@@ -406,7 +406,7 @@ body {
     padding: 0 15px;
     font-size: 12px;
     gap: 20px;
-    border-top: 2px solid #ddd;
+    border-bottom: 2px solid #ddd;
 }
 
 .status-bar span {

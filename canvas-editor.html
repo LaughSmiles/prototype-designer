@@ -145,6 +145,13 @@
 
         <!-- 中央画布区域 -->
         <main class="canvas-area">
+            <!-- 顶部状态栏 -->
+            <div class="status-bar">
+                <span id="elementCount">元素: 0</span>
+                <span id="selectedInfo">未选择</span>
+                <span id="mousePos">X: 0, Y: 0</span>
+            </div>
+
             <div class="canvas-wrapper" id="canvasWrapper">
                 <div class="canvas" id="canvas">
                     <!-- 画布元素将动态添加到这里 -->
@@ -154,11 +161,6 @@
                         <p>或使用工具添加标注</p>
                     </div>
                 </div>
-            </div>
-            <div class="status-bar">
-                <span id="elementCount">元素: 0</span>
-                <span id="selectedInfo">未选择</span>
-                <span id="mousePos">X: 0, Y: 0</span>
             </div>
         </main>
 
