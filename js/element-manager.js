@@ -34,14 +34,14 @@ const ElementManager = {
     },
 
     // 添加箭头元素
-    addArrowElement(startPoint, endPoint) {
+    addArrowElement(points) {
         const element = {
             id: `elem_${this.state.nextId++}`,
             type: 'arrow',
-            points: [startPoint, endPoint],
+            points: points,  // 所有点的数组
             position: { x: 0, y: 0 },
-            width: Math.abs(endPoint.x - startPoint.x),
-            height: Math.abs(endPoint.y - startPoint.y)
+            width: 0,
+            height: 0
         };
 
         this.state.elements.push(element);
@@ -153,35 +153,52 @@ const ElementManager = {
 
         } else if (element.type === 'arrow') {
             // 箭头元素
+            const points = element.points;
+            if (points.length < 2) return;
+
+            // 计算所有点的边界
+            const allX = points.map(p => p.x);
+            const allY = points.map(p => p.y);
+
+            const minX = Math.min(...allX);
+            const minY = Math.min(...allY);
+            const maxX = Math.max(...allX);
+            const maxY = Math.max(...allY);
+
+            const padding = 50;
+            div.style.left = `${minX - padding}px`;
+            div.style.top = `${minY - padding}px`;
+            div.style.width = `${maxX - minX + padding * 2}px`;
+            div.style.height = `${maxY - minY + padding * 2}px`;
+
+            // 关键修改：让div不响应鼠标事件,只有SVG路径响应
+            div.style.pointerEvents = 'none';
+
+            // 创建SVG
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.classList.add('arrow-svg');
             svg.setAttribute('width', '100%');
             svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `${-padding} ${-padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`);
+            svg.style.overflow = 'visible';
 
-            const points = element.points;
-            const minX = Math.min(points[0].x, points[1].x);
-            const minY = Math.min(points[0].y, points[1].y);
-            const maxX = Math.max(points[0].x, points[1].x);
-            const maxY = Math.max(points[0].y, points[1].y);
+            // 生成路径（带微微弯曲）
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const pathData = this.generateArrowPath(points, minX, minY);
 
-            div.style.left = `${minX}px`;
-            div.style.top = `${minY}px`;
-            div.style.width = `${maxX - minX}px`;
-            div.style.height = `${maxY - minY}px`;
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#e74c3c');
+            path.setAttribute('stroke-width', '3');
 
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', points[0].x - minX);
-            line.setAttribute('y1', points[0].y - minY);
-            line.setAttribute('x2', points[1].x - minX);
-            line.setAttribute('y2', points[1].y - minY);
-            line.setAttribute('stroke', '#e74c3c');
-            line.setAttribute('stroke-width', '3');
-            line.setAttribute('marker-end', 'url(#arrowhead)');
+            // 关键修改：让路径响应鼠标事件（只有点击线条本身才触发）
+            path.style.pointerEvents = 'stroke';
 
             // 箭头标记
             const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const markerId = `arrowhead_${element.id}`;
             const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-            marker.setAttribute('id', 'arrowhead');
+            marker.setAttribute('id', markerId);
             marker.setAttribute('markerWidth', '10');
             marker.setAttribute('markerHeight', '10');
             marker.setAttribute('refX', '9');
@@ -195,8 +212,15 @@ const ElementManager = {
             marker.appendChild(polygon);
             defs.appendChild(marker);
             svg.appendChild(defs);
-            svg.appendChild(line);
+
+            path.setAttribute('marker-end', `url(#${markerId})`);
+            svg.appendChild(path);
             div.appendChild(svg);
+
+            // 更新元素的位置和大小
+            element.position = { x: minX - padding, y: minY - padding };
+            element.width = maxX - minX + padding * 2;
+            element.height = maxY - minY + padding * 2;
 
         } else if (element.type === 'text') {
             // 文字元素
@@ -452,5 +476,22 @@ const ElementManager = {
     // 获取选中元素ID
     getSelectedElementId() {
         return this.state.selectedElement;
+    },
+
+    // 生成箭头路径（全部使用直线）
+    generateArrowPath(points, offsetX, offsetY) {
+        if (points.length < 2) return '';
+
+        // 所有点之间都使用直线
+        let path = '';
+        path += `M ${points[0].x - offsetX} ${points[0].y - offsetY}`;
+
+        for (let i = 1; i < points.length; i++) {
+            const x = points[i].x - offsetX;
+            const y = points[i].y - offsetY;
+            path += ` L ${x} ${y}`;
+        }
+
+        return path;
     }
 };

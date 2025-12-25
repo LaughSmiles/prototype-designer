@@ -96,15 +96,32 @@ const CanvasView = {
 
         // 鼠标按下（开始拖动视图或元素）
         canvasWrapper.addEventListener('mousedown', (e) => {
-            // 检查是否点击了元素
-            const targetElement = e.target.closest('.canvas-element');
+            // 检查是否点击了元素（包括箭头的SVG路径）
+            let targetElement = e.target.closest('.canvas-element');
+            let targetElementId = null;
+
+            // 如果没有找到canvas-element,检查是否点击了箭头SVG路径
+            if (!targetElement) {
+                // 检查是否点击了箭头元素的SVG路径
+                const arrowPath = e.target.closest('svg.arrow-svg path');
+                if (arrowPath) {
+                    // 从SVG找到父级div元素
+                    const arrowDiv = arrowPath.closest('.canvas-element.arrow-element');
+                    if (arrowDiv) {
+                        targetElement = arrowDiv;
+                        targetElementId = arrowDiv.dataset.elementId;
+                    }
+                }
+            } else {
+                targetElementId = targetElement.dataset.elementId;
+            }
 
             // 检查是否点击了拖拽手柄（仅手柄可拖拽）
             const isDragHandle = e.target.closest('.page-drag-handle');
 
-            if (targetElement) {
+            if (targetElement && targetElementId) {
                 // 选中元素
-                ElementManager.selectElement(targetElement.dataset.elementId);
+                ElementManager.selectElement(targetElementId);
 
                 // 只有点击拖拽手柄时才开始拖拽元素
                 if (e.button === 0 && isDragHandle) {
@@ -160,6 +177,11 @@ const CanvasView = {
                     element.position.x += dx;
                     element.position.y += dy;
                     ElementManager.updateElementPosition(this.draggedElement, element);
+
+                    // 如果是页面元素，更新相关的连接线
+                    if (element.type === 'page') {
+                        ElementManager.updateConnectionsForElement(element.id);
+                    }
                 }
             }
         });

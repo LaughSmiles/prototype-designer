@@ -7,7 +7,7 @@ const Tools = {
 
     // 箭头工具状态
     arrowState: {
-        startPoint: null,
+        points: [],  // 存储所有拐点
         isDrawing: false
     },
 
@@ -39,7 +39,7 @@ const Tools = {
         this.currentTool = tool;
 
         // 重置工具状态
-        this.arrowState = { startPoint: null, isDrawing: false };
+        this.arrowState = { points: [], isDrawing: false };
         this.textState = { isAdding: false };
 
         // 更新UI
@@ -96,75 +96,155 @@ const Tools = {
                 this.updateArrowPreview(e);
             }
         });
+
+        // 右键事件（用于完成箭头绘制）
+        canvas.addEventListener('contextmenu', (e) => {
+            if (this.currentTool === 'arrow' && this.arrowState.isDrawing) {
+                e.preventDefault();  // 阻止默认右键菜单
+                this.handleArrowRightClick(e);
+            }
+        });
     },
 
-    // 处理箭头点击
+    // 处理箭头左键点击（添加拐点）
     handleArrowClick(e) {
-        const canvas = document.getElementById('canvas');
-        const rect = canvas.getBoundingClientRect();
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
         const view = CanvasView.getView();
 
-        const x = (e.clientX - rect.left - view.pan.x) / view.zoom;
-        const y = (e.clientY - rect.top - view.pan.y) / view.zoom;
+        // 计算画布内部坐标（考虑pan和zoom）
+        const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
+        const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
 
-        if (!this.arrowState.startPoint) {
-            // 第一点
-            this.arrowState.startPoint = { x, y };
+        if (!this.arrowState.isDrawing) {
+            // 第一个点：开始绘制
+            this.arrowState.points = [{ x, y }];
             this.arrowState.isDrawing = true;
 
             // 创建临时预览线
             this.createArrowPreview();
 
+            PageLibrary.showHint('左键继续添加拐点，右键完成');
         } else {
-            // 第二点，完成箭头
-            const endPoint = { x, y };
-            ElementManager.addArrowElement(this.arrowState.startPoint, endPoint);
-
-            // 重置状态
-            this.arrowState.startPoint = null;
-            this.arrowState.isDrawing = false;
-            this.removeArrowPreview();
-
-            PageLibrary.showHint('箭头已添加');
+            // 后续拐点
+            this.arrowState.points.push({ x, y });
         }
+    },
+
+    // 处理箭头右键点击（完成绘制）
+    handleArrowRightClick(e) {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        const view = CanvasView.getView();
+
+        // 计算画布内部坐标（考虑pan和zoom）
+        const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
+        const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
+
+        // 添加最后一个点
+        this.arrowState.points.push({ x, y });
+
+        // 创建箭头元素
+        ElementManager.addArrowElement(this.arrowState.points);
+
+        // 重置状态
+        this.arrowState.points = [];
+        this.arrowState.isDrawing = false;
+        this.removeArrowPreview();
+
+        PageLibrary.showHint('箭头已添加');
     },
 
     // 创建箭头预览
     createArrowPreview() {
         const canvas = document.getElementById('canvas');
-        const preview = document.createElement('div');
+        const preview = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         preview.id = 'arrowPreview';
         preview.style.position = 'absolute';
         preview.style.pointerEvents = 'none';
         preview.style.zIndex = '999';
-        preview.style.borderTop = '2px dashed #e74c3c';
-        preview.style.transformOrigin = '0 0';
+        preview.style.overflow = 'visible';
         canvas.appendChild(preview);
     },
 
     // 更新箭头预览
     updateArrowPreview(e) {
         const canvas = document.getElementById('canvas');
-        const rect = canvas.getBoundingClientRect();
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvas || !canvasWrapper) return;
+
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
         const view = CanvasView.getView();
 
-        const x = (e.clientX - rect.left - view.pan.x) / view.zoom;
-        const y = (e.clientY - rect.top - view.pan.y) / view.zoom;
+        // 关键修复：需要考虑canvas的变换
+        // 1. 先计算鼠标相对于canvasWrapper的坐标
+        const mouseXInWrapper = e.clientX - wrapperRect.left;
+        const mouseYInWrapper = e.clientY - wrapperRect.top;
 
-        const start = this.arrowState.startPoint;
+        // 2. 转换为画布内部坐标（考虑pan和zoom）
+        // 画布内部坐标 = (鼠标在wrapper中的坐标 - pan偏移) / 缩放比例
+        const mouseX = (mouseXInWrapper - view.pan.x) / view.zoom;
+        const mouseY = (mouseYInWrapper - view.pan.y) / view.zoom;
+
+        const points = this.arrowState.points;
+        if (points.length === 0) return;
+
+        // 所有要绘制的点（包括鼠标当前位置）
+        const allPoints = [...points, { x: mouseX, y: mouseY }];
+
         const preview = document.getElementById('arrowPreview');
+        if (!preview) return;
 
-        if (preview && start) {
-            const dx = x - start.x;
-            const dy = y - start.y;
-            const length = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        // 计算SVG边界
+        const allX = allPoints.map(p => p.x);
+        const allY = allPoints.map(p => p.y);
 
-            preview.style.left = `${start.x}px`;
-            preview.style.top = `${start.y}px`;
-            preview.style.width = `${length}px`;
-            preview.style.transform = `rotate(${angle}deg)`;
+        const minX = Math.min(...allX);
+        const minY = Math.min(...allY);
+        const maxX = Math.max(...allX);
+        const maxY = Math.max(...allY);
+
+        const padding = 50;
+
+        // 使用画布坐标直接定位（因为preview是canvas的子元素）
+        preview.style.left = `${minX - padding}px`;
+        preview.style.top = `${minY - padding}px`;
+        preview.style.width = `${maxX - minX + padding * 2}px`;
+        preview.style.height = `${maxY - minY + padding * 2}px`;
+        preview.setAttribute('viewBox', `${-padding} ${-padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`);
+
+        // 绘制预览路径
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const pathData = this.generateArrowPath(allPoints, minX, minY);
+
+        preview.innerHTML = '';
+        path.setAttribute('d', pathData);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#e74c3c');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-dasharray', '5,5');
+        preview.appendChild(path);
+    },
+
+    // 生成箭头路径（全部使用直线）
+    generateArrowPath(points, offsetX, offsetY) {
+        if (points.length < 2) return '';
+
+        // 所有点之间都使用直线
+        let path = '';
+        path += `M ${points[0].x - offsetX} ${points[0].y - offsetY}`;
+
+        for (let i = 1; i < points.length; i++) {
+            const x = points[i].x - offsetX;
+            const y = points[i].y - offsetY;
+            path += ` L ${x} ${y}`;
         }
+
+        return path;
     },
 
     // 移除箭头预览
@@ -177,12 +257,15 @@ const Tools = {
 
     // 处理文字点击
     handleTextClick(e) {
-        const canvas = document.getElementById('canvas');
-        const rect = canvas.getBoundingClientRect();
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
         const view = CanvasView.getView();
 
-        const x = (e.clientX - rect.left - view.pan.x) / view.zoom;
-        const y = (e.clientY - rect.top - view.pan.y) / view.zoom;
+        // 计算画布内部坐标（考虑pan和zoom）
+        const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
+        const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
 
         // 弹出输入框
         const text = prompt('请输入文字内容：');
