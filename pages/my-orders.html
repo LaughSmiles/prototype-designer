@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的订单</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+        .status-bar { background: white; padding: 12px 20px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+        .nav-header { background: white; padding: 10px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #f0f0f0; }
+        .order-tabs { background: white; padding: 12px 16px; display: flex; gap: 12px; overflow-x: auto; border-bottom: 1px solid #f0f0f0; }
+        .order-tab { padding: 8px 16px; background: #F5F5F5; border-radius: 20px; font-size: 13px; color: #666; white-space: nowrap; }
+        .order-tab.active { background: #007AFF; color: white; }
+        .order-card { background: white; margin: 12px 16px; border-radius: 16px; padding: 16px; }
+        .order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .order-id { font-size: 13px; color: #666; }
+        .order-status { font-size: 13px; color: #007AFF; font-weight: 500; }
+        .order-content { display: flex; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid #f5f5f5; }
+        .order-content img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; }
+        .order-info { flex: 1; }
+        .order-name { font-weight: 500; font-size: 15px; margin-bottom: 4px; }
+        .order-period { font-size: 12px; color: #999; }
+        .order-price { text-align: right; padding-top: 12px; }
+        .price-label { font-size: 12px; color: #666; }
+        .price-value { font-size: 18px; font-weight: 700; color: #333; }
+        .order-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .action-btn { flex: 1; padding: 10px; border-radius: 20px; font-size: 14px; font-weight: 500; border: 1px solid #E0E0E0; background: white; }
+        .action-btn.primary { background: #007AFF; color: white; border-color: #007AFF; }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+    <div class="nav-header">
+        <i class="fas fa-arrow-left"></i>
+        <span class="font-semibold text-lg">我的订单</span>
+    </div>
+    <div class="order-tabs">
+        <div class="order-tab active">全部</div>
+        <div class="order-tab">待支付</div>
+        <div class="order-tab">待发货</div>
+        <div class="order-tab">待收货</div>
+        <div class="order-tab">租赁中</div>
+        <div class="order-tab">已归还</div>
+        <div class="order-tab">待评价</div>
+        <div class="order-tab">已完成</div>
+    </div>
+    <div class="order-card">
+        <div class="order-header">
+            <span class="order-id">订单号: 202401150001</span>
+            <span class="order-status">租赁中</span>
+        </div>
+        <div class="order-content">
+            <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200" alt="设备">
+            <div class="order-info">
+                <div class="order-name">Canon EOS R5</div>
+                <div class="order-period">租期: 2024-01-15 至 2024-01-18</div>
+                <div class="order-period">配件: 电池×2、充电器、SD卡</div>
+            </div>
+        </div>
+        <div class="order-price">
+            <div class="price-label">实付金额</div>
+            <div class="price-value">¥660</div>
+        </div>
+        <div class="order-actions">
+            <button class="action-btn">联系客服</button>
+            <button class="action-btn primary">归还设备</button>
+        </div>
+    </div>
+    <div class="order-card">
+        <div class="order-header">
+            <span class="order-id">订单号: 202401100002</span>
+            <span class="order-status">已完成</span>
+        </div>
+        <div class="order-content">
+            <img src="https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=200" alt="设备">
+            <div class="order-info">
+                <div class="order-name">Sony 70-200mm</div>
+                <div class="order-period">租期: 2024-01-10 至 2024-01-12</div>
+            </div>
+        </div>
+        <div class="order-price">
+            <div class="price-label">实付金额</div>
+            <div class="price-value">¥300</div>
+        </div>
+        <div class="order-actions">
+            <button class="action-btn">再次租赁</button>
+            <button class="action-btn primary">评价</button>
+        </div>
+    </div>
+</body>
+</html>

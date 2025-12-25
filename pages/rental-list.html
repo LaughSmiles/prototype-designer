@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>租赁</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+        .status-bar {
+            background: white;
+            padding: 12px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .search-bar {
+            background: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .search-input {
+            flex: 1;
+            background: #f5f5f5;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .filter-bar {
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            background: white;
+            border: 1px solid #E0E0E0;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #666;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .filter-btn.active {
+            background: #007AFF;
+            color: white;
+            border-color: #007AFF;
+        }
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 16px;
+        }
+        .device-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .device-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+        }
+        .device-info {
+            padding: 12px;
+        }
+        .device-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .device-specs {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+        .device-price {
+            color: #007AFF;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        .device-price span {
+            font-size: 12px;
+            font-weight: 400;
+        }
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 8px 0 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            color: #999;
+        }
+        .tab-item.active {
+            color: #007AFF;
+        }
+        .tab-item i {
+            font-size: 22px;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+        <div class="flex items-center bg-gray-100 rounded-full px-4 py-2 flex-1">
+            <i class="fas fa-search text-gray-400 mr-2"></i>
+            <input type="text" class="search-input bg-transparent" placeholder="搜索摄影设备或品牌">
+        </div>
+    </div>
+
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+        <div class="filter-btn active">
+            <i class="fas fa-sliders-h text-xs"></i>
+            筛选
+        </div>
+        <div class="filter-btn">品牌 <i class="fas fa-chevron-down text-xs"></i></div>
+        <div class="filter-btn">价格 <i class="fas fa-chevron-down text-xs"></i></div>
+        <div class="filter-btn">类型 <i class="fas fa-chevron-down text-xs"></i></div>
+    </div>
+
+    <!-- 设备列表 -->
+    <div class="device-grid">
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400" alt="相机">
+            <div class="device-info">
+                <div class="device-name">Canon EOS R5</div>
+                <div class="device-specs">全画幅 / 4500万像素</div>
+                <div class="device-price">¥200<span>/天</span></div>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=400" alt="镜头">
+            <div class="device-info">
+                <div class="device-name">Sony 70-200mm</div>
+                <div class="device-specs">f/2.8 / GM镜头</div>
+                <div class="device-price">¥150<span>/天</span></div>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=400" alt="无人机">
+            <div class="device-info">
+                <div class="device-name">DJI Mavic 3</div>
+                <div class="device-specs">哈苏镜头 / 5.1K</div>
+                <div class="device-price">¥300<span>/天</span></div>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=400" alt="相机">
+            <div class="device-info">
+                <div class="device-name">Sony A7M4</div>
+                <div class="device-specs">全画幅 / 3300万像素</div>
+                <div class="device-price">¥180<span>/天</span></div>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1617338758375-a1f970b5f1ba?w=400" alt="镜头">
+            <div class="device-info">
+                <div class="device-name">Canon 24-70mm</div>
+                <div class="device-specs">f/2.8 / RF镜头</div>
+                <div class="device-price">¥120<span>/天</span></div>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1577437171679-3d8f5c0f8bbd?w=400" alt="稳定器">
+            <div class="device-info">
+                <div class="device-name">DJI RS3 Pro</div>
+                <div class="device-specs">三轴稳定器</div>
+                <div class="device-price">¥100<span>/天</span></div>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1591805599742-7af6c86b4d6f?w=400" alt="灯光">
+            <div class="device-info">
+                <div class="device-name">神牛补光灯</div>
+                <div class="device-specs">LED / 可调色温</div>
+                <div class="device-price">¥80<span>/天</span></div>
+            </div>
+        </div>
+
+        <div class="device-card" onclick="location.href='rental-detail.html'">
+            <img src="https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=400" alt="三脚架">
+            <div class="device-info">
+                <div class="device-name">Manfrotto三脚架</div>
+                <div class="device-specs">碳纤维 / 专业级</div>
+                <div class="device-price">¥60<span>/天</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部Tab栏 -->
+    <div class="tab-bar">
+        <div class="tab-item" onclick="location.href='home.html'">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item active">
+            <i class="fas fa-camera"></i>
+            <span>租赁</span>
+        </div>
+        <div class="tab-item" onclick="location.href='works.html'">
+            <i class="fas fa-images"></i>
+            <span>作品</span>
+        </div>
+        <div class="tab-item" onclick="location.href='messages.html'">
+            <i class="fas fa-comment"></i>
+            <span>消息</span>
+        </div>
+        <div class="tab-item" onclick="location.href='profile.html'">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+</body>
+</html>

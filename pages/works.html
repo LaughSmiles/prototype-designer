@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+        .status-bar {
+            background: white;
+            padding: 12px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .nav-tabs {
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            gap: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .nav-tab {
+            font-size: 16px;
+            color: #666;
+            font-weight: 500;
+            padding-bottom: 8px;
+            position: relative;
+        }
+        .nav-tab.active {
+            color: #333;
+            font-weight: 600;
+        }
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #FF2442;
+            border-radius: 2px;
+        }
+        .masonry-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 12px;
+        }
+        .work-item {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .work-item img {
+            width: 100%;
+            display: block;
+        }
+        .work-info {
+            padding: 10px 12px;
+        }
+        .work-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        .work-author {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .work-author img {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        .work-author span {
+            font-size: 12px;
+            color: #999;
+        }
+        .work-stats {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #999;
+        }
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 8px 0 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            color: #999;
+        }
+        .tab-item.active {
+            color: #007AFF;
+        }
+        .tab-item i {
+            font-size: 22px;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 导航标签 -->
+    <div class="nav-tabs">
+        <div class="nav-tab active">热门</div>
+        <div class="nav-tab">关注</div>
+        <div class="nav-tab">推荐</div>
+        <div class="flex-1"></div>
+        <div class="nav-tab" onclick="location.href='publish-work-select.html'">
+            <i class="fas fa-plus-circle text-blue-500 text-xl"></i>
+        </div>
+        <div class="nav-tab">
+            <i class="fas fa-search text-gray-600"></i>
+        </div>
+    </div>
+
+    <!-- 作品瀑布流 -->
+    <div class="masonry-grid">
+        <div class="work-item" onclick="location.href='image-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400" alt="作品" style="height: 200px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">雪山日出,美到窒息!🏔️</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=1" alt="头像">
+                    <span>摄影达人</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 1.2k</span>
+                    <span><i class="far fa-comment"></i> 86</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="work-item" onclick="location.href='video-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400" alt="作品" style="height: 240px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">森林漫步vlog🌲</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=2" alt="头像">
+                    <span>自然摄影师</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 2.5k</span>
+                    <span><i class="far fa-comment"></i> 132</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="work-item" onclick="location.href='image-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400" alt="作品" style="height: 180px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">湖畔清晨</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=3" alt="头像">
+                    <span>风景大师</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 890</span>
+                    <span><i class="far fa-comment"></i> 45</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="work-item" onclick="location.href='image-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400" alt="作品" style="height: 220px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">云海奇观✨</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=4" alt="头像">
+                    <span>云端行者</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 3.2k</span>
+                    <span><i class="far fa-comment"></i> 201</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="work-item" onclick="location.href='image-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400" alt="作品" style="height: 190px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">日落时分的山谷</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=5" alt="头像">
+                    <span>户外探险家</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 1.5k</span>
+                    <span><i class="far fa-comment"></i> 98</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="work-item" onclick="location.href='image-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400" alt="作品" style="height: 200px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">星空下的雪山⭐</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=6" alt="头像">
+                    <span>追光者</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 4.1k</span>
+                    <span><i class="far fa-comment"></i> 287</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="work-item" onclick="location.href='image-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=400" alt="作品" style="height: 210px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">秋日私语🍂</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=7" alt="头像">
+                    <span>四季摄影师</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 2.0k</span>
+                    <span><i class="far fa-comment"></i> 156</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="work-item" onclick="location.href='image-work-detail.html'">
+            <img src="https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=400" alt="作品" style="height: 230px; object-fit: cover;">
+            <div class="work-info">
+                <div class="work-title">雪山倒影</div>
+                <div class="work-author">
+                    <img src="https://i.pravatar.cc/20?img=8" alt="头像">
+                    <span>高山摄影师</span>
+                </div>
+                <div class="work-stats">
+                    <span><i class="far fa-heart"></i> 1.8k</span>
+                    <span><i class="far fa-comment"></i> 112</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部Tab栏 -->
+    <div class="tab-bar">
+        <div class="tab-item" onclick="location.href='home.html'">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item" onclick="location.href='rental-list.html'">
+            <i class="fas fa-camera"></i>
+            <span>租赁</span>
+        </div>
+        <div class="tab-item active">
+            <i class="fas fa-images"></i>
+            <span>作品</span>
+        </div>
+        <div class="tab-item" onclick="location.href='messages.html'">
+            <i class="fas fa-comment"></i>
+            <span>消息</span>
+        </div>
+        <div class="tab-item" onclick="location.href='profile.html'">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+</body>
+</html>

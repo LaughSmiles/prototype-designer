@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摄影派 - 高保真原型展示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .screen-wrapper {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .screen-wrapper:hover {
+            transform: translateY(-5px);
+        }
+
+        .screen-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+
+        .phone-frame {
+            width: 320px;
+            height: 680px;
+            background: #000;
+            border-radius: 45px;
+            padding: 12px;
+            box-shadow: inset 0 0 0 2px #333;
+            position: relative;
+        }
+
+        .phone-frame::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 25px;
+            background: #000;
+            border-radius: 15px;
+            z-index: 10;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #f5f5f5;
+            border-radius: 35px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .phone-screen iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 35px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin: 40px 0 20px 0;
+            padding: 15px 25px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 1800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📷 摄影派 App</h1>
+        <p>高保真原型设计展示 - iPhone 15 Pro 尺寸</p>
+    </div>
+
+    <!-- 首页模块 -->
+    <div class="section-title">
+        <i class="fas fa-home"></i> 首页模块
+    </div>
+    <div class="screens-grid">
+        <div class="screen-wrapper">
+            <div class="screen-title">首页</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/home.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">搜索页面</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/search.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">租赁详情</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/rental-detail.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">选择租期</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/select-rental-period.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">支付结果</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/payment-result.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">门店信息</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/store-info.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">评论列表</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/comment-list.html"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 租赁模块 -->
+    <div class="section-title">
+        <i class="fas fa-camera"></i> 租赁模块
+    </div>
+    <div class="screens-grid">
+        <div class="screen-wrapper">
+            <div class="screen-title">租赁列表</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/rental-list.html"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 作品模块 -->
+    <div class="section-title">
+        <i class="fas fa-images"></i> 作品模块
+    </div>
+    <div class="screens-grid">
+        <div class="screen-wrapper">
+            <div class="screen-title">作品首页</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/works.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">视频作品详情</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/video-work-detail.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">图文作品详情</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/image-work-detail.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">发布作品(选择)</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/publish-work-select.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">发布视频</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/publish-video.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">发布图片</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/publish-image.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">收货方式</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/delivery-method.html"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息模块 -->
+    <div class="section-title">
+        <i class="fas fa-comment"></i> 消息模块
+    </div>
+    <div class="screens-grid">
+        <div class="screen-wrapper">
+            <div class="screen-title">消息首页</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/messages.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">系统消息</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/system-message.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">互动消息</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/interaction-message.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">在线客服</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/customer-service.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">私聊</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/private-chat.html"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我的模块 -->
+    <div class="section-title">
+        <i class="fas fa-user"></i> 我的模块
+    </div>
+    <div class="screens-grid">
+        <div class="screen-wrapper">
+            <div class="screen-title">我的页面</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/profile.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">设置</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/settings.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">实名认证(未完成)</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/identity-verify.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">实名认证(已完成)</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/identity-verified.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">地址管理</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/address-manage.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">编辑地址</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/edit-address.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">门店地址</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/store-address.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">关于我们</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/about-us.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">个人信息编辑</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/edit-profile.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">数据概览</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/data-overview.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">我的订单</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/my-orders.html"></iframe>
+                </div>
+            </div>
+        </div>
+        <div class="screen-wrapper">
+            <div class="screen-title">查看物流</div>
+            <div class="phone-frame">
+                <div class="phone-screen">
+                    <iframe src="pages/logistics-detail.html"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

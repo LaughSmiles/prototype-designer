@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我们</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+        .status-bar { background: white; padding: 12px 20px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+        .nav-header { background: white; padding: 10px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #f0f0f0; }
+        .logo-section { background: white; margin: 16px; border-radius: 16px; padding: 40px 20px; text-align: center; }
+        .logo-section i { font-size: 60px; color: #007AFF; margin-bottom: 16px; }
+        .info-card { background: white; margin: 12px 16px; border-radius: 16px; padding: 16px; }
+        .info-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+        .info-item:last-child { border-bottom: none; }
+        .info-label { color: #666; }
+        .info-value { color: #333; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+    <div class="nav-header">
+        <i class="fas fa-arrow-left"></i>
+        <span class="font-semibold text-lg">关于我们</span>
+    </div>
+    <div class="logo-section">
+        <i class="fas fa-camera-retro"></i>
+        <h2 class="text-xl font-bold mb-2">摄影派</h2>
+        <p class="text-gray-500 text-sm">版本 1.0.0</p>
+    </div>
+    <div class="info-card">
+        <div class="info-item">
+            <span class="info-label">官方网站</span>
+            <span class="info-value">www.sheyingpai.com</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">客服电话</span>
+            <span class="info-value">400-123-4567</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">企业邮箱</span>
+            <span class="info-value">contact@sheyingpai.com</span>
+        </div>
+    </div>
+    <div class="info-card">
+        <div class="info-item">
+            <span class="info-label">用户协议</span>
+            <i class="fas fa-chevron-right text-gray-400"></i>
+        </div>
+        <div class="info-item">
+            <span class="info-label">隐私政策</span>
+            <i class="fas fa-chevron-right text-gray-400"></i>
+        </div>
+        <div class="info-item">
+            <span class="info-label">免责声明</span>
+            <i class="fas fa-chevron-right text-gray-400"></i>
+        </div>
+    </div>
+    <div class="text-center text-gray-400 text-xs py-4">
+        © 2024 摄影派 All Rights Reserved
+    </div>
+</body>
+</html>

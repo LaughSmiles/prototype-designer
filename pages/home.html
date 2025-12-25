@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            overflow-x: hidden;
+        }
+        .status-bar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .carousel {
+            position: relative;
+            height: 180px;
+            overflow: hidden;
+            border-radius: 0 0 20px 20px;
+        }
+        .carousel-inner {
+            display: flex;
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .carousel-item {
+            min-width: 100%;
+            height: 100%;
+        }
+        .carousel-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .carousel-dots {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+        }
+        .carousel-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+        }
+        .carousel-dot.active {
+            background: white;
+            width: 20px;
+            border-radius: 3px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 20px 0 12px;
+            padding: 0 16px;
+        }
+        .device-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        .device-card:active {
+            transform: scale(0.98);
+        }
+        .device-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+        }
+        .work-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 0 16px;
+        }
+        .work-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 3/4;
+        }
+        .work-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .work-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            padding: 20px 10px 10px;
+            color: white;
+        }
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 8px 0 20px;
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            color: #999;
+        }
+        .tab-item.active {
+            color: #007AFF;
+        }
+        .tab-item i {
+            font-size: 22px;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="px-4 py-3 bg-white">
+        <div class="flex items-center bg-gray-100 rounded-full px-4 py-2.5" onclick="location.href='search.html'">
+            <i class="fas fa-search text-gray-400 mr-2"></i>
+            <span class="text-gray-400 text-sm">搜索摄影设备、摄影师、作品</span>
+        </div>
+    </div>
+
+    <!-- 轮播广告 -->
+    <div class="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item">
+                <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800" alt="摄影活动">
+            </div>
+        </div>
+        <div class="carousel-dots">
+            <div class="carousel-dot active"></div>
+            <div class="carousel-dot"></div>
+            <div class="carousel-dot"></div>
+        </div>
+    </div>
+
+    <!-- 推荐设备区域 -->
+    <div class="px-4">
+        <div class="section-title flex justify-between items-center">
+            <span>热门设备</span>
+            <span class="text-sm text-blue-500 font-normal">查看更多 <i class="fas fa-chevron-right text-xs"></i></span>
+        </div>
+        <div class="flex gap-3 overflow-x-auto pb-2" style="-webkit-overflow-scrolling: touch;">
+            <div class="device-card min-w-[140px]" onclick="location.href='rental-detail.html'">
+                <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400" alt="相机">
+                <div class="p-3">
+                    <div class="font-semibold text-sm text-gray-800 mb-1">Canon EOS R5</div>
+                    <div class="text-blue-600 font-bold text-sm">¥200/天</div>
+                </div>
+            </div>
+            <div class="device-card min-w-[140px]" onclick="location.href='rental-detail.html'">
+                <img src="https://images.unsplash.com/photo-1617005082133-548c4dd27f35?w=400" alt="镜头">
+                <div class="p-3">
+                    <div class="font-semibold text-sm text-gray-800 mb-1">Sony 70-200mm</div>
+                    <div class="text-blue-600 font-bold text-sm">¥150/天</div>
+                </div>
+            </div>
+            <div class="device-card min-w-[140px]" onclick="location.href='rental-detail.html'">
+                <img src="https://images.unsplash.com/photo-1555680202-c86f0e12f086?w=400" alt="无人机">
+                <div class="p-3">
+                    <div class="font-semibold text-sm text-gray-800 mb-1">DJI Mavic 3</div>
+                    <div class="text-blue-600 font-bold text-sm">¥300/天</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 热门作品展示 -->
+    <div class="mt-4">
+        <div class="section-title flex justify-between items-center">
+            <span>热门作品</span>
+            <span class="text-sm text-blue-500 font-normal">查看更多 <i class="fas fa-chevron-right text-xs"></i></span>
+        </div>
+        <div class="work-grid">
+            <div class="work-item" onclick="location.href='../pages/image-work-detail.html'">
+                <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400" alt="作品">
+                <div class="work-info">
+                    <div class="text-sm font-semibold">雪山日出</div>
+                    <div class="text-xs opacity-80">by 摄影达人</div>
+                </div>
+            </div>
+            <div class="work-item" onclick="location.href='../pages/image-work-detail.html'">
+                <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400" alt="作品">
+                <div class="work-info">
+                    <div class="text-sm font-semibold">森林小径</div>
+                    <div class="text-xs opacity-80">by 自然摄影师</div>
+                </div>
+            </div>
+            <div class="work-item" onclick="location.href='../pages/image-work-detail.html'">
+                <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400" alt="作品">
+                <div class="work-info">
+                    <div class="text-sm font-semibold">湖畔风光</div>
+                    <div class="text-xs opacity-80">by 风景大师</div>
+                </div>
+            </div>
+            <div class="work-item" onclick="location.href='../pages/image-work-detail.html'">
+                <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400" alt="作品">
+                <div class="work-info">
+                    <div class="text-sm font-semibold">云海奇观</div>
+                    <div class="text-xs opacity-80">by 云端行者</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="h-20"></div>
+
+    <!-- 底部Tab栏 -->
+    <div class="tab-bar">
+        <div class="tab-item active">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </div>
+        <div class="tab-item" onclick="location.href='../pages/rental-list.html'">
+            <i class="fas fa-camera"></i>
+            <span>租赁</span>
+        </div>
+        <div class="tab-item" onclick="location.href='../pages/works.html'">
+            <i class="fas fa-images"></i>
+            <span>作品</span>
+        </div>
+        <div class="tab-item" onclick="location.href='../pages/messages.html'">
+            <i class="fas fa-comment"></i>
+            <span>消息</span>
+        </div>
+        <div class="tab-item" onclick="location.href='../pages/profile.html'">
+            <i class="fas fa-user"></i>
+            <span>我的</span>
+        </div>
+    </div>
+</body>
+</html>

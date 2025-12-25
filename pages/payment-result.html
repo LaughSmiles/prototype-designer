@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付结果</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding-bottom: 100px;
+        }
+        .status-bar {
+            background: white;
+            padding: 12px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .nav-header {
+            background: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #07C160 0%, #06AD56 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .success-icon i {
+            color: white;
+            font-size: 40px;
+        }
+        .info-card {
+            background: white;
+            margin: 12px 16px;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 12px 16px;
+            padding-bottom: 24px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 12px;
+        }
+        .btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            text-align: center;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+        }
+        .btn-outline {
+            background: white;
+            color: #007AFF;
+            border: 2px solid #007AFF;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <div class="nav-header">
+        <i class="fas fa-arrow-left text-gray-700"></i>
+        <span class="font-semibold text-lg">支付结果</span>
+        <i class="fas fa-home text-gray-700"></i>
+    </div>
+
+    <!-- 支付成功图标 -->
+    <div class="text-center pt-10 pb-6">
+        <div class="success-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">支付成功</h2>
+        <p class="text-gray-500 text-sm">订单号: 202401150001</p>
+    </div>
+
+    <!-- 租赁物品 -->
+    <div class="info-card">
+        <h3 class="font-bold text-gray-900 mb-3">租赁物品</h3>
+        <div class="flex gap-3 pb-3 border-b border-gray-100">
+            <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200" alt="设备" class="w-16 h-16 rounded-lg object-cover">
+            <div class="flex-1">
+                <div class="font-semibold text-gray-800">Canon EOS R5</div>
+                <div class="text-sm text-gray-500">配件: 电池×2、充电器、SD卡</div>
+            </div>
+        </div>
+        <div class="info-row">
+            <span class="text-gray-600">租期</span>
+            <span class="font-semibold">2024-01-15 至 2024-01-18(3天)</span>
+        </div>
+        <div class="info-row">
+            <span class="text-gray-600">押金费用</span>
+            <span class="font-semibold">¥5000</span>
+        </div>
+        <div class="info-row">
+            <span class="text-gray-600">租赁费用</span>
+            <span class="font-semibold">¥600</span>
+        </div>
+        <div class="info-row">
+            <span class="text-gray-600">配件费用</span>
+            <span class="font-semibold">¥60</span>
+        </div>
+        <div class="info-row">
+            <span class="text-gray-600 font-semibold">实付费用</span>
+            <span class="font-bold text-red-600 text-lg">¥660</span>
+        </div>
+    </div>
+
+    <!-- 收件地址 -->
+    <div class="info-card">
+        <h3 class="font-bold text-gray-900 mb-3">收件地址</h3>
+        <div class="text-gray-700">
+            <div class="font-semibold mb-1">张三 138****8888</div>
+            <div class="text-sm">北京市朝阳区建国路88号SOHO现代城A座1001室</div>
+        </div>
+    </div>
+
+    <!-- 订单状态 -->
+    <div class="info-card">
+        <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-info-circle text-blue-600"></i>
+            <span class="font-bold text-gray-900">订单状态</span>
+        </div>
+        <div class="text-sm text-gray-600 leading-relaxed">
+            您的订单已支付成功,商家将在24小时内发货,请保持手机畅通,注意查收快递。
+        </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-bar">
+        <button class="btn btn-outline" onclick="location.href='my-orders.html'">查看订单</button>
+        <button class="btn btn-primary" onclick="location.href='home.html'">返回首页</button>
+    </div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑地址</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding-bottom: 80px; }
+        .status-bar { background: white; padding: 12px 20px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; }
+        .nav-header { background: white; padding: 10px 16px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #f0f0f0; }
+        .form-card { background: white; margin: 12px 16px; border-radius: 16px; padding: 16px; }
+        .form-item { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+        .form-item:last-child { border-bottom: none; }
+        .form-label { font-size: 14px; color: #666; margin-bottom: 8px; }
+        .form-input { width: 100%; border: none; font-size: 15px; outline: none; }
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 16px; padding-bottom: 24px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; gap: 12px; }
+        .btn { flex: 1; padding: 14px; border-radius: 25px; font-size: 16px; font-weight: 600; border: none; }
+        .btn-danger { background: white; color: #FF2442; border: 2px solid #FF2442; }
+        .btn-primary { background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%); color: white; }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+    <div class="nav-header">
+        <i class="fas fa-arrow-left"></i>
+        <span class="font-semibold text-lg">编辑地址</span>
+    </div>
+    <div class="form-card">
+        <div class="form-item">
+            <div class="form-label">收件人</div>
+            <input type="text" class="form-input" value="张三" placeholder="请输入收件人姓名">
+        </div>
+        <div class="form-item">
+            <div class="form-label">手机号码</div>
+            <input type="tel" class="form-input" value="138****8888" placeholder="请输入手机号码">
+        </div>
+        <div class="form-item">
+            <div class="form-label">所在地区</div>
+            <input type="text" class="form-input" value="北京市朝阳区" placeholder="请选择地区">
+        </div>
+        <div class="form-item">
+            <div class="form-label">详细地址</div>
+            <textarea class="form-input" rows="3" placeholder="请输入详细地址">建国路88号SOHO现代城A座1001室</textarea>
+        </div>
+    </div>
+    <div class="form-card">
+        <div class="flex items-center justify-between py-3">
+            <span class="text-gray-700">设为默认地址</span>
+            <div class="w-12 h-7 bg-blue-500 rounded-full relative">
+                <div class="w-5 h-5 bg-white rounded-full absolute right-1 top-1 shadow"></div>
+            </div>
+        </div>
+    </div>
+    <div class="bottom-bar">
+        <button class="btn btn-danger">删除地址</button>
+        <button class="btn btn-primary">保存</button>
+    </div>
+</body>
+</html>

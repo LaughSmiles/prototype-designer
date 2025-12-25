@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布作品</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+        .status-bar {
+            background: white;
+            padding: 12px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .nav-header {
+            background: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .publish-btn {
+            background: #FF2442;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+        }
+        .content-type-tabs {
+            background: white;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            margin: 12px;
+            border-radius: 16px;
+        }
+        .type-tab {
+            flex: 1;
+            padding: 16px;
+            border: 2px solid #E0E0E0;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .type-tab.active {
+            border-color: #FF2442;
+            background: #FFF5F7;
+        }
+        .type-tab i {
+            font-size: 32px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .type-tab.active i {
+            color: #FF2442;
+        }
+        .type-tab span {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+        .upload-area {
+            background: white;
+            margin: 0 12px 12px;
+            border-radius: 16px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .upload-area i {
+            font-size: 48px;
+            color: #E0E0E0;
+            margin-bottom: 12px;
+        }
+        .upload-area p {
+            color: #999;
+            font-size: 14px;
+        }
+        .upload-tips {
+            background: white;
+            margin: 0 12px;
+            border-radius: 16px;
+            padding: 16px;
+        }
+        .tips-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+        .tips-item {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            padding-left: 12px;
+            position: relative;
+        }
+        .tips-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 6px;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #999;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <div class="nav-header">
+        <span class="text-gray-700" onclick="history.back()">取消</span>
+        <span class="font-semibold text-lg">发布作品</span>
+        <button class="publish-btn" onclick="location.href='publish-video.html'">发布</button>
+    </div>
+
+    <!-- 内容类型选择 -->
+    <div class="content-type-tabs">
+        <div class="type-tab active" onclick="location.href='publish-video.html'">
+            <i class="fas fa-video"></i>
+            <span>视频作品</span>
+        </div>
+        <div class="type-tab" onclick="location.href='publish-image.html'">
+            <i class="fas fa-images"></i>
+            <span>图片作品</span>
+        </div>
+    </div>
+
+    <!-- 上传区域 -->
+    <div class="upload-area">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <p>点击上传视频</p>
+        <p style="font-size: 12px; margin-top: 4px;">支持MP4、MOV格式,最大500MB</p>
+    </div>
+
+    <!-- 发布提示 -->
+    <div class="upload-tips">
+        <div class="tips-title">发布须知</div>
+        <div class="tips-item">请确保视频内容原创,不侵犯他人版权</div>
+        <div class="tips-item">视频时长建议在15秒-5分钟之间</div>
+        <div class="tips-item">建议上传高清视频(1080p及以上)</div>
+        <div class="tips-item">避免上传违规内容,包括但不限于暴力、色情等</div>
+        <div class="tips-item">添加相关标签可以获得更多曝光</div>
+    </div>
+
+    <div class="h-8"></div>
+</body>
+</html>

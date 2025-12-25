@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图文作品详情</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #fff;
+            padding-bottom: 70px;
+        }
+        .status-bar {
+            background: white;
+            padding: 12px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .nav-header {
+            background: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .user-info img {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+        }
+        .follow-btn {
+            padding: 6px 16px;
+            background: #FF2442;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .image-viewer {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+        }
+        .image-viewer img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .page-indicator {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .content-area {
+            padding: 16px;
+        }
+        .work-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        .work-desc {
+            font-size: 15px;
+            color: #666;
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .tag {
+            color: #1e3a8a;
+            font-size: 14px;
+        }
+        .publish-time {
+            font-size: 12px;
+            color: #999;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .comments-section {
+            padding: 16px;
+        }
+        .comments-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 16px;
+        }
+        .comment-item {
+            margin-bottom: 16px;
+        }
+        .comment-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .comment-user img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+        }
+        .comment-user .name {
+            font-size: 13px;
+            color: #666;
+            font-weight: 500;
+        }
+        .comment-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
+            margin-left: 36px;
+        }
+        .comment-actions {
+            display: flex;
+            gap: 16px;
+            margin-left: 36px;
+            margin-top: 6px;
+        }
+        .comment-actions span {
+            font-size: 12px;
+            color: #999;
+        }
+        .bottom-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 10px 16px;
+            padding-bottom: 24px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .comment-input-box {
+            flex: 1;
+            background: #f5f5f5;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .action-btn i {
+            font-size: 22px;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <div class="nav-header">
+        <i class="fas fa-arrow-left text-gray-700"></i>
+        <div class="user-info">
+            <img src="https://i.pravatar.cc/36?img=1" alt="头像">
+            <div>
+                <div class="font-semibold text-sm">摄影达人</div>
+                <div class="text-xs text-gray-500">01-15 发布</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button class="follow-btn"><i class="fas fa-plus mr-1"></i>关注</button>
+            <i class="fas fa-share-alt text-gray-700"></i>
+        </div>
+    </div>
+
+    <!-- 图片查看器 -->
+    <div class="image-viewer">
+        <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800" alt="作品图片">
+        <div class="page-indicator">1/5</div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content-area">
+        <div class="work-title">雪山日出,美到窒息!🏔️ 摄影技巧分享</div>
+        <div class="work-desc">
+            这次去雪山拍摄日出,提前做了很多功课。凌晨3点起床,徒步2小时才到达最佳拍摄点。当第一缕阳光照在雪山上时,一切辛苦都值得了!
+            <br><br>
+            拍摄参数:<br>
+            相机: Canon EOS R5<br>
+            镜头: 24-70mm f/2.8<br>
+            ISO: 100 | 光圈: f/8 | 快门: 1/250s
+        </div>
+        <div class="tags">
+            <span class="tag">#雪山摄影</span>
+            <span class="tag">#日出</span>
+            <span class="tag">#风光摄影</span>
+            <span class="tag">#Canon</span>
+        </div>
+        <div class="publish-time">01-15 编辑于 北京</div>
+    </div>
+
+    <!-- 评论区 -->
+    <div class="comments-section">
+        <div class="comments-header">共86条评论</div>
+
+        <div class="comment-item">
+            <div class="comment-user">
+                <img src="https://i.pravatar.cc/28?img=10" alt="头像">
+                <div class="name">小明同学</div>
+            </div>
+            <div class="comment-text">
+                太美了!请问是哪个雪山呀?想去打卡!
+            </div>
+            <div class="comment-actions">
+                <span>01-15</span>
+                <span><i class="far fa-heart"></i> 23</span>
+                <span>回复</span>
+            </div>
+            <div class="comment-item" style="margin-left: 36px; margin-top: 12px;">
+                <div class="comment-user">
+                    <img src="https://i.pravatar.cc/28?img=1" alt="头像">
+                    <div class="name">摄影达人 <span class="text-gray-400">作者</span></div>
+                </div>
+                <div class="comment-text">
+                    是四姑娘山,最佳拍摄点在日隆镇!
+                </div>
+                <div class="comment-actions">
+                    <span>01-15</span>
+                    <span><i class="far fa-heart"></i> 12</span>
+                    <span>回复</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="comment-item">
+            <div class="comment-user">
+                <img src="https://i.pravatar.cc/28?img=11" alt="头像">
+                <div class="name">摄影爱好者</div>
+            </div>
+            <div class="comment-text">
+                这个构图太棒了!学习了👍
+            </div>
+            <div class="comment-actions">
+                <span>01-15</span>
+                <span><i class="far fa-heart"></i> 15</span>
+                <span>回复</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-bar">
+        <input type="text" class="comment-input-box" placeholder="说点什么...">
+        <div class="action-btn">
+            <i class="far fa-heart"></i>
+            <span>1.2k</span>
+        </div>
+        <div class="action-btn">
+            <i class="far fa-star"></i>
+            <span>收藏</span>
+        </div>
+        <div class="action-btn">
+            <i class="far fa-comment"></i>
+            <span>86</span>
+        </div>
+    </div>
+</body>
+</html>

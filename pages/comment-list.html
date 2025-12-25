@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评论列表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+        .status-bar {
+            background: white;
+            padding: 12px 20px 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .nav-header {
+            background: white;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .nav-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .filter-tabs {
+            background: white;
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .filter-tab {
+            padding: 8px 16px;
+            background: #F5F5F5;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+        }
+        .filter-tab.active {
+            background: #007AFF;
+            color: white;
+        }
+        .overview-card {
+            background: white;
+            margin: 12px 16px;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .score-display {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 12px;
+        }
+        .big-score {
+            font-size: 48px;
+            font-weight: 700;
+            color: #FFA000;
+        }
+        .comment-card {
+            background: white;
+            margin: 0 16px 12px;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .rating-stars {
+            color: #FFA000;
+            font-size: 12px;
+        }
+        .comment-images {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .comment-images img {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="flex items-center gap-1">
+            <i class="fas fa-signal text-xs"></i>
+            <i class="fas fa-wifi text-xs"></i>
+            <i class="fas fa-battery-full text-xs"></i>
+        </div>
+    </div>
+
+    <!-- 导航栏 -->
+    <div class="nav-header">
+        <i class="fas fa-arrow-left text-gray-700"></i>
+        <h1>全部评论</h1>
+    </div>
+
+    <!-- 筛选标签 -->
+    <div class="filter-tabs">
+        <div class="filter-tab active">全部 (128)</div>
+        <div class="filter-tab">最新 (45)</div>
+        <div class="filter-tab">有图 (32)</div>
+    </div>
+
+    <!-- 评价概览 -->
+    <div class="overview-card">
+        <div class="score-display">
+            <div class="big-score">4.8</div>
+            <div>
+                <div class="rating-stars mb-1">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star-half-alt"></i>
+                </div>
+                <div class="text-sm text-gray-600">共128条评价</div>
+            </div>
+        </div>
+        <div class="flex gap-4 text-sm">
+            <div class="flex-1">
+                <div class="flex justify-between mb-1">
+                    <span class="text-gray-600">5星</span>
+                    <span class="text-gray-800">86</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-yellow-500" style="width: 67%"></div>
+                </div>
+            </div>
+            <div class="flex-1">
+                <div class="flex justify-between mb-1">
+                    <span class="text-gray-600">4星</span>
+                    <span class="text-gray-800">32</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-yellow-500" style="width: 25%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-4 text-sm mt-2">
+            <div class="flex-1">
+                <div class="flex justify-between mb-1">
+                    <span class="text-gray-600">3星</span>
+                    <span class="text-gray-800">8</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-yellow-500" style="width: 6%"></div>
+                </div>
+            </div>
+            <div class="flex-1">
+                <div class="flex justify-between mb-1">
+                    <span class="text-gray-600">2星</span>
+                    <span class="text-gray-800">2</span>
+                </div>
+                <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-yellow-500" style="width: 2%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 评论列表 -->
+    <div class="comment-card">
+        <div class="user-info">
+            <img src="https://i.pravatar.cc/40?img=1" alt="头像">
+            <div class="flex-1">
+                <div class="font-semibold text-gray-800">小明同学</div>
+                <div class="rating-stars">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+            <span class="text-xs text-gray-500">2024-01-10</span>
+        </div>
+        <p class="text-sm text-gray-700 mb-2">相机很新,成色很好,拍摄效果非常棒!门店服务也很周到,下次还会再来租。</p>
+        <div class="comment-images">
+            <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200" alt="评论图片">
+            <img src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=200" alt="评论图片">
+        </div>
+    </div>
+
+    <div class="comment-card">
+        <div class="user-info">
+            <img src="https://i.pravatar.cc/40?img=2" alt="头像">
+            <div class="flex-1">
+                <div class="font-semibold text-gray-800">摄影师小王</div>
+                <div class="rating-stars">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="far fa-star"></i>
+                </div>
+            </div>
+            <span class="text-xs text-gray-500">2024-01-08</span>
+        </div>
+        <p class="text-sm text-gray-700">设备性能不错,租借流程也很方便,就是取的时候稍微等了一下。总体满意!</p>
+    </div>
+
+    <div class="comment-card">
+        <div class="user-info">
+            <img src="https://i.pravatar.cc/40?img=3" alt="头像">
+            <div class="flex-1">
+                <div class="font-semibold text-gray-800">摄影爱好者</div>
+                <div class="rating-stars">
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+            <span class="text-xs text-gray-500">2024-01-05</span>
+        </div>
+        <p class="text-sm text-gray-700 mb-2">第一次租赁设备,体验非常好!配件齐全,还附带了使用说明,非常贴心。</p>
+        <div class="comment-images">
+            <img src="https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=200" alt="评论图片">
+        </div>
+    </div>
+
+    <div class="h-8"></div>
+</body>
+</html>
