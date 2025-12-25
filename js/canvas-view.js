@@ -97,8 +97,8 @@ const CanvasView = {
                         y: (e.clientY - rect.top) / this.state.zoom
                     };
                 }
-            } else if (e.button === 1 || e.button === 0) {
-                // 中键或左键（且未点击元素）：拖动视图
+            } else if (e.button === 1) {
+                // 中键（且未点击元素）：拖动视图
                 this.isPanning = true;
                 this.startPan = { x: e.clientX, y: e.clientY };
                 canvasWrapper.classList.add('grabbing');
