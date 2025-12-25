@@ -138,36 +138,39 @@ const PageLibrary = {
 
     // 设置拖拽事件
     setupDragAndDrop() {
+        const canvasWrapper = document.getElementById('canvasWrapper');
         const canvas = document.getElementById('canvas');
-        if (!canvas) return;
+        if (!canvasWrapper || !canvas) return;
 
         // 拖拽经过
-        canvas.addEventListener('dragover', (e) => {
+        canvasWrapper.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
-            canvas.classList.add('drag-over');
+            canvasWrapper.classList.add('drag-over');
         });
 
         // 拖拽离开
-        canvas.addEventListener('dragleave', (e) => {
-            if (e.target === canvas) {
-                canvas.classList.remove('drag-over');
+        canvasWrapper.addEventListener('dragleave', (e) => {
+            if (e.target === canvasWrapper) {
+                canvasWrapper.classList.remove('drag-over');
             }
         });
 
         // 放置
-        canvas.addEventListener('drop', (e) => {
+        canvasWrapper.addEventListener('drop', (e) => {
             e.preventDefault();
-            canvas.classList.remove('drag-over');
+            canvasWrapper.classList.remove('drag-over');
 
             const pageId = e.dataTransfer.getData('pageId');
             if (pageId) {
                 // 获取放置位置（考虑视图变换）
-                const canvasWrapper = document.getElementById('canvasWrapper');
-                const rect = canvas.getBoundingClientRect();
+                const rect = canvasWrapper.getBoundingClientRect();
                 const view = CanvasView.getView();
 
                 // 计算相对于画布的坐标
+                // 1. 先计算相对于 canvasWrapper 的坐标
+                // 2. 减去视图平移偏移
+                // 3. 除以缩放比例
                 const x = (e.clientX - rect.left - view.pan.x) / view.zoom;
                 const y = (e.clientY - rect.top - view.pan.y) / view.zoom;
 
