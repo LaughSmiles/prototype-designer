@@ -1,0 +1,144 @@
+// 画布编辑器主控制器
+// 负责初始化所有模块和协调各模块工作
+
+const CanvasEditor = {
+    // 初始化
+    init() {
+        console.log('🎨 摄影派画布编辑器正在初始化...');
+
+        // 按顺序初始化各模块
+        this.initModules()
+            .then(() => {
+                console.log('✅ 所有模块初始化完成');
+                this.showWelcome();
+            })
+            .catch(error => {
+                console.error('❌ 初始化失败:', error);
+                alert('初始化失败：' + error.message);
+            });
+    },
+
+    // 初始化所有模块
+    async initModules() {
+        try {
+            // 1. 页面库
+            PageLibrary.init();
+            console.log('✅ 页面库初始化完成');
+
+            // 2. 画布视图
+            CanvasView.init();
+            console.log('✅ 画布视图初始化完成');
+
+            // 3. 元素管理
+            ElementManager.init();
+            console.log('✅ 元素管理初始化完成');
+
+            // 4. 工具系统
+            Tools.init();
+            console.log('✅ 工具系统初始化完成');
+
+            // 5. 数据持久化
+            Storage.init();
+            console.log('✅ 数据持久化初始化完成');
+
+            // 6. 绑定全局快捷键
+            this.bindGlobalShortcuts();
+
+        } catch (error) {
+            throw error;
+        }
+    },
+
+    // 绑定全局快捷键
+    bindGlobalShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+S: 保存
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                Storage.save();
+            }
+
+            // Ctrl+E: 导出
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                Storage.export();
+            }
+
+            // Ctrl+I: 导入
+            if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.click();
+            }
+
+            // Ctrl+0: 重置视图
+            if (e.ctrlKey && e.key === '0') {
+                e.preventDefault();
+                CanvasView.zoomReset();
+            }
+
+            // Ctrl+/: 显示帮助
+            if (e.ctrlKey && e.key === '/') {
+                e.preventDefault();
+                this.showHelp();
+            }
+        });
+    },
+
+    // 显示欢迎信息
+    showWelcome() {
+        const message = `
+🎨 摄影派画布编辑器已就绪！
+
+📌 快速开始：
+1. 从右侧页面库拖拽页面到画布
+2. 使用左侧工具添加箭头或文字标注
+3. Ctrl+滚轮：缩放视图
+4. 滚轮：拖动视图
+5. Ctrl+S：保存进度
+
+💡 提示：
+- 选中元素后，Delete键删除
+- 选中元素后，Ctrl+滚轮缩放元素
+- 双击元素取消选择
+        `;
+
+        console.log(message);
+        PageLibrary.showHint('画布编辑器已就绪！');
+    },
+
+    // 显示帮助
+    showHelp() {
+        alert(`
+🎨 画布编辑器快捷键
+
+视图操作：
+- 鼠标滚轮：拖动视图
+- Ctrl + 滚轮：缩放视图
+- Ctrl + 0：重置视图
+
+元素操作：
+- 拖拽页面库：添加页面元素
+- 选中 + 拖拽：移动元素
+- 选中 + Ctrl + 滚轮：缩放元素
+- Delete：删除选中元素
+- Esc：取消选择
+
+工具切换：
+- S：选择工具
+- A：箭头工具
+- T：文字工具
+
+数据操作：
+- Ctrl + S：保存到本地
+- Ctrl + E：导出JSON
+- Ctrl + I：导入JSON
+- Ctrl + /：显示帮助
+        `);
+    }
+};
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    CanvasEditor.init();
+});

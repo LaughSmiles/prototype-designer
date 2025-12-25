@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摄影派 - 画布编辑器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/canvas-editor.css">
+</head>
+<body>
+    <!-- 主容器 - 三栏布局 -->
+    <div class="app-container">
+        <!-- 左侧工具栏 -->
+        <aside class="sidebar-left">
+            <div class="toolbar-header">
+                <h2>工具</h2>
+            </div>
+            <div class="tool-buttons">
+                <button class="tool-btn active" data-tool="select" title="选择工具 (S)">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <span>选择</span>
+                </button>
+                <button class="tool-btn" data-tool="arrow" title="箭头工具 (A)">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>箭头</span>
+                </button>
+                <button class="tool-btn" data-tool="text" title="文字工具 (T)">
+                    <i class="fas fa-font"></i>
+                    <span>文字</span>
+                </button>
+            </div>
+            <div class="divider"></div>
+            <div class="action-buttons">
+                <button class="action-btn" id="saveBtn" title="保存到本地 (Ctrl+S)">
+                    <i class="fas fa-save"></i>
+                    <span>保存</span>
+                </button>
+                <button class="action-btn" id="exportBtn" title="导出JSON">
+                    <i class="fas fa-file-export"></i>
+                    <span>导出</span>
+                </button>
+                <button class="action-btn" id="importBtn" title="导入JSON">
+                    <i class="fas fa-file-import"></i>
+                    <span>导入</span>
+                </button>
+                <button class="action-btn" id="clearBtn" title="清空画布">
+                    <i class="fas fa-trash"></i>
+                    <span>清空</span>
+                </button>
+            </div>
+            <div class="divider"></div>
+            <div class="view-controls">
+                <div class="zoom-info">
+                    <span>缩放: <strong id="zoomDisplay">100%</strong></span>
+                </div>
+                <button class="zoom-btn" id="zoomInBtn" title="放大">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="zoom-btn" id="zoomOutBtn" title="缩小">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="zoom-btn" id="zoomResetBtn" title="重置">
+                    <i class="fas fa-compress"></i>
+                </button>
+            </div>
+            <div class="divider"></div>
+            <div class="help-info">
+                <h3>快捷键</h3>
+                <ul>
+                    <li><strong>滚轮</strong>: 移动视图</li>
+                    <li><strong>Ctrl+滚轮</strong>: 缩放视图</li>
+                    <li><strong>选中+滚轮</strong>: 缩放元素</li>
+                    <li><strong>Delete</strong>: 删除元素</li>
+                    <li><strong>Esc</strong>: 取消选择</li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- 中央画布区域 -->
+        <main class="canvas-area">
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <div class="canvas" id="canvas">
+                    <!-- 画布元素将动态添加到这里 -->
+                    <div class="canvas-hint">
+                        <i class="fas fa-hand-pointer"></i>
+                        <p>从右侧拖拽页面到画布</p>
+                        <p>或使用工具添加标注</p>
+                    </div>
+                </div>
+            </div>
+            <div class="status-bar">
+                <span id="elementCount">元素: 0</span>
+                <span id="selectedInfo">未选择</span>
+                <span id="mousePos">X: 0, Y: 0</span>
+            </div>
+        </main>
+
+        <!-- 右侧页面库 -->
+        <aside class="sidebar-right">
+            <div class="page-library-header">
+                <h2>页面库</h2>
+                <span id="pageCount">32</span>
+            </div>
+            <div class="page-library" id="pageLibrary">
+                <!-- 页面列表将动态生成 -->
+            </div>
+        </aside>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <!-- JavaScript 文件 -->
+    <script src="js/page-library.js"></script>
+    <script src="js/canvas-view.js"></script>
+    <script src="js/element-manager.js"></script>
+    <script src="js/tools.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/canvas-editor.js"></script>
+</body>
+</html>
