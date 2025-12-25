@@ -250,6 +250,8 @@ const ElementManager = {
         const deleteBtn = document.createElement('div');
         deleteBtn.className = 'delete-btn';
         deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+        // 关键修复：让删除按钮可以响应鼠标事件(覆盖父元素的pointerEvents: 'none')
+        deleteBtn.style.pointerEvents = 'auto';
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             this.deleteElement(element.id);

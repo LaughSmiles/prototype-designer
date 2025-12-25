@@ -159,6 +159,11 @@ const CanvasView = {
             // 更新鼠标位置显示
             this.updateMousePosition(e);
 
+            // 动态更新光标(仅在select工具且未拖拽时)
+            if (Tools.getCurrentTool() === 'select' && !this.isDraggingElement && !this.isPanning) {
+                this.updateCursorByElement(e);
+            }
+
             if (this.isPanning) {
                 // 拖动视图
                 const dx = e.clientX - this.startPan.x;
@@ -353,6 +358,28 @@ const CanvasView = {
         this.centerCanvas();  // 调用居中方法计算正确的平移偏移
         this.updateView();
         this.updateZoomDisplay();
+    },
+
+    // 根据鼠标下的元素动态更新光标
+    updateCursorByElement(e) {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        // 检查鼠标下是否在元素上
+        const targetElement = e.target.closest('.canvas-element');
+        const dragHandle = e.target.closest('.page-drag-handle');
+        const arrowPath = e.target.closest('svg.arrow-svg path');
+
+        if (dragHandle) {
+            // 在拖拽手柄上：显示move光标
+            canvasWrapper.style.cursor = 'move';
+        } else if (targetElement || arrowPath) {
+            // 在元素上(包括箭头路径)：显示grab光标
+            canvasWrapper.style.cursor = 'grab';
+        } else {
+            // 在空白区域：显示默认箭头
+            canvasWrapper.style.cursor = 'default';
+        }
     },
 
     // 显示临时提示

@@ -56,7 +56,7 @@ const Tools = {
         const canvasWrapper = document.getElementById('canvasWrapper');
         if (canvasWrapper) {
             if (tool === 'select') {
-                canvasWrapper.style.cursor = 'grab';
+                canvasWrapper.style.cursor = 'default';  // 空白区域显示箭头
             } else if (tool === 'arrow') {
                 canvasWrapper.style.cursor = 'crosshair';
             } else if (tool === 'text') {
