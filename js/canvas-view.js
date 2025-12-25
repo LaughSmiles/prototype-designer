@@ -343,7 +343,7 @@ const CanvasView = {
     updateZoomDisplay() {
         const display = document.getElementById('zoomDisplay');
         if (display) {
-            display.textContent = `${Math.round(this.state.zoom * 100)}%`;
+            display.textContent = `缩放: ${Math.round(this.state.zoom * 100)}%`;
         }
 
         // 显示临时缩放提示

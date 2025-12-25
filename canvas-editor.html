@@ -77,10 +77,6 @@
                     <i class="fas fa-arrow-right"></i>
                     <span>箭头</span>
                 </button>
-                <button class="tool-btn" data-tool="text" title="文字工具 (T)">
-                    <i class="fas fa-font"></i>
-                    <span>文字</span>
-                </button>
                 <button class="tool-btn" data-tool="note" title="卡片注释 (N)">
                     <i class="fas fa-sticky-note"></i>
                     <span>注释</span>
@@ -106,27 +102,11 @@
                 </button>
             </div>
             <div class="divider"></div>
-            <div class="view-controls">
-                <div class="zoom-info">
-                    <span>缩放: <strong id="zoomDisplay">100%</strong></span>
-                </div>
-                <button class="zoom-btn" id="zoomInBtn" title="放大">
-                    <i class="fas fa-search-plus"></i>
-                </button>
-                <button class="zoom-btn" id="zoomOutBtn" title="缩小">
-                    <i class="fas fa-search-minus"></i>
-                </button>
-                <button class="zoom-btn" id="zoomResetBtn" title="重置">
-                    <i class="fas fa-compress"></i>
-                </button>
-            </div>
-            <div class="divider"></div>
             <div class="help-info">
                 <h3>快捷键</h3>
                 <ul>
                     <li><strong>S</strong>: 选择工具</li>
                     <li><strong>A</strong>: 箭头工具</li>
-                    <li><strong>T</strong>: 文字工具</li>
                     <li><strong>N</strong>: 卡片注释工具</li>
                     <li><strong>空格键</strong>: 缩放50%并返回中心</li>
                     <li><strong>滚轮</strong>: 移动视图</li>
@@ -160,6 +140,7 @@
                 <span id="elementCount">元素: 0</span>
                 <span id="selectedInfo">未选择</span>
                 <span id="mousePos">X: 0, Y: 0</span>
+                <span id="zoomDisplay">缩放: 50%</span>
             </div>
 
             <div class="canvas-wrapper" id="canvasWrapper">

@@ -241,27 +241,6 @@ const ElementManager = {
             element.width = maxX - minX + padding * 2;
             element.height = maxY - minY + padding * 2;
 
-        } else if (element.type === 'text') {
-            // 文字元素
-            div.style.left = `${element.position.x}px`;
-            div.style.top = `${element.position.y}px`;
-            div.style.width = `${element.width}px`;
-            div.style.height = `${element.height}px`;
-            div.style.fontSize = `${element.fontSize}px`;
-            div.style.color = element.color;
-            div.textContent = element.text;
-            div.contentEditable = true;
-
-            // 文字编辑事件
-            div.addEventListener('input', (e) => {
-                element.text = e.target.textContent;
-            });
-
-            div.addEventListener('blur', (e) => {
-                if (!e.target.textContent.trim()) {
-                    this.deleteElement(element.id);
-                }
-            });
         } else if (element.type === 'note') {
             // 卡片注释元素
             div.style.left = `${element.position.x}px`;
@@ -487,8 +466,6 @@ const ElementManager = {
                 Tools.setTool('select');
             } else if (e.key === 'a' && !e.ctrlKey) {
                 Tools.setTool('arrow');
-            } else if (e.key === 't' && !e.ctrlKey) {
-                Tools.setTool('text');
             } else if (e.key === 'n' && !e.ctrlKey) {
                 Tools.setTool('note');
             }
