@@ -4,7 +4,7 @@
 const CanvasView = {
     // 视图状态
     state: {
-        zoom: 1.0,
+        zoom: 0.5,
         pan: { x: 0, y: 0 }
     },
 
@@ -24,7 +24,30 @@ const CanvasView = {
     // 初始化
     init() {
         this.setupEventListeners();
+        this.centerCanvas();
         this.updateView();
+    },
+
+    // 将画布居中显示在视口中
+    centerCanvas() {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const canvas = document.getElementById('canvas');
+
+        if (!canvasWrapper || !canvas) return;
+
+        // 获取画布容器的尺寸
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        const wrapperWidth = wrapperRect.width;
+        const wrapperHeight = wrapperRect.height;
+
+        // 获取画布的原始尺寸
+        const canvasWidth = 2000;  // canvas 元素的定义宽度
+        const canvasHeight = 2000; // canvas 元素的定义高度
+
+        // 计算居中所需的平移偏移
+        // 公式: pan = (viewport尺寸 - canvas尺寸 × zoom) / 2
+        this.state.pan.x = (wrapperWidth - canvasWidth * this.state.zoom) / 2;
+        this.state.pan.y = (wrapperHeight - canvasHeight * this.state.zoom) / 2;
     },
 
     // 获取当前视图状态
@@ -298,6 +321,14 @@ const CanvasView = {
     zoomReset() {
         this.state.zoom = 1.0;
         this.state.pan = { x: 0, y: 0 };
+        this.updateView();
+        this.updateZoomDisplay();
+    },
+
+    // 重置到50%缩放并居中
+    zoomReset50() {
+        this.state.zoom = 0.5;
+        this.centerCanvas();  // 调用居中方法计算正确的平移偏移
         this.updateView();
         this.updateZoomDisplay();
     },

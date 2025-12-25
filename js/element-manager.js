@@ -375,6 +375,12 @@ const ElementManager = {
                 Tools.setTool('select');
             }
 
+            // 空格键：重置视图到50%
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault();
+                CanvasView.zoomReset50();
+            }
+
             // Ctrl+S：保存
             if (e.ctrlKey && e.key === 's') {
                 e.preventDefault();
