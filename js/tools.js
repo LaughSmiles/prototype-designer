@@ -16,6 +16,11 @@ const Tools = {
         isAdding: false
     },
 
+    // 卡片注释工具状态
+    noteState: {
+        isAdding: false
+    },
+
     // 初始化
     init() {
         this.setupToolButtons();
@@ -41,6 +46,7 @@ const Tools = {
         // 重置工具状态
         this.arrowState = { points: [], isDrawing: false };
         this.textState = { isAdding: false };
+        this.noteState = { isAdding: false };
 
         // 更新UI
         const buttons = document.querySelectorAll('.tool-btn');
@@ -61,6 +67,8 @@ const Tools = {
                 canvasWrapper.style.cursor = 'crosshair';
             } else if (tool === 'text') {
                 canvasWrapper.style.cursor = 'text';
+            } else if (tool === 'note') {
+                canvasWrapper.style.cursor = 'cell';  // 卡片注释工具
             }
         }
 
@@ -68,7 +76,8 @@ const Tools = {
         const toolNames = {
             'select': '选择工具',
             'arrow': '箭头工具',
-            'text': '文字工具'
+            'text': '文字工具',
+            'note': '卡片注释'
         };
         PageLibrary.showHint(`切换到: ${toolNames[tool]}`);
     },
@@ -78,7 +87,7 @@ const Tools = {
         const canvas = document.getElementById('canvas');
         if (!canvas) return;
 
-        // 点击事件（用于箭头和文字工具）
+        // 点击事件（用于箭头、文字和卡片注释工具）
         canvas.addEventListener('click', (e) => {
             // 防止点击到元素时触发
             if (e.target.closest('.canvas-element')) return;
@@ -87,6 +96,8 @@ const Tools = {
                 this.handleArrowClick(e);
             } else if (this.currentTool === 'text') {
                 this.handleTextClick(e);
+            } else if (this.currentTool === 'note') {
+                this.handleNoteClick(e);
             }
         });
 
@@ -276,6 +287,31 @@ const Tools = {
 
         // 切换回选择工具
         this.setTool('select');
+    },
+
+    // 处理卡片注释点击
+    handleNoteClick(e) {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        const view = CanvasView.getView();
+
+        // 计算画布内部坐标（考虑pan和zoom）
+        const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
+        const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
+
+        // 直接创建空白卡片,不需要弹窗
+        const elementId = ElementManager.addNoteElement('', x, y);
+
+        // 自动聚焦到内容区域并选中文字
+        setTimeout(() => {
+            ElementManager.focusNoteContent(elementId);
+        }, 0);
+
+        // 切换回选择工具
+        this.setTool('select');
+        PageLibrary.showHint('卡片注释已添加,可直接输入内容');
     },
 
     // 获取当前工具

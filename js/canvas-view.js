@@ -17,9 +17,21 @@ const CanvasView = {
     draggedElement: null,
     dragStart: { x: 0, y: 0 },
 
+    // 卡片resize状态
+    isResizingNote: false,
+    resizingNote: null,
+    resizeCorner: null,
+    resizeStart: { x: 0, y: 0 },
+    resizeStartSize: { width: 0, height: 0 },
+    resizeStartPos: { x: 0, y: 0 },
+
     // 缩放限制
     MIN_ZOOM: 0.1,
     MAX_ZOOM: 5.0,
+
+    // 卡片最小尺寸
+    MIN_NOTE_WIDTH: 100,
+    MIN_NOTE_HEIGHT: 60,
 
     // 初始化
     init() {
@@ -96,6 +108,35 @@ const CanvasView = {
 
         // 鼠标按下（开始拖动视图或元素）
         canvasWrapper.addEventListener('mousedown', (e) => {
+            // 首先检查是否点击了卡片注释的resize手柄
+            const resizeHandle = e.target.closest('.note-resize-handle');
+            if (resizeHandle && e.button === 0) {
+                // 开始调整卡片大小
+                const elementId = resizeHandle.dataset.elementId;
+                const corner = resizeHandle.dataset.corner;
+                const targetElement = resizeHandle.closest('.canvas-element');
+
+                if (targetElement && elementId) {
+                    ElementManager.selectElement(elementId);
+
+                    this.isResizingNote = true;
+                    this.resizingNote = targetElement;
+                    this.resizeCorner = corner;
+                    this.resizeStart = { x: e.clientX, y: e.clientY };
+
+                    // 记录初始尺寸和位置
+                    const element = ElementManager.getElement(elementId);
+                    if (element) {
+                        this.resizeStartSize = { width: element.width, height: element.height };
+                        this.resizeStartPos = { x: element.position.x, y: element.position.y };
+                    }
+
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+            }
+
             // 检查是否点击了元素（包括箭头的SVG路径）
             let targetElement = e.target.closest('.canvas-element');
             let targetElementId = null;
@@ -117,7 +158,7 @@ const CanvasView = {
             }
 
             // 检查是否点击了拖拽手柄（仅手柄可拖拽）
-            const isDragHandle = e.target.closest('.page-drag-handle');
+            const isDragHandle = e.target.closest('.page-drag-handle') || e.target.closest('.note-drag-handle');
 
             if (targetElement && targetElementId) {
                 // 选中元素
@@ -160,7 +201,7 @@ const CanvasView = {
             this.updateMousePosition(e);
 
             // 动态更新光标(仅在select工具且未拖拽时)
-            if (Tools.getCurrentTool() === 'select' && !this.isDraggingElement && !this.isPanning) {
+            if (Tools.getCurrentTool() === 'select' && !this.isDraggingElement && !this.isPanning && !this.isResizingNote) {
                 this.updateCursorByElement(e);
             }
 
@@ -188,6 +229,9 @@ const CanvasView = {
                         ElementManager.updateConnectionsForElement(element.id);
                     }
                 }
+            } else if (this.isResizingNote && this.resizingNote) {
+                // 调整卡片大小
+                this.handleNoteResize(e);
             }
         });
 
@@ -206,6 +250,11 @@ const CanvasView = {
                 iframes.forEach(iframe => {
                     iframe.style.pointerEvents = 'auto';
                 });
+            }
+            if (this.isResizingNote) {
+                this.isResizingNote = false;
+                this.resizingNote = null;
+                this.resizeCorner = null;
             }
         });
 
@@ -367,12 +416,16 @@ const CanvasView = {
 
         // 检查鼠标下是否在元素上
         const targetElement = e.target.closest('.canvas-element');
-        const dragHandle = e.target.closest('.page-drag-handle');
+        const dragHandle = e.target.closest('.page-drag-handle') || e.target.closest('.note-drag-handle');
         const arrowPath = e.target.closest('svg.arrow-svg path');
+        const noteContent = e.target.closest('.note-content');
 
         if (dragHandle) {
             // 在拖拽手柄上：显示move光标
             canvasWrapper.style.cursor = 'move';
+        } else if (noteContent) {
+            // 在卡片注释内容区：显示text光标
+            canvasWrapper.style.cursor = 'text';
         } else if (targetElement || arrowPath) {
             // 在元素上(包括箭头路径)：显示grab光标
             canvasWrapper.style.cursor = 'grab';
@@ -393,5 +446,63 @@ const CanvasView = {
         document.body.appendChild(hint);
 
         setTimeout(() => hint.remove(), 1500);
+    },
+
+    // 处理卡片注释resize
+    handleNoteResize(e) {
+        const elementId = this.resizingNote.dataset.elementId;
+        const element = ElementManager.getElement(elementId);
+        if (!element) return;
+
+        // 计算鼠标移动的距离（考虑zoom）
+        const dx = (e.clientX - this.resizeStart.x) / this.state.zoom;
+        const dy = (e.clientY - this.resizeStart.y) / this.state.zoom;
+
+        let newWidth = this.resizeStartSize.width;
+        let newHeight = this.resizeStartSize.height;
+        let newX = this.resizeStartPos.x;
+        let newY = this.resizeStartPos.y;
+
+        // 根据拖拽的角落计算新的尺寸和位置
+        switch (this.resizeCorner) {
+            case 'se': // 右下角
+                newWidth = Math.max(this.MIN_NOTE_WIDTH, this.resizeStartSize.width + dx);
+                newHeight = Math.max(this.MIN_NOTE_HEIGHT, this.resizeStartSize.height + dy);
+                break;
+            case 'sw': // 左下角
+                newWidth = Math.max(this.MIN_NOTE_WIDTH, this.resizeStartSize.width - dx);
+                newHeight = Math.max(this.MIN_NOTE_HEIGHT, this.resizeStartSize.height + dy);
+                newX = this.resizeStartPos.x + (this.resizeStartSize.width - newWidth);
+                break;
+            case 'ne': // 右上角
+                newWidth = Math.max(this.MIN_NOTE_WIDTH, this.resizeStartSize.width + dx);
+                newHeight = Math.max(this.MIN_NOTE_HEIGHT, this.resizeStartSize.height - dy);
+                newY = this.resizeStartPos.y + (this.resizeStartSize.height - newHeight);
+                break;
+            case 'nw': // 左上角
+                newWidth = Math.max(this.MIN_NOTE_WIDTH, this.resizeStartSize.width - dx);
+                newHeight = Math.max(this.MIN_NOTE_HEIGHT, this.resizeStartSize.height - dy);
+                newX = this.resizeStartPos.x + (this.resizeStartSize.width - newWidth);
+                newY = this.resizeStartPos.y + (this.resizeStartSize.height - newHeight);
+                break;
+        }
+
+        // 更新元素数据
+        element.width = newWidth;
+        element.height = newHeight;
+        element.position.x = newX;
+        element.position.y = newY;
+
+        // 更新DOM样式
+        this.resizingNote.style.left = `${newX}px`;
+        this.resizingNote.style.top = `${newY}px`;
+        this.resizingNote.style.width = `${newWidth}px`;
+        this.resizingNote.style.height = `${newHeight}px`;
+
+        // 更新分辨率显示
+        const sizeDisplay = this.resizingNote.querySelector('.note-size-display');
+        if (sizeDisplay) {
+            sizeDisplay.textContent = `${Math.round(newWidth)}×${Math.round(newHeight)}`;
+        }
     }
 };

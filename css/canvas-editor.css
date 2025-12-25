@@ -590,3 +590,133 @@ body {
     0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
     10%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* 卡片注释元素 */
+.canvas-element.note-element {
+    background: #FDEEB5;
+    border: 2px solid #E8D5A3;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    overflow: visible; /* 改为visible,让内容可以撑开高度 */
+    display: flex;
+    flex-direction: column;
+}
+
+.note-content {
+    padding: 38px 12px 12px 12px; /* 顶部: 26px拖拽手柄 + 12px正常间距 */
+    min-height: 80px;
+    font-size: 14px;
+    color: #2c3e50;
+    line-height: 1.6;
+    word-wrap: break-word;
+    word-break: break-word; /* 确保长单词也会换行 */
+    outline: none;
+    cursor: text;
+    overflow-y: auto; /* 内容溢出时显示滚动条 */
+    flex: 1; /* 让内容区域自适应 */
+}
+
+.note-drag-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 26px;
+    background: linear-gradient(to bottom, #f5f0e0, #E8D5A3);
+    border-bottom: 1px solid #D4C08A;
+    border-radius: 6px 6px 0 0;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #5D5A4A;
+    user-select: none;
+    z-index: 10;
+}
+
+.note-drag-handle i {
+    margin-right: 6px;
+    color: #8B8680;
+}
+
+.note-drag-handle:active {
+    cursor: grabbing;
+    background: linear-gradient(to bottom, #E8D5A3, #D4C08A);
+}
+
+.canvas-element.note-element.selected .note-drag-handle {
+    background: linear-gradient(to bottom, #FFF4CC, #FDEEB5);
+    border-bottom-color: #F0C750;
+    color: #8B6F0E;
+}
+
+/* 卡片注释resize手柄 */
+.note-resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #8B6F0E;
+    border-radius: 2px;
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.canvas-element.note-element.selected .note-resize-handle {
+    opacity: 1;
+}
+
+.note-resize-handle:hover {
+    background: #FFF4CC;
+    border-color: #F0C750;
+}
+
+/* 四个角的手柄位置和光标 */
+.note-resize-nw {
+    top: 0;
+    left: 0;
+    cursor: nw-resize;
+}
+
+.note-resize-ne {
+    top: 0;
+    right: 0;
+    cursor: ne-resize;
+}
+
+.note-resize-sw {
+    bottom: 0;
+    left: 0;
+    cursor: sw-resize;
+}
+
+.note-resize-se {
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+}
+
+/* 分辨率显示 */
+.note-size-display {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    pointer-events: none;
+    z-index: 14;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.canvas-element.note-element.selected .note-size-display {
+    opacity: 1;
+}
