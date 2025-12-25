@@ -71,18 +71,6 @@ const CanvasView = {
                 // 选中元素
                 ElementManager.selectElement(targetElement.dataset.elementId);
 
-                // 检查是否点击了调整大小手柄
-                if (e.target.classList.contains('resize-handle')) {
-                    this.isResizingElement = true;
-                    this.resizedElement = targetElement;
-                    this.resizeStart = { x: e.clientX, y: e.clientY };
-                    this.resizeStartSize = {
-                        width: parseFloat(targetElement.style.width),
-                        height: parseFloat(targetElement.style.height)
-                    };
-                    return;
-                }
-
                 // 开始拖拽元素
                 if (e.button === 0) {
                     this.isDraggingElement = true;
@@ -129,23 +117,6 @@ const CanvasView = {
                     element.position.y += dy;
                     ElementManager.updateElementPosition(this.draggedElement, element);
                 }
-            } else if (this.isResizingElement && this.resizedElement) {
-                // 调整元素大小
-                const dx = (e.clientX - this.resizeStart.x) / this.state.zoom;
-                const dy = (e.clientY - this.resizeStart.y) / this.state.zoom;
-
-                const element = ElementManager.getElement(this.resizedElement.dataset.elementId);
-                if (element && element.type === 'page') {
-                    // 等比缩放
-                    const newWidth = this.resizeStartSize.width + dx;
-                    const scale = newWidth / element.originalWidth;
-
-                    element.width = newWidth;
-                    element.height = element.originalHeight * scale;
-                    element.scale = scale;
-
-                    ElementManager.updateElementSize(this.resizedElement, element);
-                }
             }
         });
 
@@ -159,32 +130,8 @@ const CanvasView = {
                 this.isDraggingElement = false;
                 this.draggedElement = null;
             }
-            if (this.isResizingElement) {
-                this.isResizingElement = false;
-                this.resizedElement = null;
-            }
         });
 
-        // 元素上的滚轮事件（缩放元素）
-        canvasWrapper.addEventListener('wheel', (e) => {
-            const targetElement = e.target.closest('.canvas-element');
-            if (targetElement && e.ctrlKey) {
-                e.preventDefault();
-                const element = ElementManager.getElement(targetElement.dataset.elementId);
-                if (element) {
-                    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-                    const newScale = Math.max(0.1, Math.min(3, element.scale * delta));
-
-                    // 等比缩放
-                    element.scale = newScale;
-                    element.width = element.originalWidth * newScale;
-                    element.height = element.originalHeight * newScale;
-
-                    ElementManager.updateElementSize(targetElement, element);
-                    this.showHint(`缩放: ${Math.round(newScale * 100)}%`);
-                }
-            }
-        }, { passive: false });
     },
 
     // 在指定点缩放

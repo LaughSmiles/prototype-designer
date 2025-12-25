@@ -272,17 +272,6 @@ body {
     word-wrap: break-word;
 }
 
-.canvas-element .resize-handle {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 15px;
-    height: 15px;
-    background: #3498db;
-    cursor: nwse-resize;
-    border-radius: 0 0 6px 0;
-}
-
 .canvas-element .delete-btn {
     position: absolute;
     top: -10px;

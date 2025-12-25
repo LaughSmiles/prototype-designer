@@ -24,11 +24,8 @@ const ElementManager = {
             type: 'page',
             pageId: pageId,
             position: { x, y },
-            originalWidth: pageInfo.originalSize.width,
-            originalHeight: pageInfo.originalSize.height,
             width: pageInfo.originalSize.width,
-            height: pageInfo.originalSize.height,
-            scale: 1.0
+            height: pageInfo.originalSize.height
         };
 
         this.state.elements.push(element);
@@ -164,12 +161,6 @@ const ElementManager = {
             });
         }
 
-        // 添加调整大小手柄（仅页面元素）
-        if (element.type === 'page') {
-            const resizeHandle = document.createElement('div');
-            resizeHandle.className = 'resize-handle';
-            div.appendChild(resizeHandle);
-        }
 
         // 添加删除按钮
         const deleteBtn = document.createElement('div');
@@ -355,7 +346,7 @@ const ElementManager = {
                 const element = this.getElement(this.state.selectedElement);
                 let info = '';
                 if (element.type === 'page') {
-                    info = `选中: ${PageLibrary.pageMap[element.pageId]} (${Math.round(element.scale * 100)}%)`;
+                    info = `选中: ${PageLibrary.pageMap[element.pageId]}`;
                 } else if (element.type === 'arrow') {
                     info = `选中: 箭头`;
                 } else if (element.type === 'text') {
