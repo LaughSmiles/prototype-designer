@@ -247,7 +247,10 @@ body {
     width: 100%;
     height: 100%;
     border: none;
-    pointer-events: none;
+    pointer-events: auto; /* 允许iframe内交互（滚动） */
+    overflow: auto; /* 启用滚动 */
+    -webkit-overflow-scrolling: touch; /* 平滑滚动 */
+    user-select: none; /* 禁用文本选择 */
 }
 
 .canvas-element.selected {
@@ -272,6 +275,43 @@ body {
     word-wrap: break-word;
 }
 
+/* 拖拽手柄 - 用于页面元素 */
+.page-drag-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 8px 8px 0 0;
+    cursor: grab;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+    user-select: none;
+    z-index: 10;
+}
+
+.page-drag-handle i {
+    margin-right: 6px;
+    color: #6c757d;
+}
+
+.page-drag-handle:active {
+    cursor: grabbing;
+    background: linear-gradient(to bottom, #e9ecef, #dee2e6);
+}
+
+.canvas-element.selected .page-drag-handle {
+    background: linear-gradient(to bottom, #e3f2fd, #bbdefb);
+    border-bottom-color: #90caf9;
+    color: #1565c0;
+}
+
 .canvas-element .delete-btn {
     position: absolute;
     top: -10px;
@@ -287,6 +327,7 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 10px;
+    z-index: 20;
 }
 
 .canvas-element.selected .delete-btn {

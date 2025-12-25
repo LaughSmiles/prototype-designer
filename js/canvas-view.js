@@ -67,12 +67,15 @@ const CanvasView = {
             // 检查是否点击了元素
             const targetElement = e.target.closest('.canvas-element');
 
+            // 检查是否点击了拖拽手柄（仅手柄可拖拽）
+            const isDragHandle = e.target.closest('.page-drag-handle');
+
             if (targetElement) {
                 // 选中元素
                 ElementManager.selectElement(targetElement.dataset.elementId);
 
-                // 开始拖拽元素
-                if (e.button === 0) {
+                // 只有点击拖拽手柄时才开始拖拽元素
+                if (e.button === 0 && isDragHandle) {
                     this.isDraggingElement = true;
                     this.draggedElement = targetElement;
 
@@ -84,6 +87,15 @@ const CanvasView = {
                         x: (e.clientX - rect.left) / this.state.zoom,
                         y: (e.clientY - rect.top) / this.state.zoom
                     };
+
+                    // 临时禁用所有iframe的交互，防止拖拽时触发滚动
+                    const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+                    iframes.forEach(iframe => {
+                        iframe.style.pointerEvents = 'none';
+                    });
+
+                    e.preventDefault(); // 防止影响iframe
+                    e.stopPropagation(); // 防止事件冒泡
                 }
             } else if (e.button === 1) {
                 // 中键（且未点击元素）：拖动视图
@@ -129,6 +141,12 @@ const CanvasView = {
             if (this.isDraggingElement) {
                 this.isDraggingElement = false;
                 this.draggedElement = null;
+
+                // 恢复所有iframe的交互
+                const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+                iframes.forEach(iframe => {
+                    iframe.style.pointerEvents = 'auto';
+                });
             }
         });
 

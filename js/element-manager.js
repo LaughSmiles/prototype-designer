@@ -83,12 +83,21 @@ const ElementManager = {
             div.style.width = `${element.width}px`;
             div.style.height = `${element.height}px`;
 
-            // 使用 iframe 显示页面预览
+            // 添加拖拽手柄（顶部标题栏）
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'page-drag-handle';
+            dragHandle.innerHTML = `<i class="fas fa-grip-vertical"></i> ${PageLibrary.pageMap[element.pageId] || '页面'}`;
+            div.appendChild(dragHandle);
+
+            // 使用 iframe 显示页面预览（支持滚动）
             const iframe = document.createElement('iframe');
             iframe.src = `pages/${element.pageId}.html`;
             iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.pointerEvents = 'none'; // 防止iframe内的交互
+            iframe.style.height = 'calc(100% - 30px)'; // 减去手柄高度
+            iframe.style.marginTop = '30px'; // 为手柄留出空间
+            iframe.style.border = 'none';
+            iframe.style.overflow = 'auto'; // 启用滚动
+            iframe.style.pointerEvents = 'auto'; // 允许iframe内交互
             div.appendChild(iframe);
 
         } else if (element.type === 'arrow') {
@@ -346,7 +355,7 @@ const ElementManager = {
                 const element = this.getElement(this.state.selectedElement);
                 let info = '';
                 if (element.type === 'page') {
-                    info = `选中: ${PageLibrary.pageMap[element.pageId]}`;
+                    info = `选中: ${PageLibrary.pageMap[element.pageId]} (拖拽手柄移动)`;
                 } else if (element.type === 'arrow') {
                     info = `选中: 箭头`;
                 } else if (element.type === 'text') {
