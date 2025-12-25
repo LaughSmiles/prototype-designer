@@ -334,6 +334,55 @@ body {
     display: flex;
 }
 
+/* 缩放提示 */
+.zoom-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    z-index: 9999;
+    animation: zoomHintFade 0.8s ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes zoomHintFade {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+/* 强制禁止浏览器缩放 - CSS层面 */
+html, body {
+    zoom: 1 !important; /* 强制固定缩放比例 */
+    transform: scale(1) !important; /* 防止CSS缩放 */
+    transform-origin: 0 0 !important; /* 固定变换原点 */
+}
+
+/* 防止移动端手势缩放 */
+body {
+    touch-action: pan-x pan-y !important; /* 只允许平移，不允许缩放 */
+    overscroll-behavior: none !important; /* 防止边缘回弹 */
+}
+
 /* 箭头绘制 */
 .arrow-svg {
     position: absolute;

@@ -47,9 +47,18 @@ const CanvasView = {
 
         if (!canvasWrapper || !canvas) return;
 
-        // 鼠标滚轮事件（视图拖动 + 缩放）
+        // 鼠标滚轮事件（视图拖动 + 缩放）- 现在由全局监听器统一处理
+        // 保留此监听器作为备用，但主要逻辑在全局监听器中
         canvasWrapper.addEventListener('wheel', (e) => {
+            // 检查是否在iframe内部
+            const isInsideIframe = e.target.closest('.canvas-element.page-element iframe');
+            if (isInsideIframe) {
+                return; // 由全局监听器处理
+            }
+
+            // 阻止默认行为
             e.preventDefault();
+            e.stopPropagation();
 
             if (e.ctrlKey) {
                 // Ctrl + 滚轮：缩放视图
@@ -150,6 +159,55 @@ const CanvasView = {
             }
         });
 
+        // 全局滚轮事件监听器 - 处理画布视图操作
+        // 注意：头部脚本已经阻止了浏览器缩放，这里只处理画布功能
+        document.addEventListener('wheel', (e) => {
+            // 检查是否在画布编辑器区域内
+            const isInsideEditor = document.querySelector('.app-container')?.contains(e.target);
+
+            if (isInsideEditor) {
+                // 检查具体位置
+                const isInsideIframe = e.target.closest('.canvas-element.page-element iframe');
+                const isInsideCanvasWrapper = e.target.closest('#canvasWrapper');
+
+                if (e.ctrlKey) {
+                    // Ctrl+滚轮：画布缩放
+                    if (isInsideCanvasWrapper && !isInsideIframe) {
+                        // 在canvasWrapper内但不在iframe内：执行画布缩放
+                        // 浏览器缩放已被头部脚本阻止
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.zoomAtPoint(e.clientX, e.clientY, e.deltaY > 0 ? 0.9 : 1.1);
+                        return false;
+                    }
+                } else {
+                    // 普通滚轮：处理画布拖动
+                    if (isInsideIframe) {
+                        // 在iframe内部：允许iframe正常滚动
+                        return;
+                    } else if (isInsideCanvasWrapper && !isInsideIframe) {
+                        // 在canvasWrapper内但不在iframe内：拖动画布视图
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.state.pan.x -= e.deltaX;
+                        this.state.pan.y -= e.deltaY;
+                        this.updateView();
+                        return false;
+                    }
+                }
+            }
+        }, { passive: false, capture: true }); // 使用捕获阶段
+
+        // 额外的全局保护 - 捕获所有可能的缩放事件
+        document.addEventListener('keydown', (e) => {
+            // 阻止Ctrl+、Ctrl-、Ctrl0等浏览器缩放快捷键
+            if (e.ctrlKey && (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '0')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
+        }, { capture: true }); // 捕获阶段执行，优先于其他监听器
+
     },
 
     // 在指定点缩放
@@ -188,6 +246,26 @@ const CanvasView = {
         if (display) {
             display.textContent = `${Math.round(this.state.zoom * 100)}%`;
         }
+
+        // 显示临时缩放提示
+        this.showZoomHint();
+    },
+
+    // 显示缩放临时提示
+    showZoomHint() {
+        const existing = document.querySelector('.zoom-hint');
+        if (existing) existing.remove();
+
+        const hint = document.createElement('div');
+        hint.className = 'zoom-hint';
+        hint.textContent = `${Math.round(this.state.zoom * 100)}%`;
+        document.body.appendChild(hint);
+
+        setTimeout(() => {
+            if (hint.parentNode) {
+                hint.remove();
+            }
+        }, 800);
     },
 
     // 更新鼠标位置显示
