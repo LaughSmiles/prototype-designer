@@ -191,7 +191,8 @@ const CanvasView = {
                 // 中键（且未点击元素）：拖动视图
                 this.isPanning = true;
                 this.startPan = { x: e.clientX, y: e.clientY };
-                canvasWrapper.classList.add('grabbing');
+                // 设置光标为grabbing(抓取中)
+                canvasWrapper.style.cursor = 'grabbing';
             }
         });
 
@@ -239,7 +240,8 @@ const CanvasView = {
         document.addEventListener('mouseup', () => {
             if (this.isPanning) {
                 this.isPanning = false;
-                canvasWrapper.classList.remove('grabbing');
+                // 恢复光标为默认状态
+                canvasWrapper.style.cursor = 'default';
             }
             if (this.isDraggingElement) {
                 this.isDraggingElement = false;
