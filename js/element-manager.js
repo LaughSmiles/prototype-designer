@@ -18,9 +18,9 @@ const ElementManager = {
         this.initializeUsageCount();
     },
 
-    // 初始化使用计数器
+    // 初始化使用计数器(从PageLibrary获取页面ID)
     initializeUsageCount() {
-        const pageIds = Object.keys(PageLibrary.pageMap);
+        const pageIds = PageLibrary.getAllPageIds();
         pageIds.forEach(id => {
             this.state.usageCount[id] = 0;
         });
@@ -156,10 +156,11 @@ const ElementManager = {
             div.style.width = `${element.width}px`;
             div.style.height = `${element.height}px`;
 
-            // 添加拖拽手柄（顶部标题栏）
+            // 添加拖拽手柄(顶部标题栏)
             const dragHandle = document.createElement('div');
             dragHandle.className = 'page-drag-handle';
-            dragHandle.innerHTML = `<i class="fas fa-grip-vertical"></i> ${PageLibrary.pageMap[element.pageId] || '页面'}`;
+            const pageName = PageLibrary.getPageName(element.pageId);
+            dragHandle.innerHTML = `<i class="fas fa-grip-vertical"></i> ${pageName || '页面'}`;
             div.appendChild(dragHandle);
 
             // 使用 iframe 显示页面预览（支持滚动）
@@ -554,7 +555,8 @@ const ElementManager = {
                 const element = this.getElement(this.state.selectedElement);
                 let info = '';
                 if (element.type === 'page') {
-                    info = `选中: ${PageLibrary.pageMap[element.pageId]} (拖拽手柄移动)`;
+                    const pageName = PageLibrary.getPageName(element.pageId);
+                    info = `选中: ${pageName} (拖拽手柄移动)`;
                 } else if (element.type === 'arrow') {
                     info = `选中: 箭头`;
                 } else if (element.type === 'text') {

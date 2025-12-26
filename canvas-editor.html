@@ -3,7 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <title>摄影派 - 画布编辑器</title>
+    <title id="pageTitle">画布编辑器</title>
+
+    <!-- 动态加载项目配置并设置标题 -->
+    <script>
+        (function() {
+            fetch('project-config.json')
+                .then(response => {
+                    if (!response.ok) throw new Error('无法加载项目配置');
+                    return response.json();
+                })
+                .then(config => {
+                    document.title = `${config.projectName} - 画布编辑器`;
+                })
+                .catch(error => {
+                    console.warn('使用默认标题:', error);
+                    document.title = '画布编辑器';
+                });
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/canvas-editor.css">
@@ -94,15 +112,15 @@
                 </button>
                 <button class="action-btn" id="exportBtn" title="导出JSON">
                     <i class="fas fa-file-export"></i>
-                    <span>导出</span>
+                    <span>导出文件</span>
                 </button>
                 <button class="action-btn" id="importBtn" title="导入JSON">
                     <i class="fas fa-file-import"></i>
-                    <span>导入</span>
+                    <span>导入文件</span>
                 </button>
                 <button class="action-btn" id="clearBtn" title="清空画布">
                     <i class="fas fa-trash"></i>
-                    <span>清空</span>
+                    <span>清空画布</span>
                 </button>
             </div>
             <div class="divider"></div>

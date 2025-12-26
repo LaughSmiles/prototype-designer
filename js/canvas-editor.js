@@ -3,8 +3,9 @@
 
 const CanvasEditor = {
     // 初始化
-    init() {
-        console.log('🎨 摄影派画布编辑器正在初始化...');
+    async init() {
+        const projectName = await this.getProjectName();
+        console.log(`🎨 ${projectName}画布编辑器正在初始化...`);
 
         // 按顺序初始化各模块
         this.initModules()
@@ -16,6 +17,17 @@ const CanvasEditor = {
                 console.error('❌ 初始化失败:', error);
                 alert('初始化失败：' + error.message);
             });
+    },
+
+    // 获取项目名称
+    async getProjectName() {
+        try {
+            const response = await fetch('project-config.json');
+            const config = await response.json();
+            return config.projectName || '画布编辑器';
+        } catch (error) {
+            return '画布编辑器';
+        }
     },
 
     // 初始化所有模块
@@ -86,9 +98,10 @@ const CanvasEditor = {
     },
 
     // 显示欢迎信息
-    showWelcome() {
+    async showWelcome() {
+        const projectName = await this.getProjectName();
         const message = `
-🎨 摄影派画布编辑器已就绪！
+🎨 ${projectName}画布编辑器已就绪！
 
 📌 快速开始：
 1. 从右侧页面库拖拽页面到画布
@@ -104,7 +117,7 @@ const CanvasEditor = {
         `;
 
         console.log(message);
-        PageLibrary.showHint('画布编辑器已就绪！');
+        PageLibrary.showHint(`${projectName}画布编辑器已就绪！`);
     },
 
     // 显示帮助

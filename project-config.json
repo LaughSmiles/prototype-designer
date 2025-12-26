@@ -1,0 +1,231 @@
+{
+  "projectName": "摄影派",
+  "projectTitle": "摄影派 - 高保真原型设计",
+  "projectDescription": "摄影器材租赁与分享平台原型设计系统",
+  "version": "1.0.0",
+  "canvasSize": {
+    "width": 320,
+    "height": 680
+  },
+  "categories": [
+    {
+      "id": "home",
+      "name": "首页模块",
+      "order": 1
+    },
+    {
+      "id": "rental",
+      "name": "租赁模块",
+      "order": 2
+    },
+    {
+      "id": "works",
+      "name": "作品模块",
+      "order": 3
+    },
+    {
+      "id": "messages",
+      "name": "消息模块",
+      "order": 4
+    },
+    {
+      "id": "profile",
+      "name": "我的模块",
+      "order": 5
+    }
+  ],
+  "pages": [
+    {
+      "id": "home",
+      "name": "首页",
+      "icon": "fa-home",
+      "category": "home"
+    },
+    {
+      "id": "search",
+      "name": "搜索页面",
+      "icon": "fa-search",
+      "category": "home"
+    },
+    {
+      "id": "rental-detail",
+      "name": "租赁详情",
+      "icon": "fa-camera",
+      "category": "home"
+    },
+    {
+      "id": "select-rental-period",
+      "name": "选择租期",
+      "icon": "fa-calendar",
+      "category": "home"
+    },
+    {
+      "id": "payment-result",
+      "name": "支付结果",
+      "icon": "fa-credit-card",
+      "category": "home"
+    },
+    {
+      "id": "store-info",
+      "name": "门店信息",
+      "icon": "fa-store",
+      "category": "home"
+    },
+    {
+      "id": "comment-list",
+      "name": "评论列表",
+      "icon": "fa-comments",
+      "category": "home"
+    },
+    {
+      "id": "rental-list",
+      "name": "租赁列表",
+      "icon": "fa-list",
+      "category": "rental"
+    },
+    {
+      "id": "works",
+      "name": "作品首页",
+      "icon": "fa-images",
+      "category": "works"
+    },
+    {
+      "id": "video-work-detail",
+      "name": "视频作品详情",
+      "icon": "fa-video",
+      "category": "works"
+    },
+    {
+      "id": "image-work-detail",
+      "name": "图文作品详情",
+      "icon": "fa-image",
+      "category": "works"
+    },
+    {
+      "id": "publish-work-select",
+      "name": "发布作品(选择)",
+      "icon": "fa-upload",
+      "category": "works"
+    },
+    {
+      "id": "publish-video",
+      "name": "发布视频",
+      "icon": "fa-video",
+      "category": "works"
+    },
+    {
+      "id": "publish-image",
+      "name": "发布图片",
+      "icon": "fa-image",
+      "category": "works"
+    },
+    {
+      "id": "delivery-method",
+      "name": "收货方式",
+      "icon": "fa-truck",
+      "category": "works"
+    },
+    {
+      "id": "messages",
+      "name": "消息首页",
+      "icon": "fa-comment",
+      "category": "messages"
+    },
+    {
+      "id": "system-message",
+      "name": "系统消息",
+      "icon": "fa-cog",
+      "category": "messages"
+    },
+    {
+      "id": "interaction-message",
+      "name": "互动消息",
+      "icon": "fa-heart",
+      "category": "messages"
+    },
+    {
+      "id": "customer-service",
+      "name": "在线客服",
+      "icon": "fa-headset",
+      "category": "messages"
+    },
+    {
+      "id": "private-chat",
+      "name": "私聊",
+      "icon": "fa-envelope",
+      "category": "messages"
+    },
+    {
+      "id": "profile",
+      "name": "我的页面",
+      "icon": "fa-user",
+      "category": "profile"
+    },
+    {
+      "id": "settings",
+      "name": "设置",
+      "icon": "fa-cog",
+      "category": "profile"
+    },
+    {
+      "id": "identity-verify",
+      "name": "实名认证(未完成)",
+      "icon": "fa-id-card",
+      "category": "profile"
+    },
+    {
+      "id": "identity-verified",
+      "name": "实名认证(已完成)",
+      "icon": "fa-id-card",
+      "category": "profile"
+    },
+    {
+      "id": "address-manage",
+      "name": "地址管理",
+      "icon": "fa-map-marker-alt",
+      "category": "profile"
+    },
+    {
+      "id": "edit-address",
+      "name": "编辑地址",
+      "icon": "fa-edit",
+      "category": "profile"
+    },
+    {
+      "id": "store-address",
+      "name": "门店地址",
+      "icon": "fa-store-alt",
+      "category": "profile"
+    },
+    {
+      "id": "about-us",
+      "name": "关于我们",
+      "icon": "fa-info-circle",
+      "category": "profile"
+    },
+    {
+      "id": "edit-profile",
+      "name": "个人信息编辑",
+      "icon": "fa-user-edit",
+      "category": "profile"
+    },
+    {
+      "id": "data-overview",
+      "name": "数据概览",
+      "icon": "fa-chart-bar",
+      "category": "profile"
+    },
+    {
+      "id": "my-orders",
+      "name": "我的订单",
+      "icon": "fa-shopping-bag",
+      "category": "profile"
+    },
+    {
+      "id": "logistics-detail",
+      "name": "查看物流",
+      "icon": "fa-shipping-fast",
+      "category": "profile"
+    }
+  ]
+}

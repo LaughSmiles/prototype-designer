@@ -1,99 +1,73 @@
 // 页面库管理模块
-// 负责扫描pages目录，生成页面列表，处理拖拽逻辑
+// 负责从项目配置文件加载页面数据,生成页面列表,处理拖拽逻辑
 
 const PageLibrary = {
     // 页面数据
     pages: [],
 
-    // 页面映射（ID到名称）
-    pageMap: {
-        'home': '首页',
-        'search': '搜索页面',
-        'rental-detail': '租赁详情',
-        'select-rental-period': '选择租期',
-        'payment-result': '支付结果',
-        'store-info': '门店信息',
-        'comment-list': '评论列表',
-        'rental-list': '租赁列表',
-        'works': '作品首页',
-        'video-work-detail': '视频作品详情',
-        'image-work-detail': '图文作品详情',
-        'publish-work-select': '发布作品(选择)',
-        'publish-video': '发布视频',
-        'publish-image': '发布图片',
-        'delivery-method': '收货方式',
-        'messages': '消息首页',
-        'system-message': '系统消息',
-        'interaction-message': '互动消息',
-        'customer-service': '在线客服',
-        'private-chat': '私聊',
-        'profile': '我的页面',
-        'settings': '设置',
-        'identity-verify': '实名认证(未完成)',
-        'identity-verified': '实名认证(已完成)',
-        'address-manage': '地址管理',
-        'edit-address': '编辑地址',
-        'store-address': '门店地址',
-        'about-us': '关于我们',
-        'edit-profile': '个人信息编辑',
-        'data-overview': '数据概览',
-        'my-orders': '我的订单',
-        'logistics-detail': '查看物流'
-    },
+    // 项目配置
+    projectConfig: null,
 
-    // 图标映射
-    iconMap: {
-        'home': 'fa-home',
-        'search': 'fa-search',
-        'rental-detail': 'fa-camera',
-        'select-rental-period': 'fa-calendar',
-        'payment-result': 'fa-credit-card',
-        'store-info': 'fa-store',
-        'comment-list': 'fa-comments',
-        'rental-list': 'fa-list',
-        'works': 'fa-images',
-        'video-work-detail': 'fa-video',
-        'image-work-detail': 'fa-image',
-        'publish-work-select': 'fa-upload',
-        'publish-video': 'fa-video',
-        'publish-image': 'fa-image',
-        'delivery-method': 'fa-truck',
-        'messages': 'fa-comment',
-        'system-message': 'fa-cog',
-        'interaction-message': 'fa-heart',
-        'customer-service': 'fa-headset',
-        'private-chat': 'fa-envelope',
-        'profile': 'fa-user',
-        'settings': 'fa-cog',
-        'identity-verify': 'fa-id-card',
-        'identity-verified': 'fa-id-card',
-        'address-manage': 'fa-map-marker-alt',
-        'edit-address': 'fa-edit',
-        'store-address': 'fa-store-alt',
-        'about-us': 'fa-info-circle',
-        'edit-profile': 'fa-user-edit',
-        'data-overview': 'fa-chart-bar',
-        'my-orders': 'fa-shopping-bag',
-        'logistics-detail': 'fa-shipping-fast'
-    },
-
-    // 初始化
-    init() {
+    // 初始化(改为异步)
+    async init() {
+        await this.loadProjectConfig();
         this.generatePageList();
         this.renderPageLibrary();
         this.setupDragAndDrop();
     },
 
-    // 生成页面列表（基于已知的32个页面）
+    // 加载项目配置文件
+    async loadProjectConfig() {
+        try {
+            const response = await fetch('project-config.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const config = await response.json();
+            this.projectConfig = config;
+            console.log(`✅ 已加载项目配置: ${config.projectName} (版本 ${config.version})`);
+        } catch (error) {
+            console.error('❌ 加载项目配置失败:', error);
+            // 提供默认配置以确保框架能正常运行
+            this.projectConfig = this.getDefaultConfig();
+            console.warn('⚠️ 使用默认配置');
+        }
+    },
+
+    // 获取默认配置(降级方案)
+    getDefaultConfig() {
+        return {
+            projectName: '画布编辑器',
+            projectTitle: '画布编辑器',
+            version: '1.0.0',
+            canvasSize: { width: 320, height: 680 },
+            pages: []
+        };
+    },
+
+    // 生成页面列表(从配置文件读取)
     generatePageList() {
-        const pageIds = Object.keys(this.pageMap);
-        this.pages = pageIds.map(id => ({
-            id: id,
-            name: this.pageMap[id],
-            filePath: `pages/${id}.html`,
-            icon: this.iconMap[id] || 'fa-file',
-            originalSize: { width: 320, height: 680 }
+        if (!this.projectConfig || !this.projectConfig.pages) {
+            console.warn('⚠️ 项目配置中没有页面数据');
+            this.pages = [];
+            return;
+        }
+
+        const canvasSize = this.projectConfig.canvasSize || { width: 320, height: 680 };
+
+        this.pages = this.projectConfig.pages.map(pageConfig => ({
+            id: pageConfig.id,
+            name: pageConfig.name,
+            filePath: `pages/${pageConfig.id}.html`,
+            icon: pageConfig.icon || 'fa-file',
+            category: pageConfig.category || '未分类',
+            originalSize: {
+                width: canvasSize.width,
+                height: canvasSize.height
+            }
         }));
+
+        console.log(`✅ 已生成 ${this.pages.length} 个页面列表`);
     },
 
     // 渲染页面库
@@ -104,37 +78,112 @@ const PageLibrary = {
         if (!container) return;
 
         container.innerHTML = '';
+
+        if (this.pages.length === 0) {
+            container.innerHTML = '<div class="no-pages-hint">未找到页面配置</div>';
+            countSpan.textContent = '0';
+            return;
+        }
+
         countSpan.textContent = this.pages.length;
 
-        this.pages.forEach(page => {
-            const item = document.createElement('div');
-            item.className = 'page-item';
-            item.draggable = true;
-            item.dataset.pageId = page.id;
+        // 按分类分组
+        const groupedPages = this.groupPagesByCategory();
 
-            item.innerHTML = `
-                <i class="fas ${page.icon}"></i>
-                <div class="page-item-info">
-                    <div class="page-item-name">${page.name}</div>
-                    <div class="page-item-id">${page.id}</div>
-                </div>
-                <div class="page-usage-badge" id="badge-${page.id}">0</div>
-            `;
-
-            // 拖拽开始
-            item.addEventListener('dragstart', (e) => {
-                e.dataTransfer.setData('pageId', page.id);
-                e.dataTransfer.effectAllowed = 'copy';
-                item.classList.add('dragging');
-            });
-
-            // 拖拽结束
-            item.addEventListener('dragend', () => {
-                item.classList.remove('dragging');
-            });
-
-            container.appendChild(item);
+        // 渲染分组
+        Object.keys(groupedPages).forEach(categoryId => {
+            const group = groupedPages[categoryId];
+            const groupElement = this.createGroupElement(group);
+            container.appendChild(groupElement);
         });
+    },
+
+    // 按分类分组页面
+    groupPagesByCategory() {
+        const groups = {};
+
+        this.pages.forEach(page => {
+            const categoryId = page.category || 'uncategorized';
+            if (!groups[categoryId]) {
+                groups[categoryId] = {
+                    id: categoryId,
+                    name: this.getCategoryName(categoryId),
+                    pages: []
+                };
+            }
+            groups[categoryId].pages.push(page);
+        });
+
+        return groups;
+    },
+
+    // 获取分类名称
+    getCategoryName(categoryId) {
+        if (!this.projectConfig || !this.projectConfig.categories) {
+            return categoryId === 'uncategorized' ? '未分类' : categoryId;
+        }
+
+        const category = this.projectConfig.categories.find(c => c.id === categoryId);
+        return category ? category.name : (categoryId === 'uncategorized' ? '未分类' : categoryId);
+    },
+
+    // 创建分组元素
+    createGroupElement(group) {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'page-group';
+
+        // 分组标题
+        const header = document.createElement('div');
+        header.className = 'page-group-header';
+        header.innerHTML = `
+            <span class="group-name">${group.name}</span>
+            <span class="group-count">${group.pages.length}</span>
+        `;
+        groupDiv.appendChild(header);
+
+        // 分组内容
+        const content = document.createElement('div');
+        content.className = 'page-group-content';
+
+        group.pages.forEach(page => {
+            const item = this.createPageItem(page);
+            content.appendChild(item);
+        });
+
+        groupDiv.appendChild(content);
+
+        return groupDiv;
+    },
+
+    // 创建页面项
+    createPageItem(page) {
+        const item = document.createElement('div');
+        item.className = 'page-item';
+        item.draggable = true;
+        item.dataset.pageId = page.id;
+
+        item.innerHTML = `
+            <i class="fas ${page.icon}"></i>
+            <div class="page-item-info">
+                <div class="page-item-name">${page.name}</div>
+                <div class="page-item-id">${page.id}</div>
+            </div>
+            <div class="page-usage-badge" id="badge-${page.id}">0</div>
+        `;
+
+        // 拖拽开始
+        item.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('pageId', page.id);
+            e.dataTransfer.effectAllowed = 'copy';
+            item.classList.add('dragging');
+        });
+
+        // 拖拽结束
+        item.addEventListener('dragend', () => {
+            item.classList.remove('dragging');
+        });
+
+        return item;
     },
 
     // 设置拖拽事件
@@ -178,8 +227,10 @@ const PageLibrary = {
                 // 创建元素
                 ElementManager.addPageElement(pageId, x, y);
 
-                // 显示提示
-                this.showHint(`已添加: ${this.pageMap[pageId]}`);
+                // 显示提示(从页面信息获取名称)
+                const pageInfo = this.getPageInfo(pageId);
+                const pageName = pageInfo ? pageInfo.name : pageId;
+                this.showHint(`已添加: ${pageName}`);
             }
         });
     },
@@ -187,6 +238,12 @@ const PageLibrary = {
     // 获取页面信息
     getPageInfo(pageId) {
         return this.pages.find(p => p.id === pageId);
+    },
+
+    // 获取页面名称(兼容旧代码)
+    getPageName(pageId) {
+        const pageInfo = this.getPageInfo(pageId);
+        return pageInfo ? pageInfo.name : pageId;
     },
 
     // 显示临时提示
@@ -214,5 +271,10 @@ const PageLibrary = {
                 badge.style.display = 'flex';
             }
         }
+    },
+
+    // 获取所有页面ID(供ElementManager使用)
+    getAllPageIds() {
+        return this.pages.map(p => p.id);
     }
 };
