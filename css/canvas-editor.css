@@ -197,8 +197,8 @@ body {
 
 .canvas {
     /* 虚拟画布尺寸 - 用于居中计算 */
-    width: 2000px;
-    height: 2000px;
+    width: 10000px;
+    height: 10000px;
     position: relative;
     transform-origin: 0 0;
     background-image:
