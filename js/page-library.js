@@ -118,6 +118,7 @@ const PageLibrary = {
                     <div class="page-item-name">${page.name}</div>
                     <div class="page-item-id">${page.id}</div>
                 </div>
+                <div class="page-usage-badge" id="badge-${page.id}">0</div>
             `;
 
             // 拖拽开始
@@ -199,5 +200,19 @@ const PageLibrary = {
         document.body.appendChild(hint);
 
         setTimeout(() => hint.remove(), 2000);
+    },
+
+    // 更新页面使用计数徽章
+    updateUsageBadge(pageId, count) {
+        const badge = document.getElementById(`badge-${pageId}`);
+        if (badge) {
+            badge.textContent = count;
+            // 如果计数为0，可以隐藏或显示0
+            if (count === 0) {
+                badge.style.display = 'none';
+            } else {
+                badge.style.display = 'flex';
+            }
+        }
     }
 };

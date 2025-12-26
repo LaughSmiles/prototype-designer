@@ -6,12 +6,24 @@ const ElementManager = {
     state: {
         elements: [],
         selectedElement: null,
-        nextId: 1
+        nextId: 1,
+        // 页面使用计数器
+        usageCount: {}
     },
 
     // 初始化
     init() {
         this.setupKeyboardEvents();
+        // 初始化所有页面的计数为0
+        this.initializeUsageCount();
+    },
+
+    // 初始化使用计数器
+    initializeUsageCount() {
+        const pageIds = Object.keys(PageLibrary.pageMap);
+        pageIds.forEach(id => {
+            this.state.usageCount[id] = 0;
+        });
     },
 
     // 添加页面元素
@@ -30,7 +42,49 @@ const ElementManager = {
 
         this.state.elements.push(element);
         this.renderElement(element);
+
+        // 增加页面使用计数
+        this.incrementUsageCount(pageId);
+
         this.updateStatusBar();
+    },
+
+    // 增加页面使用计数
+    incrementUsageCount(pageId) {
+        if (!this.state.usageCount.hasOwnProperty(pageId)) {
+            this.state.usageCount[pageId] = 0;
+        }
+        this.state.usageCount[pageId]++;
+        // 更新页面库显示
+        PageLibrary.updateUsageBadge(pageId, this.state.usageCount[pageId]);
+    },
+
+    // 减少页面使用计数
+    decrementUsageCount(pageId) {
+        if (this.state.usageCount.hasOwnProperty(pageId) && this.state.usageCount[pageId] > 0) {
+            this.state.usageCount[pageId]--;
+            // 更新页面库显示
+            PageLibrary.updateUsageBadge(pageId, this.state.usageCount[pageId]);
+        }
+    },
+
+    // 获取页面使用计数
+    getUsageCount(pageId) {
+        return this.state.usageCount[pageId] || 0;
+    },
+
+    // 设置所有使用计数（用于导入数据）
+    setUsageCounts(counts) {
+        this.state.usageCount = { ...counts };
+        // 更新所有徽章显示
+        Object.keys(this.state.usageCount).forEach(pageId => {
+            PageLibrary.updateUsageBadge(pageId, this.state.usageCount[pageId]);
+        });
+    },
+
+    // 获取所有使用计数（用于导出数据）
+    getUsageCounts() {
+        return { ...this.state.usageCount };
     },
 
     // 添加箭头元素
@@ -401,6 +455,13 @@ const ElementManager = {
         const index = this.state.elements.findIndex(e => e.id === id);
         if (index === -1) return;
 
+        const element = this.state.elements[index];
+
+        // 如果是页面元素，减少使用计数
+        if (element.type === 'page') {
+            this.decrementUsageCount(element.pageId);
+        }
+
         this.state.elements.splice(index, 1);
 
         const div = document.querySelector(`[data-element-id="${id}"]`);
@@ -426,6 +487,13 @@ const ElementManager = {
 
         this.state.elements = [];
         this.state.selectedElement = null;
+
+        // 重置所有页面使用计数
+        this.initializeUsageCount();
+        // 更新所有徽章显示
+        Object.keys(this.state.usageCount).forEach(pageId => {
+            PageLibrary.updateUsageBadge(pageId, 0);
+        });
 
         const canvas = document.getElementById('canvas');
         const elements = canvas.querySelectorAll('.canvas-element');
@@ -522,7 +590,28 @@ const ElementManager = {
             this.renderElement(element);
         });
 
+        // 重新计算使用计数
+        this.recalculateUsageCounts();
+
         this.updateStatusBar();
+    },
+
+    // 重新计算使用计数（从当前元素统计）
+    recalculateUsageCounts() {
+        // 重置计数
+        this.initializeUsageCount();
+
+        // 统计每个页面的使用次数
+        this.state.elements.forEach(element => {
+            if (element.type === 'page') {
+                this.state.usageCount[element.pageId]++;
+            }
+        });
+
+        // 更新所有徽章显示
+        Object.keys(this.state.usageCount).forEach(pageId => {
+            PageLibrary.updateUsageBadge(pageId, this.state.usageCount[pageId]);
+        });
     },
 
     // 获取选中元素ID

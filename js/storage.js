@@ -55,7 +55,8 @@ const Storage = {
             version: '1.0',
             timestamp: new Date().toISOString(),
             view: CanvasView.getView(),
-            elements: ElementManager.getAllElements()
+            elements: ElementManager.getAllElements(),
+            usageCount: ElementManager.getUsageCounts()
         };
 
         try {
@@ -116,6 +117,11 @@ const Storage = {
             ElementManager.setAllElements(data.elements);
         }
 
+        // 恢复使用计数（如果有的话，兼容旧数据）
+        if (data.usageCount) {
+            ElementManager.setUsageCounts(data.usageCount);
+        }
+
         console.log('数据加载完成:', data);
     },
 
@@ -125,7 +131,8 @@ const Storage = {
             version: '1.0',
             timestamp: new Date().toISOString(),
             view: CanvasView.getView(),
-            elements: ElementManager.getAllElements()
+            elements: ElementManager.getAllElements(),
+            usageCount: ElementManager.getUsageCounts()
         };
 
         const jsonStr = JSON.stringify(data, null, 2);

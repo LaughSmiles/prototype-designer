@@ -167,11 +167,11 @@ body {
 
 .help-info li {
     margin-bottom: 4px;
-    color: #bdc3c7;
+    color: #2c3e50;
 }
 
 .help-info strong {
-    color: #ecf0f1;
+    color: #34495e;
 }
 
 /* 中央画布区域 */
@@ -505,6 +505,22 @@ body {
 /* 拖拽时的视觉反馈 */
 .page-item.dragging {
     opacity: 0.5;
+}
+
+/* 页面使用计数徽章 */
+.page-usage-badge {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    background: #3498db;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 6px;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
 }
 
 .canvas.drag-over {
