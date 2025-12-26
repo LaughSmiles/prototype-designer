@@ -780,3 +780,28 @@ body {
     width: 100px; /* 动态计算 */
     /* 高度由JavaScript动态设置 */
 }
+
+/* ====== 对齐辅助线样式 ====== */
+.alignment-guide {
+    position: absolute;
+    background: #3498db;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.8;
+}
+
+/* 垂直辅助线 */
+.alignment-guide.vertical {
+    width: 2px;
+    height: 100%;
+    border-left: 2px dashed #3498db;
+    background: transparent;
+}
+
+/* 水平辅助线 */
+.alignment-guide.horizontal {
+    height: 2px;
+    width: 100%;
+    border-top: 2px dashed #3498db;
+    background: transparent;
+}
