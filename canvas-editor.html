@@ -144,6 +144,16 @@
             </div>
 
             <div class="canvas-wrapper" id="canvasWrapper">
+                <!-- 垂直滚动条 -->
+                <div class="virtual-scrollbar vertical-scrollbar" id="verticalScrollbar">
+                    <div class="scrollbar-thumb"></div>
+                </div>
+
+                <!-- 水平滚动条 -->
+                <div class="virtual-scrollbar horizontal-scrollbar" id="horizontalScrollbar">
+                    <div class="scrollbar-thumb"></div>
+                </div>
+
                 <div class="canvas" id="canvas">
                     <!-- 画布元素将动态添加到这里 -->
                     <div class="canvas-hint">
@@ -172,6 +182,7 @@
 
     <!-- JavaScript 文件 -->
     <script src="js/page-library.js"></script>
+    <script src="js/virtual-scrollbar.js"></script>
     <script src="js/canvas-view.js"></script>
     <script src="js/element-manager.js"></script>
     <script src="js/tools.js"></script>

@@ -720,3 +720,63 @@ body {
 .canvas-element.note-element.selected .note-size-display {
     opacity: 1;
 }
+
+/* ====== 虚拟滚动条样式 ====== */
+/* 通用滚动条样式 - 轨道 */
+.virtual-scrollbar {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.1); /* 更深的轨道背景 */
+    border-radius: 6px;
+    z-index: 1000;
+}
+
+/* 滑块样式 */
+.scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.5); /* 更深的滑块颜色 */
+    border-radius: 6px;
+    position: absolute;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.3); /* 添加边框增强可见性 */
+}
+
+.scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(0, 0, 0, 0.5);
+}
+
+.scrollbar-thumb:active {
+    background: rgba(0, 0, 0, 0.9);
+    border-color: rgba(0, 0, 0, 0.7);
+}
+
+/* 垂直滚动条 */
+.vertical-scrollbar {
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 12px;
+}
+
+.vertical-scrollbar .scrollbar-thumb {
+    right: 0;
+    left: 0;
+    top: 0;
+    width: 100%; /* 填满整个轨道宽度 */
+    height: 100px; /* 动态计算 */
+}
+
+/* 水平滚动条 */
+.horizontal-scrollbar {
+    left: 0;
+    right: 12px; /* 留出垂直滚动条的空间 */
+    bottom: 0;
+    height: 12px;
+}
+
+.horizontal-scrollbar .scrollbar-thumb {
+    left: 0;
+    top: 0;
+    width: 100px; /* 动态计算 */
+    /* 高度由JavaScript动态设置 */
+}

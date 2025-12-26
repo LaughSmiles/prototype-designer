@@ -33,11 +33,56 @@ const CanvasView = {
     MIN_NOTE_WIDTH: 100,
     MIN_NOTE_HEIGHT: 60,
 
+    // 虚拟滚动条
+    virtualScrollbars: {
+        vertical: null,
+        horizontal: null
+    },
+
     // 初始化
     init() {
         this.setupEventListeners();
+        this.initVirtualScrollbars();
         this.centerCanvas();
         this.updateView();
+    },
+
+    // 初始化虚拟滚动条
+    initVirtualScrollbars() {
+        const wrapper = document.getElementById('canvasWrapper');
+        if (!wrapper) return;
+
+        const wrapperRect = wrapper.getBoundingClientRect();
+
+        // 画布固定尺寸(不随zoom变化)
+        const canvasWidth = 2000;
+        const canvasHeight = 2000;
+
+        // 初始化垂直滚动条
+        this.virtualScrollbars.vertical = new VirtualScrollbar({
+            orientation: 'vertical',
+            viewportSize: wrapperRect.height,
+            contentSize: canvasHeight,
+            container: document.getElementById('verticalScrollbar')
+        });
+
+        this.virtualScrollbars.vertical.onScroll((position) => {
+            this.state.pan.y = -position;
+            this.updateView();
+        });
+
+        // 初始化水平滚动条
+        this.virtualScrollbars.horizontal = new VirtualScrollbar({
+            orientation: 'horizontal',
+            viewportSize: wrapperRect.width,
+            contentSize: canvasWidth,
+            container: document.getElementById('horizontalScrollbar')
+        });
+
+        this.virtualScrollbars.horizontal.onScroll((position) => {
+            this.state.pan.x = -position;
+            this.updateView();
+        });
     },
 
     // 将画布居中显示在视口中
@@ -339,6 +384,37 @@ const CanvasView = {
         if (canvas) {
             canvas.style.transform = `translate(${this.state.pan.x}px, ${this.state.pan.y}px) scale(${this.state.zoom})`;
         }
+
+        // 更新滚动条位置和尺寸
+        this.updateScrollbars();
+    },
+
+    // 更新滚动条
+    updateScrollbars() {
+        if (!this.virtualScrollbars.vertical || !this.virtualScrollbars.horizontal) return;
+
+        const wrapper = document.getElementById('canvasWrapper');
+        if (!wrapper) return;
+
+        const wrapperRect = wrapper.getBoundingClientRect();
+
+        // 画布固定尺寸(不随zoom变化)
+        const canvasWidth = 2000;
+        const canvasHeight = 2000;
+
+        // 更新垂直滚动条
+        const maxScrollY = Math.max(0, canvasHeight - wrapperRect.height);
+        const scrollY = Math.max(0, Math.min(-this.state.pan.y, maxScrollY));
+
+        this.virtualScrollbars.vertical.updateMetrics(canvasHeight, wrapperRect.height);
+        this.virtualScrollbars.vertical.updatePosition(scrollY);
+
+        // 更新水平滚动条
+        const maxScrollX = Math.max(0, canvasWidth - wrapperRect.width);
+        const scrollX = Math.max(0, Math.min(-this.state.pan.x, maxScrollX));
+
+        this.virtualScrollbars.horizontal.updateMetrics(canvasWidth, wrapperRect.width);
+        this.virtualScrollbars.horizontal.updatePosition(scrollX);
     },
 
     // 更新缩放显示
@@ -371,14 +447,14 @@ const CanvasView = {
 
     // 更新鼠标位置显示
     updateMousePosition(e) {
-        const canvas = document.getElementById('canvas');
+        const canvasWrapper = document.getElementById('canvasWrapper');
         const display = document.getElementById('mousePos');
 
-        if (!canvas || !display) return;
+        if (!canvasWrapper || !display) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.round((e.clientX - rect.left - this.state.pan.x) / this.state.zoom);
-        const y = Math.round((e.clientY - rect.top - this.state.pan.y) / this.state.zoom);
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        const x = Math.round((e.clientX - wrapperRect.left - this.state.pan.x) / this.state.zoom);
+        const y = Math.round((e.clientY - wrapperRect.top - this.state.pan.y) / this.state.zoom);
 
         display.textContent = `X: ${x}, Y: ${y}`;
     },
@@ -409,6 +485,27 @@ const CanvasView = {
         this.centerCanvas();  // 调用居中方法计算正确的平移偏移
         this.updateView();
         this.updateZoomDisplay();
+
+        // 立即更新鼠标位置显示（使用视口中心点作为参考）
+        this.updateMousePositionDisplay();
+    },
+
+    // 更新鼠标位置显示（不依赖事件对象）
+    updateMousePositionDisplay() {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const display = document.getElementById('mousePos');
+
+        if (!canvasWrapper || !display) return;
+
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        // 使用视口中心点作为鼠标位置的参考点
+        const centerX = wrapperRect.left + wrapperRect.width / 2;
+        const centerY = wrapperRect.top + wrapperRect.height / 2;
+
+        const x = Math.round((centerX - wrapperRect.left - this.state.pan.x) / this.state.zoom);
+        const y = Math.round((centerY - wrapperRect.top - this.state.pan.y) / this.state.zoom);
+
+        display.textContent = `X: ${x}, Y: ${y}`;
     },
 
     // 根据鼠标下的元素动态更新光标
