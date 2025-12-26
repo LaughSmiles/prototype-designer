@@ -111,12 +111,29 @@ body {
     transform: translateY(-1px);
 }
 
-.action-btn:nth-child(2) { background: #e67e22; }
-.action-btn:nth-child(2):hover { background: #f39c12; }
-.action-btn:nth-child(3) { background: #9b59b6; }
-.action-btn:nth-child(3):hover { background: #8e44ad; }
-.action-btn:nth-child(4) { background: #e74c3c; }
-.action-btn:nth-child(4):hover { background: #c0392b; }
+/* 危险操作按钮（红色） */
+.action-btn-danger {
+    background: #e74c3c !important;
+}
+
+.action-btn-danger:hover {
+    background: #c0392b !important;
+}
+
+/* 按钮颜色 */
+.action-btn:nth-child(1) { background: #27ae60; } /* 保存 */
+.action-btn:nth-child(1):hover { background: #2ecc71; }
+
+/* action-btn-danger 单独处理，不使用 nth-child */
+
+.action-btn:nth-child(3) { background: #3498db; } /* 导出 */
+.action-btn:nth-child(3):hover { background: #2980b9; }
+
+.action-btn:nth-child(4) { background: #9b59b6; } /* 导入 */
+.action-btn:nth-child(4):hover { background: #8e44ad; }
+
+.action-btn:nth-child(5) { background: #95a5a6; } /* 清空画布 */
+.action-btn:nth-child(5):hover { background: #7f8c8d; }
 
 .view-controls {
     padding: 15px 10px;
