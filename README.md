@@ -18,28 +18,47 @@
 
 ### 创建新项目(5分钟)
 
-#### 步骤1: 复制项目
+#### 步骤1: 通过AI创建原型图
 
-复制整个项目文件夹到新位置:
+提示词
 
-```bash
-# 复制整个项目
-cp -r "摄影派原型" "我的新项目"
+```
+我想开发一个{XXX功能的中文App，等等自己}，现在需要输出高保真的原型图，请通过以下方式帮我完成所有界面的原型设计，并确保这些原型界面可以直接用于开发：
+1.  用户体验分析：先分析这个App的用户需求和主要功能，确定核心交互逻辑。
+2.  产品界面规划：作为产品经理，定义关键界面，确保产品功能模块和信息架构合理。
+3.  高保真UI设计：作为UI设计师，设计贴近真实iOS设计规范的界面，使用现代化的UI元素，风格简洁，使其具有良好的视觉体验。
+4.  HTML原型实现：使用HTML+TailwindCSS(或Bootstrap)生成所有原型界面，并使用FontAwesome(或其他开源UI组件)让界面更加精美、接近真实的App设计。
+5.  拆分代码文件，保持结构清晰：
+    -   每个界面应作为独立的HTML文件存放，例如home.html、profile.html、settings.html等。并存在在pages目录下。
+    -   index.html作为主入口，不直接写入所有界面的HTML代码，而是使用iframe的方式嵌入这些HTML片段，并将所有页面直接平铺展示在index页面中，而不是跳转链接。
+    -   index.html在主目录下，没有存放在pages目录中
+6.  真实感增强：
+    -   界面尺寸应模拟iPhone 15 Pro，并让界面圆角化，使其更像真实的手机界面。
+    -   使用真实的UI图片，而非占位符图片(可从Unsplash、Pexels、Apple官方UI资源中选择)。
+    -   添加顶部状态栏(模拟iOS状态栏)，并包含App导航栏(类似iOS底部TabBar)。
+请按照以上要求生成完整的HTML代码，并确保其可用于实际iOS App的开发。
 ```
 
-或者在 Windows 中:
-- 复制 `生成原型图/` 文件夹
-- 粘贴并重命名为您的项目名称
+#### 步骤2: 将ai创建的原型图复制到本项目中
 
-#### 步骤2: 修改配置文件
+/page目录和index.html页面
+
+#### 步骤3: 修改配置文件
+
+notes：可以解决ai帮你生成配置文件，提示词如下
+
+```
+@README.md @pages @index.html @project-config.json
+帮我配置project-config.json
+```
 
 编辑 `project-config.json`:
 
 ```json
 {
   "projectName": "我的新项目",
-  "projectTitle": "我的新项目 - 高保真原型",
-  "projectDescription": "填写项目描述",
+  "projectTitle": "项目标题",
+  "projectDescription": "项目描述",
   "version": "1.0.0",
   "canvasSize": {
     "width": 320,
@@ -69,13 +88,6 @@ cp -r "摄影派原型" "我的新项目"
 }
 ```
 
-#### 步骤3: 创建页面文件
-
-在 `pages/` 目录创建 HTML 文件,文件名必须与配置中的 `id` 一致:
-
-- `home.html`
-- `profile.html`
-
 #### 步骤4: 完成!
 
 打开 `canvas-editor.html` 开始使用!
@@ -104,13 +116,6 @@ cp -r "摄影派原型" "我的新项目"
 │   └── alignment-manager.js   # 对齐管理器
 ├── css/                        # 样式文件(无需修改)
 │   └── canvas-editor.css      # 画布编辑器样式
-├── data/                       # 数据备份目录(自动生成)
-└── project-template/          # 项目模板(参考)
-    ├── README.md
-    ├── project-config.json
-    └── pages/
-        ├── example-home.html
-        └── example-profile.html
 ```
 
 ### 需要修改的文件
@@ -139,7 +144,7 @@ cp -r "摄影派原型" "我的新项目"
   "projectDescription": "项目描述",       // 项目简介
   "version": "1.0.0",                     // 版本号
 
-  // ===== 画布配置 =====
+  // ===== 页面元素的大小 =====
   "canvasSize": {
     "width": 320,                         // 默认宽度(px)
     "height": 680                         // 默认高度(px)
@@ -180,23 +185,23 @@ cp -r "摄影派原型" "我的新项目"
 
 ### 字段说明
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `projectName` | string | ✅ | 项目名称,用于标题和日志 |
-| `projectTitle` | string | ❌ | 项目完整标题 |
-| `projectDescription` | string | ❌ | 项目描述 |
-| `version` | string | ❌ | 版本号,默认 "1.0.0" |
-| `canvasSize.width` | number | ❌ | 画布默认宽度,默认 320 |
-| `canvasSize.height` | number | ❌ | 画布默认高度,默认 680 |
-| `categories` | array | ❌ | 页面分类数组 |
-| `categories[].id` | string | ✅ | 分类ID,必须唯一 |
-| `categories[].name` | string | ✅ | 分类显示名称 |
-| `categories[].order` | number | ❌ | 显示顺序 |
-| `pages` | array | ✅ | 页面列表数组 |
-| `pages[].id` | string | ✅ | 页面ID,必须与文件名一致 |
-| `pages[].name` | string | ✅ | 页面显示名称 |
-| `pages[].icon` | string | ✅ | FontAwesome图标类名 |
-| `pages[].category` | string | ❌ | 所属分类ID |
+| 字段                 | 类型   | 必填 | 说明                    |
+| -------------------- | ------ | ---- | ----------------------- |
+| `projectName`        | string | ✅    | 项目名称,用于标题和日志 |
+| `projectTitle`       | string | ❌    | 项目完整标题            |
+| `projectDescription` | string | ❌    | 项目描述                |
+| `version`            | string | ❌    | 版本号,默认 "1.0.0"     |
+| `canvasSize.width`   | number | ✅    | 画布默认宽度,默认 320   |
+| `canvasSize.height`  | number | ✅    | 画布默认高度,默认 680   |
+| `categories`         | array  | ❌    | 页面分类数组            |
+| `categories[].id`    | string | ✅    | 分类ID,必须唯一         |
+| `categories[].name`  | string | ✅    | 分类显示名称            |
+| `categories[].order` | number | ❌    | 显示顺序                |
+| `pages`              | array  | ✅    | 页面列表数组            |
+| `pages[].id`         | string | ✅    | 页面ID,必须与文件名一致 |
+| `pages[].name`       | string | ✅    | 页面显示名称            |
+| `pages[].icon`       | string | ✅    | FontAwesome图标类名     |
+| `pages[].category`   | string | ❌    | 所属分类ID              |
 
 ---
 
@@ -355,40 +360,40 @@ cp -r "摄影派原型" "我的新项目"
 
 ### 工具切换
 
-| 快捷键 | 功能 |
-|--------|------|
-| `S` | 选择工具 |
-| `A` | 箭头工具 |
-| `N` | 卡片注释工具 |
+| 快捷键 | 功能         |
+| ------ | ------------ |
+| `S`    | 选择工具     |
+| `A`    | 箭头工具     |
+| `N`    | 卡片注释工具 |
 
 ### 视图操作
 
-| 快捷键 | 功能 |
-|--------|------|
+| 快捷键        | 功能                |
+| ------------- | ------------------- |
 | `Ctrl + 滚轮` | 缩放视图(0.1x - 5x) |
-| `滚轮` | 移动画布视图 |
-| `空格键` | 重置视图到50% |
-| `Ctrl + 0` | 重置视图到100% |
+| `滚轮`        | 移动画布视图        |
+| `空格键`      | 重置视图到50%       |
+| `Ctrl + 0`    | 重置视图到100%      |
 
 ### 元素操作
 
-| 快捷键 | 功能 |
-|--------|------|
-| `Delete` | 删除选中元素 |
-| `Esc` | 取消选择/退出工具 |
+| 快捷键   | 功能              |
+| -------- | ----------------- |
+| `Delete` | 删除选中元素      |
+| `Esc`    | 取消选择/退出工具 |
 
 ### 数据操作
 
-| 快捷键 | 功能 |
-|--------|------|
+| 快捷键     | 功能             |
+| ---------- | ---------------- |
 | `Ctrl + S` | 保存到浏览器缓存 |
-| `Ctrl + E` | 导出JSON文件 |
-| `Ctrl + I` | 导入JSON文件 |
+| `Ctrl + E` | 导出JSON文件     |
+| `Ctrl + I` | 导入JSON文件     |
 
 ### 帮助
 
-| 快捷键 | 功能 |
-|--------|------|
+| 快捷键     | 功能         |
+| ---------- | ------------ |
 | `Ctrl + /` | 显示帮助信息 |
 
 ---
@@ -430,6 +435,7 @@ canvasEditor_usageCount
 ### 项目组织
 
 1. **按功能模块分类页面**
+
    ```json
    "categories": [
      { "id": "auth", "name": "认证模块" },
@@ -439,12 +445,14 @@ canvasEditor_usageCount
    ```
 
 2. **使用语义化的页面ID**
+
    - ✅ `user-profile-settings`
    - ✅ `order-payment-result`
    - ❌ `page1`
    - ❌ `abc`
 
 3. **合理使用图标**
+
    - 首页: `fa-home`
    - 设置: `fa-cog`
    - 用户: `fa-user`
@@ -477,6 +485,7 @@ canvasEditor_usageCount
 **原因**: `project-config.json` 文件格式错误或路径不正确
 
 **解决**:
+
 1. 检查 JSON 格式是否正确(可使用 https://jsonlint.com 验证)
 2. 确保文件在项目根目录
 3. 打开浏览器控制台查看错误信息
@@ -484,11 +493,13 @@ canvasEditor_usageCount
 ### Q2: 页面无法显示
 
 **原因**:
+
 - 文件名与配置中的 `id` 不一致
 - 文件不在 `pages/` 目录
 - HTML 文件格式错误
 
 **解决**:
+
 1. 检查文件名拼写(区分大小写)
 2. 确保文件在 `pages/` 目录
 3. 验证 HTML 语法
@@ -498,6 +509,7 @@ canvasEditor_usageCount
 **原因**: iframe 加载失败
 
 **解决**:
+
 1. 检查页面文件路径
 2. 打开浏览器控制台查看错误
 3. 确保使用 `http://` 或 `https://` 协议(不是 `file://`)
@@ -505,11 +517,13 @@ canvasEditor_usageCount
 ### Q4: 快捷键不生效
 
 **原因**:
+
 - 输入法处于激活状态
 - 浏览器拦截了快捷键
 - 焦点不在编辑器
 
 **解决**:
+
 1. 切换到英文输入法
 2. 点击画布区域获取焦点
 3. 检查浏览器快捷键冲突
@@ -519,6 +533,7 @@ canvasEditor_usageCount
 **原因**: 浏览器缓存被清空
 
 **解决**:
+
 1. 定期导出数据(JSON文件)
 2. 不要使用浏览器隐私模式
 3. 清除浏览器数据前先导出
