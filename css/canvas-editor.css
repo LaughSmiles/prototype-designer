@@ -315,6 +315,37 @@ body {
     white-space: nowrap;
 }
 
+/* 拖拽手柄样式 */
+.page-drag-handle {
+    color: #999;
+    margin-right: 8px;
+    cursor: grab;
+    transition: color 0.2s;
+}
+
+.page-drag-handle:hover {
+    color: #666;
+}
+
+.page-drag-handle:active {
+    cursor: grabbing;
+}
+
+/* 拖拽中的样式 */
+.page-list-item.dragging {
+    opacity: 0.5;
+    background: #f0f0f0;
+    transform: scale(0.98);
+}
+
+/* 拖拽经过目标元素的样式 */
+.page-list-item.drag-over {
+    background: #e3f2fd;
+    border-color: #2196f3;
+    border-style: dashed;
+    transform: scale(1.02);
+}
+
 /* 右键菜单样式 */
 .page-context-menu {
     position: fixed;

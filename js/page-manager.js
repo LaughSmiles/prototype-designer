@@ -227,10 +227,17 @@ const PageManager = {
         pageList.innerHTML = '';
 
         // 添加所有页面列表项
-        this.pages.forEach(page => {
+        this.pages.forEach((page, index) => {
             const item = document.createElement('div');
             item.className = `page-list-item ${page.id === this.currentPageId ? 'active' : ''}`;
             item.dataset.pageId = page.id;
+            item.dataset.pageIndex = index; // 存储页面索引
+            item.draggable = true; // 启用拖拽
+
+            // 拖拽手柄图标
+            const dragHandle = document.createElement('i');
+            dragHandle.className = 'fas fa-grip-vertical page-drag-handle';
+            item.appendChild(dragHandle);
 
             // 页面名称
             const nameSpan = document.createElement('span');
@@ -249,8 +256,119 @@ const PageManager = {
                 this.showContextMenu(e, page.id);
             });
 
+            // 拖拽事件
+            item.addEventListener('dragstart', (e) => {
+                this.handleDragStart(e, index);
+            });
+
+            item.addEventListener('dragover', (e) => {
+                this.handleDragOver(e);
+            });
+
+            item.addEventListener('drop', (e) => {
+                this.handleDrop(e, index);
+            });
+
+            item.addEventListener('dragenter', (e) => {
+                this.handleDragEnter(e, item);
+            });
+
+            item.addEventListener('dragleave', (e) => {
+                this.handleDragLeave(e, item);
+            });
+
+            item.addEventListener('dragend', (e) => {
+                this.handleDragEnd(e);
+            });
+
             pageList.appendChild(item);
         });
+    },
+
+    // ============ 拖拽排序相关方法 ============
+
+    // 开始拖拽
+    handleDragStart(event, fromIndex) {
+        // 存储拖拽的起始索引
+        this._dragFromIndex = fromIndex;
+
+        // 设置拖拽效果
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/html', event.target.innerHTML);
+
+        // 添加拖拽中的样式
+        event.target.classList.add('dragging');
+
+        console.log(`开始拖拽页面 ${fromIndex}`);
+    },
+
+    // 拖拽经过目标元素
+    handleDragOver(event) {
+        // 必须阻止默认行为才能允许 drop
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    },
+
+    // 放置拖拽元素
+    handleDrop(event, toIndex) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // 如果拖拽到相同位置，不做任何操作
+        if (this._dragFromIndex === toIndex) {
+            return;
+        }
+
+        console.log(`从位置 ${this._dragFromIndex} 移动到位置 ${toIndex}`);
+
+        // 移动页面
+        this.movePage(this._dragFromIndex, toIndex);
+
+        // 重新渲染页面列表
+        this.renderTabs();
+    },
+
+    // 拖拽进入目标元素
+    handleDragEnter(event, targetItem) {
+        event.preventDefault();
+        // 添加视觉反馈
+        targetItem.classList.add('drag-over');
+    },
+
+    // 拖拽离开目标元素
+    handleDragLeave(event, targetItem) {
+        event.preventDefault();
+        // 移除视觉反馈
+        targetItem.classList.remove('drag-over');
+    },
+
+    // 拖拽结束
+    handleDragEnd(event) {
+        // 移除所有拖拽相关的样式
+        const items = document.querySelectorAll('.page-list-item');
+        items.forEach(item => {
+            item.classList.remove('dragging');
+            item.classList.remove('drag-over');
+        });
+
+        // 清理临时变量
+        delete this._dragFromIndex;
+
+        console.log('拖拽结束');
+    },
+
+    // 移动页面位置（数组操作）
+    movePage(fromIndex, toIndex) {
+        if (fromIndex === toIndex) return;
+
+        // 从数组中移除页面
+        const [movedPage] = this.pages.splice(fromIndex, 1);
+
+        // 在新位置插入页面
+        this.pages.splice(toIndex, 0, movedPage);
+
+        console.log(`页面已移动: ${fromIndex} -> ${toIndex}`);
+        console.log('新的页面顺序:', this.pages.map(p => p.name));
     },
 
     // 更新页面列表选中状态
