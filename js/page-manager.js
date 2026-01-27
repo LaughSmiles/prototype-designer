@@ -88,21 +88,31 @@ const PageManager = {
             return;
         }
 
-        const pageIndex = this.pages.findIndex(p => p.id === pageId);
-        if (pageIndex === -1) return;
+        const page = this.pages.find(p => p.id === pageId);
+        if (!page) return;
 
-        // 删除页面
-        this.pages.splice(pageIndex, 1);
+        // 显示确认弹窗
+        ModalManager.showConfirm(
+            `确定要删除页面"${page.name}"吗? 此操作无法撤销。`,
+            '删除页面',
+            () => {
+                const pageIndex = this.pages.findIndex(p => p.id === pageId);
+                if (pageIndex === -1) return;
 
-        // 如果删除的是当前页面,切换到其他页面
-        if (pageId === this.currentPageId) {
-            // 切换到前一个页面,如果没有则切换到第一个
-            const newPageIndex = Math.max(0, pageIndex - 1);
-            this.switchPage(this.pages[newPageIndex].id);
-        }
+                // 删除页面
+                this.pages.splice(pageIndex, 1);
 
-        this.renderTabs();
-        PageLibrary.showHint('✅ 页面已删除');
+                // 如果删除的是当前页面,切换到其他页面
+                if (pageId === this.currentPageId) {
+                    // 切换到前一个页面,如果没有则切换到第一个
+                    const newPageIndex = Math.max(0, pageIndex - 1);
+                    this.switchPage(this.pages[newPageIndex].id);
+                }
+
+                this.renderTabs();
+                PageLibrary.showHint('✅ 页面已删除');
+            }
+        );
     },
 
     // 切换页面
@@ -260,25 +270,27 @@ const PageManager = {
         const contextMenu = document.getElementById('pageContextMenu');
         if (!contextMenu) return;
 
-        // 移除旧的事件监听器
-        const menuItems = contextMenu.querySelectorAll('.context-menu-item');
-        menuItems.forEach(item => {
-            item.onclick = null;
-        });
-
         // 设置菜单位置
         contextMenu.style.left = `${event.clientX}px`;
         contextMenu.style.top = `${event.clientY}px`;
         contextMenu.style.display = 'block';
 
-        // 绑定菜单项事件
-        menuItems.forEach(item => {
-            const action = item.dataset.action;
-            item.addEventListener('click', () => {
-                this.handleContextMenuAction(action, pageId);
-                contextMenu.style.display = 'none';
+        // 动态存储当前操作的pageId
+        contextMenu._currentPageId = pageId;
+
+        // 只绑定一次事件监听器
+        if (!contextMenu._eventsBound) {
+            const menuItems = contextMenu.querySelectorAll('.context-menu-item');
+            menuItems.forEach(item => {
+                const action = item.dataset.action;
+                item.addEventListener('click', () => {
+                    // 使用动态存储的pageId,而不是闭包中的pageId
+                    this.handleContextMenuAction(action, contextMenu._currentPageId);
+                    contextMenu.style.display = 'none';
+                });
             });
-        });
+            contextMenu._eventsBound = true;
+        }
 
         // 点击其他地方关闭菜单
         const closeMenu = (e) => {
@@ -312,11 +324,17 @@ const PageManager = {
         const page = this.pages.find(p => p.id === pageId);
         if (!page) return;
 
-        const newName = prompt('请输入新的页面名称:', page.name);
-        if (newName && newName.trim() && newName !== page.name) {
-            this.renamePage(pageId, newName.trim());
-            PageLibrary.showHint(`✅ 页面已重命名为: ${newName.trim()}`);
-        }
+        ModalManager.showPrompt(
+            '请输入新的页面名称:',
+            page.name,
+            '重命名页面',
+            (newName) => {
+                if (newName && newName.trim() && newName !== page.name) {
+                    this.renamePage(pageId, newName.trim());
+                    PageLibrary.showHint(`✅ 页面已重命名为: ${newName.trim()}`);
+                }
+            }
+        );
     },
 
     // 获取所有页面数据(用于保存)

@@ -509,10 +509,22 @@ const ElementManager = {
         if (this.state.elements.length === 0) return;
 
         // 如果不是静默模式,弹出确认框
-        if (!silent && !confirm(`确定要清空画布上的 ${this.state.elements.length} 个元素吗？`)) {
+        if (!silent) {
+            ModalManager.showConfirm(
+                `确定要清空画布上的 ${this.state.elements.length} 个元素吗? 此操作无法撤销。`,
+                '清空画布',
+                () => {
+                    this.executeClearAll(false);
+                }
+            );
             return;
         }
 
+        this.executeClearAll(silent);
+    },
+
+    // 执行清空操作
+    executeClearAll(silent) {
         this.state.elements = [];
         this.state.selectedElement = null;
 
@@ -531,7 +543,7 @@ const ElementManager = {
 
         // 只有在非静默模式下才显示提示
         if (!silent) {
-            PageLibrary.showHint('画布已清空');
+            PageLibrary.showHint('✅ 画布已清空');
         }
     },
 

@@ -207,6 +207,41 @@
             </div>
         </div>
 
+        <!-- 确认弹窗 -->
+        <div class="confirm-modal" id="confirmModal">
+            <div class="help-modal-overlay"></div>
+            <div class="confirm-modal-content">
+                <div class="confirm-modal-header">
+                    <h2 id="confirmModalTitle"><i class="fas fa-exclamation-circle"></i> 确认操作</h2>
+                </div>
+                <div class="confirm-modal-body">
+                    <p id="confirmModalMessage">确定要执行此操作吗?</p>
+                </div>
+                <div class="confirm-modal-footer">
+                    <button class="confirm-modal-btn cancel" id="confirmModalCancel">取消</button>
+                    <button class="confirm-modal-btn confirm" id="confirmModalConfirm">确定</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入弹窗 -->
+        <div class="prompt-modal" id="promptModal">
+            <div class="help-modal-overlay"></div>
+            <div class="prompt-modal-content">
+                <div class="confirm-modal-header">
+                    <h2 id="promptModalTitle"><i class="fas fa-edit"></i> 输入内容</h2>
+                </div>
+                <div class="prompt-modal-body">
+                    <p id="promptModalMessage">请输入内容:</p>
+                    <input type="text" id="promptModalInput" class="prompt-modal-input" placeholder="请输入...">
+                </div>
+                <div class="confirm-modal-footer">
+                    <button class="confirm-modal-btn cancel" id="promptModalCancel">取消</button>
+                    <button class="confirm-modal-btn confirm" id="promptModalConfirm">确定</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 中央画布区域 -->
         <main class="canvas-area">
             <!-- 顶部状态栏 -->
@@ -307,6 +342,7 @@
     <script src="js/canvas-view.js"></script>
     <script src="js/element-manager.js"></script>
     <script src="js/tools.js"></script>
+    <script src="js/modal-manager.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/page-manager.js"></script>
     <script src="js/canvas-editor.js"></script>

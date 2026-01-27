@@ -232,23 +232,27 @@ const Storage = {
 
     // 清空浏览器缓存
     clearBrowserCache() {
-        if (confirm('确定要清空浏览器缓存吗？\n\n此操作将删除 localStorage 中保存的画布数据，且不可恢复！')) {
-            try {
-                localStorage.removeItem(this.STORAGE_KEY);
+        ModalManager.showConfirm(
+            '确定要清空浏览器缓存吗?\n\n此操作将删除 localStorage 中保存的画布数据,且不可恢复!',
+            '清空浏览器缓存',
+            () => {
+                try {
+                    localStorage.removeItem(this.STORAGE_KEY);
 
-                // 检查是否成功删除
-                const saved = localStorage.getItem(this.STORAGE_KEY);
-                if (saved === null) {
-                    PageLibrary.showHint('✅ 浏览器缓存已清空');
-                    console.log('浏览器缓存已清空');
-                } else {
-                    PageLibrary.showHint('❌ 清空失败');
-                    console.error('清空缓存失败');
+                    // 检查是否成功删除
+                    const saved = localStorage.getItem(this.STORAGE_KEY);
+                    if (saved === null) {
+                        PageLibrary.showHint('✅ 浏览器缓存已清空');
+                        console.log('浏览器缓存已清空');
+                    } else {
+                        PageLibrary.showHint('❌ 清空失败');
+                        console.error('清空缓存失败');
+                    }
+                } catch (error) {
+                    console.error('清空缓存失败:', error);
+                    alert('清空缓存失败：' + error.message);
                 }
-            } catch (error) {
-                console.error('清空缓存失败:', error);
-                alert('清空缓存失败：' + error.message);
             }
-        }
+        );
     }
 };

@@ -49,15 +49,19 @@ const CanvasEditor = {
             Tools.init();
             console.log('✅ 工具系统初始化完成');
 
-            // 5. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
+            // 5. 弹窗管理器
+            ModalManager.init();
+            console.log('✅ 弹窗管理器初始化完成');
+
+            // 6. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
             Storage.init();
             console.log('✅ 数据持久化初始化完成');
 
-            // 6. 页面管理器 (必须在Storage之后,因为需要加载数据)
+            // 7. 页面管理器 (必须在Storage之后,因为需要加载数据)
             PageManager.init();
             console.log('✅ 页面管理器初始化完成');
 
-            // 7. 绑定全局快捷键
+            // 8. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
         } catch (error) {
