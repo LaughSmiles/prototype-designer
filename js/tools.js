@@ -88,11 +88,13 @@ const Tools = {
 
     // 设置画布事件
     setupCanvasEvents() {
-        const canvas = document.getElementById('canvas');
-        if (!canvas) return;
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
 
         // 点击事件（用于箭头和卡片注释工具）
-        canvas.addEventListener('click', (e) => {
+        // 关键修复：在canvas-wrapper上监听,而不是canvas
+        // 这样可以避免iframe拦截事件,确保工具在iframe上方也能正常工作
+        canvasWrapper.addEventListener('click', (e) => {
             // 只在选择工具模式下才防止点击元素时触发
             // 工具模式(箭头/注释)需要在元素上方也能正常工作
             if (this.currentTool === 'select' && e.target.closest('.canvas-element')) {
@@ -107,14 +109,16 @@ const Tools = {
         });
 
         // 鼠标移动（用于箭头预览）
-        canvas.addEventListener('mousemove', (e) => {
+        // 也在canvas-wrapper上监听,确保箭头预览在iframe上方正常工作
+        canvasWrapper.addEventListener('mousemove', (e) => {
             if (this.currentTool === 'arrow' && this.arrowState.isDrawing) {
                 this.updateArrowPreview(e);
             }
         });
 
         // 右键事件（用于完成箭头绘制）
-        canvas.addEventListener('contextmenu', (e) => {
+        // 也在canvas-wrapper上监听,确保右键完成在iframe上方正常工作
+        canvasWrapper.addEventListener('contextmenu', (e) => {
             if (this.currentTool === 'arrow' && this.arrowState.isDrawing) {
                 e.preventDefault();  // 阻止默认右键菜单
                 this.handleArrowRightClick(e);
