@@ -86,21 +86,36 @@ class AlignmentManager {
 
     // 显示辅助线
     showGuideLine(type, position) {
+        const canvasWrapper = document.getElementById('canvasWrapper');
         const canvas = document.getElementById('canvas');
-        if (!canvas) return;
+        if (!canvasWrapper || !canvas) return;
 
         const guide = document.createElement('div');
         guide.className = `alignment-guide ${type === 'left' || type === 'right' ? 'vertical' : 'horizontal'}`;
 
+        // 获取当前视图状态
+        const view = CanvasView.getView();
+
+        // 将canvas坐标转换为canvasWrapper坐标
+        // canvasWrapper坐标 = canvas坐标 × zoom + pan
+        const wrapperPosition = position * view.zoom + (type === 'left' || type === 'right' ? view.pan.x : view.pan.y);
+
         if (type === 'left' || type === 'right') {
-            guide.style.left = `${position}px`;
+            // 垂直线：从上到下覆盖整个视口
+            guide.style.left = `${wrapperPosition}px`;
             guide.style.top = '0';
+            guide.style.height = '100%'; // 覆盖整个canvasWrapper高度
+            guide.style.width = '2px';
         } else {
-            guide.style.top = `${position}px`;
+            // 水平线：从左到右覆盖整个视口
+            guide.style.top = `${wrapperPosition}px`;
             guide.style.left = '0';
+            guide.style.width = '100%'; // 覆盖整个canvasWrapper宽度
+            guide.style.height = '2px';
         }
 
-        canvas.appendChild(guide);
+        // 关键修复：添加到canvasWrapper而不是canvas
+        canvasWrapper.appendChild(guide);
         this.activeGuides.push(guide);
     }
 
