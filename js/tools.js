@@ -60,8 +60,8 @@ const Tools = {
         // 更新UI
         const buttons = document.querySelectorAll('.tool-icon-btn');
         buttons.forEach(btn => {
-            const tool = btn.dataset.tool;
-            if (tool && btn.dataset.tool === tool) {
+            const btnTool = btn.dataset.tool;
+            if (btnTool && btnTool === tool) {
                 btn.classList.add('active');
             } else {
                 btn.classList.remove('active');
