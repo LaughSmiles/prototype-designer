@@ -237,12 +237,12 @@ const ElementManager = {
                     return;
                 }
 
-                // 获取页面路径
+                // 获取页面信息
                 const pageInfo = PageLibrary.getPageInfo(element.pageId);
                 const filePath = pageInfo ? pageInfo.filePath : '';
 
-                // 显示自定义右键菜单
-                this.showContextMenu(e.clientX, e.clientY, filePath);
+                // 显示自定义右键菜单(传递 element, iframe, pageInfo)
+                this.showContextMenu(e.clientX, e.clientY, element, iframe, pageInfo);
             });
 
         } else if (element.type === 'arrow') {
@@ -812,7 +812,7 @@ const ElementManager = {
     },
 
     // 显示右键菜单
-    showContextMenu(x, y, filePath) {
+    showContextMenu(x, y, element, iframe, pageInfo) {
         // 移除已存在的菜单
         const existingMenu = document.querySelector('.context-menu');
         if (existingMenu) existingMenu.remove();
@@ -823,7 +823,8 @@ const ElementManager = {
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
 
-        // 创建菜单项
+        // 1. 复制文件路径菜单项
+        const filePath = pageInfo ? pageInfo.filePath : '';
         const copyItem = document.createElement('div');
         copyItem.className = 'context-menu-item';
         copyItem.innerHTML = '<i class="fas fa-copy"></i><span>复制文件路径</span>';
@@ -833,6 +834,18 @@ const ElementManager = {
         });
 
         menu.appendChild(copyItem);
+
+        // 2. 保存长截图菜单项
+        const screenshotItem = document.createElement('div');
+        screenshotItem.className = 'context-menu-item';
+        screenshotItem.innerHTML = '<i class="fas fa-camera"></i><span>保存长截图</span>';
+        screenshotItem.addEventListener('click', () => {
+            this.captureIframeScreenshot(iframe, pageInfo);
+            menu.remove();
+        });
+
+        menu.appendChild(screenshotItem);
+
         document.body.appendChild(menu);
 
         // 点击其他地方关闭菜单
@@ -892,5 +905,79 @@ const ElementManager = {
         }
 
         document.body.removeChild(textarea);
+    },
+
+    // 捕获 iframe 长截图
+    async captureIframeScreenshot(iframe, pageInfo) {
+        if (!iframe || !pageInfo) {
+            PageLibrary.showHint('⚠️ 无法获取页面信息');
+            return;
+        }
+
+        try {
+            // 显示加载提示
+            PageLibrary.showHint('📸 正在生成截图,请稍候...');
+
+            // 访问 iframe 内部文档
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+            if (!iframeDoc) {
+                throw new Error('无法访问 iframe 内部文档');
+            }
+
+            // 检查是否安装了 html2canvas
+            if (typeof html2canvas === 'undefined') {
+                throw new Error('html2canvas 库未加载');
+            }
+
+            // 获取页面名称(用于文件名)
+            const pageName = pageInfo.name || pageInfo.id || 'screenshot';
+
+            // 使用 html2canvas 截图
+            // scale: 2 提高清晰度
+            // useCORS: true 允许跨域图片
+            // allowTaint: true 允许跨域内容
+            const canvas = await html2canvas(iframeDoc.body, {
+                scale: 2, // 2倍清晰度
+                useCORS: true, // 支持跨域图片
+                allowTaint: true, // 允许被污染的 canvas
+                backgroundColor: '#ffffff', // 白色背景
+                logging: false, // 关闭日志
+                width: iframeDoc.body.scrollWidth, // 宽度等于内容宽度
+                height: iframeDoc.body.scrollHeight, // 高度等于内容高度
+                windowWidth: iframeDoc.body.scrollWidth,
+                windowHeight: iframeDoc.body.scrollHeight
+            });
+
+            // 转换为图片并下载
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    PageLibrary.showHint('❌ 生成图片失败');
+                    return;
+                }
+
+                // 创建下载链接
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${pageName}_${Date.now()}.png`;
+
+                // 触发下载
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                // 释放 URL 对象
+                URL.revokeObjectURL(url);
+
+                // 显示成功提示
+                PageLibrary.showHint(`✅ 截图已保存: ${pageName}.png`);
+
+            }, 'image/png', 1.0); // 质量: 最高
+
+        } catch (error) {
+            console.error('截图失败:', error);
+            PageLibrary.showHint(`❌ 截图失败: ${error.message}`);
+        }
     }
 };
