@@ -11,6 +11,24 @@ const PageManager = {
     // 页面计数器(用于生成唯一ID)
     pageCounter: 0,
 
+    // 全局元素ID计数器(确保所有页面的元素ID唯一)
+    globalNextElementId: 1,
+
+    // 生成唯一的元素ID
+    generateElementId() {
+        return `elem_${this.globalNextElementId++}`;
+    },
+
+    // 获取当前全局元素ID计数器
+    getGlobalNextElementId() {
+        return this.globalNextElementId;
+    },
+
+    // 设置全局元素ID计数器(用于加载缓存)
+    setGlobalNextElementId(id) {
+        this.globalNextElementId = id;
+    },
+
     // 初始化
     init() {
         // 如果没有页面,创建默认页面
@@ -209,7 +227,8 @@ const PageManager = {
 
         return {
             pages: this.pages,
-            currentPageId: this.currentPageId
+            currentPageId: this.currentPageId,
+            globalNextElementId: this.globalNextElementId  // 保存全局元素ID计数器
         };
     },
 
@@ -220,6 +239,23 @@ const PageManager = {
         this.pages = data.pages;
         this.currentPageId = data.currentPageId || data.pages[0].id;
         this.pageCounter = Math.max(...data.pages.map(p => parseInt(p.id.split('_')[1]) || 0));
+
+        // 恢复全局元素ID计数器
+        if (data.globalNextElementId) {
+            this.globalNextElementId = data.globalNextElementId;
+        } else {
+            // 兼容旧数据: 从所有元素中计算最大的ID
+            let maxId = 0;
+            data.pages.forEach(page => {
+                if (page.elements) {
+                    page.elements.forEach(elem => {
+                        const id = parseInt(elem.id.split('_')[1]) || 0;
+                        if (id > maxId) maxId = id;
+                    });
+                }
+            });
+            this.globalNextElementId = maxId + 1;
+        }
 
         // 渲染标签栏
         this.renderTabs();

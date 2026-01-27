@@ -33,7 +33,7 @@ const ElementManager = {
         if (!pageInfo) return;
 
         const element = {
-            id: `elem_${this.state.nextId++}`,
+            id: PageManager.generateElementId(),
             type: 'page',
             pageId: pageId,
             position: { x, y },
@@ -91,7 +91,7 @@ const ElementManager = {
     // 添加箭头元素
     addArrowElement(points) {
         const element = {
-            id: `elem_${this.state.nextId++}`,
+            id: PageManager.generateElementId(),
             type: 'arrow',
             points: points,  // 所有点的数组
             position: { x: 0, y: 0 },
@@ -107,7 +107,7 @@ const ElementManager = {
     // 添加文字元素
     addTextElement(text, x, y) {
         const element = {
-            id: `elem_${this.state.nextId++}`,
+            id: PageManager.generateElementId(),
             type: 'text',
             text: text,
             position: { x, y },
@@ -125,7 +125,7 @@ const ElementManager = {
     // 添加卡片注释元素
     addNoteElement(text, x, y) {
         const element = {
-            id: `elem_${this.state.nextId++}`,
+            id: PageManager.generateElementId(),
             type: 'note',
             text: text,
             position: { x, y },
@@ -618,7 +618,12 @@ const ElementManager = {
 
         // 设置新元素
         this.state.elements = JSON.parse(JSON.stringify(elements));
-        this.state.nextId = Math.max(...elements.map(e => parseInt(e.id.split('_')[1])), 0) + 1;
+
+        // 更新PageManager的全局元素ID计数器
+        if (elements.length > 0) {
+            const maxId = Math.max(...elements.map(e => parseInt(e.id.split('_')[1])), 0);
+            PageManager.setGlobalNextElementId(maxId + 1);
+        }
 
         // 渲染所有元素
         this.state.elements.forEach(element => {
