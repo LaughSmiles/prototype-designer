@@ -46,6 +46,7 @@ const CanvasView = {
 
     // 初始化
     init() {
+        this.disableBrowserZoom();
         this.setupEventListeners();
         this.initVirtualScrollbars();
         this.centerCanvas();
@@ -849,5 +850,17 @@ const CanvasView = {
             elemBottom < boxTop ||
             elemTop > boxBottom
         );
+    },
+
+    // 禁用浏览器级别的Ctrl+滚轮缩放
+    disableBrowserZoom() {
+        // 在document级别监听wheel事件
+        // 当检测到Ctrl键时,阻止浏览器默认的缩放行为
+        document.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                return false;
+            }
+        }, { passive: false });
     }
 };
