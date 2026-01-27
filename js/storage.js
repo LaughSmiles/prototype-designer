@@ -19,6 +19,7 @@ const Storage = {
         const exportBtn = document.getElementById('exportBtn');
         const importBtn = document.getElementById('importBtn');
         const clearBtn = document.getElementById('clearBtn');
+        const helpBtn = document.getElementById('helpBtn');
         const fileInput = document.getElementById('fileInput');
 
         if (saveBtn) {
@@ -41,6 +42,11 @@ const Storage = {
 
         if (clearBtn) {
             clearBtn.addEventListener('click', () => ElementManager.clearAll());
+        }
+
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => CanvasEditor.showHelp());
+        }
         }
 
         if (fileInput) {

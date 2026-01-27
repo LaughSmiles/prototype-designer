@@ -124,36 +124,106 @@
                 </button>
             </div>
             <div class="divider"></div>
-            <div class="help-info">
-                <h3>快捷键</h3>
-                <ul>
-                    <li><strong>1</strong>: 选择工具</li>
-                    <li><strong>2</strong>: 箭头工具</li>
-                    <li><strong>3</strong>: 卡片注释工具</li>
-                    <li><strong>空格键</strong>: 缩放50%并返回中心</li>
-                    <li><strong>滚轮</strong>: 移动视图</li>
-                    <li><strong>Ctrl+滚轮</strong>: 缩放视图（0.1x - 5x）</li>
-                    <li><strong>Delete</strong>: 删除选中元素</li>
-                    <li><strong>Esc</strong>: 取消选择</li>
-                </ul>
-                <h3>操作说明</h3>
-                <ul>
-                    <li><strong>拖拽手柄</strong>: 拖动顶部手柄移动页面或注释</li>
-                    <li><strong>页面滚动</strong>: 在页面区域内上下滚动查看内容</li>
-                    <li><strong>点击页面</strong>: 选中元素（不移动）</li>
-                    <li><strong>中键拖动</strong>: 拖动整个画布视图</li>
-                    <li><strong>Ctrl+滚轮</strong>: 在空白区域或手柄上缩放画布</li>
-                    <li><strong>卡片注释</strong>: 点击画布添加黄色注释卡片</li>
-                </ul>
-                <h3>注意</h3>
-                <ul>
-                    <li><strong>浏览器缩放已完全禁用</strong>：本页面禁止所有浏览器缩放功能</li>
-                    <li><strong>画布缩放</strong>：在空白区域或手柄上使用Ctrl+滚轮，缩放比例0.1x-5x</li>
-                    <li><strong>页面滚动</strong>：在页面区域内直接滚动查看内容</li>
-                    <li><strong>iframe内Ctrl+滚轮</strong>：阻止浏览器缩放，不进行任何操作</li>
-                </ul>
+            <div class="action-buttons">
+                <button class="action-btn" id="helpBtn" title="使用帮助">
+                    <i class="fas fa-question-circle"></i>
+                    <span>使用帮助</span>
+                </button>
             </div>
         </aside>
+
+        <!-- 帮助模态窗口 -->
+        <div class="help-modal" id="helpModal">
+            <div class="help-modal-overlay" id="helpModalOverlay"></div>
+            <div class="help-modal-content">
+                <div class="help-modal-header">
+                    <h2><i class="fas fa-question-circle"></i> 使用帮助</h2>
+                    <button class="help-modal-close" id="helpModalClose">&times;</button>
+                </div>
+                <div class="help-modal-body">
+                    <div class="help-section">
+                        <h3><i class="fas fa-keyboard"></i> 快捷键</h3>
+                        <div class="help-grid">
+                            <div class="help-item">
+                                <kbd>1</kbd>
+                                <span>选择工具</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>2</kbd>
+                                <span>箭头工具</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>3</kbd>
+                                <span>卡片注释工具</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>空格</kbd>
+                                <span>缩放50%并居中</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>Delete</kbd>
+                                <span>删除选中元素</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>Esc</kbd>
+                                <span>取消选择</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>滚轮</kbd>
+                                <span>移动视图</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>Ctrl</kbd> + <kbd>滚轮</kbd>
+                                <span>缩放视图</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                                <span>保存到缓存</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>Ctrl</kbd> + <kbd>E</kbd>
+                                <span>导出文件</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>Ctrl</kbd> + <kbd>I</kbd>
+                                <span>导入文件</span>
+                            </div>
+                            <div class="help-item">
+                                <kbd>Ctrl</kbd> + <kbd>0</kbd>
+                                <span>重置视图</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="help-section">
+                        <h3><i class="fas fa-mouse-pointer"></i> 操作说明</h3>
+                        <ul class="help-list">
+                            <li><strong>添加页面</strong>: 从右侧页面库拖拽页面到画布</li>
+                            <li><strong>移动元素</strong>: 点击拖拽手柄(顶部标题栏)移动</li>
+                            <li><strong>缩放元素</strong>: 选中元素 + Ctrl + 滚轮</li>
+                            <li><strong>绘制箭头</strong>: 选择箭头工具,点击起点和终点</li>
+                            <li><strong>添加注释</strong>: 选择注释工具,点击画布任意位置</li>
+                            <li><strong>编辑注释</strong>: 点击注释内容区域,输入文字</li>
+                            <li><strong>调整注释大小</strong>: 拖拽注释卡片的四角手柄</li>
+                            <li><strong>框选多个元素</strong>: 选择工具下,在空白处拖拽</li>
+                            <li><strong>删除元素</strong>: 选中后按Delete键或点击×按钮</li>
+                            <li><strong>右键菜单</strong>: 页面元素右键可打开页面预览</li>
+                        </ul>
+                    </div>
+
+                    <div class="help-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> 注意事项</h3>
+                        <ul class="help-list">
+                            <li><strong>浏览器缩放已禁用</strong>: 本页面禁用浏览器的缩放功能</li>
+                            <li><strong>画布缩放范围</strong>: 0.1x - 5x</li>
+                            <li><strong>自动保存</strong>: 每1分钟自动保存到浏览器缓存</li>
+                            <li><strong>页面滚动</strong>: 在页面iframe内可直接滚动查看内容</li>
+                            <li><strong>拖拽手柄</strong>: 必须通过顶部标题栏手柄才能拖拽页面元素</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- 中央画布区域 -->
         <main class="canvas-area">
@@ -206,7 +276,6 @@
     <script src="js/page-library.js"></script>
     <script src="js/virtual-scrollbar.js"></script>
     <script src="js/alignment-manager.js"></script>
-    <script src="js/history-manager.js"></script>
     <script src="js/canvas-view.js"></script>
     <script src="js/element-manager.js"></script>
     <script src="js/tools.js"></script>

@@ -37,27 +37,23 @@ const CanvasEditor = {
             await PageLibrary.init();
             console.log('✅ 页面库初始化完成');
 
-            // 2. 历史记录管理器
-            HistoryManager.init();
-            console.log('✅ 历史记录管理器初始化完成');
-
-            // 3. 画布视图
+            // 2. 画布视图
             CanvasView.init();
             console.log('✅ 画布视图初始化完成');
 
-            // 4. 元素管理
+            // 3. 元素管理
             ElementManager.init();
             console.log('✅ 元素管理初始化完成');
 
-            // 5. 工具系统
+            // 4. 工具系统
             Tools.init();
             console.log('✅ 工具系统初始化完成');
 
-            // 6. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
+            // 5. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
             Storage.init();
             console.log('✅ 数据持久化初始化完成');
 
-            // 7. 绑定全局快捷键
+            // 6. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
         } catch (error) {
@@ -92,24 +88,6 @@ const CanvasEditor = {
                 e.preventDefault();
                 CanvasView.zoomReset();
             }
-
-            // Ctrl+Z: 撤销
-            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
-                e.preventDefault();
-                HistoryManager.undo();
-            }
-
-            // Ctrl+Y 或 Ctrl+Shift+Z: 重做
-            if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
-                e.preventDefault();
-                HistoryManager.redo();
-            }
-
-            // Ctrl+/: 显示帮助
-            if (e.ctrlKey && e.key === '/') {
-                e.preventDefault();
-                this.showHelp();
-            }
         });
     },
 
@@ -138,34 +116,37 @@ const CanvasEditor = {
 
     // 显示帮助
     showHelp() {
-        alert(`
-🎨 画布编辑器快捷键
+        const modal = document.getElementById('helpModal');
+        if (modal) {
+            modal.classList.add('active');
 
-视图操作：
-- 鼠标滚轮：拖动视图
-- Ctrl + 滚轮：缩放视图
-- Ctrl + 0：重置视图
+            // 设置关闭事件
+            const overlay = document.getElementById('helpModalOverlay');
+            const closeBtn = document.getElementById('helpModalClose');
 
-元素操作：
-- 拖拽页面库：添加页面元素
-- 选中 + 拖拽：移动元素
-- 选中 + Ctrl + 滚轮：缩放元素
-- Delete：删除选中元素
-- Esc：取消选择
+            // 点击遮罩层关闭
+            const closeOverlay = () => {
+                modal.classList.remove('active');
+                overlay.removeEventListener('click', closeOverlay);
+            };
+            overlay.addEventListener('click', closeOverlay);
 
-工具切换：
-- 1：选择工具
-- 2：箭头工具
-- 3：注释工具
+            // 点击关闭按钮
+            const closeBtnHandler = () => {
+                modal.classList.remove('active');
+                closeBtn.removeEventListener('click', closeBtnHandler);
+            };
+            closeBtn.addEventListener('click', closeBtnHandler);
 
-数据操作：
-- Ctrl + S：保存到本地
-- Ctrl + E：导出JSON
-- Ctrl + I：导入JSON
-- Ctrl + Z：撤销
-- Ctrl + Y 或 Ctrl + Shift + Z：重做
-- Ctrl + /：显示帮助
-        `);
+            // ESC键关闭
+            const escHandler = (e) => {
+                if (e.key === 'Escape') {
+                    modal.classList.remove('active');
+                    document.removeEventListener('keydown', escHandler);
+                }
+            };
+            document.addEventListener('keydown', escHandler);
+        }
     }
 };
 
