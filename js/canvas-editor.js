@@ -37,23 +37,27 @@ const CanvasEditor = {
             await PageLibrary.init();
             console.log('✅ 页面库初始化完成');
 
-            // 2. 画布视图
+            // 2. 历史记录管理器
+            HistoryManager.init();
+            console.log('✅ 历史记录管理器初始化完成');
+
+            // 3. 画布视图
             CanvasView.init();
             console.log('✅ 画布视图初始化完成');
 
-            // 3. 元素管理
+            // 4. 元素管理
             ElementManager.init();
             console.log('✅ 元素管理初始化完成');
 
-            // 4. 工具系统
+            // 5. 工具系统
             Tools.init();
             console.log('✅ 工具系统初始化完成');
 
-            // 5. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
+            // 6. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
             Storage.init();
             console.log('✅ 数据持久化初始化完成');
 
-            // 6. 绑定全局快捷键
+            // 7. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
         } catch (error) {
@@ -87,6 +91,18 @@ const CanvasEditor = {
             if (e.ctrlKey && e.key === '0') {
                 e.preventDefault();
                 CanvasView.zoomReset();
+            }
+
+            // Ctrl+Z: 撤销
+            if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                HistoryManager.undo();
+            }
+
+            // Ctrl+Y 或 Ctrl+Shift+Z: 重做
+            if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'Z')) {
+                e.preventDefault();
+                HistoryManager.redo();
             }
 
             // Ctrl+/: 显示帮助
@@ -146,6 +162,8 @@ const CanvasEditor = {
 - Ctrl + S：保存到本地
 - Ctrl + E：导出JSON
 - Ctrl + I：导入JSON
+- Ctrl + Z：撤销
+- Ctrl + Y 或 Ctrl + Shift + Z：重做
 - Ctrl + /：显示帮助
         `);
     }

@@ -41,13 +41,12 @@ const ElementManager = {
             height: pageInfo.originalSize.height
         };
 
-        this.state.elements.push(element);
-        this.renderElement(element);
+        // 创建并执行添加元素命令
+        const command = new AddElementCommand(this, element);
+        HistoryManager.execute(command);
 
         // 增加页面使用计数
         this.incrementUsageCount(pageId);
-
-        this.updateStatusBar();
     },
 
     // 增加页面使用计数
@@ -99,9 +98,9 @@ const ElementManager = {
             height: 0
         };
 
-        this.state.elements.push(element);
-        this.renderElement(element);
-        this.updateStatusBar();
+        // 创建并执行添加元素命令
+        const command = new AddElementCommand(this, element);
+        HistoryManager.execute(command);
     },
 
     // 添加文字元素
@@ -133,9 +132,9 @@ const ElementManager = {
             height: 120
         };
 
-        this.state.elements.push(element);
-        this.renderElement(element);
-        this.updateStatusBar();
+        // 创建并执行添加元素命令
+        const command = new AddElementCommand(this, element);
+        HistoryManager.execute(command);
 
         // 返回元素ID,用于后续聚焦
         return element.id;
@@ -456,11 +455,25 @@ const ElementManager = {
     },
 
     // 删除元素
-    deleteElement(id) {
+    deleteElement(id, recordHistory = true) {
         const index = this.state.elements.findIndex(e => e.id === id);
         if (index === -1) return;
 
         const element = this.state.elements[index];
+
+        // 如果需要记录历史
+        if (recordHistory && !HistoryManager.isExecutingCommand) {
+            // 创建并执行删除命令
+            const command = new DeleteElementCommand(this, element);
+            HistoryManager.execute(command);
+
+            // 如果是页面元素，减少使用计数
+            if (element.type === 'page') {
+                this.decrementUsageCount(element.pageId);
+            }
+
+            return;
+        }
 
         // 如果是页面元素，减少使用计数
         if (element.type === 'page') {
