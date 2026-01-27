@@ -39,193 +39,225 @@
       "id": "home",
       "name": "首页",
       "icon": "fa-home",
-      "category": "home"
+      "category": "home",
+      "path": "pages/home/home.html"
     },
     {
       "id": "search",
       "name": "搜索页面",
       "icon": "fa-search",
-      "category": "home"
+      "category": "home",
+      "path": "pages/home/search.html"
     },
     {
       "id": "rental-detail",
       "name": "租赁详情",
       "icon": "fa-camera",
-      "category": "home"
+      "category": "home",
+      "path": "pages/home/rental-detail.html"
     },
     {
       "id": "select-rental-period",
       "name": "选择租期",
       "icon": "fa-calendar",
-      "category": "home"
+      "category": "home",
+      "path": "pages/home/select-rental-period.html"
     },
     {
       "id": "payment-result",
       "name": "支付结果",
       "icon": "fa-credit-card",
-      "category": "home"
+      "category": "home",
+      "path": "pages/home/payment-result.html"
     },
     {
       "id": "store-info",
       "name": "门店信息",
       "icon": "fa-store",
-      "category": "home"
+      "category": "home",
+      "path": "pages/home/store-info.html"
     },
     {
       "id": "comment-list",
       "name": "评论列表",
       "icon": "fa-comments",
-      "category": "home"
+      "category": "home",
+      "path": "pages/home/comment-list.html"
     },
     {
       "id": "rental-list",
       "name": "租赁列表",
       "icon": "fa-list",
-      "category": "rental"
+      "category": "rental",
+      "path": "pages/rental/rental-list.html"
     },
     {
       "id": "works",
       "name": "作品首页",
       "icon": "fa-images",
-      "category": "works"
+      "category": "works",
+      "path": "pages/works/works.html"
     },
     {
       "id": "video-work-detail",
       "name": "视频作品详情",
       "icon": "fa-video",
-      "category": "works"
+      "category": "works",
+      "path": "pages/works/video-work-detail.html"
     },
     {
       "id": "image-work-detail",
       "name": "图文作品详情",
       "icon": "fa-image",
-      "category": "works"
+      "category": "works",
+      "path": "pages/works/image-work-detail.html"
     },
     {
       "id": "publish-work-select",
       "name": "发布作品(选择)",
       "icon": "fa-upload",
-      "category": "works"
+      "category": "works",
+      "path": "pages/works/publish-work-select.html"
     },
     {
       "id": "publish-video",
       "name": "发布视频",
       "icon": "fa-video",
-      "category": "works"
+      "category": "works",
+      "path": "pages/works/publish-video.html"
     },
     {
       "id": "publish-image",
       "name": "发布图片",
       "icon": "fa-image",
-      "category": "works"
+      "category": "works",
+      "path": "pages/works/publish-image.html"
     },
     {
       "id": "delivery-method",
       "name": "收货方式",
       "icon": "fa-truck",
-      "category": "works"
+      "category": "works",
+      "path": "pages/works/delivery-method.html"
     },
     {
       "id": "messages",
       "name": "消息首页",
       "icon": "fa-comment",
-      "category": "messages"
+      "category": "messages",
+      "path": "pages/messages/messages.html"
     },
     {
       "id": "system-message",
       "name": "系统消息",
       "icon": "fa-cog",
-      "category": "messages"
+      "category": "messages",
+      "path": "pages/messages/system-message.html"
     },
     {
       "id": "interaction-message",
       "name": "互动消息",
       "icon": "fa-heart",
-      "category": "messages"
+      "category": "messages",
+      "path": "pages/messages/interaction-message.html"
     },
     {
       "id": "customer-service",
       "name": "在线客服",
       "icon": "fa-headset",
-      "category": "messages"
+      "category": "messages",
+      "path": "pages/messages/customer-service.html"
     },
     {
       "id": "private-chat",
       "name": "私聊",
       "icon": "fa-envelope",
-      "category": "messages"
+      "category": "messages",
+      "path": "pages/messages/private-chat.html"
     },
     {
       "id": "profile",
       "name": "我的页面",
       "icon": "fa-user",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/profile.html"
     },
     {
       "id": "settings",
       "name": "设置",
       "icon": "fa-cog",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/settings.html"
     },
     {
       "id": "identity-verify",
       "name": "实名认证(未完成)",
       "icon": "fa-id-card",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/identity-verify.html"
     },
     {
       "id": "identity-verified",
       "name": "实名认证(已完成)",
       "icon": "fa-id-card",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/identity-verified.html"
     },
     {
       "id": "address-manage",
       "name": "地址管理",
       "icon": "fa-map-marker-alt",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/address-manage.html"
     },
     {
       "id": "edit-address",
       "name": "编辑地址",
       "icon": "fa-edit",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/edit-address.html"
     },
     {
       "id": "store-address",
       "name": "门店地址",
       "icon": "fa-store-alt",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/store-address.html"
     },
     {
       "id": "about-us",
       "name": "关于我们",
       "icon": "fa-info-circle",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/about-us.html"
     },
     {
       "id": "edit-profile",
       "name": "个人信息编辑",
       "icon": "fa-user-edit",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/edit-profile.html"
     },
     {
       "id": "data-overview",
       "name": "数据概览",
       "icon": "fa-chart-bar",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/data-overview.html"
     },
     {
       "id": "my-orders",
       "name": "我的订单",
       "icon": "fa-shopping-bag",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/my-orders.html"
     },
     {
       "id": "logistics-detail",
       "name": "查看物流",
       "icon": "fa-shipping-fast",
-      "category": "profile"
+      "category": "profile",
+      "path": "pages/profile/logistics-detail.html"
     }
   ]
 }

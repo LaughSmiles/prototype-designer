@@ -165,7 +165,9 @@ const ElementManager = {
 
             // 使用 iframe 显示页面预览（支持滚动）
             const iframe = document.createElement('iframe');
-            iframe.src = `pages/${element.pageId}.html`;
+            // 从 PageLibrary 获取正确的文件路径
+            const pageInfo = PageLibrary.getPageInfo(element.pageId);
+            iframe.src = pageInfo ? pageInfo.filePath : `pages/${element.pageId}.html`;
             iframe.style.width = '100%';
             iframe.style.height = 'calc(100% - 30px)'; // 减去手柄高度
             iframe.style.marginTop = '30px'; // 为手柄留出空间
@@ -686,5 +688,12 @@ const ElementManager = {
                 sizeDisplay.textContent = `${Math.round(element.width)}×${Math.round(newHeight)}`;
             }
         }
+    },
+
+    // 更新连接线(占位函数,避免报错)
+    updateConnectionsForElement(elementId) {
+        // 这个函数用于连接线功能
+        // 当前不需要实现,留空避免报错
+        // 如果后续需要连接线功能,可以在这里实现
     }
 };

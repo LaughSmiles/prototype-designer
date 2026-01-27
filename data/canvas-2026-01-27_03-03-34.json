@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-01-27T03:03:34.922Z",
+  "view": {
+    "zoom": 0.7320500000000003,
+    "pan": {
+      "x": -65.20920000000024,
+      "y": -377.5911000000002
+    }
+  },
+  "elements": [
+    {
+      "id": "elem_15",
+      "type": "page",
+      "pageId": "rental-list",
+      "position": {
+        "x": 409.2942421965714,
+        "y": 662
+      },
+      "width": 320,
+      "height": 680
+    },
+    {
+      "id": "elem_25",
+      "type": "page",
+      "pageId": "delivery-method",
+      "position": {
+        "x": 815.5884843931422,
+        "y": 662
+      },
+      "width": 320,
+      "height": 680
+    },
+    {
+      "id": "elem_30",
+      "type": "page",
+      "pageId": "about-us",
+      "position": {
+        "x": 1188.1172734102875,
+        "y": 662
+      },
+      "width": 320,
+      "height": 680
+    }
+  ],
+  "usageCount": {
+    "home": 0,
+    "search": 0,
+    "rental-detail": 0,
+    "select-rental-period": 0,
+    "rental-list": 1,
+    "publish-video": 0,
+    "edit-profile": 0,
+    "comment-list": 0,
+    "store-info": 0,
+    "works": 0,
+    "about-us": 1,
+    "delivery-method": 1
+  }
+}

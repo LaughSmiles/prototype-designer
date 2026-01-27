@@ -80,10 +80,10 @@ const Storage = {
             const saved = localStorage.getItem(this.STORAGE_KEY);
             if (saved) {
                 const data = JSON.parse(saved);
-                if (confirm('检测到已保存的画布数据，是否加载？')) {
-                    this.loadData(data);
-                    PageLibrary.showHint('✅ 数据已恢复');
-                }
+                // 直接加载,不询问用户
+                this.loadData(data);
+                PageLibrary.showHint('✅ 已恢复上次的画布');
+                console.log('自动加载完成:', data);
             }
         } catch (error) {
             console.error('自动加载失败:', error);

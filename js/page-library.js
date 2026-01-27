@@ -58,7 +58,7 @@ const PageLibrary = {
         this.pages = this.projectConfig.pages.map(pageConfig => ({
             id: pageConfig.id,
             name: pageConfig.name,
-            filePath: `pages/${pageConfig.id}.html`,
+            filePath: pageConfig.path || `pages/${pageConfig.category}/${pageConfig.id}.html`,
             icon: pageConfig.icon || 'fa-file',
             category: pageConfig.category || '未分类',
             originalSize: {
