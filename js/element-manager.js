@@ -181,6 +181,12 @@ const ElementManager = {
             div.addEventListener('contextmenu', (e) => {
                 e.preventDefault(); // 阻止浏览器默认右键菜单
 
+                // 如果箭头工具正在绘制,不显示右键菜单,让箭头工具处理
+                const currentTool = Tools.getCurrentTool();
+                if (currentTool === 'arrow' && Tools.arrowState.isDrawing) {
+                    return;
+                }
+
                 // 获取页面路径
                 const pageInfo = PageLibrary.getPageInfo(element.pageId);
                 const filePath = pageInfo ? pageInfo.filePath : '';
@@ -209,8 +215,8 @@ const ElementManager = {
             div.style.width = `${maxX - minX + padding * 2}px`;
             div.style.height = `${maxY - minY + padding * 2}px`;
 
-            // 关键修改：让div不响应鼠标事件,只有SVG路径响应
-            div.style.pointerEvents = 'none';
+            // 关键修改：让div响应鼠标事件,确保箭头在iframe上方时能被拖动
+            div.style.pointerEvents = 'auto';
 
             // 创建SVG
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -522,7 +528,7 @@ const ElementManager = {
                     const pageName = PageLibrary.getPageName(element.pageId);
                     info = `选中: ${pageName} (拖拽手柄移动)`;
                 } else if (element.type === 'arrow') {
-                    info = `选中: 箭头`;
+                    info = `选中: 箭头 (点击任意位置拖动)`;
                 } else if (element.type === 'text') {
                     info = `选中: 文字`;
                 } else if (element.type === 'note') {

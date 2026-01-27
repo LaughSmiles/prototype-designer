@@ -35,6 +35,19 @@ const Tools = {
 
     // 设置当前工具
     setTool(tool) {
+        // 如果正在绘制箭头时切换工具,需要先清理状态并恢复iframe
+        if (this.arrowState.isDrawing) {
+            this.removeArrowPreview();
+            this.arrowState.points = [];
+            this.arrowState.isDrawing = false;
+
+            // 恢复所有iframe的交互
+            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'auto';
+            });
+        }
+
         // 更新状态
         this.currentTool = tool;
 
@@ -123,6 +136,12 @@ const Tools = {
             this.arrowState.points = [{ x, y }];
             this.arrowState.isDrawing = true;
 
+            // 临时禁用所有iframe的交互，防止绘制时触发iframe滚动
+            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'none';
+            });
+
             // 创建临时预览线
             this.createArrowPreview();
 
@@ -150,6 +169,12 @@ const Tools = {
 
         // 创建箭头元素
         ElementManager.addArrowElement(this.arrowState.points);
+
+        // 恢复所有iframe的交互
+        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+        iframes.forEach(iframe => {
+            iframe.style.pointerEvents = 'auto';
+        });
 
         // 重置状态
         this.arrowState.points = [];
