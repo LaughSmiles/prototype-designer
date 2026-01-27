@@ -504,10 +504,12 @@ const ElementManager = {
     },
 
     // 删除所有元素
-    clearAll() {
+    // silent: 是否静默删除(不弹出确认框),默认为false
+    clearAll(silent = false) {
         if (this.state.elements.length === 0) return;
 
-        if (!confirm(`确定要清空画布上的 ${this.state.elements.length} 个元素吗？`)) {
+        // 如果不是静默模式,弹出确认框
+        if (!silent && !confirm(`确定要清空画布上的 ${this.state.elements.length} 个元素吗？`)) {
             return;
         }
 
@@ -526,7 +528,11 @@ const ElementManager = {
         elements.forEach(el => el.remove());
 
         this.updateStatusBar();
-        PageLibrary.showHint('画布已清空');
+
+        // 只有在非静默模式下才显示提示
+        if (!silent) {
+            PageLibrary.showHint('画布已清空');
+        }
     },
 
     // 设置键盘事件

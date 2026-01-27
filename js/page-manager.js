@@ -38,6 +38,15 @@ const PageManager = {
 
         // 渲染标签栏
         this.renderTabs();
+
+        // 设置新增按钮事件(只绑定一次)
+        const addPageBtn = document.getElementById('addPageBtn');
+        if (addPageBtn) {
+            addPageBtn.addEventListener('click', () => {
+                const newPage = this.createPage();
+                PageLibrary.showHint(`✅ 已创建新页面: ${newPage.name}`);
+            });
+        }
     },
 
     // 创建新页面
@@ -53,7 +62,7 @@ const PageManager = {
                 pan: { x: 0, y: 0 }
             },
             elements: [],
-            usageCount: {}
+            usageCount: {} // 每个画布页面有独立的空usageCount
         };
 
         this.pages.push(page);
@@ -64,6 +73,9 @@ const PageManager = {
         }
 
         this.renderTabs();
+
+        // 自动切换到新创建的页面
+        this.switchPage(page.id);
 
         return page;
     },
@@ -107,19 +119,43 @@ const PageManager = {
         // 切换到新页面
         this.currentPageId = pageId;
 
-        // 清空当前画布元素
-        ElementManager.clearAll(false);
+        // 直接清空画布DOM,不调用clearAll()
+        const canvas = document.getElementById('canvas');
+        const elements = canvas.querySelectorAll('.canvas-element');
+        elements.forEach(el => el.remove());
 
-        // 加载新页面的元素
+        // 清空元素数组和选中状态
+        ElementManager.state.elements = [];
+        ElementManager.state.selectedElement = null;
+
+        // 关键修复:先重置全局usageCount为空,避免显示旧页面的计数
+        ElementManager.state.usageCount = {};
+        // 初始化所有页面库页面的计数为0
+        PageLibrary.getAllPageIds().forEach(pageId => {
+            ElementManager.state.usageCount[pageId] = 0;
+        });
+        // 更新所有徽章为0(清空显示)
+        PageLibrary.getAllPageIds().forEach(pageId => {
+            PageLibrary.updateUsageBadge(pageId, 0);
+        });
+
+        // 加载新页面的元素(深拷贝,避免引用问题)
         if (page.elements && page.elements.length > 0) {
             page.elements.forEach(element => {
-                ElementManager.state.elements.push(element);
-                ElementManager.renderElement(element);
+                // 深拷贝元素对象,避免修改影响原始数据
+                const elementCopy = JSON.parse(JSON.stringify(element));
+                ElementManager.state.elements.push(elementCopy);
+                ElementManager.renderElement(elementCopy);
             });
         }
 
         // 恢复新页面的视图状态
         CanvasView.setView(page.view.zoom, page.view.pan);
+
+        // 恢复新页面的使用计数
+        if (page.usageCount) {
+            ElementManager.setUsageCounts(page.usageCount);
+        }
 
         // 更新标签栏选中状态
         this.updateTabActive(pageId);
@@ -172,34 +208,102 @@ const PageManager = {
         return this.pages.find(p => p.id === this.currentPageId);
     },
 
-    // 渲染页面选择器
+    // 渲染页面列表
     renderTabs() {
-        const pageSelect = document.getElementById('pageSelect');
-        if (!pageSelect) return;
+        const pageList = document.getElementById('pageList');
+        if (!pageList) return;
 
-        // 清空现有选项
-        pageSelect.innerHTML = '';
+        // 清空现有列表
+        pageList.innerHTML = '';
 
-        // 添加所有页面选项
+        // 添加所有页面列表项
         this.pages.forEach(page => {
-            const option = document.createElement('option');
-            option.value = page.id;
-            option.textContent = page.name;
-            option.selected = page.id === this.currentPageId;
-            pageSelect.appendChild(option);
-        });
+            const item = document.createElement('div');
+            item.className = `page-list-item ${page.id === this.currentPageId ? 'active' : ''}`;
+            item.dataset.pageId = page.id;
 
-        // 绑定change事件
-        pageSelect.onchange = (e) => {
-            this.switchPage(e.target.value);
-        };
+            // 页面名称
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'page-name';
+            nameSpan.textContent = page.name;
+            item.appendChild(nameSpan);
+
+            // 点击事件:切换页面
+            item.addEventListener('click', () => {
+                this.switchPage(page.id);
+            });
+
+            // 右键菜单事件
+            item.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                this.showContextMenu(e, page.id);
+            });
+
+            pageList.appendChild(item);
+        });
     },
 
-    // 更新页面选择器选中状态
+    // 更新页面列表选中状态
     updateTabActive(pageId) {
-        const pageSelect = document.getElementById('pageSelect');
-        if (pageSelect) {
-            pageSelect.value = pageId;
+        const items = document.querySelectorAll('.page-list-item');
+        items.forEach(item => {
+            if (item.dataset.pageId === pageId) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    },
+
+    // 显示右键菜单
+    showContextMenu(event, pageId) {
+        const contextMenu = document.getElementById('pageContextMenu');
+        if (!contextMenu) return;
+
+        // 移除旧的事件监听器
+        const menuItems = contextMenu.querySelectorAll('.context-menu-item');
+        menuItems.forEach(item => {
+            item.onclick = null;
+        });
+
+        // 设置菜单位置
+        contextMenu.style.left = `${event.clientX}px`;
+        contextMenu.style.top = `${event.clientY}px`;
+        contextMenu.style.display = 'block';
+
+        // 绑定菜单项事件
+        menuItems.forEach(item => {
+            const action = item.dataset.action;
+            item.addEventListener('click', () => {
+                this.handleContextMenuAction(action, pageId);
+                contextMenu.style.display = 'none';
+            });
+        });
+
+        // 点击其他地方关闭菜单
+        const closeMenu = (e) => {
+            if (!contextMenu.contains(e.target)) {
+                contextMenu.style.display = 'none';
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        setTimeout(() => {
+            document.addEventListener('click', closeMenu);
+        }, 0);
+    },
+
+    // 处理右键菜单操作
+    handleContextMenuAction(action, pageId) {
+        switch (action) {
+            case 'rename':
+                this.promptRename(pageId);
+                break;
+            case 'duplicate':
+                this.duplicatePage(pageId);
+                break;
+            case 'delete':
+                this.deletePage(pageId);
+                break;
         }
     },
 
@@ -217,11 +321,12 @@ const PageManager = {
 
     // 获取所有页面数据(用于保存)
     getAllPagesData() {
-        // 保存前先更新当前页面的视图状态
+        // 保存前先更新当前页面的视图状态、元素和使用计数
         const currentPage = this.getCurrentPage();
         if (currentPage) {
             currentPage.view = CanvasView.getView();
             currentPage.elements = ElementManager.getAllElements();
+            // 关键:只保存当前画布页面的usageCount,每个画布页面独立计数
             currentPage.usageCount = ElementManager.getUsageCounts();
         }
 
@@ -260,7 +365,7 @@ const PageManager = {
         // 渲染标签栏
         this.renderTabs();
 
-        // 加载当前页面
+        // 加载当前页面(会恢复usageCount)
         this.switchPage(this.currentPageId);
     }
 };

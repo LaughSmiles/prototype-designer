@@ -470,6 +470,7 @@ const CanvasView = {
         this.state.zoom = newZoom;
         this.updateView();
         this.updateZoomDisplay();
+        this.showZoomHint();  // 用户主动缩放,显示提示
     },
 
     // 更新视图变换
@@ -518,8 +519,8 @@ const CanvasView = {
             display.textContent = `缩放: ${Math.round(this.state.zoom * 100)}%`;
         }
 
-        // 显示临时缩放提示
-        this.showZoomHint();
+        // 不再自动显示临时缩放提示
+        // 只在用户主动缩放时调用showZoomHint()
     },
 
     // 显示缩放临时提示
@@ -558,12 +559,14 @@ const CanvasView = {
         this.state.zoom = Math.min(this.MAX_ZOOM, this.state.zoom * 1.2);
         this.updateView();
         this.updateZoomDisplay();
+        this.showZoomHint();  // 用户主动缩放,显示提示
     },
 
     zoomOut() {
         this.state.zoom = Math.max(this.MIN_ZOOM, this.state.zoom / 1.2);
         this.updateView();
         this.updateZoomDisplay();
+        this.showZoomHint();  // 用户主动缩放,显示提示
     },
 
     zoomReset() {
@@ -579,6 +582,7 @@ const CanvasView = {
         this.centerCanvas();  // 调用居中方法计算正确的平移偏移
         this.updateView();
         this.updateZoomDisplay();
+        this.showZoomHint();  // 用户主动重置,显示提示
 
         // 立即更新鼠标位置显示（使用视口中心点作为参考）
         this.updateMousePositionDisplay();

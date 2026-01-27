@@ -85,29 +85,31 @@
         <aside class="sidebar-left">
             <div class="toolbar-header">
                 <h2>页面</h2>
+                <button class="add-page-btn" id="addPageBtn" title="新建页面">
+                    <i class="fas fa-plus"></i>
+                </button>
             </div>
 
-            <!-- 页面管理区域 -->
-            <div class="page-management">
-                <div class="page-selector">
-                    <label>当前页面:</label>
-                    <select id="pageSelect">
-                        <!-- 选项动态生成 -->
-                    </select>
+            <!-- 页面列表区域 -->
+            <div class="page-list-container">
+                <div id="pageList" class="page-list">
+                    <!-- 页面列表项动态生成 -->
                 </div>
-                <div class="page-actions">
-                    <button class="page-action-btn" id="newPageBtn" title="新建页面 (Ctrl+T)">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                    <button class="page-action-btn" id="deletePageBtn" title="删除页面 (Ctrl+W)">
-                        <i class="fas fa-minus"></i>
-                    </button>
-                    <button class="page-action-btn" id="renamePageBtn" title="重命名页面">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="page-action-btn" id="duplicatePageBtn" title="复制页面">
-                        <i class="fas fa-copy"></i>
-                    </button>
+            </div>
+
+            <!-- 右键菜单 -->
+            <div id="pageContextMenu" class="page-context-menu" style="display: none;">
+                <div class="context-menu-item" data-action="rename">
+                    <i class="fas fa-edit"></i>
+                    <span>重命名</span>
+                </div>
+                <div class="context-menu-item" data-action="duplicate">
+                    <i class="fas fa-copy"></i>
+                    <span>复制</span>
+                </div>
+                <div class="context-menu-item" data-action="delete">
+                    <i class="fas fa-trash"></i>
+                    <span>删除</span>
                 </div>
             </div>
         </aside>
