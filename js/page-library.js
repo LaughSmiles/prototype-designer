@@ -8,12 +8,26 @@ const PageLibrary = {
     // 项目配置
     projectConfig: null,
 
+    // 分类展开状态(默认全部展开)
+    categoryExpanded: {},
+
     // 初始化(改为异步)
     async init() {
         await this.loadProjectConfig();
         this.generatePageList();
+        this.initializeCategoryExpanded(); // 初始化分类展开状态
         this.renderPageLibrary();
         this.setupDragAndDrop();
+    },
+
+    // 初始化分类展开状态(默认全部展开)
+    initializeCategoryExpanded() {
+        const groupedPages = this.groupPagesByCategory();
+        Object.keys(groupedPages).forEach(categoryId => {
+            if (!(categoryId in this.categoryExpanded)) {
+                this.categoryExpanded[categoryId] = true; // 默认展开
+            }
+        });
     },
 
     // 加载项目配置文件
@@ -131,19 +145,36 @@ const PageLibrary = {
     createGroupElement(group) {
         const groupDiv = document.createElement('div');
         groupDiv.className = 'page-group';
+        groupDiv.dataset.categoryId = group.id;
 
-        // 分组标题
+        // 分组标题(可点击)
         const header = document.createElement('div');
         header.className = 'page-group-header';
+        header.style.cursor = 'pointer';
+
+        // 获取展开状态
+        const isExpanded = this.categoryExpanded[group.id] !== false;
+
         header.innerHTML = `
             <span class="group-name">${group.name}</span>
-            <span class="group-count">${group.pages.length}</span>
+            <div class="group-header-right">
+                <span class="group-count">${group.pages.length}</span>
+                <span class="category-toggle-icon ${isExpanded ? 'expanded' : 'collapsed'}">
+                    <i class="fas fa-chevron-down"></i>
+                </span>
+            </div>
         `;
+
+        // 点击标题切换折叠/展开
+        header.addEventListener('click', () => {
+            this.toggleCategory(group.id);
+        });
+
         groupDiv.appendChild(header);
 
-        // 分组内容
+        // 分组内容(支持折叠)
         const content = document.createElement('div');
-        content.className = 'page-group-content';
+        content.className = `page-group-content ${isExpanded ? '' : 'collapsed'}`;
 
         group.pages.forEach(page => {
             const item = this.createPageItem(page);
@@ -197,6 +228,17 @@ const PageLibrary = {
         return item;
     },
 
+    // 切换分类折叠/展开状态
+    toggleCategory(categoryId) {
+        // 切换状态
+        this.categoryExpanded[categoryId] = !this.categoryExpanded[categoryId];
+
+        // 重新渲染页面库
+        this.renderPageLibrary();
+
+        console.log(`${this.categoryExpanded[categoryId] ? '展开' : '折叠'}分类: ${categoryId}`);
+    },
+
     // 设置拖拽事件
     setupDragAndDrop() {
         const canvasWrapper = document.getElementById('canvasWrapper');
@@ -242,6 +284,67 @@ const PageLibrary = {
                 const pageInfo = this.getPageInfo(pageId);
                 const pageName = pageInfo ? pageInfo.name : pageId;
                 this.showHint(`已添加: ${pageName}`);
+            }
+        });
+
+        // 添加拖拽到折叠分类时自动展开的功能
+        this.setupCategoryExpandOnDrag();
+    },
+
+    // 设置拖拽时自动展开折叠分类
+    setupCategoryExpandOnDrag() {
+        const pageLibrary = document.getElementById('pageLibrary');
+        if (!pageLibrary) return;
+
+        let expandTimeout = null;
+
+        // 监听拖拽经过分类标题
+        pageLibrary.addEventListener('dragover', (e) => {
+            const groupHeader = e.target.closest('.page-group-header');
+            if (!groupHeader) {
+                // 清除定时器
+                if (expandTimeout) {
+                    clearTimeout(expandTimeout);
+                    expandTimeout = null;
+                }
+                return;
+            }
+
+            const groupDiv = groupHeader.closest('.page-group');
+            if (!groupDiv) return;
+
+            const categoryId = groupDiv.dataset.categoryId;
+            if (!categoryId) return;
+
+            // 检查该分类是否折叠
+            if (this.categoryExpanded[categoryId] === false) {
+                // 清除之前的定时器
+                if (expandTimeout) {
+                    clearTimeout(expandTimeout);
+                }
+
+                // 延迟500ms后自动展开(避免快速滑动时误触发)
+                expandTimeout = setTimeout(() => {
+                    this.categoryExpanded[categoryId] = true;
+                    this.renderPageLibrary();
+                    console.log(`拖拽时自动展开分类: ${categoryId}`);
+                }, 500);
+            }
+        });
+
+        // 拖拽离开时清除定时器
+        pageLibrary.addEventListener('dragleave', () => {
+            if (expandTimeout) {
+                clearTimeout(expandTimeout);
+                expandTimeout = null;
+            }
+        });
+
+        // 拖拽结束时清除定时器
+        pageLibrary.addEventListener('drop', () => {
+            if (expandTimeout) {
+                clearTimeout(expandTimeout);
+                expandTimeout = null;
             }
         });
     },
