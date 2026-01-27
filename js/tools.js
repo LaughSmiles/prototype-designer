@@ -93,8 +93,11 @@ const Tools = {
 
         // 点击事件（用于箭头和卡片注释工具）
         canvas.addEventListener('click', (e) => {
-            // 防止点击到元素时触发
-            if (e.target.closest('.canvas-element')) return;
+            // 只在选择工具模式下才防止点击元素时触发
+            // 工具模式(箭头/注释)需要在元素上方也能正常工作
+            if (this.currentTool === 'select' && e.target.closest('.canvas-element')) {
+                return;
+            }
 
             if (this.currentTool === 'arrow') {
                 this.handleArrowClick(e);
