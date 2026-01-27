@@ -47,7 +47,6 @@ const Storage = {
         if (helpBtn) {
             helpBtn.addEventListener('click', () => CanvasEditor.showHelp());
         }
-        }
 
         if (fileInput) {
             fileInput.addEventListener('change', (e) => {
