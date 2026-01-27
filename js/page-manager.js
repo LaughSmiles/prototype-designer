@@ -154,56 +154,35 @@ const PageManager = {
         return this.pages.find(p => p.id === this.currentPageId);
     },
 
-    // 渲染标签栏
+    // 渲染页面选择器
     renderTabs() {
-        const tabsContainer = document.getElementById('pageTabsContainer');
-        if (!tabsContainer) return;
+        const pageSelect = document.getElementById('pageSelect');
+        if (!pageSelect) return;
 
-        tabsContainer.innerHTML = '';
+        // 清空现有选项
+        pageSelect.innerHTML = '';
 
+        // 添加所有页面选项
         this.pages.forEach(page => {
-            const tab = document.createElement('div');
-            tab.className = `page-tab ${page.id === this.currentPageId ? 'active' : ''}`;
-            tab.dataset.pageId = page.id;
-
-            tab.innerHTML = `
-                <span class="tab-name">${page.name}</span>
-                <button class="tab-close" title="关闭页面">&times;</button>
-            `;
-
-            // 点击标签切换页面
-            tab.addEventListener('click', (e) => {
-                if (!e.target.classList.contains('tab-close')) {
-                    this.switchPage(page.id);
-                }
-            });
-
-            // 点击关闭按钮
-            const closeBtn = tab.querySelector('.tab-close');
-            closeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deletePage(page.id);
-            });
-
-            // 双击重命名
-            tab.addEventListener('dblclick', () => {
-                this.promptRename(page.id);
-            });
-
-            tabsContainer.appendChild(tab);
+            const option = document.createElement('option');
+            option.value = page.id;
+            option.textContent = page.name;
+            option.selected = page.id === this.currentPageId;
+            pageSelect.appendChild(option);
         });
+
+        // 绑定change事件
+        pageSelect.onchange = (e) => {
+            this.switchPage(e.target.value);
+        };
     },
 
-    // 更新标签选中状态
+    // 更新页面选择器选中状态
     updateTabActive(pageId) {
-        const tabs = document.querySelectorAll('.page-tab');
-        tabs.forEach(tab => {
-            if (tab.dataset.pageId === pageId) {
-                tab.classList.add('active');
-            } else {
-                tab.classList.remove('active');
-            }
-        });
+        const pageSelect = document.getElementById('pageSelect');
+        if (pageSelect) {
+            pageSelect.value = pageId;
+        }
     },
 
     // 提示重命名

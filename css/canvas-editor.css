@@ -212,134 +212,80 @@ body {
     cursor: grabbing;
 }
 
-/* ====== 页面标签栏样式 ====== */
-.page-tabs-bar {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
+/* ====== 页面管理区域样式 ====== */
+.page-management {
+    padding: 12px;
     background: #f8f9fa;
-    border-bottom: 2px solid #e0e0e0;
-    gap: 8px;
+    border-radius: 8px;
+    margin-bottom: 8px;
 }
 
-.page-tabs-container {
+.page-selector {
+    margin-bottom: 10px;
+}
+
+.page-selector label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.page-selector select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.page-selector select:hover {
+    border-color: #3498db;
+}
+
+.page-selector select:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.page-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+}
+
+.page-action-btn {
     flex: 1;
-    display: flex;
-    gap: 4px;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
-.page-tabs-container::-webkit-scrollbar {
-    height: 6px;
-}
-
-.page-tabs-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-.page-tabs-container::-webkit-scrollbar-thumb {
-    background: #ccc;
-    border-radius: 3px;
-}
-
-.page-tabs-container::-webkit-scrollbar-thumb:hover {
-    background: #999;
-}
-
-.page-tab {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 6px;
+    padding: 8px;
     cursor: pointer;
     transition: all 0.2s;
-    min-width: 100px;
-    max-width: 200px;
-    flex-shrink: 0;
-    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
 }
 
-.page-tab:hover {
-    background: #f0f0f0;
-    border-color: #bbb;
-}
-
-.page-tab.active {
+.page-action-btn:hover {
     background: #3498db;
     color: white;
-    border-color: #2980b9;
+    border-color: #3498db;
+    transform: translateY(-1px);
 }
 
-.page-tab.active .tab-close {
-    color: white;
-    opacity: 0.8;
+.page-action-btn:active {
+    transform: translateY(0);
 }
 
-.page-tab.active .tab-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-}
-
-.tab-name {
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-}
-
-.tab-close {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: #999;
-    cursor: pointer;
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.tab-close:hover {
-    background: #e0e0e0;
-    color: #333;
-}
-
-.new-page-btn {
-    background: #27ae60;
-    color: white;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    font-size: 20px;
-    cursor: pointer;
-    transition: all 0.2s;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.new-page-btn:hover {
-    background: #229954;
-    transform: scale(1.05);
-}
-
-.new-page-btn:active {
-    transform: scale(0.95);
+.page-action-btn i {
+    font-size: 14px;
 }
 
 .canvas {

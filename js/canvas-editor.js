@@ -106,11 +106,32 @@ const CanvasEditor = {
             }
         });
 
-        // 绑定新建页面按钮
+        // 绑定页面管理按钮
         const newPageBtn = document.getElementById('newPageBtn');
         if (newPageBtn) {
             newPageBtn.addEventListener('click', () => {
                 PageManager.createPage();
+            });
+        }
+
+        const deletePageBtn = document.getElementById('deletePageBtn');
+        if (deletePageBtn) {
+            deletePageBtn.addEventListener('click', () => {
+                PageManager.deletePage(PageManager.currentPageId);
+            });
+        }
+
+        const renamePageBtn = document.getElementById('renamePageBtn');
+        if (renamePageBtn) {
+            renamePageBtn.addEventListener('click', () => {
+                PageManager.promptRename(PageManager.currentPageId);
+            });
+        }
+
+        const duplicatePageBtn = document.getElementById('duplicatePageBtn');
+        if (duplicatePageBtn) {
+            duplicatePageBtn.addEventListener('click', () => {
+                PageManager.duplicatePage(PageManager.currentPageId);
             });
         }
     },

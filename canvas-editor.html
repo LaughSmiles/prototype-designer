@@ -86,6 +86,33 @@
             <div class="toolbar-header">
                 <h2>工具</h2>
             </div>
+
+            <!-- 页面管理区域 -->
+            <div class="page-management">
+                <div class="page-selector">
+                    <label>当前页面:</label>
+                    <select id="pageSelect">
+                        <!-- 选项动态生成 -->
+                    </select>
+                </div>
+                <div class="page-actions">
+                    <button class="page-action-btn" id="newPageBtn" title="新建页面 (Ctrl+T)">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="page-action-btn" id="deletePageBtn" title="删除页面 (Ctrl+W)">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="page-action-btn" id="renamePageBtn" title="重命名页面">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="page-action-btn" id="duplicatePageBtn" title="复制页面">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
             <div class="tool-buttons">
                 <button class="tool-btn active" data-tool="select" title="选择工具 (1)">
                     <i class="fas fa-mouse-pointer"></i>
@@ -227,14 +254,6 @@
 
         <!-- 中央画布区域 -->
         <main class="canvas-area">
-            <!-- 页面标签栏 -->
-            <div class="page-tabs-bar">
-                <div class="page-tabs-container" id="pageTabsContainer">
-                    <!-- 标签动态生成 -->
-                </div>
-                <button class="new-page-btn" id="newPageBtn" title="新建页面 (Ctrl+T)">+</button>
-            </div>
-
             <!-- 顶部状态栏 -->
             <div class="status-bar">
                 <span id="elementCount">元素: 0</span>
