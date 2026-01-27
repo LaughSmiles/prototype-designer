@@ -64,9 +64,9 @@ const HistoryManager = {
 
             // 画布视图状态
             viewState: {
-                scale: CanvasView.scale,
-                offsetX: CanvasView.offsetX,
-                offsetY: CanvasView.offsetY
+                scale: CanvasView.state.zoom,
+                offsetX: CanvasView.state.pan.x,
+                offsetY: CanvasView.state.pan.y
             },
 
             // 时间戳
@@ -99,10 +99,11 @@ const HistoryManager = {
 
             // 恢复画布视图状态
             if (state.viewState) {
-                CanvasView.scale = state.viewState.scale;
-                CanvasView.offsetX = state.viewState.offsetX;
-                CanvasView.offsetY = state.viewState.offsetY;
-                CanvasView.updateTransform();
+                CanvasView.state.zoom = state.viewState.scale;
+                CanvasView.state.pan.x = state.viewState.offsetX;
+                CanvasView.state.pan.y = state.viewState.offsetY;
+                CanvasView.updateView();
+                CanvasView.updateZoomDisplay();
             }
 
             // 重新渲染所有元素
@@ -111,12 +112,21 @@ const HistoryManager = {
             });
 
             // 更新页面库的使用计数徽章
+            // 先重置所有徽章(隐藏所有徽章)
+            const allBadges = document.querySelectorAll('[id^="badge-"]');
+            allBadges.forEach(badge => {
+                badge.style.display = 'none';
+                badge.textContent = '0';
+            });
+
+            // 然后更新usageCount中的页面
             Object.keys(ElementManager.state.usageCount).forEach(pageId => {
-                PageLibrary.updateUsageBadge(pageId, ElementManager.state.usageCount[pageId]);
+                const count = ElementManager.state.usageCount[pageId];
+                PageLibrary.updateUsageBadge(pageId, count);
             });
 
             // 更新页面列表
-            PageManager.renderPageList();
+            PageManager.renderTabs();
 
             // 更新状态栏
             ElementManager.updateStatusBar();
