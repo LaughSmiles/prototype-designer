@@ -177,6 +177,18 @@ const ElementManager = {
 
             div.appendChild(iframe);
 
+            // 添加右键菜单事件
+            div.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // 阻止浏览器默认右键菜单
+
+                // 获取页面路径
+                const pageInfo = PageLibrary.getPageInfo(element.pageId);
+                const filePath = pageInfo ? pageInfo.filePath : '';
+
+                // 显示自定义右键菜单
+                this.showContextMenu(e.clientX, e.clientY, filePath);
+            });
+
         } else if (element.type === 'arrow') {
             // 箭头元素
             const points = element.points;
@@ -645,5 +657,88 @@ const ElementManager = {
         // 这个函数用于连接线功能
         // 当前不需要实现,留空避免报错
         // 如果后续需要连接线功能,可以在这里实现
+    },
+
+    // 显示右键菜单
+    showContextMenu(x, y, filePath) {
+        // 移除已存在的菜单
+        const existingMenu = document.querySelector('.context-menu');
+        if (existingMenu) existingMenu.remove();
+
+        // 创建菜单
+        const menu = document.createElement('div');
+        menu.className = 'context-menu';
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+
+        // 创建菜单项
+        const copyItem = document.createElement('div');
+        copyItem.className = 'context-menu-item';
+        copyItem.innerHTML = '<i class="fas fa-copy"></i><span>复制文件路径</span>';
+        copyItem.addEventListener('click', () => {
+            this.copyToClipboard(filePath);
+            menu.remove();
+        });
+
+        menu.appendChild(copyItem);
+        document.body.appendChild(menu);
+
+        // 点击其他地方关闭菜单
+        setTimeout(() => {
+            const closeMenu = (e) => {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            };
+            document.addEventListener('click', closeMenu);
+        }, 0);
+    },
+
+    // 复制到剪贴板
+    copyToClipboard(text) {
+        if (!text) {
+            PageLibrary.showHint('⚠️ 无效的路径');
+            return;
+        }
+
+        // 使用现代 Clipboard API
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    PageLibrary.showHint(`✅ 已复制: ${text}`);
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    this.fallbackCopy(text);
+                });
+        } else {
+            // 降级方案
+            this.fallbackCopy(text);
+        }
+    },
+
+    // 降级复制方案（兼容旧浏览器）
+    fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                PageLibrary.showHint(`✅ 已复制: ${text}`);
+            } else {
+                PageLibrary.showHint('❌ 复制失败');
+            }
+        } catch (err) {
+            console.error('复制失败:', err);
+            PageLibrary.showHint('❌ 复制失败');
+        }
+
+        document.body.removeChild(textarea);
     }
 };

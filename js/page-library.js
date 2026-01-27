@@ -183,6 +183,17 @@ const PageLibrary = {
             item.classList.remove('dragging');
         });
 
+        // 添加右键菜单事件
+        item.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); // 阻止浏览器默认右键菜单
+
+            // 获取页面路径
+            const filePath = page.filePath;
+
+            // 显示自定义右键菜单（调用ElementManager的方法）
+            ElementManager.showContextMenu(e.clientX, e.clientY, filePath);
+        });
+
         return item;
     },
 

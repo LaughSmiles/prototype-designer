@@ -838,3 +838,35 @@ body {
     border-top: 2px dashed #3498db;
     background: transparent;
 }
+
+/* ====== 右键菜单样式 ====== */
+.context-menu {
+    position: fixed;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 8px 0;
+    z-index: 10000;
+    min-width: 200px;
+    font-size: 14px;
+}
+
+.context-menu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.2s;
+    color: #333;
+}
+
+.context-menu-item:hover {
+    background: #f0f0f0;
+}
+
+.context-menu-item i {
+    color: #666;
+    width: 16px;
+    text-align: center;
+}
