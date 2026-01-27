@@ -32,6 +32,9 @@ const ElementManager = {
         const pageInfo = PageLibrary.getPageInfo(pageId);
         if (!pageInfo) return;
 
+        // 保存当前状态用于撤销
+        HistoryManager.saveState();
+
         const element = {
             id: PageManager.generateElementId(),
             type: 'page',
@@ -90,6 +93,9 @@ const ElementManager = {
 
     // 添加箭头元素
     addArrowElement(points) {
+        // 保存当前状态用于撤销
+        HistoryManager.saveState();
+
         const element = {
             id: PageManager.generateElementId(),
             type: 'arrow',
@@ -106,6 +112,9 @@ const ElementManager = {
 
     // 添加文字元素
     addTextElement(text, x, y) {
+        // 保存当前状态用于撤销
+        HistoryManager.saveState();
+
         const element = {
             id: PageManager.generateElementId(),
             type: 'text',
@@ -124,6 +133,9 @@ const ElementManager = {
 
     // 添加卡片注释元素
     addNoteElement(text, x, y) {
+        // 保存当前状态用于撤销
+        HistoryManager.saveState();
+
         const element = {
             id: PageManager.generateElementId(),
             type: 'note',
@@ -480,6 +492,9 @@ const ElementManager = {
     deleteElement(id) {
         const index = this.state.elements.findIndex(e => e.id === id);
         if (index === -1) return;
+
+        // 保存当前状态用于撤销
+        HistoryManager.saveState();
 
         const element = this.state.elements[index];
 

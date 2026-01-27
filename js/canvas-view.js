@@ -386,11 +386,17 @@ const CanvasView = {
                 iframes.forEach(iframe => {
                     iframe.style.pointerEvents = 'auto';
                 });
+
+                // 保存状态用于撤销(拖拽移动完成后)
+                HistoryManager.saveState();
             }
             if (this.isResizingNote) {
                 this.isResizingNote = false;
                 this.resizingNote = null;
                 this.resizeCorner = null;
+
+                // 保存状态用于撤销(缩放完成后)
+                HistoryManager.saveState();
             }
             if (this.isBoxSelecting) {
                 // 完成框选

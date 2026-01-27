@@ -61,7 +61,11 @@ const CanvasEditor = {
             PageManager.init();
             console.log('✅ 页面管理器初始化完成');
 
-            // 8. 绑定全局快捷键
+            // 8. 历史记录管理器
+            HistoryManager.init();
+            console.log('✅ 历史记录管理器初始化完成');
+
+            // 9. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
         } catch (error) {
@@ -107,6 +111,18 @@ const CanvasEditor = {
             if (e.ctrlKey && e.key === 'w') {
                 e.preventDefault();
                 PageManager.deletePage(PageManager.currentPageId);
+            }
+
+            // Ctrl+Z: 撤销
+            if (e.ctrlKey && e.key === 'z') {
+                e.preventDefault();
+                HistoryManager.undo();
+            }
+
+            // Ctrl+Y 或 Ctrl+Shift+Z: 重做
+            if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+                e.preventDefault();
+                HistoryManager.redo();
             }
         });
     },

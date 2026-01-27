@@ -410,6 +410,9 @@ const PageManager = {
         // 同步数据
         this.syncPageData();
 
+        // 保存状态用于撤销(页面排序后)
+        HistoryManager.saveState();
+
         console.log('拖拽放置完成');
     },
 
@@ -545,6 +548,9 @@ const PageManager = {
 
         // 同步数据
         this.syncPageData();
+
+        // 保存状态用于撤销(页面排序后)
+        HistoryManager.saveState();
 
         console.log('容器拖拽放置完成');
     },
