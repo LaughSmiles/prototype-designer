@@ -636,6 +636,7 @@ body {
     overflow: visible; /* 改为visible,让内容可以撑开高度 */
     display: flex;
     flex-direction: column;
+    z-index: 10000; /* 确保注释卡片在iframe上方显示 */
 }
 
 .note-content {
