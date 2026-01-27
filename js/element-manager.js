@@ -32,9 +32,6 @@ const ElementManager = {
         const pageInfo = PageLibrary.getPageInfo(pageId);
         if (!pageInfo) return;
 
-        // 保存当前状态用于撤销
-        HistoryManager.saveState();
-
         const element = {
             id: PageManager.generateElementId(),
             type: 'page',
@@ -51,6 +48,9 @@ const ElementManager = {
         this.incrementUsageCount(pageId);
 
         this.updateStatusBar();
+
+        // 在添加元素之后保存状态用于撤销
+        HistoryManager.saveState();
     },
 
     // 增加页面使用计数
@@ -93,9 +93,6 @@ const ElementManager = {
 
     // 添加箭头元素
     addArrowElement(points) {
-        // 保存当前状态用于撤销
-        HistoryManager.saveState();
-
         const element = {
             id: PageManager.generateElementId(),
             type: 'arrow',
@@ -108,13 +105,13 @@ const ElementManager = {
         this.state.elements.push(element);
         this.renderElement(element);
         this.updateStatusBar();
+
+        // 在添加元素之后保存状态用于撤销
+        HistoryManager.saveState();
     },
 
     // 添加文字元素
     addTextElement(text, x, y) {
-        // 保存当前状态用于撤销
-        HistoryManager.saveState();
-
         const element = {
             id: PageManager.generateElementId(),
             type: 'text',
@@ -129,13 +126,13 @@ const ElementManager = {
         this.state.elements.push(element);
         this.renderElement(element);
         this.updateStatusBar();
+
+        // 在添加元素之后保存状态用于撤销
+        HistoryManager.saveState();
     },
 
     // 添加卡片注释元素
     addNoteElement(text, x, y) {
-        // 保存当前状态用于撤销
-        HistoryManager.saveState();
-
         const element = {
             id: PageManager.generateElementId(),
             type: 'note',
@@ -148,6 +145,10 @@ const ElementManager = {
         this.state.elements.push(element);
         this.renderElement(element);
         this.updateStatusBar();
+
+        // 注意:不在创建时保存状态
+        // 只有在用户输入内容并失焦后才会保存状态
+        // 这样撤销时可以直接删除注释,而不是回到"空注释"状态
 
         // 返回元素ID,用于后续聚焦
         return element.id;
@@ -305,16 +306,20 @@ const ElementManager = {
             contentDiv.textContent = element.text || '输入注释'; // 默认文字
 
             // 卡片编辑事件
+            let originalText = element.text || '';
             contentDiv.addEventListener('input', (e) => {
                 element.text = e.target.textContent;
                 // 自动调整卡片高度以适应内容
                 this.adjustNoteHeight(div, contentDiv, element);
             });
 
-            // 失焦时如果内容为空则删除卡片
+            // 失焦时保存状态（如果内容不为空）
             contentDiv.addEventListener('blur', (e) => {
-                if (!e.target.textContent.trim() || e.target.textContent === '输入注释') {
-                    this.deleteElement(element.id);
+                const currentText = e.target.textContent;
+                // 只有当内容不为空，且内容真正变化了，才保存状态
+                if (currentText.trim() && currentText !== '输入注释' && currentText !== originalText) {
+                    HistoryManager.saveState();
+                    originalText = currentText; // 更新原始文本
                 }
             });
 
@@ -493,9 +498,6 @@ const ElementManager = {
         const index = this.state.elements.findIndex(e => e.id === id);
         if (index === -1) return;
 
-        // 保存当前状态用于撤销
-        HistoryManager.saveState();
-
         const element = this.state.elements[index];
 
         // 如果是页面元素，减少使用计数
@@ -515,6 +517,10 @@ const ElementManager = {
         }
 
         this.updateStatusBar();
+
+        // 在删除元素之后保存状态用于撤销
+        HistoryManager.saveState();
+
         PageLibrary.showHint('元素已删除');
     },
 
@@ -597,12 +603,15 @@ const ElementManager = {
             }
 
             // 快捷键切换工具
-            if (e.key === '1' && !e.ctrlKey) {
-                Tools.setTool('select');
-            } else if (e.key === '2' && !e.ctrlKey) {
-                Tools.setTool('arrow');
-            } else if (e.key === '3' && !e.ctrlKey) {
-                Tools.setTool('note');
+            // 只有当焦点不在注释内容区域时才触发
+            if (!e.target.closest('.note-content')) {
+                if (e.key === '1' && !e.ctrlKey) {
+                    Tools.setTool('select');
+                } else if (e.key === '2' && !e.ctrlKey) {
+                    Tools.setTool('arrow');
+                } else if (e.key === '3' && !e.ctrlKey) {
+                    Tools.setTool('note');
+                }
             }
         });
     },

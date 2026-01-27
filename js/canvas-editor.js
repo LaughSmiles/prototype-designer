@@ -68,12 +68,8 @@ const CanvasEditor = {
             // 9. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
-            // 10. 保存初始状态作为历史记录的起点
-            // 确保在所有模块初始化完成且数据恢复后保存第一个状态
-            setTimeout(() => {
-                console.log('💾 保存初始状态到历史记录');
-                HistoryManager.saveState();
-            }, 100);
+            // 注意: 不在初始化时保存空状态
+            // 第一次操作时会自动保存初始状态
 
         } catch (error) {
             throw error;

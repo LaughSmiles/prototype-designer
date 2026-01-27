@@ -26,7 +26,30 @@ const HistoryManager = {
             return;
         }
 
-        // 获取当前完整状态
+        // 如果历史栈为空,先保存空状态作为起点
+        if (this.historyStack.length === 0) {
+            const emptyState = {
+                elements: [],
+                nextId: ElementManager.state.nextId,
+                usageCount: JSON.parse(JSON.stringify(ElementManager.state.usageCount)),
+                selectedElement: null,
+                selectedElements: [],
+                pages: JSON.parse(JSON.stringify(PageManager.pages)),
+                currentPageId: PageManager.currentPageId,
+                pageCounter: PageManager.pageCounter,
+                viewState: {
+                    scale: CanvasView.state.zoom,
+                    offsetX: CanvasView.state.pan.x,
+                    offsetY: CanvasView.state.pan.y
+                },
+                timestamp: Date.now()
+            };
+            this.historyStack.push(emptyState);
+            this.currentIndex = 0;
+            console.log('💾 保存空状态作为起点');
+        }
+
+        // 获取当前完整状态(此时元素已经添加到state.elements中了)
         const state = this.captureState();
 
         // 如果当前不在栈顶,删除当前位置之后的所有历史
@@ -79,11 +102,8 @@ const HistoryManager = {
         this.isUndoingOrRedoing = true;
 
         try {
-            // 清空画布
+            // 获取画布元素(不要清空,智能更新会处理)
             const canvas = document.getElementById('canvas');
-            if (canvas) {
-                canvas.innerHTML = '';
-            }
 
             // 恢复元素管理器状态
             ElementManager.state.elements = JSON.parse(JSON.stringify(state.elements));
@@ -107,7 +127,6 @@ const HistoryManager = {
             }
 
             // 智能更新元素:复用现有DOM,避免iframe刷新
-            const canvas = document.getElementById('canvas');
             if (canvas) {
                 // 1. 获取当前画布上的所有元素ID
                 const existingIds = new Set();
@@ -128,9 +147,17 @@ const HistoryManager = {
                 ElementManager.state.elements.forEach(element => {
                     const existingDiv = canvas.querySelector(`[data-element-id="${element.id}"]`);
                     if (existingDiv) {
-                        // 复用:只更新位置和尺寸,不重建iframe
-                        ElementManager.updateElementPosition(existingDiv, element);
-                        ElementManager.updateElementSize(existingDiv, element);
+                        // 对于页面元素,复用iframe,只更新位置和尺寸
+                        if (element.type === 'page') {
+                            ElementManager.updateElementPosition(existingDiv, element);
+                            ElementManager.updateElementSize(existingDiv, element);
+                        }
+                        // 对于箭头/文字/注释元素,需要完全重新渲染
+                        // 因为它们的位置/尺寸由内部内容决定
+                        else {
+                            existingDiv.remove();
+                            ElementManager.renderElement(element);
+                        }
                     } else {
                         // 新建:渲染新元素
                         ElementManager.renderElement(element);
