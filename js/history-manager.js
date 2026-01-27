@@ -106,10 +106,37 @@ const HistoryManager = {
                 CanvasView.updateZoomDisplay();
             }
 
-            // 重新渲染所有元素
-            ElementManager.state.elements.forEach(element => {
-                ElementManager.renderElement(element);
-            });
+            // 智能更新元素:复用现有DOM,避免iframe刷新
+            const canvas = document.getElementById('canvas');
+            if (canvas) {
+                // 1. 获取当前画布上的所有元素ID
+                const existingIds = new Set();
+                canvas.querySelectorAll('.canvas-element').forEach(el => {
+                    const id = el.dataset.elementId;
+                    if (id) existingIds.add(id);
+                });
+
+                // 2. 删除恢复后不存在的元素
+                existingIds.forEach(id => {
+                    if (!ElementManager.state.elements.find(e => e.id === id)) {
+                        const el = canvas.querySelector(`[data-element-id="${id}"]`);
+                        if (el) el.remove();
+                    }
+                });
+
+                // 3. 添加或更新元素
+                ElementManager.state.elements.forEach(element => {
+                    const existingDiv = canvas.querySelector(`[data-element-id="${element.id}"]`);
+                    if (existingDiv) {
+                        // 复用:只更新位置和尺寸,不重建iframe
+                        ElementManager.updateElementPosition(existingDiv, element);
+                        ElementManager.updateElementSize(existingDiv, element);
+                    } else {
+                        // 新建:渲染新元素
+                        ElementManager.renderElement(element);
+                    }
+                });
+            }
 
             // 更新页面库的使用计数徽章
             // 先重置所有徽章(隐藏所有徽章)
