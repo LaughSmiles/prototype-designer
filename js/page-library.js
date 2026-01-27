@@ -147,10 +147,12 @@ const PageLibrary = {
         groupDiv.className = 'page-group';
         groupDiv.dataset.categoryId = group.id;
 
-        // 分组标题(可点击)
+        // 分组标题(可点击,可拖拽)
         const header = document.createElement('div');
         header.className = 'page-group-header';
         header.style.cursor = 'pointer';
+        header.draggable = true; // 添加拖拽支持
+        header.dataset.categoryId = group.id;
 
         // 获取展开状态
         const isExpanded = this.categoryExpanded[group.id] !== false;
@@ -168,6 +170,25 @@ const PageLibrary = {
         // 点击标题切换折叠/展开
         header.addEventListener('click', () => {
             this.toggleCategory(group.id);
+        });
+
+        // 拖拽开始(批量添加分类下所有页面)
+        header.addEventListener('dragstart', (e) => {
+            const categoryId = group.id;
+            const pages = this.getPagesInCategory(categoryId);
+
+            // 传递分类ID和页面ID列表
+            e.dataTransfer.setData('categoryId', categoryId);
+            e.dataTransfer.setData('pageIds', JSON.stringify(pages.map(p => p.id)));
+            e.dataTransfer.effectAllowed = 'copy';
+
+            header.classList.add('dragging');
+            console.log(`开始拖拽分类: ${group.name} (${pages.length}个页面)`);
+        });
+
+        // 拖拽结束
+        header.addEventListener('dragend', () => {
+            header.classList.remove('dragging');
         });
 
         groupDiv.appendChild(header);
@@ -264,6 +285,23 @@ const PageLibrary = {
             e.preventDefault();
             canvasWrapper.classList.remove('drag-over');
 
+            // 优先检查是否是分类拖拽(批量添加)
+            const categoryId = e.dataTransfer.getData('categoryId');
+            if (categoryId) {
+                // 获取放置位置（考虑视图变换）
+                const rect = canvasWrapper.getBoundingClientRect();
+                const view = CanvasView.getView();
+
+                // 计算相对于画布的坐标
+                const x = (e.clientX - rect.left - view.pan.x) / view.zoom;
+                const y = (e.clientY - rect.top - view.pan.y) / view.zoom;
+
+                // 批量添加该分类下的所有页面
+                this.addCategoryPages(categoryId, x, y);
+                return;
+            }
+
+            // 单个页面添加(原有逻辑)
             const pageId = e.dataTransfer.getData('pageId');
             if (pageId) {
                 // 获取放置位置（考虑视图变换）
@@ -358,6 +396,41 @@ const PageLibrary = {
     getPageName(pageId) {
         const pageInfo = this.getPageInfo(pageId);
         return pageInfo ? pageInfo.name : pageId;
+    },
+
+    // 获取分类下的所有页面
+    getPagesInCategory(categoryId) {
+        return this.pages.filter(p => p.category === categoryId);
+    },
+
+    // 批量添加分类下的所有页面到画布
+    addCategoryPages(categoryId, startX, startY) {
+        const pages = this.getPagesInCategory(categoryId);
+
+        if (pages.length === 0) {
+            console.warn(`分类 ${categoryId} 下没有页面`);
+            return;
+        }
+
+        const pageWidth = 320;  // 页面宽度
+        const gap = 50;         // 页面间距
+
+        // 所有的页面放在一行,横向排列
+        pages.forEach((page, index) => {
+            const x = startX + index * (pageWidth + gap);
+            const y = startY;  // 所有页面y坐标相同
+
+            ElementManager.addPageElement(page.id, x, y);
+        });
+
+        // 获取分类名称
+        const groupedPages = this.groupPagesByCategory();
+        const categoryName = groupedPages[categoryId]?.name || categoryId;
+
+        // 显示提示
+        this.showHint(`已添加 ${pages.length} 个页面(${categoryName})`);
+
+        console.log(`批量添加完成: ${categoryName} (${pages.length}个页面)`);
     },
 
     // 显示临时提示

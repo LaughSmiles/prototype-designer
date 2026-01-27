@@ -1697,3 +1697,18 @@ body {
     padding-bottom: 0;
     opacity: 0;
 }
+
+/* ========== 分类拖拽样式 ========== */
+
+/* 拖拽分类标题时的样式 */
+.page-group-header.dragging {
+    opacity: 0.6;
+    background: #3498db;
+    border-color: #2980b9;
+}
+
+.page-group-header.dragging .group-name,
+.page-group-header.dragging .group-count,
+.page-group-header.dragging .category-toggle-icon {
+    color: white;
+}
