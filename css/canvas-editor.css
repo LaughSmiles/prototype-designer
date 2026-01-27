@@ -317,6 +317,7 @@ body {
 
 /* 拖拽手柄样式 */
 .page-drag-handle {
+    display: none; /* 隐藏拖拽手柄图标 */
     color: #999;
     margin-right: 8px;
     cursor: grab;
@@ -331,11 +332,23 @@ body {
     cursor: grabbing;
 }
 
-/* 拖拽中的样式 */
+/* 拖拽中的样式 - 保持完全原样,不改变视觉 */
 .page-list-item.dragging {
-    opacity: 0.5;
-    background: #f0f0f0;
-    transform: scale(0.98);
+    /* 不做任何视觉改变,完全保持原样 */
+}
+
+/* 拖拽插入指示器 */
+.drag-insert-indicator {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #2196f3;
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 1000;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
 }
 
 /* 拖拽经过目标元素的样式 */
@@ -344,6 +357,35 @@ body {
     border-color: #2196f3;
     border-style: dashed;
     transform: scale(1.02);
+}
+
+/* 插入位预留空间 - 改为边框高亮效果 */
+.page-list-item.insert-space-before {
+    border-top: 1px solid #000000;
+}
+
+.page-list-item.insert-space-after {
+    border-bottom: 1px solid #000000;
+}
+
+/* 拖拽占位符样式 */
+.page-list-item.drag-placeholder {
+    background: #f5f5f5;
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 14px;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.page-list-item.drag-placeholder::before {
+    content: '📋 拖拽到此处';
+    font-weight: 500;
 }
 
 /* 右键菜单样式 */
@@ -476,7 +518,7 @@ body {
 }
 
 /* 拖拽手柄 - 用于页面元素 */
-.page-drag-handle {
+.canvas-drag-handle {
     position: absolute;
     top: 0;
     left: 0;
@@ -496,17 +538,17 @@ body {
     z-index: 10;
 }
 
-.page-drag-handle i {
+.canvas-drag-handle i {
     margin-right: 6px;
     color: #6c757d;
 }
 
-.page-drag-handle:active {
+.canvas-drag-handle:active {
     cursor: grabbing;
     background: linear-gradient(to bottom, #e9ecef, #dee2e6);
 }
 
-.canvas-element.selected .page-drag-handle {
+.canvas-element.selected .canvas-drag-handle {
     background: linear-gradient(to bottom, #e3f2fd, #bbdefb);
     border-bottom-color: #90caf9;
     color: #1565c0;
@@ -601,18 +643,20 @@ body {
     color: #2c3e50;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 0 16px;
     font-size: 12px;
     border-bottom: 2px solid #ddd;
+    position: relative;
 }
 
-.status-bar-left,
-.status-bar-right {
+.status-bar-left {
     display: flex;
     gap: 16px;
     color: #666;
     white-space: nowrap;
+    flex: 0 0 auto;
+    min-width: 80px;
+    max-width: 150px;
 }
 
 .status-bar-center {
@@ -621,6 +665,24 @@ body {
     padding: 0 16px;
     border-left: 1px solid #e0e0e0;
     border-right: 1px solid #e0e0e0;
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 0;
+    bottom: 0;
+}
+
+.status-bar-right {
+    display: flex;
+    gap: 16px;
+    color: #666;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    margin-left: auto;
+    min-width: 200px;
 }
 
 /* 工具图标按钮(小正方形) */

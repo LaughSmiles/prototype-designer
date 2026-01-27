@@ -8,6 +8,12 @@ const PageManager = {
     // 当前激活页面ID
     currentPageId: null,
 
+    // 页面列表DOM元素引用
+    pageListEl: null,
+
+    // 插入指示器元素
+    insertIndicator: null,
+
     // 页面计数器(用于生成唯一ID)
     pageCounter: 0,
 
@@ -31,6 +37,9 @@ const PageManager = {
 
     // 初始化
     init() {
+        // 创建插入指示器
+        this.createInsertIndicator();
+
         // 如果没有页面,创建默认页面
         if (this.pages.length === 0) {
             this.createPage('页面1');
@@ -223,6 +232,9 @@ const PageManager = {
         const pageList = document.getElementById('pageList');
         if (!pageList) return;
 
+        // 保存pageList引用
+        this.pageListEl = pageList;
+
         // 清空现有列表
         pageList.innerHTML = '';
 
@@ -283,6 +295,20 @@ const PageManager = {
 
             pageList.appendChild(item);
         });
+
+        // 在容器上绑定拖放事件,支持在空白区域放置
+        // 只绑定一次(通过检查是否已有标记)
+        if (!pageList._dragEventsBound) {
+            pageList.addEventListener('dragover', (e) => {
+                this.handleContainerDragOver(e);
+            });
+
+            pageList.addEventListener('drop', (e) => {
+                this.handleContainerDrop(e);
+            });
+
+            pageList._dragEventsBound = true;
+        }
     },
 
     // ============ 拖拽排序相关方法 ============
@@ -292,12 +318,21 @@ const PageManager = {
         // 存储拖拽的起始索引
         this._dragFromIndex = fromIndex;
 
+        // 关键修复: 保存拖拽元素的引用,而不是依赖索引
+        this._draggingItem = event.target;
+
         // 设置拖拽效果
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/html', event.target.innerHTML);
 
-        // 添加拖拽中的样式
+        // 添加拖拽中的样式(通过CSS让元素看起来半透明)
         event.target.classList.add('dragging');
+
+        // 简化方案: 不隐藏拖拽元素,让它保持可见但半透明
+        // 这样不会中断HTML5拖拽,拖拽元素仍然占据空间
+
+        // 清理之前的插入指示器
+        this.hideInsertIndicator();
 
         console.log(`开始拖拽页面 ${fromIndex}`);
     },
@@ -307,6 +342,37 @@ const PageManager = {
         // 必须阻止默认行为才能允许 drop
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
+
+        // 获取拖拽元素
+        const draggingItem = this._draggingItem;
+        if (!draggingItem) return;
+
+        // 获取鼠标位置对应的目标项
+        const targetItem = event.target.closest('.page-list-item');
+        if (!targetItem || targetItem === draggingItem) {
+            return;
+        }
+
+        // 移除所有插入空间的类
+        const items = this.pageListEl.querySelectorAll('.page-list-item');
+        items.forEach(item => {
+            item.classList.remove('insert-space-before', 'insert-space-after');
+        });
+
+        // 计算鼠标在目标元素中的位置
+        const rect = targetItem.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const isInsertBefore = event.clientY < midY;
+
+        // 显示插入指示器
+        this.showInsertIndicator(targetItem, isInsertBefore);
+
+        // 添加插入空间效果
+        if (isInsertBefore) {
+            targetItem.classList.add('insert-space-before');
+        } else {
+            targetItem.classList.add('insert-space-after');
+        }
     },
 
     // 放置拖拽元素
@@ -314,47 +380,197 @@ const PageManager = {
         event.preventDefault();
         event.stopPropagation();
 
-        // 如果拖拽到相同位置，不做任何操作
-        if (this._dragFromIndex === toIndex) {
+        // 获取目标项
+        const targetItem = event.target.closest('.page-list-item');
+        if (!targetItem) return;
+
+        const draggingItem = this._draggingItem;
+        if (!draggingItem || draggingItem === targetItem) {
+            this.clearDragState();
             return;
         }
 
-        console.log(`从位置 ${this._dragFromIndex} 移动到位置 ${toIndex}`);
+        // 计算插入位置
+        const rect = targetItem.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const isInsertBefore = event.clientY < midY;
 
-        // 移动页面
-        this.movePage(this._dragFromIndex, toIndex);
+        // 移动拖拽元素到正确位置
+        if (isInsertBefore) {
+            this.pageListEl.insertBefore(draggingItem, targetItem);
+        } else {
+            this.pageListEl.insertBefore(draggingItem, targetItem.nextSibling);
+        }
 
-        // 重新渲染页面列表
-        this.renderTabs();
+        // 隐藏插入指示器和移除所有插入空间效果
+        this.hideInsertIndicator();
+        this.clearInsertSpaces();
+        this.clearAllTransforms();
+
+        // 同步数据
+        this.syncPageData();
+
+        console.log('拖拽放置完成');
+    },
+
+    // 清理拖拽状态
+    clearDragState() {
+        const items = document.querySelectorAll('.page-list-item');
+        items.forEach(item => {
+            item.classList.remove('dragging', 'drag-over', 'insert-space-before', 'insert-space-after');
+        });
+        this.hideInsertIndicator();
+        this.clearAllTransforms();
+    },
+
+    // 同步页面数据
+    syncPageData() {
+        const items = Array.from(document.querySelectorAll('.page-list-item'));
+        const newOrder = [];
+
+        // 根据当前DOM顺序重新构建页面数组
+        items.forEach(item => {
+            const pageId = item.dataset.pageId;
+            const page = this.pages.find(p => p.id === pageId);
+            if (page) {
+                newOrder.push(page);
+            }
+        });
+
+        // 更新页面数组
+        this.pages = newOrder;
     },
 
     // 拖拽进入目标元素
     handleDragEnter(event, targetItem) {
         event.preventDefault();
-        // 添加视觉反馈
-        targetItem.classList.add('drag-over');
+        // 不再添加静态的 drag-over 效果，改为在 handleDragOver 中实时处理
     },
 
     // 拖拽离开目标元素
     handleDragLeave(event, targetItem) {
         event.preventDefault();
-        // 移除视觉反馈
-        targetItem.classList.remove('drag-over');
+        // 不再需要，因为位置是实时计算的
     },
 
     // 拖拽结束
     handleDragEnd(event) {
-        // 移除所有拖拽相关的样式
-        const items = document.querySelectorAll('.page-list-item');
-        items.forEach(item => {
-            item.classList.remove('dragging');
-            item.classList.remove('drag-over');
-        });
+        // 使用统一的清理方法
+        this.clearDragState();
+
+        // 清理所有transform
+        this.clearAllTransforms();
 
         // 清理临时变量
         delete this._dragFromIndex;
+        delete this._draggingItem;
 
         console.log('拖拽结束');
+    },
+
+    // ============ 容器级别的拖放处理(支持空白区域) ============
+
+    // 容器上的拖拽经过事件
+    handleContainerDragOver(event) {
+        // 必须阻止默认行为才能允许 drop
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+
+        // 获取拖拽元素
+        const draggingItem = this._draggingItem;
+        if (!draggingItem) return;
+
+        // 检查鼠标是否在某个页面项上
+        const targetItem = event.target.closest('.page-list-item');
+
+        if (targetItem && targetItem !== draggingItem) {
+            // 如果在某个页面项上,使用原有的 handleDragOver 逻辑
+            this.handleDragOver(event);
+        } else {
+            // 如果在空白区域,计算位置
+            this.clearInsertSpaces();
+
+            const containerRect = this.pageListEl.getBoundingClientRect();
+            const mouseY = event.clientY;
+
+            // 获取所有页面项
+            const items = Array.from(this.pageListEl.querySelectorAll('.page-list-item'));
+            if (items.length === 0) return;
+
+            // 检测是在列表上方还是下方空白区域
+            const firstItemRect = items[0].getBoundingClientRect();
+            const lastItemRect = items[items.length - 1].getBoundingClientRect();
+
+            if (mouseY < firstItemRect.top) {
+                // 在第一个元素上方
+                this.showInsertIndicator(items[0], true);
+            } else if (mouseY > lastItemRect.bottom) {
+                // 在最后一个元素下方
+                this.showInsertIndicator(items[items.length - 1], false);
+            }
+        }
+    },
+
+    // 容器上的放置事件
+    handleContainerDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const draggingItem = this._draggingItem;
+        if (!draggingItem) return;
+
+        // 获取所有页面项
+        const items = Array.from(this.pageListEl.querySelectorAll('.page-list-item'));
+        if (items.length === 0) return;
+
+        const containerRect = this.pageListEl.getBoundingClientRect();
+        const mouseY = event.clientY;
+
+        // 检测是在列表上方还是下方空白区域
+        const firstItemRect = items[0].getBoundingClientRect();
+        const lastItemRect = items[items.length - 1].getBoundingClientRect();
+
+        if (mouseY < firstItemRect.top) {
+            // 插入到第一个元素之前
+            this.pageListEl.insertBefore(draggingItem, items[0]);
+        } else if (mouseY > lastItemRect.bottom) {
+            // 插入到最后一个元素之后
+            this.pageListEl.appendChild(draggingItem);
+        }
+
+        // 清理插入指示器和效果
+        this.hideInsertIndicator();
+        this.clearInsertSpaces();
+        this.clearAllTransforms();
+
+        // 同步数据
+        this.syncPageData();
+
+        console.log('容器拖拽放置完成');
+    },
+
+    // 清理所有插入空间的样式
+    clearInsertSpaces() {
+        const items = this.pageListEl.querySelectorAll('.page-list-item');
+        items.forEach(item => {
+            item.classList.remove('insert-space-before', 'insert-space-after');
+        });
+    },
+
+    // 更新所有页面项的pageIndex
+    updatePageIndex() {
+        const items = this.pageListEl.querySelectorAll('.page-list-item');
+        items.forEach((item, index) => {
+            item.dataset.pageIndex = index;
+        });
+    },
+
+    // 清理所有transform效果
+    clearAllTransforms() {
+        const items = this.pageListEl.querySelectorAll('.page-list-item');
+        items.forEach(item => {
+            item.style.transform = '';
+        });
     },
 
     // 移动页面位置（数组操作）
@@ -503,5 +719,32 @@ const PageManager = {
 
         // 加载当前页面(会恢复usageCount)
         this.switchPage(this.currentPageId);
+    },
+
+    // 创建插入指示器
+    createInsertIndicator() {
+        if (this.insertIndicator) return;
+
+        this.insertIndicator = document.createElement('div');
+        this.insertIndicator.className = 'drag-insert-indicator';
+        this.insertIndicator.style.display = 'none';
+        document.body.appendChild(this.insertIndicator);
+    },
+
+    // 显示插入指示器
+    showInsertIndicator(targetElement, insertBefore = true) {
+        if (!this.insertIndicator) return;
+
+        const rect = targetElement.getBoundingClientRect();
+        this.insertIndicator.style.top = insertBefore ? rect.top : rect.bottom;
+        this.insertIndicator.style.left = rect.left;
+        this.insertIndicator.style.width = rect.width + 'px';
+        this.insertIndicator.style.display = 'block';
+    },
+
+    // 隐藏插入指示器
+    hideInsertIndicator() {
+        if (!this.insertIndicator) return;
+        this.insertIndicator.style.display = 'none';
     }
 };

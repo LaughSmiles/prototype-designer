@@ -159,7 +159,7 @@ const ElementManager = {
 
             // 添加拖拽手柄(顶部标题栏)
             const dragHandle = document.createElement('div');
-            dragHandle.className = 'page-drag-handle';
+            dragHandle.className = 'page-drag-handle canvas-drag-handle';
             const pageName = PageLibrary.getPageName(element.pageId);
             dragHandle.innerHTML = `<i class="fas fa-grip-vertical"></i> ${pageName || '页面'}`;
             div.appendChild(dragHandle);
