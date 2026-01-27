@@ -248,7 +248,14 @@ const CanvasView = {
             } else if (e.button === 0 && Tools.getCurrentTool() === 'select') {
                 // 左键在选择工具模式下点击空白处：开始框选
                 this.isBoxSelecting = true;
-                this.boxSelectionStart = { x: e.clientX, y: e.clientY };
+
+                // 关键修复：转换为canvasWrapper相对坐标
+                // 选择框是canvasWrapper的子元素，需要使用相对坐标定位
+                const wrapperRect = canvasWrapper.getBoundingClientRect();
+                this.boxSelectionStart = {
+                    x: e.clientX - wrapperRect.left,
+                    y: e.clientY - wrapperRect.top
+                };
 
                 // 临时禁用所有iframe的交互，防止框选时鼠标移动被iframe拦截
                 const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
@@ -715,9 +722,16 @@ const CanvasView = {
         const selectionBox = document.getElementById('boxSelection');
         if (!selectionBox) return;
 
-        this.boxSelectionEnd = { x: e.clientX, y: e.clientY };
+        // 关键修复：转换为canvasWrapper相对坐标
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
 
-        // 计算选择框的位置和大小(基于屏幕坐标)
+        this.boxSelectionEnd = {
+            x: e.clientX - wrapperRect.left,
+            y: e.clientY - wrapperRect.top
+        };
+
+        // 计算选择框的位置和大小(基于canvasWrapper相对坐标)
         const x = Math.min(this.boxSelectionStart.x, this.boxSelectionEnd.x);
         const y = Math.min(this.boxSelectionStart.y, this.boxSelectionEnd.y);
         const width = Math.abs(this.boxSelectionEnd.x - this.boxSelectionStart.x);
