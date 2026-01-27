@@ -554,6 +554,15 @@ body {
     font-size: 14px;
 }
 
+/* 状态栏分隔符 */
+.status-bar-divider {
+    width: 1px;
+    height: 24px;
+    background: #ddd;
+    margin: 0 8px;
+    flex-shrink: 0;
+}
+
 /* 右侧页面库 */
 .sidebar-right {
     width: 280px;
