@@ -249,6 +249,13 @@ const CanvasView = {
                 // 左键在选择工具模式下点击空白处：开始框选
                 this.isBoxSelecting = true;
                 this.boxSelectionStart = { x: e.clientX, y: e.clientY };
+
+                // 临时禁用所有iframe的交互，防止框选时鼠标移动被iframe拦截
+                const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+                iframes.forEach(iframe => {
+                    iframe.style.pointerEvents = 'none';
+                });
+
                 // 创建选择框元素
                 this.createBoxSelection();
             } else if (e.button === 1) {
@@ -736,6 +743,13 @@ const CanvasView = {
         // 检查是否有有效的选择区域
         if (selectionBox.style.display === 'none') {
             selectionBox.remove();
+
+            // 恢复所有iframe的交互
+            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'auto';
+            });
+
             return;
         }
 
@@ -769,6 +783,12 @@ const CanvasView = {
 
         // 移除选择框
         selectionBox.remove();
+
+        // 恢复所有iframe的交互
+        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+        iframes.forEach(iframe => {
+            iframe.style.pointerEvents = 'auto';
+        });
 
         // 选中框内的所有元素
         if (selectedElements.length > 0) {
