@@ -768,7 +768,7 @@ const CanvasView = {
             return;
         }
 
-        // 获取选择框的位置和大小(屏幕坐标)
+        // 获取选择框的位置和大小(canvasWrapper相对坐标)
         const boxRect = {
             left: parseFloat(selectionBox.style.left),
             top: parseFloat(selectionBox.style.top),
@@ -776,19 +776,14 @@ const CanvasView = {
             height: parseFloat(selectionBox.style.height)
         };
 
-        // 转换为画布内部坐标
-        const canvasWrapper = document.getElementById('canvasWrapper');
-        const wrapperRect = canvasWrapper.getBoundingClientRect();
         const view = this.getView();
 
-        // 选择框相对于canvas-wrapper的坐标
-        const boxLeft = boxRect.left - wrapperRect.left;
-        const boxTop = boxRect.top - wrapperRect.top;
-
-        // 转换为画布内部坐标(考虑pan和zoom)
+        // 关键修复:选择框已经是canvasWrapper相对坐标
+        // 需要转换为canvas坐标系统(考虑pan和zoom)
+        // canvas坐标 = (canvasWrapper坐标 - pan) / zoom
         const canvasBox = {
-            x: (boxLeft - view.pan.x) / view.zoom,
-            y: (boxTop - view.pan.y) / view.zoom,
+            x: (boxRect.left - view.pan.x) / view.zoom,
+            y: (boxRect.top - view.pan.y) / view.zoom,
             width: boxRect.width / view.zoom,
             height: boxRect.height / view.zoom
         };
