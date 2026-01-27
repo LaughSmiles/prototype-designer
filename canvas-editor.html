@@ -227,6 +227,14 @@
 
         <!-- 中央画布区域 -->
         <main class="canvas-area">
+            <!-- 页面标签栏 -->
+            <div class="page-tabs-bar">
+                <div class="page-tabs-container" id="pageTabsContainer">
+                    <!-- 标签动态生成 -->
+                </div>
+                <button class="new-page-btn" id="newPageBtn" title="新建页面 (Ctrl+T)">+</button>
+            </div>
+
             <!-- 顶部状态栏 -->
             <div class="status-bar">
                 <span id="elementCount">元素: 0</span>
@@ -280,6 +288,7 @@
     <script src="js/element-manager.js"></script>
     <script src="js/tools.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/page-manager.js"></script>
     <script src="js/canvas-editor.js"></script>
 </body>
 </html>

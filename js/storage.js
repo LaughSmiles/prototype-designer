@@ -62,12 +62,13 @@ const Storage = {
 
     // 保存到 localStorage
     save() {
+        // 获取所有页面数据
+        const pagesData = PageManager.getAllPagesData();
+
         const data = {
-            version: '1.0',
+            version: '2.0', // 升级版本号
             timestamp: new Date().toISOString(),
-            view: CanvasView.getView(),
-            elements: ElementManager.getAllElements(),
-            usageCount: ElementManager.getUsageCounts()
+            ...pagesData
         };
 
         try {
@@ -82,12 +83,13 @@ const Storage = {
 
     // 静默保存（不显示提示，用于自动保存）
     saveSilently() {
+        // 获取所有页面数据
+        const pagesData = PageManager.getAllPagesData();
+
         const data = {
-            version: '1.0',
+            version: '2.0',
             timestamp: new Date().toISOString(),
-            view: CanvasView.getView(),
-            elements: ElementManager.getAllElements(),
-            usageCount: ElementManager.getUsageCounts()
+            ...pagesData
         };
 
         try {
@@ -145,19 +147,30 @@ const Storage = {
     loadData(data) {
         if (!data) return;
 
-        // 恢复视图
-        if (data.view) {
-            CanvasView.setView(data.view.zoom, data.view.pan);
-        }
+        // 检测数据版本并迁移
+        if (data.version === '1.0' || (!data.pages && data.elements)) {
+            // 旧数据格式: 单页面,需要迁移
+            console.log('检测到旧数据格式,正在迁移...');
 
-        // 恢复元素
-        if (data.elements) {
-            ElementManager.setAllElements(data.elements);
-        }
+            const migratedData = {
+                pages: [{
+                    id: 'page_1',
+                    name: '页面1',
+                    view: data.view || { zoom: 0.5, pan: { x: 0, y: 0 } },
+                    elements: data.elements || [],
+                    usageCount: data.usageCount || {}
+                }],
+                currentPageId: 'page_1'
+            };
 
-        // 恢复使用计数（如果有的话，兼容旧数据）
-        if (data.usageCount) {
-            ElementManager.setUsageCounts(data.usageCount);
+            PageManager.setPagesData(migratedData);
+            console.log('旧数据已迁移到新格式');
+        } else if (data.version === '2.0' && data.pages) {
+            // 新数据格式: 多页面
+            PageManager.setPagesData(data);
+        } else {
+            // 空数据,创建默认页面
+            PageManager.init();
         }
 
         console.log('数据加载完成:', data);
@@ -165,12 +178,13 @@ const Storage = {
 
     // 导出为 JSON 文件
     export() {
+        // 获取所有页面数据
+        const pagesData = PageManager.getAllPagesData();
+
         const data = {
-            version: '1.0',
+            version: '2.0',
             timestamp: new Date().toISOString(),
-            view: CanvasView.getView(),
-            elements: ElementManager.getAllElements(),
-            usageCount: ElementManager.getUsageCounts()
+            ...pagesData
         };
 
         const jsonStr = JSON.stringify(data, null, 2);

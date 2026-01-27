@@ -53,7 +53,11 @@ const CanvasEditor = {
             Storage.init();
             console.log('✅ 数据持久化初始化完成');
 
-            // 6. 绑定全局快捷键
+            // 6. 页面管理器 (必须在Storage之后,因为需要加载数据)
+            PageManager.init();
+            console.log('✅ 页面管理器初始化完成');
+
+            // 7. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
         } catch (error) {
@@ -88,7 +92,27 @@ const CanvasEditor = {
                 e.preventDefault();
                 CanvasView.zoomReset();
             }
+
+            // Ctrl+T: 新建页面
+            if (e.ctrlKey && e.key === 't') {
+                e.preventDefault();
+                PageManager.createPage();
+            }
+
+            // Ctrl+W: 关闭当前页面
+            if (e.ctrlKey && e.key === 'w') {
+                e.preventDefault();
+                PageManager.deletePage(PageManager.currentPageId);
+            }
         });
+
+        // 绑定新建页面按钮
+        const newPageBtn = document.getElementById('newPageBtn');
+        if (newPageBtn) {
+            newPageBtn.addEventListener('click', () => {
+                PageManager.createPage();
+            });
+        }
     },
 
     // 显示欢迎信息

@@ -212,6 +212,136 @@ body {
     cursor: grabbing;
 }
 
+/* ====== 页面标签栏样式 ====== */
+.page-tabs-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e0e0e0;
+    gap: 8px;
+}
+
+.page-tabs-container {
+    flex: 1;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.page-tabs-container::-webkit-scrollbar {
+    height: 6px;
+}
+
+.page-tabs-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.page-tabs-container::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.page-tabs-container::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+.page-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 100px;
+    max-width: 200px;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.page-tab:hover {
+    background: #f0f0f0;
+    border-color: #bbb;
+}
+
+.page-tab.active {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+.page-tab.active .tab-close {
+    color: white;
+    opacity: 0.8;
+}
+
+.page-tab.active .tab-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.tab-name {
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.tab-close {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.tab-close:hover {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.new-page-btn {
+    background: #27ae60;
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.new-page-btn:hover {
+    background: #229954;
+    transform: scale(1.05);
+}
+
+.new-page-btn:active {
+    transform: scale(0.95);
+}
+
 .canvas {
     /* 虚拟画布尺寸 - 用于居中计算 */
     width: 10000px;
