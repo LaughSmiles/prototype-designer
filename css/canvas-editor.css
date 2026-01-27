@@ -494,20 +494,64 @@ body {
 
 /* 状态栏 */
 .status-bar {
-    height: 30px;
+    height: 44px;
     background: white;
     color: #2c3e50;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 15px;
+    padding: 0 16px;
     font-size: 12px;
-    gap: 20px;
     border-bottom: 2px solid #ddd;
 }
 
-.status-bar span {
+.status-bar-left,
+.status-bar-right {
+    display: flex;
+    gap: 16px;
+    color: #666;
     white-space: nowrap;
+}
+
+.status-bar-center {
+    display: flex;
+    gap: 4px;
+    padding: 0 16px;
+    border-left: 1px solid #e0e0e0;
+    border-right: 1px solid #e0e0e0;
+}
+
+/* 工具图标按钮(小正方形) */
+.tool-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #555;
+    flex-shrink: 0;
+}
+
+.tool-icon-btn:hover {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+    transform: scale(1.1);
+}
+
+.tool-icon-btn.active {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+.tool-icon-btn i {
+    font-size: 14px;
 }
 
 /* 右侧页面库 */

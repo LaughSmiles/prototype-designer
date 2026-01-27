@@ -24,12 +24,14 @@ const Tools = {
 
     // 设置工具按钮
     setupToolButtons() {
-        const buttons = document.querySelectorAll('.tool-btn');
+        const buttons = document.querySelectorAll('.tool-icon-btn');
         buttons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tool = btn.dataset.tool;
-                this.setTool(tool);
-            });
+            const tool = btn.dataset.tool;
+            if (tool) {
+                btn.addEventListener('click', () => {
+                    this.setTool(tool);
+                });
+            }
         });
     },
 
@@ -56,9 +58,10 @@ const Tools = {
         this.noteState = { isAdding: false };
 
         // 更新UI
-        const buttons = document.querySelectorAll('.tool-btn');
+        const buttons = document.querySelectorAll('.tool-icon-btn');
         buttons.forEach(btn => {
-            if (btn.dataset.tool === tool) {
+            const tool = btn.dataset.tool;
+            if (tool && btn.dataset.tool === tool) {
                 btn.classList.add('active');
             } else {
                 btn.classList.remove('active');

@@ -84,7 +84,7 @@
         <!-- 左侧工具栏 -->
         <aside class="sidebar-left">
             <div class="toolbar-header">
-                <h2>工具</h2>
+                <h2>页面</h2>
             </div>
 
             <!-- 页面管理区域 -->
@@ -109,53 +109,6 @@
                         <i class="fas fa-copy"></i>
                     </button>
                 </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="tool-buttons">
-                <button class="tool-btn active" data-tool="select" title="选择工具 (1)">
-                    <i class="fas fa-mouse-pointer"></i>
-                    <span>选择</span>
-                </button>
-                <button class="tool-btn" data-tool="arrow" title="箭头工具 (2)">
-                    <i class="fas fa-arrow-right"></i>
-                    <span>箭头</span>
-                </button>
-                <button class="tool-btn" data-tool="note" title="卡片注释 (3)">
-                    <i class="fas fa-sticky-note"></i>
-                    <span>注释</span>
-                </button>
-            </div>
-            <div class="divider"></div>
-            <div class="action-buttons">
-                <button class="action-btn" id="saveBtn" title="保存到本地 (Ctrl+S)">
-                    <i class="fas fa-save"></i>
-                    <span>保存到浏览器缓存</span>
-                </button>
-                <button class="action-btn action-btn-danger" id="clearCacheBtn" title="清空浏览器缓存">
-                    <i class="fas fa-trash-alt"></i>
-                    <span>清空浏览器缓存</span>
-                </button>
-                <button class="action-btn" id="exportBtn" title="导出JSON">
-                    <i class="fas fa-file-export"></i>
-                    <span>导出文件</span>
-                </button>
-                <button class="action-btn" id="importBtn" title="导入JSON">
-                    <i class="fas fa-file-import"></i>
-                    <span>导入文件</span>
-                </button>
-                <button class="action-btn" id="clearBtn" title="清空画布">
-                    <i class="fas fa-trash"></i>
-                    <span>清空画布</span>
-                </button>
-            </div>
-            <div class="divider"></div>
-            <div class="action-buttons">
-                <button class="action-btn" id="helpBtn" title="使用帮助">
-                    <i class="fas fa-question-circle"></i>
-                    <span>使用帮助</span>
-                </button>
             </div>
         </aside>
 
@@ -256,10 +209,48 @@
         <main class="canvas-area">
             <!-- 顶部状态栏 -->
             <div class="status-bar">
-                <span id="elementCount">元素: 0</span>
-                <span id="selectedInfo">未选择</span>
-                <span id="mousePos">X: 0, Y: 0</span>
-                <span id="zoomDisplay">缩放: 50%</span>
+                <div class="status-bar-left">
+                    <span id="elementCount">元素: 0</span>
+                </div>
+
+                <div class="status-bar-center">
+                    <!-- 工具按钮 -->
+                    <button class="tool-icon-btn active" data-tool="select" title="选择工具 (1)">
+                        <i class="fas fa-mouse-pointer"></i>
+                    </button>
+                    <button class="tool-icon-btn" data-tool="arrow" title="箭头工具 (2)">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button class="tool-icon-btn" data-tool="note" title="注释工具 (3)">
+                        <i class="fas fa-sticky-note"></i>
+                    </button>
+
+                    <!-- 操作按钮 -->
+                    <button class="tool-icon-btn" id="saveBtn" title="保存到本地 (Ctrl+S)">
+                        <i class="fas fa-save"></i>
+                    </button>
+                    <button class="tool-icon-btn" id="clearCacheBtn" title="清空浏览器缓存">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                    <button class="tool-icon-btn" id="exportBtn" title="导出JSON (Ctrl+E)">
+                        <i class="fas fa-file-export"></i>
+                    </button>
+                    <button class="tool-icon-btn" id="importBtn" title="导入JSON (Ctrl+I)">
+                        <i class="fas fa-file-import"></i>
+                    </button>
+                    <button class="tool-icon-btn" id="clearBtn" title="清空画布">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="tool-icon-btn" id="helpBtn" title="使用帮助">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+
+                <div class="status-bar-right">
+                    <span id="selectedInfo">未选择</span>
+                    <span id="mousePos">X: 0, Y: 0</span>
+                    <span id="zoomDisplay">缩放: 50%</span>
+                </div>
             </div>
 
             <div class="canvas-wrapper" id="canvasWrapper">
