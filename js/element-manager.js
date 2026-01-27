@@ -175,56 +175,6 @@ const ElementManager = {
             iframe.style.overflow = 'auto'; // 启用滚动
             iframe.style.pointerEvents = 'auto'; // 允许iframe内交互
 
-            // 添加沙箱属性，限制iframe的某些行为
-            // 注意：由于是同域页面，可以使用allow-scripts等权限
-            iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals');
-
-            // 防止iframe内部的缩放行为
-            iframe.setAttribute('allowfullscreen', 'false');
-
-            // 在iframe加载完成后，注入脚本阻止内部的缩放行为
-            iframe.addEventListener('load', function() {
-                try {
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-
-                    // 向iframe内部注入滚轮事件阻止脚本
-                    const script = iframeDoc.createElement('script');
-                    script.textContent = `
-                        // 阻止iframe内部的浏览器缩放
-                        document.addEventListener('wheel', function(e) {
-                            if (e.ctrlKey) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.stopImmediatePropagation();
-                                return false;
-                            }
-                        }, { passive: false });
-
-                        // 阻止iframe内部的键盘缩放快捷键
-                        document.addEventListener('keydown', function(e) {
-                            if (e.ctrlKey && (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '0')) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.stopImmediatePropagation();
-                                return false;
-                            }
-                        }, true);
-
-                        // 阻止触摸手势缩放
-                        document.addEventListener('touchmove', function(e) {
-                            if (e.scale && e.scale !== 1) {
-                                e.preventDefault();
-                                return false;
-                            }
-                        }, { passive: false });
-                    `;
-                    iframeDoc.head.appendChild(script);
-                } catch (err) {
-                    // 跨域iframe无法访问，但已通过sandbox限制
-                    console.log('无法注入iframe脚本（可能是跨域限制）');
-                }
-            });
-
             div.appendChild(iframe);
 
         } else if (element.type === 'arrow') {
@@ -533,11 +483,11 @@ const ElementManager = {
             }
 
             // 快捷键切换工具
-            if (e.key === 's' && !e.ctrlKey) {
+            if (e.key === '1' && !e.ctrlKey) {
                 Tools.setTool('select');
-            } else if (e.key === 'a' && !e.ctrlKey) {
+            } else if (e.key === '2' && !e.ctrlKey) {
                 Tools.setTool('arrow');
-            } else if (e.key === 'n' && !e.ctrlKey) {
+            } else if (e.key === '3' && !e.ctrlKey) {
                 Tools.setTool('note');
             }
         });

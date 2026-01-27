@@ -33,8 +33,8 @@ const CanvasEditor = {
     // 初始化所有模块
     async initModules() {
         try {
-            // 1. 页面库
-            PageLibrary.init();
+            // 1. 页面库 (必须等待加载完成,因为其他模块依赖它)
+            await PageLibrary.init();
             console.log('✅ 页面库初始化完成');
 
             // 2. 画布视图
@@ -49,7 +49,7 @@ const CanvasEditor = {
             Tools.init();
             console.log('✅ 工具系统初始化完成');
 
-            // 5. 数据持久化
+            // 5. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
             Storage.init();
             console.log('✅ 数据持久化初始化完成');
 
@@ -138,9 +138,9 @@ const CanvasEditor = {
 - Esc：取消选择
 
 工具切换：
-- S：选择工具
-- A：箭头工具
-- T：文字工具
+- 1：选择工具
+- 2：箭头工具
+- 3：注释工具
 
 数据操作：
 - Ctrl + S：保存到本地
