@@ -191,6 +191,42 @@ const ElementManager = {
 
             div.appendChild(iframe);
 
+            // 在 iframe 加载完成后,禁止 Ctrl+滚轮 的浏览器默认缩放行为
+            iframe.addEventListener('load', () => {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                    iframeDoc.addEventListener('wheel', (e) => {
+                        if (e.ctrlKey) {
+                            // 阻止浏览器默认缩放行为
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            // 将事件重新分发到父文档,让画布能够正常缩放
+                            const newEvent = new WheelEvent('wheel', {
+                                deltaX: e.deltaX,
+                                deltaY: e.deltaY,
+                                deltaZ: e.deltaZ,
+                                deltaMode: e.deltaMode,
+                                ctrlKey: e.ctrlKey,
+                                shiftKey: e.shiftKey,
+                                altKey: e.altKey,
+                                metaKey: e.metaKey,
+                                bubbles: true,
+                                cancelable: true
+                            });
+
+                            // 在 iframe 元素上分发事件,让它冒泡到父文档
+                            iframe.dispatchEvent(newEvent);
+                        }
+                    }, { passive: false }); // 必须使用 passive: false 才能调用 preventDefault()
+
+                    console.log('✅ iframe缩放保护已启用');
+                } catch (error) {
+                    console.warn('⚠️ 无法访问iframe内部(跨域限制):', error);
+                }
+            });
+
             // 添加右键菜单事件
             div.addEventListener('contextmenu', (e) => {
                 e.preventDefault(); // 阻止浏览器默认右键菜单
