@@ -625,6 +625,68 @@ body {
     font-size: 14px;
 }
 
+/* 操作按钮样式 */
+.tool-icon-btn.action-btn {
+    background: #e8f4fd;
+    border-color: #3498db;
+    color: #2980b9;
+}
+
+.tool-icon-btn.action-btn:hover {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+/* 特定按钮颜色 */
+#saveBtn {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+#saveBtn:hover {
+    background: #28a745;
+    color: white;
+}
+
+#clearBtn,
+#clearCacheBtn {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+#clearBtn:hover,
+#clearCacheBtn:hover {
+    background: #dc3545;
+    color: white;
+}
+
+#exportBtn,
+#importBtn {
+    background: #d1ecf1;
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+#exportBtn:hover,
+#importBtn:hover {
+    background: #17a2b8;
+    color: white;
+}
+
+#helpBtn {
+    background: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+#helpBtn:hover {
+    background: #ffc107;
+    color: white;
+}
+
 /* 状态栏分隔符 */
 .status-bar-divider {
     width: 1px;
