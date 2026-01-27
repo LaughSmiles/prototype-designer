@@ -9,6 +9,7 @@ const Storage = {
     init() {
         this.setupEventListeners();
         this.loadAuto(); // 自动加载上次保存的数据
+        this.startAutoSave(); // 启动自动保存定时器
     },
 
     // 设置事件监听器
@@ -72,6 +73,33 @@ const Storage = {
             console.error('保存失败:', error);
             alert('保存失败：' + error.message);
         }
+    },
+
+    // 静默保存（不显示提示，用于自动保存）
+    saveSilently() {
+        const data = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            view: CanvasView.getView(),
+            elements: ElementManager.getAllElements(),
+            usageCount: ElementManager.getUsageCounts()
+        };
+
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+            console.log('自动保存成功:', new Date().toLocaleTimeString());
+        } catch (error) {
+            console.error('自动保存失败:', error);
+        }
+    },
+
+    // 启动自动保存定时器（每1分钟自动保存）
+    startAutoSave() {
+        setInterval(() => {
+            this.saveSilently();
+        }, 60000); // 60000毫秒 = 1分钟
+
+        console.log('✅ 自动保存已启动，每1分钟保存一次');
     },
 
     // 自动加载（页面加载时）
