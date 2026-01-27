@@ -274,6 +274,9 @@ const ElementManager = {
             div.style.height = `${element.height}px`;
             div.classList.add('note-element');
 
+            // 关键修复：让div响应鼠标事件,确保注释在iframe上方时能被点击和编辑
+            div.style.pointerEvents = 'auto';
+
             // 卡片内容容器
             const contentDiv = document.createElement('div');
             contentDiv.className = 'note-content';
