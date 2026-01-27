@@ -557,7 +557,7 @@ body {
 /* 状态栏分隔符 */
 .status-bar-divider {
     width: 1px;
-    height: 24px;
+    height: 36px;
     background: #ddd;
     margin: 0 8px;
     flex-shrink: 0;
