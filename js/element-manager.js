@@ -329,6 +329,21 @@ const ElementManager = {
                 resizeHandle.dataset.elementId = element.id;
                 div.appendChild(resizeHandle);
             });
+
+            // 添加点击选中事件
+            div.addEventListener('click', (e) => {
+                // 如果点击的是可编辑内容区域,不触发选中(让用户正常编辑)
+                if (e.target.classList.contains('note-content')) {
+                    return;
+                }
+                // 如果点击的是删除按钮,不触发选中(删除按钮有自己的逻辑)
+                if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
+                    return;
+                }
+
+                e.stopPropagation();
+                this.selectElement(element.id);
+            });
         }
 
         // 添加删除按钮
