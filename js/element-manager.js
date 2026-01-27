@@ -5,7 +5,8 @@ const ElementManager = {
     // 画布状态
     state: {
         elements: [],
-        selectedElement: null,
+        selectedElement: null,  // 单选时的选中元素(向后兼容)
+        selectedElements: [],   // 多选时的选中元素数组
         nextId: 1,
         // 页面使用计数器
         usageCount: {}
@@ -351,15 +352,23 @@ const ElementManager = {
     },
 
     // 选中元素
-    selectElement(id) {
-        // 移除之前的选中状态
-        this.deselectElement();
-
+    selectElement(id, addToSelection = false) {
         const element = this.getElement(id);
         if (!element) return;
 
-        this.state.selectedElement = id;
+        if (addToSelection) {
+            // 添加到多选(如果还未选中)
+            if (!this.state.selectedElements.includes(id)) {
+                this.state.selectedElements.push(id);
+            }
+        } else {
+            // 单选模式:先清除所有选择
+            this.deselectElement();
+            this.state.selectedElement = id;
+            this.state.selectedElements = [id];
+        }
 
+        // 添加选中样式
         const div = document.querySelector(`[data-element-id="${id}"]`);
         if (div) {
             div.classList.add('selected');
@@ -369,15 +378,35 @@ const ElementManager = {
     },
 
     // 取消选中
-    deselectElement() {
-        if (this.state.selectedElement) {
-            const div = document.querySelector(`[data-element-id="${this.state.selectedElement}"]`);
+    deselectElement(id = null) {
+        if (id) {
+            // 取消指定元素的选中状态
+            const index = this.state.selectedElements.indexOf(id);
+            if (index > -1) {
+                this.state.selectedElements.splice(index, 1);
+            }
+
+            if (this.state.selectedElement === id) {
+                this.state.selectedElement = null;
+            }
+
+            const div = document.querySelector(`[data-element-id="${id}"]`);
             if (div) {
                 div.classList.remove('selected');
             }
+        } else {
+            // 取消所有选中状态
+            this.state.selectedElements.forEach(elementId => {
+                const div = document.querySelector(`[data-element-id="${elementId}"]`);
+                if (div) {
+                    div.classList.remove('selected');
+                }
+            });
+            this.state.selectedElements = [];
             this.state.selectedElement = null;
-            this.updateStatusBar();
         }
+
+        this.updateStatusBar();
     },
 
     // 更新元素位置
@@ -482,9 +511,17 @@ const ElementManager = {
     // 设置键盘事件
     setupKeyboardEvents() {
         document.addEventListener('keydown', (e) => {
-            // Delete 键：删除选中元素
-            if (e.key === 'Delete' && this.state.selectedElement) {
-                this.deleteElement(this.state.selectedElement);
+            // Delete 键：删除选中元素(支持多选)
+            if (e.key === 'Delete') {
+                if (this.state.selectedElements.length > 0) {
+                    // 删除所有选中的元素
+                    const idsToDelete = [...this.state.selectedElements];
+                    idsToDelete.forEach(id => this.deleteElement(id));
+                    PageLibrary.showHint(`已删除 ${idsToDelete.length} 个元素`);
+                } else if (this.state.selectedElement) {
+                    // 兼容旧的单选逻辑
+                    this.deleteElement(this.state.selectedElement);
+                }
             }
 
             // Esc 键：取消选择

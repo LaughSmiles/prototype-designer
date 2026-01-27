@@ -260,6 +260,7 @@ body {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10; /* 页面元素在底层 */
 }
 
 .canvas-element.page-element iframe {
@@ -281,6 +282,7 @@ body {
 .canvas-element.arrow-element {
     background: transparent;
     border: none;
+    z-index: 100; /* 箭头元素在页面之上 */
 }
 
 .canvas-element.text-element {
@@ -292,6 +294,7 @@ body {
     font-size: 16px;
     color: #2c3e50;
     word-wrap: break-word;
+    z-index: 50; /* 文本元素在页面和箭头之间 */
 }
 
 /* 拖拽手柄 - 用于页面元素 */
@@ -752,6 +755,15 @@ body {
 
 .canvas-element.note-element.selected .note-size-display {
     opacity: 1;
+}
+
+/* ====== 框选矩形样式 ====== */
+.box-selection {
+    position: absolute;
+    border: 2px dashed #3498db;
+    background-color: rgba(52, 152, 219, 0.1);
+    pointer-events: none;
+    z-index: 999;
 }
 
 /* ====== 虚拟滚动条样式 ====== */

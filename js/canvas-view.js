@@ -25,6 +25,11 @@ const CanvasView = {
     resizeStartSize: { width: 0, height: 0 },
     resizeStartPos: { x: 0, y: 0 },
 
+    // 框选状态
+    isBoxSelecting: false,
+    boxSelectionStart: { x: 0, y: 0 },
+    boxSelectionEnd: { x: 0, y: 0 },
+
     // 缩放限制
     MIN_ZOOM: 0.1,
     MAX_ZOOM: 5.0,
@@ -209,8 +214,12 @@ const CanvasView = {
                 // 选中元素
                 ElementManager.selectElement(targetElementId);
 
-                // 只有点击拖拽手柄时才开始拖拽元素
-                if (e.button === 0 && isDragHandle) {
+                // 判断元素类型
+                const element = ElementManager.getElement(targetElementId);
+                const isArrow = element && element.type === 'arrow';
+
+                // 对于箭头:点击任意位置可拖拽;对于其他元素:只点击拖拽手柄时可拖拽
+                if (e.button === 0 && (isArrow || isDragHandle)) {
                     this.isDraggingElement = true;
                     this.draggedElement = targetElement;
 
@@ -236,6 +245,12 @@ const CanvasView = {
                     e.preventDefault(); // 防止影响iframe
                     e.stopPropagation(); // 防止事件冒泡
                 }
+            } else if (e.button === 0 && Tools.getCurrentTool() === 'select') {
+                // 左键在选择工具模式下点击空白处：开始框选
+                this.isBoxSelecting = true;
+                this.boxSelectionStart = { x: e.clientX, y: e.clientY };
+                // 创建选择框元素
+                this.createBoxSelection();
             } else if (e.button === 1) {
                 // 中键（且未点击元素）：拖动视图
                 this.isPanning = true;
@@ -264,61 +279,75 @@ const CanvasView = {
                 this.startPan = { x: e.clientX, y: e.clientY };
                 this.updateView();
             } else if (this.isDraggingElement && this.draggedElement) {
-                // 拖动元素
+                // 拖动元素(支持多选)
                 const dx = e.movementX / this.state.zoom;
                 const dy = e.movementY / this.state.zoom;
 
-                const element = ElementManager.getElement(this.draggedElement.dataset.elementId);
-                if (element) {
-                    // 计算新的位置
-                    let newX = element.position.x + dx;
-                    let newY = element.position.y + dy;
+                // 获取所有选中的元素
+                const selectedElements = ElementManager.state.selectedElements;
+                const elementsToMove = selectedElements.length > 0
+                    ? selectedElements.map(id => ElementManager.getElement(id)).filter(e => e)
+                    : [ElementManager.getElement(this.draggedElement.dataset.elementId)];
 
-                    // 获取当前元素的位置信息
-                    const currentBounds = {
-                        left: newX,
-                        top: newY,
-                        right: newX + element.width,
-                        bottom: newY + element.height,
-                        width: element.width,
-                        height: element.height
-                    };
+                if (elementsToMove.length > 0) {
+                    elementsToMove.forEach(element => {
+                        // 计算新的位置
+                        let newX = element.position.x + dx;
+                        let newY = element.position.y + dy;
 
-                    // 检测对齐关系
-                    const alignments = alignmentManager.checkAlignment(currentBounds, this.allElementBounds);
+                        // 获取当前元素的位置信息
+                        const currentBounds = {
+                            left: newX,
+                            top: newY,
+                            right: newX + element.width,
+                            bottom: newY + element.height,
+                            width: element.width,
+                            height: element.height
+                        };
 
-                    // 如果检测到对齐，吸附到对齐位置
-                    if (alignments.length > 0) {
-                        const snapped = alignmentManager.snapToAlignment(
-                            newX,
-                            newY,
-                            element.width,
-                            element.height,
-                            alignments
-                        );
-                        newX = snapped.x;
-                        newY = snapped.y;
+                        // 检测对齐关系
+                        const alignments = alignmentManager.checkAlignment(currentBounds, this.allElementBounds);
 
-                        // 显示辅助线
-                        alignmentManager.updateGuides(alignments);
-                    } else {
-                        // 没有对齐时清除辅助线
-                        alignmentManager.clearGuideLines();
-                    }
+                        // 如果检测到对齐，吸附到对齐位置
+                        if (alignments.length > 0) {
+                            const snapped = alignmentManager.snapToAlignment(
+                                newX,
+                                newY,
+                                element.width,
+                                element.height,
+                                alignments
+                            );
+                            newX = snapped.x;
+                            newY = snapped.y;
 
-                    // 更新元素位置
-                    element.position.x = newX;
-                    element.position.y = newY;
-                    ElementManager.updateElementPosition(this.draggedElement, element);
+                            // 显示辅助线
+                            alignmentManager.updateGuides(alignments);
+                        } else {
+                            // 没有对齐时清除辅助线
+                            alignmentManager.clearGuideLines();
+                        }
 
-                    // 如果是页面元素，更新相关的连接线
-                    if (element.type === 'page') {
-                        ElementManager.updateConnectionsForElement(element.id);
-                    }
+                        // 更新元素位置
+                        element.position.x = newX;
+                        element.position.y = newY;
+
+                        const div = document.querySelector(`[data-element-id="${element.id}"]`);
+                        if (div) {
+                            ElementManager.updateElementPosition(div, element);
+                        }
+
+                        // 如果是页面元素，更新相关的连接线
+                        if (element.type === 'page') {
+                            ElementManager.updateConnectionsForElement(element.id);
+                        }
+                    });
                 }
             } else if (this.isResizingNote && this.resizingNote) {
                 // 调整卡片大小
                 this.handleNoteResize(e);
+            } else if (this.isBoxSelecting) {
+                // 更新框选
+                this.updateBoxSelection(e);
             }
         });
 
@@ -347,6 +376,11 @@ const CanvasView = {
                 this.isResizingNote = false;
                 this.resizingNote = null;
                 this.resizeCorner = null;
+            }
+            if (this.isBoxSelecting) {
+                // 完成框选
+                this.isBoxSelecting = false;
+                this.finishBoxSelection();
             }
         });
 
@@ -648,5 +682,138 @@ const CanvasView = {
         if (sizeDisplay) {
             sizeDisplay.textContent = `${Math.round(newWidth)}×${Math.round(newHeight)}`;
         }
+    },
+
+    // 创建框选矩形
+    createBoxSelection() {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        // 创建选择框div
+        const selectionBox = document.createElement('div');
+        selectionBox.id = 'boxSelection';
+        selectionBox.className = 'box-selection';
+        selectionBox.style.position = 'absolute';
+        selectionBox.style.border = '2px dashed #3498db';
+        selectionBox.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+        selectionBox.style.pointerEvents = 'none'; // 不拦截鼠标事件
+        selectionBox.style.zIndex = '999';
+        selectionBox.style.display = 'none';
+
+        canvasWrapper.appendChild(selectionBox);
+    },
+
+    // 更新框选矩形
+    updateBoxSelection(e) {
+        const selectionBox = document.getElementById('boxSelection');
+        if (!selectionBox) return;
+
+        this.boxSelectionEnd = { x: e.clientX, y: e.clientY };
+
+        // 计算选择框的位置和大小(基于屏幕坐标)
+        const x = Math.min(this.boxSelectionStart.x, this.boxSelectionEnd.x);
+        const y = Math.min(this.boxSelectionStart.y, this.boxSelectionEnd.y);
+        const width = Math.abs(this.boxSelectionEnd.x - this.boxSelectionStart.x);
+        const height = Math.abs(this.boxSelectionEnd.y - this.boxSelectionStart.y);
+
+        // 只有当拖动距离超过5px时才显示选择框
+        if (width > 5 || height > 5) {
+            selectionBox.style.display = 'block';
+            selectionBox.style.left = `${x}px`;
+            selectionBox.style.top = `${y}px`;
+            selectionBox.style.width = `${width}px`;
+            selectionBox.style.height = `${height}px`;
+        } else {
+            selectionBox.style.display = 'none';
+        }
+    },
+
+    // 完成框选
+    finishBoxSelection() {
+        const selectionBox = document.getElementById('boxSelection');
+        if (!selectionBox) return;
+
+        // 检查是否有有效的选择区域
+        if (selectionBox.style.display === 'none') {
+            selectionBox.remove();
+            return;
+        }
+
+        // 获取选择框的位置和大小(屏幕坐标)
+        const boxRect = {
+            left: parseFloat(selectionBox.style.left),
+            top: parseFloat(selectionBox.style.top),
+            width: parseFloat(selectionBox.style.width),
+            height: parseFloat(selectionBox.style.height)
+        };
+
+        // 转换为画布内部坐标
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        const view = this.getView();
+
+        // 选择框相对于canvas-wrapper的坐标
+        const boxLeft = boxRect.left - wrapperRect.left;
+        const boxTop = boxRect.top - wrapperRect.top;
+
+        // 转换为画布内部坐标(考虑pan和zoom)
+        const canvasBox = {
+            x: (boxLeft - view.pan.x) / view.zoom,
+            y: (boxTop - view.pan.y) / view.zoom,
+            width: boxRect.width / view.zoom,
+            height: boxRect.height / view.zoom
+        };
+
+        // 选择框内的所有元素
+        const selectedElements = this.getElementsInBox(canvasBox);
+
+        // 移除选择框
+        selectionBox.remove();
+
+        // 选中框内的所有元素
+        if (selectedElements.length > 0) {
+            ElementManager.deselectElement(); // 先清除之前的选择
+            selectedElements.forEach((element, index) => {
+                ElementManager.selectElement(element.id, index > 0); // 第一个直接选中,后续的添加到多选
+            });
+            PageLibrary.showHint(`已选中 ${selectedElements.length} 个元素`);
+        }
+    },
+
+    // 获取选择框内的所有元素
+    getElementsInBox(box) {
+        const elements = ElementManager.state.elements;
+        const selected = [];
+
+        elements.forEach(element => {
+            if (this.isElementInBox(element, box)) {
+                selected.push(element);
+            }
+        });
+
+        return selected;
+    },
+
+    // 判断元素是否在选择框内
+    isElementInBox(element, box) {
+        // 元素的边界
+        const elemLeft = element.position.x;
+        const elemTop = element.position.y;
+        const elemRight = elemLeft + element.width;
+        const elemBottom = elemTop + element.height;
+
+        // 选择框的边界
+        const boxLeft = box.x;
+        const boxTop = box.y;
+        const boxRight = boxLeft + box.width;
+        const boxBottom = boxTop + box.height;
+
+        // 判断是否有交集(元素任何部分在选择框内)
+        return !(
+            elemRight < boxLeft ||
+            elemLeft > boxRight ||
+            elemBottom < boxTop ||
+            elemTop > boxBottom
+        );
     }
 };
