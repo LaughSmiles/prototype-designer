@@ -250,7 +250,9 @@ const ElementManager = {
             marker.setAttribute('orient', 'auto');
 
             const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-            polygon.setAttribute('points', '0 0, 10 3, 0 6');
+            // 关键修复：箭头头部应该指向右侧(正X轴方向)
+            // 尖端在(10,3),底边在左侧,orient='auto'会自动旋转指向正确方向
+            polygon.setAttribute('points', '10 3, 0 0, 0 6');
             polygon.setAttribute('fill', '#e74c3c');
 
             marker.appendChild(polygon);
