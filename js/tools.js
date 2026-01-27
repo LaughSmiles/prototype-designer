@@ -292,12 +292,24 @@ const Tools = {
         const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
         const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
 
+        // 临时禁用所有iframe的交互，防止点击时触发iframe事件
+        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+        iframes.forEach(iframe => {
+            iframe.style.pointerEvents = 'none';
+        });
+
         // 直接创建空白卡片,不需要弹窗
         const elementId = ElementManager.addNoteElement('', x, y);
 
-        // 自动聚焦到内容区域并选中文字
+        // 自动聚焦到内容区域并选中文字,同时恢复iframe交互
         setTimeout(() => {
             ElementManager.focusNoteContent(elementId);
+
+            // 恢复所有iframe的交互
+            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'auto';
+            });
         }, 0);
 
         // 切换回选择工具
