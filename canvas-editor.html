@@ -123,85 +123,186 @@
                     <button class="help-modal-close" id="helpModalClose">&times;</button>
                 </div>
                 <div class="help-modal-body">
-                    <div class="help-section">
-                        <h3><i class="fas fa-keyboard"></i> 快捷键</h3>
-                        <div class="help-grid">
-                            <div class="help-item">
-                                <kbd>1</kbd>
-                                <span>选择工具</span>
+                    <!-- Tab 导航 -->
+                    <div class="help-tabs">
+                        <button class="help-tab active" data-tab="shortcuts">快捷键</button>
+                        <button class="help-tab" data-tab="basic">基础操作</button>
+                        <button class="help-tab" data-tab="advanced">高级功能</button>
+                        <button class="help-tab" data-tab="faq">常见问题</button>
+                    </div>
+
+                    <!-- Tab 内容 -->
+                    <div class="help-tab-content">
+                        <!-- 快捷键 Tab -->
+                        <div class="help-tab-pane active" id="tab-shortcuts">
+                            <div class="help-section">
+                                <h3><i class="fas fa-tools"></i> 工具切换</h3>
+                                <div class="help-grid">
+                                    <div class="help-item"><kbd>1</kbd><span>选择工具</span></div>
+                                    <div class="help-item"><kbd>2</kbd><span>箭头工具</span></div>
+                                    <div class="help-item"><kbd>3</kbd><span>卡片注释工具</span></div>
+                                </div>
                             </div>
-                            <div class="help-item">
-                                <kbd>2</kbd>
-                                <span>箭头工具</span>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-arrows-alt"></i> 视图操作</h3>
+                                <div class="help-grid">
+                                    <div class="help-item"><kbd>空格</kbd><span>缩放50%并居中</span></div>
+                                    <div class="help-item"><kbd>滚轮</kbd><span>移动视图</span></div>
+                                    <div class="help-item"><kbd>Ctrl</kbd>+<kbd>滚轮</kbd><span>缩放视图</span></div>
+                                </div>
                             </div>
-                            <div class="help-item">
-                                <kbd>3</kbd>
-                                <span>卡片注释工具</span>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-edit"></i> 元素操作</h3>
+                                <div class="help-grid">
+                                    <div class="help-item"><kbd>Delete</kbd><span>删除选中元素</span></div>
+                                    <div class="help-item"><kbd>Esc</kbd><span>取消选择</span></div>
+                                </div>
                             </div>
-                            <div class="help-item">
-                                <kbd>空格</kbd>
-                                <span>缩放50%并居中</span>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-history"></i> 撤销/重做</h3>
+                                <div class="help-grid">
+                                    <div class="help-item"><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>撤销</span></div>
+                                    <div class="help-item"><kbd>Ctrl</kbd>+<kbd>Y</kbd><span>重做</span></div>
+                                    <div class="help-item"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd><span>重做</span></div>
+                                </div>
                             </div>
-                            <div class="help-item">
-                                <kbd>Delete</kbd>
-                                <span>删除选中元素</span>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-file"></i> 文件操作</h3>
+                                <div class="help-grid">
+                                    <div class="help-item"><kbd>Ctrl</kbd>+<kbd>S</kbd><span>保存到缓存</span></div>
+                                </div>
                             </div>
-                            <div class="help-item">
-                                <kbd>Esc</kbd>
-                                <span>取消选择</span>
+
+                        </div>
+
+                        <!-- 基础操作 Tab -->
+                        <div class="help-tab-pane" id="tab-basic">
+                            <div class="help-section">
+                                <h3><i class="fas fa-plus-circle"></i> 添加元素</h3>
+                                <ul class="help-list">
+                                    <li><strong>添加页面</strong>: 从右侧页面库拖拽页面到画布</li>
+                                    <li><strong>绘制箭头</strong>: 选择箭头工具,点击起点和终点</li>
+                                    <li><strong>添加注释</strong>: 选择注释工具,点击画布任意位置</li>
+                                </ul>
                             </div>
-                            <div class="help-item">
-                                <kbd>滚轮</kbd>
-                                <span>移动视图</span>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-arrows-alt"></i> 移动和调整</h3>
+                                <ul class="help-list">
+                                    <li><strong>移动页面元素</strong>: 点击拖拽顶部标题栏手柄</li>
+                                    <li><strong>调整注释大小</strong>: 拖拽注释卡片的四角手柄</li>
+                                </ul>
                             </div>
-                            <div class="help-item">
-                                <kbd>Ctrl</kbd> + <kbd>滚轮</kbd>
-                                <span>缩放视图</span>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-mouse-pointer"></i> 选择和删除</h3>
+                                <ul class="help-list">
+                                    <li><strong>选中元素</strong>: 点击元素即可选中</li>
+                                    <li><strong>框选多个</strong>: 选择工具下,在空白处拖拽框选</li>
+                                    <li><strong>删除元素</strong>: 选中后按 Delete 键或点击 × 按钮</li>
+                                    <li><strong>取消选择</strong>: 按 Esc 键或点击空白区域</li>
+                                </ul>
                             </div>
-                            <div class="help-item">
-                                <kbd>Ctrl</kbd> + <kbd>S</kbd>
-                                <span>保存到缓存</span>
-                            </div>
-                            <div class="help-item">
-                                <kbd>Ctrl</kbd> + <kbd>E</kbd>
-                                <span>导出文件</span>
-                            </div>
-                            <div class="help-item">
-                                <kbd>Ctrl</kbd> + <kbd>I</kbd>
-                                <span>导入文件</span>
-                            </div>
-                            <div class="help-item">
-                                <kbd>Ctrl</kbd> + <kbd>0</kbd>
-                                <span>重置视图</span>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-eye"></i> 视图控制</h3>
+                                <ul class="help-list">
+                                    <li><strong>移动视图</strong>: 鼠标滚轮滚动</li>
+                                    <li><strong>缩放视图</strong>: Ctrl + 滚轮</li>
+                                    <li><strong>快速居中</strong>: 按空格键</li>
+                                </ul>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="help-section">
-                        <h3><i class="fas fa-mouse-pointer"></i> 操作说明</h3>
-                        <ul class="help-list">
-                            <li><strong>添加页面</strong>: 从右侧页面库拖拽页面到画布</li>
-                            <li><strong>移动元素</strong>: 点击拖拽手柄(顶部标题栏)移动</li>
-                            <li><strong>缩放元素</strong>: 选中元素 + Ctrl + 滚轮</li>
-                            <li><strong>绘制箭头</strong>: 选择箭头工具,点击起点和终点</li>
-                            <li><strong>添加注释</strong>: 选择注释工具,点击画布任意位置</li>
-                            <li><strong>编辑注释</strong>: 点击注释内容区域,输入文字</li>
-                            <li><strong>调整注释大小</strong>: 拖拽注释卡片的四角手柄</li>
-                            <li><strong>框选多个元素</strong>: 选择工具下,在空白处拖拽</li>
-                            <li><strong>删除元素</strong>: 选中后按Delete键或点击×按钮</li>
-                            <li><strong>右键菜单</strong>: 页面元素右键可打开页面预览</li>
-                        </ul>
-                    </div>
+                        <!-- 高级功能 Tab -->
+                        <div class="help-tab-pane" id="tab-advanced">
+                            <div class="help-section">
+                                <h3><i class="fas fa-layer-group"></i> 多页面管理</h3>
+                                <ul class="help-list">
+                                    <li><strong>新建页面</strong>: 点击底部"新建页面"按钮</li>
+                                    <li><strong>切换页面</strong>: 点击底部的页面标签切换</li>
+                                    <li><strong>排序页面</strong>: 拖拽底部页面标签调整顺序</li>
+                                    <li><strong>删除页面</strong>: 点击页面标签上的 ×</li>
+                                    <li><strong>独立使用计数</strong>: 每个页面独立统计元素使用次数</li>
+                                </ul>
+                            </div>
 
-                    <div class="help-section">
-                        <h3><i class="fas fa-exclamation-triangle"></i> 注意事项</h3>
-                        <ul class="help-list">
-                            <li><strong>浏览器缩放已禁用</strong>: 本页面禁用浏览器的缩放功能</li>
-                            <li><strong>画布缩放范围</strong>: 0.1x - 5x</li>
-                            <li><strong>自动保存</strong>: 每1分钟自动保存到浏览器缓存</li>
-                            <li><strong>页面滚动</strong>: 在页面iframe内可直接滚动查看内容</li>
-                            <li><strong>拖拽手柄</strong>: 必须通过顶部标题栏手柄才能拖拽页面元素</li>
-                        </ul>
+                            <div class="help-section">
+                                <h3><i class="fas fa-folder"></i> 页面库功能</h3>
+                                <ul class="help-list">
+                                    <li><strong>分类折叠</strong>: 点击分类标题可折叠/展开页面列表</li>
+                                    <li><strong>分类排序</strong>: 拖拽分类标题调整分类顺序</li>
+                                    <li><strong>批量添加</strong>: 点击分类标题右侧的"+"按钮可批量添加该分类所有页面</li>
+                                    <li><strong>使用计数徽章</strong>: 显示每个页面在当前页面中的使用次数</li>
+                                </ul>
+                            </div>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-mouse"></i> 右键菜单</h3>
+                                <ul class="help-list">
+                                    <li><strong>复制文件路径</strong>: 右键点击页面元素,可复制页面文件路径</li>
+                                    <li><strong>保存长截图</strong>: 右键点击页面元素,可将整个页面(包括滚动部分)保存为高清PNG图片</li>
+                                </ul>
+                            </div>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-history"></i> 撤销/重做</h3>
+                                <ul class="help-list">
+                                    <li><strong>支持的操作</strong>: 添加/删除/移动元素、页面排序、注释编辑等</li>
+                                    <li><strong>历史记录数</strong>: 最多保存50步操作历史</li>
+                                    <li><strong>智能恢复</strong>: 撤销时智能复用DOM,避免iframe刷新</li>
+                                </ul>
+                            </div>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-edit"></i> 注释编辑技巧</h3>
+                                <ul class="help-list">
+                                    <li><strong>输入内容</strong>: 点击注释内容区域即可输入文字</li>
+                                    <li><strong>调整大小</strong>: 拖拽四角手柄可自由调整卡片尺寸</li>
+                                    <li><strong>支持数字</strong>: 注释中可以正常输入数字,不会触发工具切换</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- 常见问题 Tab -->
+                        <div class="help-tab-pane" id="tab-faq">
+                            <div class="help-section">
+                                <h3><i class="fas fa-question-circle"></i> 常见问题</h3>
+                                <ul class="help-list">
+                                    <li><strong>Q: 为什么在页面内按 Ctrl+滚轮没有缩放画布?</strong><br>
+                                        A: 已禁用 iframe 内的浏览器缩放,现在会正确触发画布缩放</li>
+
+                                    <li><strong>Q: 如何保存包含滚动内容的长截图?</strong><br>
+                                        A: 右键点击页面元素,选择"保存长截图",会自动捕获完整页面内容</li>
+
+                                    <li><strong>Q: 页面内容太长,如何截图完整内容?</strong><br>
+                                        A: 使用右键菜单的"保存长截图"功能,会自动捕获 scrollHeight 包含的所有内容</li>
+
+                                    <li><strong>Q: 为什么我的页面元素无法拖拽?</strong><br>
+                                        A: 必须通过顶部标题栏手柄才能拖拽页面元素,点击其他区域无效</li>
+
+                                    <li><strong>Q: 如何在注释中输入数字?</strong><br>
+                                        A: 已修复冲突,现在可以在注释中正常输入数字1/2/3等</li>
+
+                                    <li><strong>Q: 撤销后页面为什么会刷新?</strong><br>
+                                        A: 已优化,撤销时智能复用DOM,页面元素不会刷新,只有箭头/注释等会重新渲染</li>
+                                </ul>
+                            </div>
+
+                            <div class="help-section">
+                                <h3><i class="fas fa-info-circle"></i> 重要提示</h3>
+                                <ul class="help-list">
+                                    <li><strong>画布缩放范围</strong>: 0.1x - 5x</li>
+                                    <li><strong>自动保存</strong>: 每1分钟自动保存到浏览器缓存</li>
+                                    <li><strong>数据持久化</strong>: 刷新页面不会丢失数据(除非清除浏览器缓存)</li>
+                                    <li><strong>浏览器兼容</strong>: 建议使用 Chrome/Edge/Firefox 最新版本</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

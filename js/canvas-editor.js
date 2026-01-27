@@ -85,37 +85,6 @@ const CanvasEditor = {
                 Storage.save();
             }
 
-            // Ctrl+E: 导出
-            if (e.ctrlKey && e.key === 'e') {
-                e.preventDefault();
-                Storage.export();
-            }
-
-            // Ctrl+I: 导入
-            if (e.ctrlKey && e.key === 'i') {
-                e.preventDefault();
-                const fileInput = document.getElementById('fileInput');
-                if (fileInput) fileInput.click();
-            }
-
-            // Ctrl+0: 重置视图
-            if (e.ctrlKey && e.key === '0') {
-                e.preventDefault();
-                CanvasView.zoomReset();
-            }
-
-            // Ctrl+T: 新建页面
-            if (e.ctrlKey && e.key === 't') {
-                e.preventDefault();
-                PageManager.createPage();
-            }
-
-            // Ctrl+W: 关闭当前页面
-            if (e.ctrlKey && e.key === 'w') {
-                e.preventDefault();
-                PageManager.deletePage(PageManager.currentPageId);
-            }
-
             // Ctrl+Z: 撤销
             if (e.ctrlKey && e.key === 'z') {
                 e.preventDefault();
@@ -159,6 +128,9 @@ const CanvasEditor = {
         if (modal) {
             modal.classList.add('active');
 
+            // 初始化Tab切换功能
+            this.initHelpTabs();
+
             // 设置关闭事件
             const overlay = document.getElementById('helpModalOverlay');
             const closeBtn = document.getElementById('helpModalClose');
@@ -186,6 +158,29 @@ const CanvasEditor = {
             };
             document.addEventListener('keydown', escHandler);
         }
+    },
+
+    // 初始化帮助Tab切换
+    initHelpTabs() {
+        const tabs = document.querySelectorAll('.help-tab');
+        const panes = document.querySelectorAll('.help-tab-pane');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+
+                // 移除所有active状态
+                tabs.forEach(t => t.classList.remove('active'));
+                panes.forEach(p => p.classList.remove('active'));
+
+                // 添加active状态到当前Tab
+                tab.classList.add('active');
+                const targetPane = document.getElementById(`tab-${tabName}`);
+                if (targetPane) {
+                    targetPane.classList.add('active');
+                }
+            });
+        });
     }
 };
 
