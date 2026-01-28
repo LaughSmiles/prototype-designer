@@ -438,9 +438,6 @@ body {
     height: 10000px;
     position: relative;
     transform-origin: 0 0;
-    background-image:
-        linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
     background-size: 20px 20px;
     background-position: center;
 }

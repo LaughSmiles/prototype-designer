@@ -247,7 +247,20 @@ const CanvasView = {
                     e.stopPropagation(); // 防止事件冒泡
                 }
             } else if (e.button === 0 && Tools.getCurrentTool() === 'select') {
-                // 左键在选择工具模式下点击空白处：开始框选
+                // 左键在选择工具模式下点击空白处
+
+                // 检查是否有已选中的元素
+                const hasSelection = ElementManager.state.selectedElements.length > 0 ||
+                                    ElementManager.state.selectedElement !== null;
+
+                if (hasSelection) {
+                    // 如果有选中元素,先取消选中
+                    ElementManager.deselectElement();
+                    // 不开始框选,只是取消选中
+                    return;
+                }
+
+                // 如果没有选中元素,则开始框选
                 this.isBoxSelecting = true;
 
                 // 关键修复：转换为canvasWrapper相对坐标
