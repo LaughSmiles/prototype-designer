@@ -1584,6 +1584,12 @@ const ElementManager = {
             // 选中元素
             this.selectElement(data.id);
 
+            // 临时禁用所有iframe的交互,防止拖动时触发iframe事件导致阻尼感
+            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'none';
+            });
+
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         });
@@ -1653,6 +1659,12 @@ const ElementManager = {
                 isDragging = false;
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
+
+                // 恢复所有iframe的交互
+                const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+                iframes.forEach(iframe => {
+                    iframe.style.pointerEvents = 'auto';
+                });
 
                 // 拖拽完成后保存状态
                 HistoryManager.saveState();
