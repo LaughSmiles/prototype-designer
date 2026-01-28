@@ -129,10 +129,18 @@ const PageManager = {
         const page = this.pages.find(p => p.id === pageId);
         if (!page) return;
 
-        // 保存当前页面的视图状态
+        // 保存当前页面的视图状态、元素数据和使用计数
         const currentPage = this.getCurrentPage();
         if (currentPage) {
             currentPage.view = CanvasView.getView();
+            // 关键修复: 只有当内存中有元素时才保存(避免初始化时用空数组覆盖已有数据)
+            // 如果 ElementManager.state.elements 为空,说明是页面刚加载的初始化场景
+            // 此时应该保留 page.elements 中的数据,而不是用空数组覆盖
+            if (ElementManager.state.elements.length > 0 || currentPage.id !== pageId) {
+                currentPage.elements = ElementManager.getAllElements();
+                currentPage.usageCount = ElementManager.getUsageCounts();
+            }
+            // 如果是初始化场景(currentPage === page),则不覆盖,保留从 localStorage 加载的数据
         }
 
         // 切换到新页面

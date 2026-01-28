@@ -632,11 +632,8 @@ const ElementManager = {
                 CanvasView.zoomReset50();
             }
 
-            // Ctrl+S：保存
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                Storage.save();
-            }
+            // 注意: Ctrl+S 保存快捷键已在 canvas-editor.js 的 bindGlobalShortcuts() 中统一管理
+            // 这里不再重复绑定,避免触发两次保存
 
             // 快捷键切换工具
             // 只有当焦点不在注释内容区域时才触发
