@@ -349,9 +349,9 @@ const Tools = {
         const view = CanvasView.getView();
 
         // 计算画布内部坐标（考虑pan和zoom）
-        // 点击位置作为批注框中心坐标
-        const centerX = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
-        const centerY = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
+        // 点击位置作为批注框左上角坐标
+        const boxX = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
+        const boxY = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
 
         // 临时禁用所有iframe的交互，防止点击时触发iframe事件
         const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
@@ -359,8 +359,8 @@ const Tools = {
             iframe.style.pointerEvents = 'none';
         });
 
-        // 创建批注元素,批注框中心在点击位置
-        const elementId = ElementManager.addAnnotationElement(centerX, centerY);
+        // 创建批注元素,批注框左上角在点击位置
+        const elementId = ElementManager.addAnnotationElement(boxX, boxY);
 
         // 自动聚焦到批注框内容区域,同时恢复iframe交互
         setTimeout(() => {

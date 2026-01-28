@@ -157,14 +157,13 @@ const ElementManager = {
     },
 
     // 添加批注标记元素
-    addAnnotationElement(centerX, centerY) {
+    addAnnotationElement(boxX, boxY) {
         const BOX_WIDTH = 200;
         const BOX_HEIGHT = 120;
         const ANCHOR_OFFSET = 60;
 
-        // 批注框位置(以点击位置为中心)
-        const boxX = centerX - BOX_WIDTH / 2;   // centerX - 100
-        const boxY = centerY - BOX_HEIGHT / 2;  // centerY - 60
+        // 点击位置就是批注框左上角,无需计算
+        // boxX, boxY 直接使用
 
         // 锚点位置(在批注框左侧60px处,垂直居中对齐)
         const anchorX = boxX - ANCHOR_OFFSET;              // boxX - 60
