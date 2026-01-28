@@ -157,13 +157,18 @@ const ElementManager = {
     },
 
     // 添加批注标记元素
-    addAnnotationElement(anchorX, anchorY) {
-        // 批注框默认在锚点右侧60px处
-        const boxX = anchorX + 60;
-        // 垂直居中对齐:锚点中心(anchorY + 5)与批注框中心(boxY + 60)对齐
-        // anchorY + 5 = boxY + 60
-        // 因此: boxY = anchorY - 55
-        const boxY = anchorY - 55;
+    addAnnotationElement(centerX, centerY) {
+        const BOX_WIDTH = 200;
+        const BOX_HEIGHT = 120;
+        const ANCHOR_OFFSET = 60;
+
+        // 批注框位置(以点击位置为中心)
+        const boxX = centerX - BOX_WIDTH / 2;   // centerX - 100
+        const boxY = centerY - BOX_HEIGHT / 2;  // centerY - 60
+
+        // 锚点位置(在批注框左侧60px处,垂直居中对齐)
+        const anchorX = boxX - ANCHOR_OFFSET;              // boxX - 60
+        const anchorY = boxY + BOX_HEIGHT / 2 - 5;         // boxY + 60 - 5
 
         const element = {
             id: PageManager.generateElementId(),
@@ -172,10 +177,10 @@ const ElementManager = {
             anchorY: anchorY,
             boxX: boxX,
             boxY: boxY,
-            boxWidth: 200,  // 批注框实际宽度
-            boxHeight: 120, // 批注框实际高度
-            width: 10000,   // 容器宽度(用于容纳锚点和框)
-            height: 10000,  // 容器高度
+            boxWidth: BOX_WIDTH,   // 批注框实际宽度
+            boxHeight: BOX_HEIGHT, // 批注框实际高度
+            width: 10000,          // 容器宽度(用于容纳锚点和框)
+            height: 10000,         // 容器高度
             content: ''
         };
 
