@@ -16,6 +16,11 @@ const Tools = {
         isAdding: false
     },
 
+    // 批注标记工具状态
+    annotationState: {
+        isAdding: false
+    },
+
     // 初始化
     init() {
         this.setupToolButtons();
@@ -56,6 +61,7 @@ const Tools = {
         // 重置工具状态
         this.arrowState = { points: [], isDrawing: false };
         this.noteState = { isAdding: false };
+        this.annotationState = { isAdding: false };
 
         // 更新UI
         const buttons = document.querySelectorAll('.tool-icon-btn');
@@ -77,6 +83,8 @@ const Tools = {
                 canvasWrapper.style.cursor = 'crosshair';
             } else if (tool === 'note') {
                 canvasWrapper.style.cursor = 'cell';  // 卡片注释工具
+            } else if (tool === 'annotation') {
+                canvasWrapper.style.cursor = 'text';  // 批注标记工具
             }
         }
 
@@ -84,7 +92,8 @@ const Tools = {
         const toolNames = {
             'select': '选择工具',
             'arrow': '箭头工具',
-            'note': '卡片注释'
+            'note': '卡片注释',
+            'annotation': '批注标记'
         };
         PageLibrary.showHint(`切换到: ${toolNames[tool]}`);
     },
@@ -108,6 +117,8 @@ const Tools = {
                 this.handleArrowClick(e);
             } else if (this.currentTool === 'note') {
                 this.handleNoteClick(e);
+            } else if (this.currentTool === 'annotation') {
+                this.handleAnnotationClick(e);
             }
         });
 
@@ -327,6 +338,43 @@ const Tools = {
         // 切换回选择工具
         this.setTool('select');
         PageLibrary.showHint('卡片注释已添加,可直接输入内容');
+    },
+
+    // 处理批注标记点击
+    handleAnnotationClick(e) {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        const wrapperRect = canvasWrapper.getBoundingClientRect();
+        const view = CanvasView.getView();
+
+        // 计算画布内部坐标（考虑pan和zoom）
+        const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
+        const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
+
+        // 临时禁用所有iframe的交互，防止点击时触发iframe事件
+        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+        iframes.forEach(iframe => {
+            iframe.style.pointerEvents = 'none';
+        });
+
+        // 创建批注元素,锚点在点击位置
+        const elementId = ElementManager.addAnnotationElement(x, y);
+
+        // 自动聚焦到批注框内容区域,同时恢复iframe交互
+        setTimeout(() => {
+            ElementManager.focusAnnotationContent(elementId);
+
+            // 恢复所有iframe的交互
+            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'auto';
+            });
+        }, 0);
+
+        // 切换回选择工具
+        this.setTool('select');
+        PageLibrary.showHint('批注标记已添加,可直接输入内容');
     },
 
     // 获取当前工具

@@ -157,6 +157,38 @@ const ElementManager = {
         return element.id;
     },
 
+    // 添加批注标记元素
+    addAnnotationElement(anchorX, anchorY) {
+        // 批注框默认在锚点右侧60px处
+        const boxX = anchorX + 60;
+        // 垂直居中对齐:锚点中心(anchorY + 5)与批注框中心(boxY + 40)对齐
+        // anchorY + 5 = boxY + 40
+        // 因此: boxY = anchorY - 35
+        const boxY = anchorY - 35;
+
+        const element = {
+            id: PageManager.generateElementId(),
+            type: 'annotation',
+            anchorX: anchorX,
+            anchorY: anchorY,
+            boxX: boxX,
+            boxY: boxY,
+            width: 150,
+            height: 80,
+            content: ''
+        };
+
+        this.state.elements.push(element);
+        this.renderElement(element);
+        this.updateStatusBar();
+
+        // 注意:不在创建时保存状态
+        // 只有在用户输入内容并失焦后才会保存状态
+
+        // 返回元素ID,用于后续聚焦
+        return element.id;
+    },
+
     // 渲染元素(不更新计数,用于撤销/重做)
     renderElementWithoutCount(element) {
         const canvas = document.getElementById('canvas');
@@ -400,10 +432,15 @@ const ElementManager = {
                 e.stopPropagation();
                 this.selectElement(element.id);
             });
+
+        } else if (element.type === 'annotation') {
+            // 批注标记元素
+            this.renderAnnotationElement(div, element);
         }
 
-        // 添加删除按钮
-        const deleteBtn = document.createElement('div');
+        // 添加删除按钮(批注元素已经在renderAnnotationElement中添加了,跳过)
+        if (element.type !== 'annotation') {
+            const deleteBtn = document.createElement('div');
         deleteBtn.className = 'delete-btn';
         deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
         // 关键修复：让删除按钮可以响应鼠标事件(覆盖父元素的pointerEvents: 'none')
@@ -413,6 +450,7 @@ const ElementManager = {
             this.deleteElement(element.id);
         });
         div.appendChild(deleteBtn);
+        }
 
         // 双击取消选择
         div.addEventListener('dblclick', (e) => {
@@ -666,10 +704,15 @@ const ElementManager = {
                 e.stopPropagation();
                 this.selectElement(element.id);
             });
+
+        } else if (element.type === 'annotation') {
+            // 批注标记元素
+            this.renderAnnotationElement(div, element);
         }
 
-        // 添加删除按钮
-        const deleteBtn = document.createElement('div');
+        // 添加删除按钮(批注元素已经在renderAnnotationElement中添加了,跳过)
+        if (element.type !== 'annotation') {
+            const deleteBtn = document.createElement('div');
         deleteBtn.className = 'delete-btn';
         deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
         // 关键修复：让删除按钮可以响应鼠标事件(覆盖父元素的pointerEvents: 'none')
@@ -679,6 +722,7 @@ const ElementManager = {
             this.deleteElement(element.id);
         });
         div.appendChild(deleteBtn);
+        }
 
         // 双击取消选择
         div.addEventListener('dblclick', (e) => {
@@ -906,13 +950,15 @@ const ElementManager = {
 
             // 快捷键切换工具
             // 只有当焦点不在注释内容区域时才触发
-            if (!e.target.closest('.note-content')) {
+            if (!e.target.closest('.note-content') && !e.target.closest('.annotation-content')) {
                 if (e.key === '1' && !e.ctrlKey) {
                     Tools.setTool('select');
                 } else if (e.key === '2' && !e.ctrlKey) {
                     Tools.setTool('arrow');
                 } else if (e.key === '3' && !e.ctrlKey) {
                     Tools.setTool('note');
+                } else if (e.key === '4' && !e.ctrlKey) {
+                    Tools.setTool('annotation');
                 }
             }
         });
@@ -940,6 +986,8 @@ const ElementManager = {
                     info = `选中: 文字`;
                 } else if (element.type === 'note') {
                     info = `选中: 卡片注释 (拖拽手柄移动)`;
+                } else if (element.type === 'annotation') {
+                    info = `选中: 批注标记 (拖动锚点或框)`;
                 }
                 selectedSpan.textContent = info;
             } else {
@@ -1301,6 +1349,250 @@ const ElementManager = {
         } catch (error) {
             console.error('截图失败:', error);
             PageLibrary.showHint(`❌ 截图失败: ${error.message}`);
+        }
+    },
+
+    // 渲染批注标记元素(提取为独立函数以便复用)
+    renderAnnotationElement(div, element) {
+        div.classList.add('annotation-element');
+
+        // 不使用包围盒,直接设置容器为固定大小,足够容纳锚点和批注框
+        // 容器大小设为画布大小,通过绝对定位来放置元素
+        div.style.left = `0px`;
+        div.style.top = `0px`;
+        div.style.width = `100%`;
+        div.style.height = `100%`;
+        div.style.pointerEvents = 'none'; // 容器本身不响应事件
+
+        // 创建SVG容器用于绘制连接线(覆盖整个画布)
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.classList.add('annotation-svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.style.position = 'absolute';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.overflow = 'visible';
+        svg.style.pointerEvents = 'none';
+
+        // 关键修复: SVG需要与canvas元素的坐标系统对齐
+        // 因为div是canvas的子元素,SVG的(0,0)对应canvas的(0,0)
+        // 所以直接使用canvas坐标即可
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', element.anchorX + 5); // 锚点中心
+        line.setAttribute('y1', element.anchorY + 5);
+        line.setAttribute('x2', element.boxX); // 批注框左边缘
+        line.setAttribute('y2', element.boxY + 40); // 批注框垂直中心(固定80px高度,中心在+40)
+        line.setAttribute('stroke', '#FF9500');
+        line.setAttribute('stroke-width', '1');
+        line.setAttribute('class', 'annotation-connection-line'); // 添加class方便选择
+        svg.appendChild(line);
+
+        div.appendChild(svg);
+
+        // 创建锚点(橙色圆点) - 使用绝对定位
+        const anchor = document.createElement('div');
+        anchor.className = 'annotation-anchor';
+        anchor.style.position = 'absolute';
+        anchor.style.left = `${element.anchorX}px`;
+        anchor.style.top = `${element.anchorY}px`;
+        anchor.style.width = '10px';
+        anchor.style.height = '10px';
+        anchor.style.borderRadius = '50%';
+        anchor.style.backgroundColor = '#FF9500';
+        anchor.style.cursor = 'move';
+        anchor.style.pointerEvents = 'auto';
+        anchor.dataset.elementId = element.id;
+        anchor.dataset.part = 'anchor';
+
+        // 锚点拖拽事件
+        this.setupAnnotationDrag(anchor, element, 'anchor');
+        div.appendChild(anchor);
+
+        // 创建批注框 - 使用绝对定位
+        const box = document.createElement('div');
+        box.className = 'annotation-box';
+        box.style.position = 'absolute';
+        box.style.left = `${element.boxX}px`;
+        box.style.top = `${element.boxY}px`;
+        box.style.width = `${element.width}px`;
+        box.style.height = `${element.height}px`;
+        box.style.backgroundColor = '#FFF9E6';
+        box.style.border = '1px solid #FFD700';
+        box.style.borderRadius = '4px';
+        box.style.padding = '8px';
+        box.style.cursor = 'move';
+        box.style.pointerEvents = 'auto';
+        box.dataset.elementId = element.id;
+        box.dataset.part = 'box';
+
+        // 批注框内容(可编辑)
+        const content = document.createElement('div');
+        content.className = 'annotation-content';
+        content.contentEditable = true;
+        content.style.width = '100%';
+        content.style.height = '100%';
+        content.style.fontSize = '14px';
+        content.style.fontFamily = 'inherit';
+        content.style.color = '#333';
+        content.style.outline = 'none';
+        content.textContent = element.content || '输入批注';
+
+        // 批注框编辑事件
+        let originalContent = element.content || '';
+        content.addEventListener('input', (e) => {
+            element.content = e.target.textContent;
+        });
+
+        // 失焦时保存状态
+        content.addEventListener('blur', (e) => {
+            const currentContent = e.target.textContent;
+            if (currentContent.trim() && currentContent !== '输入批注' && currentContent !== originalContent) {
+                HistoryManager.saveState();
+                originalContent = currentContent;
+            }
+        });
+
+        box.appendChild(content);
+        div.appendChild(box);
+
+        // 批注框拖拽事件
+        this.setupAnnotationDrag(box, element, 'box');
+
+        // 添加删除按钮(相对于批注框定位)
+        const deleteBtn = document.createElement('div');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+        deleteBtn.style.pointerEvents = 'auto';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteElement(element.id);
+        });
+
+        // 将删除按钮添加到批注框内
+        box.style.position = 'relative';
+        box.appendChild(deleteBtn);
+
+        // 更新元素的位置和大小(使用固定值)
+        element.position = { x: 0, y: 0 };
+        element.width = 10000; // 足够大
+        element.height = 10000;
+
+        // 点击空白区域选中事件
+        div.addEventListener('click', (e) => {
+            if (e.target === div || e.target === svg) {
+                e.stopPropagation();
+                this.selectElement(element.id);
+            }
+        });
+    },
+
+    // 设置批注元素的拖拽逻辑(锚点和框分离拖动)
+    setupAnnotationDrag(element, data, part) {
+        let isDragging = false;
+        let startX, startY;
+
+        element.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('annotation-content')) {
+                return; // 如果点击的是可编辑内容区域,不拖拽
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+
+            // 选中元素
+            this.selectElement(data.id);
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+
+        const onMouseMove = (e) => {
+            if (!isDragging) return;
+
+            const canvasWrapper = document.getElementById('canvasWrapper');
+            if (!canvasWrapper) return;
+
+            const view = CanvasView.getView();
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+
+            // 计算画布内部坐标的增量(考虑zoom)
+            const deltaX = (e.clientX - startX) / view.zoom;
+            const deltaY = (e.clientY - startY) / view.zoom;
+
+            const div = document.querySelector(`[data-element-id="${data.id}"]`);
+            if (!div) return;
+
+            if (part === 'anchor') {
+                // 拖动锚点:只更新锚点位置和连接线
+                data.anchorX += deltaX;
+                data.anchorY += deltaY;
+
+                // 直接更新锚点DOM位置
+                const anchorEl = div.querySelector('.annotation-anchor');
+                if (anchorEl) {
+                    anchorEl.style.left = `${data.anchorX}px`;
+                    anchorEl.style.top = `${data.anchorY}px`;
+                }
+
+                // 更新连接线起点(锚点中心)
+                const line = div.querySelector('.annotation-connection-line');
+                if (line) {
+                    line.setAttribute('x1', data.anchorX + 5);
+                    line.setAttribute('y1', data.anchorY + 5);
+                }
+
+            } else if (part === 'box') {
+                // 拖动批注框:只更新批注框位置和连接线
+                data.boxX += deltaX;
+                data.boxY += deltaY;
+
+                // 直接更新批注框DOM位置
+                const boxEl = div.querySelector('.annotation-box');
+                if (boxEl) {
+                    boxEl.style.left = `${data.boxX}px`;
+                    boxEl.style.top = `${data.boxY}px`;
+                }
+
+                // 更新连接线终点(批注框左边缘中心)
+                const line = div.querySelector('.annotation-connection-line');
+                if (line) {
+                    line.setAttribute('x2', data.boxX);
+                    // 修复: 使用实际高度80px,而不是data.height(已被设为10000)
+                    line.setAttribute('y2', data.boxY + 40); // 80 / 2 = 40
+                }
+            }
+
+            startX = e.clientX;
+            startY = e.clientY;
+        };
+
+        const onMouseUp = () => {
+            if (isDragging) {
+                isDragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+
+                // 拖拽完成后保存状态
+                HistoryManager.saveState();
+            }
+        };
+    },
+
+    // 聚焦到批注框内容区域
+    focusAnnotationContent(elementId) {
+        const div = document.querySelector(`[data-element-id="${elementId}"]`);
+        if (!div) return;
+
+        const contentDiv = div.querySelector('.annotation-content');
+        if (contentDiv) {
+            contentDiv.focus();
+            // 选中所有文字,方便用户直接替换
+            document.execCommand('selectAll', false, null);
         }
     }
 };
