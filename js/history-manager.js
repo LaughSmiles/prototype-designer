@@ -174,7 +174,7 @@ const HistoryManager = {
                             ElementManager.updateElementPosition(existingDiv, element);
                             ElementManager.updateElementSize(existingDiv, element);
                         }
-                        // 对于箭头/文字/注释元素,需要完全重新渲染
+                        // 对于箭头/文字/文字卡片元素,需要完全重新渲染
                         // 因为它们的位置/尺寸由内部内容决定
                         else {
                             existingDiv.remove();

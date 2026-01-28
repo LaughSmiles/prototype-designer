@@ -140,7 +140,7 @@
                                 <div class="help-grid">
                                     <div class="help-item"><kbd>1</kbd><span>选择工具</span></div>
                                     <div class="help-item"><kbd>2</kbd><span>箭头工具</span></div>
-                                    <div class="help-item"><kbd>3</kbd><span>卡片注释工具</span></div>
+                                    <div class="help-item"><kbd>3</kbd><span>文字卡片工具</span></div>
                                     <div class="help-item"><kbd>4</kbd><span>批注标记工具</span></div>
                                 </div>
                             </div>
@@ -187,7 +187,7 @@
                                 <ul class="help-list">
                                     <li><strong>添加页面</strong>: 从右侧页面库拖拽页面到画布</li>
                                     <li><strong>绘制箭头</strong>: 选择箭头工具,点击起点和终点</li>
-                                    <li><strong>添加注释</strong>: 选择注释工具,点击画布任意位置</li>
+                                    <li><strong>添加文字卡片</strong>: 选择文字卡片工具,点击画布任意位置</li>
                                 </ul>
                             </div>
 
@@ -195,7 +195,7 @@
                                 <h3><i class="fas fa-arrows-alt"></i> 移动和调整</h3>
                                 <ul class="help-list">
                                     <li><strong>移动页面元素</strong>: 点击拖拽顶部标题栏手柄</li>
-                                    <li><strong>调整注释大小</strong>: 拖拽注释卡片的四角手柄</li>
+                                    <li><strong>调整文字卡片大小</strong>: 拖拽文字卡片的四角手柄</li>
                                 </ul>
                             </div>
 
@@ -253,18 +253,18 @@
                             <div class="help-section">
                                 <h3><i class="fas fa-history"></i> 撤销/重做</h3>
                                 <ul class="help-list">
-                                    <li><strong>支持的操作</strong>: 添加/删除/移动元素、页面排序、注释编辑等</li>
+                                    <li><strong>支持的操作</strong>: 添加/删除/移动元素、页面排序、文字卡片编辑等</li>
                                     <li><strong>历史记录数</strong>: 最多保存50步操作历史</li>
                                     <li><strong>智能恢复</strong>: 撤销时智能复用DOM,避免iframe刷新</li>
                                 </ul>
                             </div>
 
                             <div class="help-section">
-                                <h3><i class="fas fa-edit"></i> 注释编辑技巧</h3>
+                                <h3><i class="fas fa-edit"></i> 文字卡片编辑技巧</h3>
                                 <ul class="help-list">
-                                    <li><strong>输入内容</strong>: 点击注释内容区域即可输入文字</li>
+                                    <li><strong>输入内容</strong>: 点击文字卡片内容区域即可输入文字</li>
                                     <li><strong>调整大小</strong>: 拖拽四角手柄可自由调整卡片尺寸</li>
-                                    <li><strong>支持数字</strong>: 注释中可以正常输入数字,不会触发工具切换</li>
+                                    <li><strong>支持数字</strong>: 文字卡片中可以正常输入数字,不会触发工具切换</li>
                                 </ul>
                             </div>
                         </div>
@@ -286,11 +286,11 @@
                                     <li><strong>Q: 为什么我的页面元素无法拖拽?</strong><br>
                                         A: 必须通过顶部标题栏手柄才能拖拽页面元素,点击其他区域无效</li>
 
-                                    <li><strong>Q: 如何在注释中输入数字?</strong><br>
-                                        A: 已修复冲突,现在可以在注释中正常输入数字1/2/3等</li>
+                                    <li><strong>Q: 如何在文字卡片中输入数字?</strong><br>
+                                        A: 已修复冲突,现在可以在文字卡片中正常输入数字1/2/3等</li>
 
                                     <li><strong>Q: 撤销后页面为什么会刷新?</strong><br>
-                                        A: 已优化,撤销时智能复用DOM,页面元素不会刷新,只有箭头/注释等会重新渲染</li>
+                                        A: 已优化,撤销时智能复用DOM,页面元素不会刷新,只有箭头/文字卡片等会重新渲染</li>
                                 </ul>
                             </div>
 
@@ -360,7 +360,7 @@
                     <button class="tool-icon-btn" data-tool="arrow" title="箭头工具 (2)">
                         <i class="fas fa-arrow-right"></i>
                     </button>
-                    <button class="tool-icon-btn" data-tool="note" title="注释工具 (3)">
+                    <button class="tool-icon-btn" data-tool="note" title="文字卡片工具 (3)">
                         <i class="fas fa-sticky-note"></i>
                     </button>
                     <button class="tool-icon-btn" data-tool="annotation" title="批注标记 (4)">

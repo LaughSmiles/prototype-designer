@@ -159,10 +159,10 @@ const CanvasView = {
 
         // 鼠标按下（开始拖动视图或元素）
         canvasWrapper.addEventListener('mousedown', (e) => {
-            // 首先检查是否点击了卡片注释的resize手柄
+            // 首先检查是否点击了文字卡片的resize手柄
             const resizeHandle = e.target.closest('.note-resize-handle');
             if (resizeHandle && e.button === 0) {
-                // 开始调整卡片大小
+                // 开始调整文字卡片大小
                 const elementId = resizeHandle.dataset.elementId;
                 const corner = resizeHandle.dataset.corner;
                 const targetElement = resizeHandle.closest('.canvas-element');
@@ -648,7 +648,7 @@ const CanvasView = {
             // 在拖拽手柄上：显示move光标
             canvasWrapper.style.cursor = 'move';
         } else if (noteContent) {
-            // 在卡片注释内容区：显示text光标
+            // 在文字卡片内容区：显示text光标
             canvasWrapper.style.cursor = 'text';
         } else if (targetElement || arrowPath) {
             // 在元素上(包括箭头路径)：显示grab光标
@@ -672,7 +672,7 @@ const CanvasView = {
         setTimeout(() => hint.remove(), 1500);
     },
 
-    // 处理卡片注释resize
+    // 处理文字卡片resize
     handleNoteResize(e) {
         const elementId = this.resizingNote.dataset.elementId;
         const element = ElementManager.getElement(elementId);

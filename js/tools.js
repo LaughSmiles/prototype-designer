@@ -11,7 +11,7 @@ const Tools = {
         isDrawing: false
     },
 
-    // 卡片注释工具状态
+    // 文字卡片工具状态
     noteState: {
         isAdding: false
     },
@@ -82,7 +82,7 @@ const Tools = {
             } else if (tool === 'arrow') {
                 canvasWrapper.style.cursor = 'crosshair';
             } else if (tool === 'note') {
-                canvasWrapper.style.cursor = 'cell';  // 卡片注释工具
+                canvasWrapper.style.cursor = 'cell';  // 文字卡片工具
             } else if (tool === 'annotation') {
                 canvasWrapper.style.cursor = 'text';  // 批注标记工具
             }
@@ -92,7 +92,7 @@ const Tools = {
         const toolNames = {
             'select': '选择工具',
             'arrow': '箭头工具',
-            'note': '卡片注释',
+            'note': '文字卡片',
             'annotation': '批注标记'
         };
         PageLibrary.showHint(`切换到: ${toolNames[tool]}`);
@@ -103,12 +103,12 @@ const Tools = {
         const canvasWrapper = document.getElementById('canvasWrapper');
         if (!canvasWrapper) return;
 
-        // 点击事件（用于箭头和卡片注释工具）
+        // 点击事件（用于箭头和文字卡片工具）
         // 关键修复：在canvas-wrapper上监听,而不是canvas
         // 这样可以避免iframe拦截事件,确保工具在iframe上方也能正常工作
         canvasWrapper.addEventListener('click', (e) => {
             // 只在选择工具模式下才防止点击元素时触发
-            // 工具模式(箭头/注释)需要在元素上方也能正常工作
+            // 工具模式(箭头/文字卡片)需要在元素上方也能正常工作
             if (this.currentTool === 'select' && e.target.closest('.canvas-element')) {
                 return;
             }
@@ -303,7 +303,7 @@ const Tools = {
         }
     },
 
-    // 处理卡片注释点击
+    // 处理文字卡片点击
     handleNoteClick(e) {
         const canvasWrapper = document.getElementById('canvasWrapper');
         if (!canvasWrapper) return;
@@ -337,7 +337,7 @@ const Tools = {
 
         // 切换回选择工具
         this.setTool('select');
-        PageLibrary.showHint('卡片注释已添加,可直接输入内容');
+        PageLibrary.showHint('文字卡片已添加,可直接输入内容');
     },
 
     // 处理批注标记点击

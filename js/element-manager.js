@@ -134,7 +134,7 @@ const ElementManager = {
         HistoryManager.saveState();
     },
 
-    // 添加卡片注释元素
+    // 添加文字卡片元素
     addNoteElement(text, x, y) {
         const element = {
             id: PageManager.generateElementId(),
@@ -361,21 +361,21 @@ const ElementManager = {
             element.height = maxY - minY + padding * 2;
 
         } else if (element.type === 'note') {
-            // 卡片注释元素
+            // 文字卡片元素
             div.style.left = `${element.position.x}px`;
             div.style.top = `${element.position.y}px`;
             div.style.width = `${element.width}px`;
             div.style.height = `${element.height}px`;
             div.classList.add('note-element');
 
-            // 关键修复：让div响应鼠标事件,确保注释在iframe上方时能被点击和编辑
+            // 关键修复：让div响应鼠标事件,确保文字卡片在iframe上方时能被点击和编辑
             div.style.pointerEvents = 'auto';
 
             // 卡片内容容器
             const contentDiv = document.createElement('div');
             contentDiv.className = 'note-content';
             contentDiv.contentEditable = true;
-            contentDiv.textContent = element.text || '输入注释'; // 默认文字
+            contentDiv.textContent = element.text || '输入文字'; // 默认文字
 
             // 卡片编辑事件
             let originalText = element.text || '';
@@ -389,7 +389,7 @@ const ElementManager = {
             contentDiv.addEventListener('blur', (e) => {
                 const currentText = e.target.textContent;
                 // 只有当内容不为空，且内容真正变化了，才保存状态
-                if (currentText.trim() && currentText !== '输入注释' && currentText !== originalText) {
+                if (currentText.trim() && currentText !== '输入文字' && currentText !== originalText) {
                     HistoryManager.saveState();
                     originalText = currentText; // 更新原始文本
                 }
@@ -400,7 +400,7 @@ const ElementManager = {
             // 添加拖拽手柄
             const dragHandle = document.createElement('div');
             dragHandle.className = 'note-drag-handle';
-            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 注释';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 文字';
             div.appendChild(dragHandle);
 
             // 添加分辨率显示
@@ -633,21 +633,21 @@ const ElementManager = {
             element.height = maxY - minY + padding * 2;
 
         } else if (element.type === 'note') {
-            // 卡片注释元素
+            // 文字卡片元素
             div.style.left = `${element.position.x}px`;
             div.style.top = `${element.position.y}px`;
             div.style.width = `${element.width}px`;
             div.style.height = `${element.height}px`;
             div.classList.add('note-element');
 
-            // 关键修复：让div响应鼠标事件,确保注释在iframe上方时能被点击和编辑
+            // 关键修复：让div响应鼠标事件,确保文字卡片在iframe上方时能被点击和编辑
             div.style.pointerEvents = 'auto';
 
             // 卡片内容容器
             const contentDiv = document.createElement('div');
             contentDiv.className = 'note-content';
             contentDiv.contentEditable = true;
-            contentDiv.textContent = element.text || '输入注释'; // 默认文字
+            contentDiv.textContent = element.text || '输入文字'; // 默认文字
 
             // 卡片编辑事件
             let originalText = element.text || '';
@@ -661,7 +661,7 @@ const ElementManager = {
             contentDiv.addEventListener('blur', (e) => {
                 const currentText = e.target.textContent;
                 // 只有当内容不为空，且内容真正变化了，才保存状态
-                if (currentText.trim() && currentText !== '输入注释' && currentText !== originalText) {
+                if (currentText.trim() && currentText !== '输入文字' && currentText !== originalText) {
                     HistoryManager.saveState();
                     originalText = currentText; // 更新原始文本
                 }
@@ -672,7 +672,7 @@ const ElementManager = {
             // 添加拖拽手柄
             const dragHandle = document.createElement('div');
             dragHandle.className = 'note-drag-handle';
-            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 注释';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 文字';
             div.appendChild(dragHandle);
 
             // 添加分辨率显示
@@ -940,7 +940,7 @@ const ElementManager = {
                 Tools.setTool('select');
             }
 
-            // 空格键：重置视图到50%（但不在编辑注释或批注时）
+            // 空格键：重置视图到50%（但不在编辑文字卡片或批注时）
             if ((e.code === 'Space' || e.key === ' ') &&
                 !e.target.closest('.note-content') &&
                 !e.target.closest('.annotation-content')) {
@@ -952,7 +952,7 @@ const ElementManager = {
             // 这里不再重复绑定,避免触发两次保存
 
             // 快捷键切换工具
-            // 只有当焦点不在注释内容区域时才触发
+            // 只有当焦点不在文字卡片内容区域时才触发
             if (!e.target.closest('.note-content') && !e.target.closest('.annotation-content')) {
                 if (e.key === '1' && !e.ctrlKey) {
                     Tools.setTool('select');
@@ -988,7 +988,7 @@ const ElementManager = {
                 } else if (element.type === 'text') {
                     info = `选中: 文字`;
                 } else if (element.type === 'note') {
-                    info = `选中: 卡片注释 (拖拽手柄移动)`;
+                    info = `选中: 文字卡片 (拖拽手柄移动)`;
                 } else if (element.type === 'annotation') {
                     info = `选中: 批注标记 (拖动锚点或框)`;
                 }
@@ -1071,7 +1071,7 @@ const ElementManager = {
         return path;
     },
 
-    // 聚焦到卡片注释内容区域
+    // 聚焦到文字卡片内容区域
     focusNoteContent(elementId) {
         const div = document.querySelector(`[data-element-id="${elementId}"]`);
         if (!div) return;
@@ -1084,7 +1084,7 @@ const ElementManager = {
         }
     },
 
-    // 自动调整卡片注释高度以适应内容(简化版:精准控制)
+    // 自动调整文字卡片高度以适应内容(简化版:精准控制)
     adjustNoteHeight(div, contentDiv, element) {
         const MIN_HEIGHT = 120; // 最小高度
         const FONT_SIZE = 14; // 字体大小
