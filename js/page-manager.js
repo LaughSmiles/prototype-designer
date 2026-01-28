@@ -131,16 +131,14 @@ const PageManager = {
 
         // 保存当前页面的视图状态、元素数据和使用计数
         const currentPage = this.getCurrentPage();
-        if (currentPage) {
+        if (currentPage && currentPage.id !== pageId) {
+            // 只有当切换到不同页面时,才保存当前页面的状态
+            // 避免页面加载时用默认状态覆盖刚加载的数据
             currentPage.view = CanvasView.getView();
-            // 关键修复: 只有当内存中有元素时才保存(避免初始化时用空数组覆盖已有数据)
-            // 如果 ElementManager.state.elements 为空,说明是页面刚加载的初始化场景
-            // 此时应该保留 page.elements 中的数据,而不是用空数组覆盖
-            if (ElementManager.state.elements.length > 0 || currentPage.id !== pageId) {
+            if (ElementManager.state.elements.length > 0) {
                 currentPage.elements = ElementManager.getAllElements();
                 currentPage.usageCount = ElementManager.getUsageCounts();
             }
-            // 如果是初始化场景(currentPage === page),则不覆盖,保留从 localStorage 加载的数据
         }
 
         // 切换到新页面
@@ -177,7 +175,13 @@ const PageManager = {
         }
 
         // 恢复新页面的视图状态
+        console.log('🔄 恢复视图状态:', page.view);
+        console.log('🔍 CanvasView 当前状态 (恢复前):', CanvasView.state);
+        console.log('🔍 MIN_ZOOM:', CanvasView.MIN_ZOOM, 'MAX_ZOOM:', CanvasView.MAX_ZOOM);
+
         CanvasView.setView(page.view.zoom, page.view.pan);
+
+        console.log('✅ 视图状态已恢复, 当前zoom:', CanvasView.state.zoom, 'pan:', CanvasView.state.pan);
 
         // 恢复新页面的使用计数
         if (page.usageCount) {
@@ -690,10 +694,20 @@ const PageManager = {
         // 保存前先更新当前页面的视图状态、元素和使用计数
         const currentPage = this.getCurrentPage();
         if (currentPage) {
-            currentPage.view = CanvasView.getView();
+            // 🔍 调试:保存前检查CanvasView的实际状态
+            console.log('💾 保存前 - CanvasView.state.zoom:', CanvasView.state.zoom);
+            console.log('💾 保存前 - CanvasView.state.pan:', CanvasView.state.pan);
+
+            const view = CanvasView.getView();
+            console.log('💾 保存前 - getView() 返回:', view);
+            console.log('💾 保存前 - 当前页面:', currentPage.name);
+
+            currentPage.view = view;
             currentPage.elements = ElementManager.getAllElements();
             // 关键:只保存当前画布页面的usageCount,每个画布页面独立计数
             currentPage.usageCount = ElementManager.getUsageCounts();
+
+            console.log('💾 保存后 - currentPage.view:', currentPage.view);
         }
 
         return {
@@ -731,7 +745,12 @@ const PageManager = {
         // 渲染标签栏
         this.renderTabs();
 
-        // 加载当前页面(会恢复usageCount)
+        // 调试: 打印加载的视图状态
+        const currentPage = this.pages.find(p => p.id === this.currentPageId);
+        console.log('📖 准备恢复页面:', currentPage?.name);
+        console.log('📖 视图状态:', currentPage?.view);
+
+        // 加载当前页面(会恢复usageCount和视图状态)
         this.switchPage(this.currentPageId);
     },
 
