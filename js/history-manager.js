@@ -244,7 +244,7 @@ const HistoryManager = {
 
         const time = new Date(state.timestamp).toLocaleTimeString();
         console.log(`↩️ 撤销到 ${time}`);
-        PageLibrary.showHint(`已撤销 (${this.currentIndex + 1}/${this.historyStack.length})`);
+        PageLibrary.showHint(`已撤销 (${this.currentIndex}/${this.historyStack.length - 1})`);
 
         return true;
     },
@@ -263,7 +263,7 @@ const HistoryManager = {
 
         const time = new Date(state.timestamp).toLocaleTimeString();
         console.log(`↪️ 重做到 ${time}`);
-        PageLibrary.showHint(`已重做 (${this.currentIndex + 1}/${this.historyStack.length})`);
+        PageLibrary.showHint(`已重做 (${this.currentIndex}/${this.historyStack.length - 1})`);
 
         return true;
     },
