@@ -206,6 +206,32 @@ body {
     overflow: hidden;
     position: relative;
     /* 默认使用箭头光标,不设置 cursor 属性 */
+    /* 移除拖动时的蓝色边框 */
+    outline: transparent !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+}
+
+.canvas-wrapper,
+.canvas-wrapper *,
+.canvas,
+.canvas * {
+    outline: transparent !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+}
+
+/* 移除所有可能的焦点样式 */
+.canvas-wrapper:focus,
+.canvas-wrapper:focus-visible,
+.canvas-wrapper:focus-within,
+.canvas:focus,
+.canvas *:focus,
+.canvas *:focus-visible {
+    outline: transparent !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
 }
 
 .canvas-wrapper.grabbing {
