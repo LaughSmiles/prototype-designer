@@ -1089,8 +1089,14 @@ const ElementManager = {
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
 
+        // 获取文件路径并转换为绝对路径
+        let filePath = '';
+        if (pageInfo && pageInfo.filePath) {
+            // 从 pageInfo 获取 filePath 并转换为绝对路径
+            filePath = PageLibrary.getAbsolutePath(pageInfo.filePath);
+        }
+
         // 1. 复制文件路径菜单项
-        const filePath = pageInfo ? pageInfo.filePath : '';
         const copyItem = document.createElement('div');
         copyItem.className = 'context-menu-item';
         copyItem.innerHTML = '<i class="fas fa-copy"></i><span>复制文件路径</span>';
@@ -1101,16 +1107,23 @@ const ElementManager = {
 
         menu.appendChild(copyItem);
 
-        // 2. 保存长截图菜单项
-        const screenshotItem = document.createElement('div');
-        screenshotItem.className = 'context-menu-item';
-        screenshotItem.innerHTML = '<i class="fas fa-camera"></i><span>保存长截图</span>';
-        screenshotItem.addEventListener('click', () => {
-            this.captureIframeScreenshot(iframe, pageInfo);
-            menu.remove();
-        });
+        // 2. 保存长截图菜单项(只在有 pageInfo 时显示)
+        if (pageInfo) {
+            const screenshotItem = document.createElement('div');
+            screenshotItem.className = 'context-menu-item';
+            screenshotItem.innerHTML = '<i class="fas fa-camera"></i><span>保存长截图</span>';
+            screenshotItem.addEventListener('click', () => {
+                // 如果是从页面库调用(没有iframe),需要先加载页面
+                if (!iframe) {
+                    this.capturePageLibraryScreenshot(pageInfo);
+                } else {
+                    this.captureIframeScreenshot(iframe, pageInfo);
+                }
+                menu.remove();
+            });
 
-        menu.appendChild(screenshotItem);
+            menu.appendChild(screenshotItem);
+        }
 
         document.body.appendChild(menu);
 
@@ -1240,6 +1253,50 @@ const ElementManager = {
                 PageLibrary.showHint(`✅ 截图已保存: ${pageName}.png`);
 
             }, 'image/png', 1.0); // 质量: 最高
+
+        } catch (error) {
+            console.error('截图失败:', error);
+            PageLibrary.showHint(`❌ 截图失败: ${error.message}`);
+        }
+    },
+
+    // 从页面库捕获截图(不需要iframe)
+    async capturePageLibraryScreenshot(pageInfo) {
+        if (!pageInfo) {
+            PageLibrary.showHint('⚠️ 无法获取页面信息');
+            return;
+        }
+
+        try {
+            // 显示加载提示
+            PageLibrary.showHint('📸 正在加载页面并生成截图,请稍候...');
+
+            // 创建临时iframe加载页面
+            const tempIframe = document.createElement('iframe');
+            tempIframe.style.position = 'fixed';
+            tempIframe.style.left = '-9999px';
+            tempIframe.style.top = '0';
+            tempIframe.style.width = '320px';
+            tempIframe.style.height = '680px';
+            tempIframe.style.border = 'none';
+
+            document.body.appendChild(tempIframe);
+
+            // 等待iframe加载完成
+            await new Promise((resolve, reject) => {
+                tempIframe.onload = resolve;
+                tempIframe.onerror = reject;
+                tempIframe.src = pageInfo.filePath;
+            });
+
+            // 等待额外时间确保页面完全渲染
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // 使用现有的截图方法
+            await this.captureIframeScreenshot(tempIframe, pageInfo);
+
+            // 清理临时iframe
+            document.body.removeChild(tempIframe);
 
         } catch (error) {
             console.error('截图失败:', error);

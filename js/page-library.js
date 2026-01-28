@@ -39,11 +39,19 @@ const PageLibrary = {
             }
             const config = await response.json();
             this.projectConfig = config;
+
+            // 读取项目根路径配置
+            this.projectRootPath = config.projectRootPath || '';
+
             console.log(`✅ 已加载项目配置: ${config.projectName} (版本 ${config.version})`);
+            if (this.projectRootPath) {
+                console.log(`✅ 项目根路径: ${this.projectRootPath}`);
+            }
         } catch (error) {
             console.error('❌ 加载项目配置失败:', error);
             // 提供默认配置以确保框架能正常运行
             this.projectConfig = this.getDefaultConfig();
+            this.projectRootPath = '';
             console.warn('⚠️ 使用默认配置');
         }
     },
@@ -239,11 +247,8 @@ const PageLibrary = {
         item.addEventListener('contextmenu', (e) => {
             e.preventDefault(); // 阻止浏览器默认右键菜单
 
-            // 获取页面路径
-            const filePath = page.filePath;
-
-            // 显示自定义右键菜单（调用ElementManager的方法）
-            ElementManager.showContextMenu(e.clientX, e.clientY, filePath);
+            // 显示自定义右键菜单（传递page对象,支持保存长截图）
+            ElementManager.showContextMenu(e.clientX, e.clientY, null, null, page);
         });
 
         return item;
@@ -470,5 +475,29 @@ const PageLibrary = {
     // 获取所有页面ID(供ElementManager使用)
     getAllPageIds() {
         return this.pages.map(p => p.id);
+    },
+
+    // 获取绝对路径(用于右键菜单复制文件路径)
+    getAbsolutePath(relativePath) {
+        if (!relativePath) return '';
+
+        // 如果配置了项目根路径,使用配置的路径
+        if (this.projectRootPath) {
+            // 确保根路径以反斜杠结尾
+            let rootPath = this.projectRootPath;
+            if (!rootPath.endsWith('\\')) {
+                rootPath += '\\';
+            }
+
+            // 将相对路径的正斜杠转换为反斜杠
+            const normalizedRelativePath = relativePath.replace(/\//g, '\\');
+
+            // 拼接完整路径
+            return rootPath + normalizedRelativePath;
+        }
+
+        // 如果没有配置项目根路径,返回相对路径
+        console.warn('⚠️ 未配置 projectRootPath,返回相对路径');
+        return relativePath;
     }
 };

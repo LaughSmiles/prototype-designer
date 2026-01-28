@@ -3,6 +3,7 @@
   "projectTitle": "摄影派 - 高保真原型设计",
   "projectDescription": "摄影器材租赁与分享平台原型设计系统",
   "version": "1.0.0",
+  "projectRootPath": "E:\\develop\\java_item\\ai\\prototype-desiger",
   "canvasSize": {
     "width": 320,
     "height": 680
