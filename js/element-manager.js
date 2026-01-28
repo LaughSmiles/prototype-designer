@@ -28,7 +28,8 @@ const ElementManager = {
     },
 
     // 添加页面元素
-    addPageElement(pageId, x, y) {
+    // saveState: 是否保存状态用于撤销(默认为true,批量操作时设为false)
+    addPageElement(pageId, x, y, saveState = true) {
         const pageInfo = PageLibrary.getPageInfo(pageId);
         if (!pageInfo) return;
 
@@ -49,8 +50,10 @@ const ElementManager = {
 
         this.updateStatusBar();
 
-        // 在添加元素之后保存状态用于撤销
-        HistoryManager.saveState();
+        // 只保存一次:操作后的状态
+        if (saveState) {
+            HistoryManager.saveState();
+        }
     },
 
     // 增加页面使用计数
@@ -152,6 +155,272 @@ const ElementManager = {
 
         // 返回元素ID,用于后续聚焦
         return element.id;
+    },
+
+    // 渲染元素(不更新计数,用于撤销/重做)
+    renderElementWithoutCount(element) {
+        const canvas = document.getElementById('canvas');
+        if (!canvas) return;
+
+        const div = document.createElement('div');
+        div.className = `canvas-element ${element.type}-element`;
+        div.dataset.elementId = element.id;
+
+        if (element.type === 'page') {
+            // 页面元素
+            div.style.left = `${element.position.x}px`;
+            div.style.top = `${element.position.y}px`;
+            div.style.width = `${element.width}px`;
+            div.style.height = `${element.height}px`;
+
+            // 添加拖拽手柄(顶部标题栏)
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'page-drag-handle canvas-drag-handle';
+            const pageName = PageLibrary.getPageName(element.pageId);
+            dragHandle.innerHTML = `<i class="fas fa-grip-vertical"></i> ${pageName || '页面'}`;
+            div.appendChild(dragHandle);
+
+            // 使用 iframe 显示页面预览（支持滚动）
+            const iframe = document.createElement('iframe');
+            // 从 PageLibrary 获取正确的文件路径
+            const pageInfo = PageLibrary.getPageInfo(element.pageId);
+            iframe.src = pageInfo ? pageInfo.filePath : `pages/${element.pageId}.html`;
+            iframe.style.width = '100%';
+            iframe.style.height = 'calc(100% - 30px)'; // 减去手柄高度
+            iframe.style.marginTop = '30px'; // 为手柄留出空间
+            iframe.style.border = 'none';
+            iframe.style.overflow = 'auto'; // 启用滚动
+            iframe.style.pointerEvents = 'auto'; // 允许iframe内交互
+
+            div.appendChild(iframe);
+
+            // 在 iframe 加载完成后,禁止 Ctrl+滚轮 的浏览器默认缩放行为
+            iframe.addEventListener('load', () => {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                    iframeDoc.addEventListener('wheel', (e) => {
+                        if (e.ctrlKey) {
+                            // 阻止浏览器默认缩放行为
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            // 将事件重新分发到父文档,让画布能够正常缩放
+                            const newEvent = new WheelEvent('wheel', {
+                                deltaX: e.deltaX,
+                                deltaY: e.deltaY,
+                                deltaZ: e.deltaZ,
+                                deltaMode: e.deltaMode,
+                                ctrlKey: e.ctrlKey,
+                                shiftKey: e.shiftKey,
+                                altKey: e.altKey,
+                                metaKey: e.metaKey,
+                                bubbles: true,
+                                cancelable: true
+                            });
+
+                            // 在 iframe 元素上分发事件,让它冒泡到父文档
+                            iframe.dispatchEvent(newEvent);
+                        }
+                    }, { passive: false }); // 必须使用 passive: false 才能调用 preventDefault()
+
+                    console.log('✅ iframe缩放保护已启用');
+                } catch (error) {
+                    console.warn('⚠️ 无法访问iframe内部(跨域限制):', error);
+                }
+            });
+
+            // 添加右键菜单事件
+            div.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // 阻止浏览器默认右键菜单
+
+                // 如果箭头工具正在绘制,不显示右键菜单,让箭头工具处理
+                const currentTool = Tools.getCurrentTool();
+                if (currentTool === 'arrow' && Tools.arrowState.isDrawing) {
+                    return;
+                }
+
+                // 获取页面信息
+                const pageInfo = PageLibrary.getPageInfo(element.pageId);
+                const filePath = pageInfo ? pageInfo.filePath : '';
+
+                // 显示自定义右键菜单(传递 element, iframe, pageInfo)
+                this.showContextMenu(e.clientX, e.clientY, element, iframe, pageInfo);
+            });
+
+        } else if (element.type === 'arrow') {
+            // 箭头元素
+            const points = element.points;
+            if (points.length < 2) return;
+
+            // 计算所有点的边界
+            const allX = points.map(p => p.x);
+            const allY = points.map(p => p.y);
+
+            const minX = Math.min(...allX);
+            const minY = Math.min(...allY);
+            const maxX = Math.max(...allX);
+            const maxY = Math.max(...allY);
+
+            const padding = 50;
+            div.style.left = `${minX - padding}px`;
+            div.style.top = `${minY - padding}px`;
+            div.style.width = `${maxX - minX + padding * 2}px`;
+            div.style.height = `${maxY - minY + padding * 2}px`;
+
+            // 关键修改：让div响应鼠标事件,确保箭头在iframe上方时能被拖动
+            div.style.pointerEvents = 'auto';
+
+            // 创建SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.classList.add('arrow-svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', `${-padding} ${-padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`);
+            svg.style.overflow = 'visible';
+
+            // 生成路径（带微微弯曲）
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const pathData = this.generateArrowPath(points, minX, minY);
+
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#e74c3c');
+            path.setAttribute('stroke-width', '3');
+
+            // 关键修改：让路径响应鼠标事件（只有点击线条本身才触发）
+            path.style.pointerEvents = 'stroke';
+
+            // 箭头标记
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const markerId = `arrowhead_${element.id}`;
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', markerId);
+            marker.setAttribute('markerWidth', '10');
+            marker.setAttribute('markerHeight', '10');
+            marker.setAttribute('refX', '9');
+            marker.setAttribute('refY', '3');
+            marker.setAttribute('orient', 'auto');
+
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            // 关键修复：箭头头部应该指向右侧(正X轴方向)
+            // 尖端在(10,3),底边在左侧,orient='auto'会自动旋转指向正确方向
+            polygon.setAttribute('points', '10 3, 0 0, 0 6');
+            polygon.setAttribute('fill', '#e74c3c');
+
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+            svg.appendChild(defs);
+
+            path.setAttribute('marker-end', `url(#${markerId})`);
+            svg.appendChild(path);
+            div.appendChild(svg);
+
+            // 添加点击选中事件
+            div.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.selectElement(element.id);
+            });
+
+            // 更新元素的位置和大小
+            element.position = { x: minX - padding, y: minY - padding };
+            element.width = maxX - minX + padding * 2;
+            element.height = maxY - minY + padding * 2;
+
+        } else if (element.type === 'note') {
+            // 卡片注释元素
+            div.style.left = `${element.position.x}px`;
+            div.style.top = `${element.position.y}px`;
+            div.style.width = `${element.width}px`;
+            div.style.height = `${element.height}px`;
+            div.classList.add('note-element');
+
+            // 关键修复：让div响应鼠标事件,确保注释在iframe上方时能被点击和编辑
+            div.style.pointerEvents = 'auto';
+
+            // 卡片内容容器
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'note-content';
+            contentDiv.contentEditable = true;
+            contentDiv.textContent = element.text || '输入注释'; // 默认文字
+
+            // 卡片编辑事件
+            let originalText = element.text || '';
+            contentDiv.addEventListener('input', (e) => {
+                element.text = e.target.textContent;
+                // 自动调整卡片高度以适应内容
+                this.adjustNoteHeight(div, contentDiv, element);
+            });
+
+            // 失焦时保存状态（如果内容不为空）
+            contentDiv.addEventListener('blur', (e) => {
+                const currentText = e.target.textContent;
+                // 只有当内容不为空，且内容真正变化了，才保存状态
+                if (currentText.trim() && currentText !== '输入注释' && currentText !== originalText) {
+                    HistoryManager.saveState();
+                    originalText = currentText; // 更新原始文本
+                }
+            });
+
+            div.appendChild(contentDiv);
+
+            // 添加拖拽手柄
+            const dragHandle = document.createElement('div');
+            dragHandle.className = 'note-drag-handle';
+            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 注释';
+            div.appendChild(dragHandle);
+
+            // 添加分辨率显示
+            const sizeDisplay = document.createElement('div');
+            sizeDisplay.className = 'note-size-display';
+            sizeDisplay.textContent = `${element.width}×${element.height}`;
+            div.appendChild(sizeDisplay);
+
+            // 添加四个角的resize手柄
+            const corners = ['nw', 'ne', 'sw', 'se'];
+            corners.forEach(corner => {
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = `note-resize-handle note-resize-${corner}`;
+                resizeHandle.dataset.corner = corner;
+                resizeHandle.dataset.elementId = element.id;
+                div.appendChild(resizeHandle);
+            });
+
+            // 添加点击选中事件
+            div.addEventListener('click', (e) => {
+                // 如果点击的是可编辑内容区域,不触发选中(让用户正常编辑)
+                if (e.target.classList.contains('note-content')) {
+                    return;
+                }
+                // 如果点击的是删除按钮,不触发选中(删除按钮有自己的逻辑)
+                if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
+                    return;
+                }
+
+                e.stopPropagation();
+                this.selectElement(element.id);
+            });
+        }
+
+        // 添加删除按钮
+        const deleteBtn = document.createElement('div');
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+        // 关键修复：让删除按钮可以响应鼠标事件(覆盖父元素的pointerEvents: 'none')
+        deleteBtn.style.pointerEvents = 'auto';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteElement(element.id);
+        });
+        div.appendChild(deleteBtn);
+
+        // 双击取消选择
+        div.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            this.deselectElement();
+        });
+
+        canvas.appendChild(div);
     },
 
     // 渲染元素

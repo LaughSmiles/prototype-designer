@@ -28,10 +28,17 @@ const HistoryManager = {
 
         // 如果历史栈为空,先保存空状态作为起点
         if (this.historyStack.length === 0) {
+            // 创建真正的空状态
+            const allPageIds = PageLibrary.getAllPageIds();
+            const emptyUsageCount = {};
+            allPageIds.forEach(pageId => {
+                emptyUsageCount[pageId] = 0;
+            });
+
             const emptyState = {
                 elements: [],
                 nextId: ElementManager.state.nextId,
-                usageCount: JSON.parse(JSON.stringify(ElementManager.state.usageCount)),
+                usageCount: emptyUsageCount,
                 selectedElement: null,
                 selectedElements: [],
                 pages: JSON.parse(JSON.stringify(PageManager.pages)),
@@ -44,12 +51,14 @@ const HistoryManager = {
                 },
                 timestamp: Date.now()
             };
+
             this.historyStack.push(emptyState);
             this.currentIndex = 0;
-            console.log('💾 保存空状态作为起点');
+            console.log('💾 初始化历史栈,保存空状态');
+            // 不 return,继续执行保存当前状态
         }
 
-        // 获取当前完整状态(此时元素已经添加到state.elements中了)
+        // 捕获当前状态
         const state = this.captureState();
 
         // 如果当前不在栈顶,删除当前位置之后的所有历史
@@ -72,7 +81,7 @@ const HistoryManager = {
 
     // 捕获当前完整状态
     captureState() {
-        return {
+        const state = {
             // 元素管理器状态
             elements: JSON.parse(JSON.stringify(ElementManager.state.elements)),
             nextId: ElementManager.state.nextId,
@@ -95,6 +104,19 @@ const HistoryManager = {
             // 时间戳
             timestamp: Date.now()
         };
+
+        // 调试信息: 打印当前状态摘要
+        const elementNames = state.elements.map(el => {
+            if (el.type === 'page') {
+                const pageInfo = PageLibrary.getPageInfo(el.pageId);
+                return pageInfo ? pageInfo.name : el.pageId;
+            }
+            return el.type;
+        }).join(', ');
+
+        console.log(`📸 捕获状态: ${state.elements.length}个元素 [${elementNames}]`);
+
+        return state;
     },
 
     // 恢复状态
@@ -156,27 +178,34 @@ const HistoryManager = {
                         // 因为它们的位置/尺寸由内部内容决定
                         else {
                             existingDiv.remove();
-                            ElementManager.renderElement(element);
+                            // 关键修复: 使用专门的渲染方法,不更新计数
+                            // (撤销时已经恢复了正确的usageCount)
+                            ElementManager.renderElementWithoutCount(element);
                         }
                     } else {
                         // 新建:渲染新元素
-                        ElementManager.renderElement(element);
+                        // 关键修复: 使用专门的渲染方法,不更新计数
+                        // (撤销时已经恢复了正确的usageCount)
+                        ElementManager.renderElementWithoutCount(element);
                     }
                 });
             }
 
             // 更新页面库的使用计数徽章
-            // 先重置所有徽章(隐藏所有徽章)
-            const allBadges = document.querySelectorAll('[id^="badge-"]');
-            allBadges.forEach(badge => {
-                badge.style.display = 'none';
-                badge.textContent = '0';
+            // 先获取所有页面ID
+            const allPageIds = PageLibrary.getAllPageIds();
+
+            // 重置所有徽章为0并隐藏
+            allPageIds.forEach(pageId => {
+                PageLibrary.updateUsageBadge(pageId, 0);
             });
 
-            // 然后更新usageCount中的页面
+            // 然后更新usageCount中计数>0的页面
             Object.keys(ElementManager.state.usageCount).forEach(pageId => {
                 const count = ElementManager.state.usageCount[pageId];
-                PageLibrary.updateUsageBadge(pageId, count);
+                if (count > 0) {
+                    PageLibrary.updateUsageBadge(pageId, count);
+                }
             });
 
             // 更新页面列表

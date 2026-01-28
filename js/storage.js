@@ -117,6 +117,13 @@ const Storage = {
                 const data = JSON.parse(saved);
                 // 直接加载,不询问用户
                 this.loadData(data);
+
+                // 检测到缓存加载后,补充当前状态到历史栈
+                if (ElementManager.state.elements.length > 0) {
+                    HistoryManager.saveState();
+                    console.log('💾 检测到缓存加载,已补充当前状态到历史栈');
+                }
+
                 PageLibrary.showHint('✅ 已恢复上次的画布');
                 console.log('自动加载完成:', data);
             }
@@ -136,6 +143,13 @@ const Storage = {
 
             const data = JSON.parse(saved);
             this.loadData(data);
+
+            // 检测到缓存加载后,补充当前状态到历史栈
+            if (ElementManager.state.elements.length > 0) {
+                HistoryManager.saveState();
+                console.log('💾 检测到缓存加载,已补充当前状态到历史栈');
+            }
+
             PageLibrary.showHint('✅ 数据已恢复');
         } catch (error) {
             console.error('加载失败:', error);
