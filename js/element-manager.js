@@ -149,9 +149,8 @@ const ElementManager = {
         this.renderElement(element);
         this.updateStatusBar();
 
-        // 注意:不在创建时保存状态
-        // 只有在用户输入内容并失焦后才会保存状态
-        // 这样撤销时可以直接删除注释,而不是回到"空注释"状态
+        // 在添加元素之后保存状态用于撤销
+        HistoryManager.saveState();
 
         // 返回元素ID,用于后续聚焦
         return element.id;
@@ -184,8 +183,8 @@ const ElementManager = {
         this.renderElement(element);
         this.updateStatusBar();
 
-        // 注意:不在创建时保存状态
-        // 只有在用户输入内容并失焦后才会保存状态
+        // 在添加元素之后保存状态用于撤销
+        HistoryManager.saveState();
 
         // 返回元素ID,用于后续聚焦
         return element.id;
