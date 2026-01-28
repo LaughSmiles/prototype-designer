@@ -234,8 +234,13 @@ const CanvasView = {
                     };
 
                     // 初始化对齐检测（获取其他元素的位置）
+                    // 只有箭头不需要对齐功能
                     this.dragAlignments = [];
-                    this.allElementBounds = alignmentManager.getAllElementBounds(targetElementId);
+                    if (element.type !== 'arrow') {
+                        this.allElementBounds = alignmentManager.getAllElementBounds(targetElementId);
+                    } else {
+                        this.allElementBounds = [];
+                    }
 
                     // 临时禁用所有iframe的交互，防止拖拽时触发滚动
                     const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
@@ -333,26 +338,29 @@ const CanvasView = {
                             height: element.height
                         };
 
-                        // 检测对齐关系
-                        const alignments = alignmentManager.checkAlignment(currentBounds, this.allElementBounds);
+                        // 检测对齐关系（只有箭头除外）
+                        let alignments = [];
+                        if (element.type !== 'arrow' && this.allElementBounds.length > 0) {
+                            alignments = alignmentManager.checkAlignment(currentBounds, this.allElementBounds);
 
-                        // 如果检测到对齐，吸附到对齐位置
-                        if (alignments.length > 0) {
-                            const snapped = alignmentManager.snapToAlignment(
-                                newX,
-                                newY,
-                                element.width,
-                                element.height,
-                                alignments
-                            );
-                            newX = snapped.x;
-                            newY = snapped.y;
+                            // 如果检测到对齐，吸附到对齐位置
+                            if (alignments.length > 0) {
+                                const snapped = alignmentManager.snapToAlignment(
+                                    newX,
+                                    newY,
+                                    element.width,
+                                    element.height,
+                                    alignments
+                                );
+                                newX = snapped.x;
+                                newY = snapped.y;
 
-                            // 显示辅助线
-                            alignmentManager.updateGuides(alignments);
-                        } else {
-                            // 没有对齐时清除辅助线
-                            alignmentManager.clearGuideLines();
+                                // 显示辅助线
+                                alignmentManager.updateGuides(alignments);
+                            } else {
+                                // 没有对齐时清除辅助线
+                                alignmentManager.clearGuideLines();
+                            }
                         }
 
                         // 更新元素位置
