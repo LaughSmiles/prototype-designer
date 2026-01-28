@@ -191,6 +191,8 @@ const Tools = {
         this.arrowState.isDrawing = false;
         this.removeArrowPreview();
 
+        // 切换回选择工具
+        this.setTool('select');
         PageLibrary.showHint('箭头已添加');
     },
 
