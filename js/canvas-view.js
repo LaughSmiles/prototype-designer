@@ -282,6 +282,15 @@ const CanvasView = {
                     iframe.style.pointerEvents = 'none';
                 });
 
+                // 临时禁用所有批注元素的交互，防止框选时被批注元素拦截
+                const annotationElements = document.querySelectorAll('.annotation-box, .annotation-anchor');
+                annotationElements.forEach(element => {
+                    element.style.pointerEvents = 'none';
+                });
+
+                // 创建透明覆盖层，防止批注元素拦截框选时的鼠标事件
+                this.createBoxSelectionOverlay();
+
                 // 创建选择框元素
                 this.createBoxSelection();
             } else if (e.button === 1) {
@@ -743,10 +752,40 @@ const CanvasView = {
         selectionBox.style.border = '2px dashed #3498db';
         selectionBox.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
         selectionBox.style.pointerEvents = 'none'; // 不拦截鼠标事件
-        selectionBox.style.zIndex = '999';
+        selectionBox.style.zIndex = '10002'; // 在覆盖层(10001)上方显示
         selectionBox.style.display = 'none';
 
         canvasWrapper.appendChild(selectionBox);
+    },
+
+    // 创建框选透明覆盖层
+    createBoxSelectionOverlay() {
+        const canvasWrapper = document.getElementById('canvasWrapper');
+        if (!canvasWrapper) return;
+
+        // 创建透明覆盖层div，覆盖整个canvasWrapper
+        const overlay = document.createElement('div');
+        overlay.id = 'boxSelectionOverlay';
+        overlay.className = 'box-selection-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.left = '0';
+        overlay.style.top = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.zIndex = '10001'; // 必须高于批注元素的z-index (10000),确保覆盖层能拦截鼠标事件
+        overlay.style.pointerEvents = 'auto'; // 拦截所有鼠标事件
+        overlay.style.backgroundColor = 'transparent';
+        overlay.style.cursor = 'crosshair';
+
+        canvasWrapper.appendChild(overlay);
+    },
+
+    // 移除框选透明覆盖层
+    removeBoxSelectionOverlay() {
+        const overlay = document.getElementById('boxSelectionOverlay');
+        if (overlay) {
+            overlay.remove();
+        }
     },
 
     // 更新框选矩形
@@ -790,10 +829,19 @@ const CanvasView = {
         if (selectionBox.style.display === 'none') {
             selectionBox.remove();
 
+            // 移除透明覆盖层
+            this.removeBoxSelectionOverlay();
+
             // 恢复所有iframe的交互
             const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
             iframes.forEach(iframe => {
                 iframe.style.pointerEvents = 'auto';
+            });
+
+            // 恢复所有批注元素的交互
+            const annotationElements = document.querySelectorAll('.annotation-box, .annotation-anchor');
+            annotationElements.forEach(element => {
+                element.style.pointerEvents = 'auto';
             });
 
             return;
@@ -825,10 +873,19 @@ const CanvasView = {
         // 移除选择框
         selectionBox.remove();
 
+        // 移除透明覆盖层
+        this.removeBoxSelectionOverlay();
+
         // 恢复所有iframe的交互
         const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
         iframes.forEach(iframe => {
             iframe.style.pointerEvents = 'auto';
+        });
+
+        // 恢复所有批注元素的交互
+        const annotationElements = document.querySelectorAll('.annotation-box, .annotation-anchor');
+        annotationElements.forEach(element => {
+            element.style.pointerEvents = 'auto';
         });
 
         // 选中框内的所有元素
@@ -857,11 +914,22 @@ const CanvasView = {
 
     // 判断元素是否在选择框内
     isElementInBox(element, box) {
-        // 元素的边界
-        const elemLeft = element.position.x;
-        const elemTop = element.position.y;
-        const elemRight = elemLeft + element.width;
-        const elemBottom = elemTop + element.height;
+        let elemLeft, elemTop, elemRight, elemBottom;
+
+        // 根据元素类型获取边界
+        if (element.type === 'annotation') {
+            // 批注元素使用boxX, boxY, boxWidth, boxHeight
+            elemLeft = element.boxX;
+            elemTop = element.boxY;
+            elemRight = elemLeft + element.boxWidth;
+            elemBottom = elemTop + element.boxHeight;
+        } else {
+            // 其他元素使用position.x, position.y, width, height
+            elemLeft = element.position.x;
+            elemTop = element.position.y;
+            elemRight = elemLeft + element.width;
+            elemBottom = elemTop + element.height;
+        }
 
         // 选择框的边界
         const boxLeft = box.x;
