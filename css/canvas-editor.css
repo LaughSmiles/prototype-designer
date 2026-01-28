@@ -1882,6 +1882,11 @@ body {
 }
 
 /* 批注元素选中状态 */
+/* 批注元素的容器本身不显示边框,避免在画布边缘出现蓝色边框 */
+.canvas-element.annotation-element.selected {
+    border: none;
+}
+
 .canvas-element.annotation-element.selected .annotation-box {
     border-color: #FF9500;
     box-shadow: 0 0 0 2px rgba(255, 149, 0, 0.2);
