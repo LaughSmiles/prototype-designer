@@ -161,10 +161,10 @@ const ElementManager = {
     addAnnotationElement(anchorX, anchorY) {
         // 批注框默认在锚点右侧60px处
         const boxX = anchorX + 60;
-        // 垂直居中对齐:锚点中心(anchorY + 5)与批注框中心(boxY + 40)对齐
-        // anchorY + 5 = boxY + 40
-        // 因此: boxY = anchorY - 35
-        const boxY = anchorY - 35;
+        // 垂直居中对齐:锚点中心(anchorY + 5)与批注框中心(boxY + 60)对齐
+        // anchorY + 5 = boxY + 60
+        // 因此: boxY = anchorY - 55
+        const boxY = anchorY - 55;
 
         const element = {
             id: PageManager.generateElementId(),
@@ -173,8 +173,10 @@ const ElementManager = {
             anchorY: anchorY,
             boxX: boxX,
             boxY: boxY,
-            width: 150,
-            height: 80,
+            boxWidth: 200,  // 批注框实际宽度
+            boxHeight: 120, // 批注框实际高度
+            width: 10000,   // 容器宽度(用于容纳锚点和框)
+            height: 10000,  // 容器高度
             content: ''
         };
 
@@ -939,8 +941,10 @@ const ElementManager = {
                 Tools.setTool('select');
             }
 
-            // 空格键：重置视图到50%（但不在编辑注释时）
-            if ((e.code === 'Space' || e.key === ' ') && !e.target.closest('.note-content')) {
+            // 空格键：重置视图到50%（但不在编辑注释或批注时）
+            if ((e.code === 'Space' || e.key === ' ') &&
+                !e.target.closest('.note-content') &&
+                !e.target.closest('.annotation-content')) {
                 e.preventDefault();
                 CanvasView.zoomReset50();
             }
@@ -1114,6 +1118,53 @@ const ElementManager = {
             const sizeDisplay = div.querySelector('.note-size-display');
             if (sizeDisplay) {
                 sizeDisplay.textContent = `${Math.round(element.width)}×${Math.round(newHeight)}`;
+            }
+        }
+    },
+
+    // 自动调整批注框高度以适应内容
+    adjustAnnotationHeight(box, contentDiv, element) {
+        const MIN_HEIGHT = 120; // 最小高度
+        const FONT_SIZE = 14; // 字体大小
+        const LINE_HEIGHT = 1.6; // 行高倍数
+
+        // 计算一行文字的实际高度
+        const oneLineHeight = FONT_SIZE * LINE_HEIGHT; // = 22.4px
+
+        // 获取内容的实际高度(需要减去padding)
+        // 批注框的 padding 是 8px (上下各8px)
+        const paddingTop = 8;
+        const paddingBottom = 8;
+        const scrollHeight = contentDiv.scrollHeight;
+        const actualContentHeight = scrollHeight - paddingTop - paddingBottom;
+
+        // 计算剩余空间
+        const remainingSpace = element.boxHeight - actualContentHeight;
+
+        // 当剩余空间少于1行文字时,提前增加1行
+        if (remainingSpace < oneLineHeight) {
+            // 每次只增加1行高度,保持平滑
+            const newHeight = Math.max(element.boxHeight + oneLineHeight, MIN_HEIGHT);
+
+            // 更新元素数据
+            element.boxHeight = newHeight;
+
+            // 更新DOM样式
+            box.style.height = `${newHeight}px`;
+
+            // 更新连接线终点(批注框左边缘中心)
+            const div = document.querySelector(`[data-element-id="${element.id}"]`);
+            if (div) {
+                const line = div.querySelector('.annotation-connection-line');
+                if (line) {
+                    line.setAttribute('y2', element.boxY + newHeight / 2);
+                }
+            }
+
+            // 更新尺寸显示
+            const sizeDisplay = box.querySelector('.annotation-size-display');
+            if (sizeDisplay) {
+                sizeDisplay.textContent = `${Math.round(element.boxWidth)} × ${Math.round(newHeight)}`;
             }
         }
     },
@@ -1382,7 +1433,7 @@ const ElementManager = {
         line.setAttribute('x1', element.anchorX + 5); // 锚点中心
         line.setAttribute('y1', element.anchorY + 5);
         line.setAttribute('x2', element.boxX); // 批注框左边缘
-        line.setAttribute('y2', element.boxY + 40); // 批注框垂直中心(固定80px高度,中心在+40)
+        line.setAttribute('y2', element.boxY + element.boxHeight / 2); // 批注框垂直中心
         line.setAttribute('stroke', '#FF9500');
         line.setAttribute('stroke-width', '1');
         line.setAttribute('class', 'annotation-connection-line'); // 添加class方便选择
@@ -1415,8 +1466,8 @@ const ElementManager = {
         box.style.position = 'absolute';
         box.style.left = `${element.boxX}px`;
         box.style.top = `${element.boxY}px`;
-        box.style.width = `${element.width}px`;
-        box.style.height = `${element.height}px`;
+        box.style.width = `${element.boxWidth}px`;   // 使用boxWidth
+        box.style.height = `${element.boxHeight}px`; // 使用boxHeight
         box.style.backgroundColor = '#FFF9E6';
         box.style.border = '1px solid #FFD700';
         box.style.borderRadius = '4px';
@@ -1442,6 +1493,8 @@ const ElementManager = {
         let originalContent = element.content || '';
         content.addEventListener('input', (e) => {
             element.content = e.target.textContent;
+            // 自动调整批注框高度以适应内容
+            this.adjustAnnotationHeight(box, content, element);
         });
 
         // 失焦时保存状态
@@ -1453,11 +1506,37 @@ const ElementManager = {
             }
         });
 
+        // 阻止空格键触发全局快捷键(防止视图复位)
+        // 使用捕获阶段确保在其他监听器之前拦截
+        content.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.stopPropagation();
+                e.stopImmediatePropagation(); // 阻止其他监听器
+                // 不阻止默认行为,让空格正常输入
+            }
+        }, true); // true = 捕获阶段
+
         box.appendChild(content);
         div.appendChild(box);
 
         // 批注框拖拽事件
         this.setupAnnotationDrag(box, element, 'box');
+
+        // 添加四个角的resize手柄
+        const corners = ['nw', 'ne', 'sw', 'se'];
+        corners.forEach(corner => {
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = `annotation-resize-handle annotation-resize-${corner}`;
+            resizeHandle.dataset.corner = corner;
+            resizeHandle.dataset.elementId = element.id;
+            box.appendChild(resizeHandle);
+        });
+
+        // 添加尺寸显示
+        const sizeDisplay = document.createElement('div');
+        sizeDisplay.className = 'annotation-size-display';
+        sizeDisplay.textContent = `${Math.round(element.boxWidth)} × ${Math.round(element.boxHeight)}`;
+        box.appendChild(sizeDisplay);
 
         // 添加删除按钮(相对于批注框定位)
         const deleteBtn = document.createElement('div');
@@ -1473,10 +1552,8 @@ const ElementManager = {
         box.style.position = 'relative';
         box.appendChild(deleteBtn);
 
-        // 更新元素的位置和大小(使用固定值)
-        element.position = { x: 0, y: 0 };
-        element.width = 10000; // 足够大
-        element.height = 10000;
+        // 批注框resize事件
+        this.setupAnnotationResize(box, element);
 
         // 点击空白区域选中事件
         div.addEventListener('click', (e) => {
@@ -1562,8 +1639,8 @@ const ElementManager = {
                 const line = div.querySelector('.annotation-connection-line');
                 if (line) {
                     line.setAttribute('x2', data.boxX);
-                    // 修复: 使用实际高度80px,而不是data.height(已被设为10000)
-                    line.setAttribute('y2', data.boxY + 40); // 80 / 2 = 40
+                    // 使用boxHeight计算中心点
+                    line.setAttribute('y2', data.boxY + data.boxHeight / 2);
                 }
             }
 
@@ -1594,5 +1671,111 @@ const ElementManager = {
             // 选中所有文字,方便用户直接替换
             document.execCommand('selectAll', false, null);
         }
+    },
+
+    // 设置批注框的缩放逻辑
+    setupAnnotationResize(box, element) {
+        const resizeHandles = box.querySelectorAll('.annotation-resize-handle');
+        const sizeDisplay = box.querySelector('.annotation-size-display');
+
+        resizeHandles.forEach(handle => {
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const corner = handle.dataset.corner;
+                const startX = e.clientX;
+                const startY = e.clientY;
+                const startWidth = element.boxWidth;   // 使用boxWidth
+                const startHeight = element.boxHeight; // 使用boxHeight
+                const startBoxX = element.boxX;
+                const startBoxY = element.boxY;
+
+                const view = CanvasView.getView();
+
+                const onMouseMove = (e) => {
+                    const deltaX = (e.clientX - startX) / view.zoom;
+                    const deltaY = (e.clientY - startY) / view.zoom;
+
+                    let newWidth = startWidth;
+                    let newHeight = startHeight;
+                    let newBoxX = startBoxX;
+                    let newBoxY = startBoxY;
+
+                    // 根据拖动的角调整尺寸和位置
+                    if (corner.includes('e')) {
+                        // 右侧拖动:只改变宽度
+                        newWidth = startWidth + deltaX;
+                    }
+                    if (corner.includes('w')) {
+                        // 左侧拖动:改变宽度并调整X位置
+                        newWidth = startWidth - deltaX;
+                        newBoxX = startBoxX + deltaX;
+                    }
+                    if (corner.includes('s')) {
+                        // 底部拖动:只改变高度
+                        newHeight = startHeight + deltaY;
+                    }
+                    if (corner.includes('n')) {
+                        // 顶部拖动:改变高度并调整Y位置
+                        newHeight = startHeight - deltaY;
+                        newBoxY = startBoxY + deltaY;
+                    }
+
+                    // 最小尺寸限制
+                    const minWidth = 100;
+                    const minHeight = 60;
+
+                    if (newWidth < minWidth) {
+                        newWidth = minWidth;
+                        if (corner.includes('w')) {
+                            newBoxX = startBoxX + startWidth - minWidth;
+                        }
+                    }
+                    if (newHeight < minHeight) {
+                        newHeight = minHeight;
+                        if (corner.includes('n')) {
+                            newBoxY = startBoxY + startHeight - minHeight;
+                        }
+                    }
+
+                    // 更新数据
+                    element.boxWidth = newWidth;
+                    element.boxHeight = newHeight;
+                    element.boxX = newBoxX;
+                    element.boxY = newBoxY;
+
+                    // 更新DOM
+                    box.style.width = `${newWidth}px`;
+                    box.style.height = `${newHeight}px`;
+                    box.style.left = `${newBoxX}px`;
+                    box.style.top = `${newBoxY}px`;
+
+                    // 更新连接线终点(批注框左边缘中心)
+                    const div = document.querySelector(`[data-element-id="${element.id}"]`);
+                    if (div) {
+                        const line = div.querySelector('.annotation-connection-line');
+                        if (line) {
+                            line.setAttribute('x2', newBoxX);
+                            line.setAttribute('y2', newBoxY + newHeight / 2);
+                        }
+                    }
+
+                    // 更新尺寸显示
+                    if (sizeDisplay) {
+                        sizeDisplay.textContent = `${Math.round(newWidth)} × ${Math.round(newHeight)}`;
+                    }
+                };
+
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    HistoryManager.saveState();
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        });
     }
 };

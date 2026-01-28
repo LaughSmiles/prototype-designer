@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批注标记功能测试</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .info {
+            background: #e8f4f8;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+        }
+        .steps {
+            background: #fff9e6;
+            padding: 15px;
+            border-left: 4px solid #f39c12;
+            margin: 20px 0;
+        }
+        .steps ol {
+            margin-left: 20px;
+        }
+        .steps li {
+            margin: 10px 0;
+        }
+        kbd {
+            background: #eee;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 0.9em;
+        }
+        .demo {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 10px;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .annotation-preview {
+            margin-top: 30px;
+            border: 1px dashed #ccc;
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 8px;
+        }
+        .annotation-preview h3 {
+            color: #FF9500;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>📝 批注标记功能测试</h1>
+
+        <div class="info">
+            <strong>✅ 功能已完成实现!</strong>
+        </div>
+
+        <div class="steps">
+            <h3>🚀 测试步骤:</h3>
+            <ol>
+                <li>打开 <strong>canvas-editor.html</strong></li>
+                <li>点击左侧工具栏的 <strong>批注按钮</strong> (📝图标) 或按快捷键 <kbd>4</kbd></li>
+                <li>在画布上<strong>点击任意位置</strong>,会创建一个批注标记</li>
+                <li>批注包含:
+                    <ul>
+                        <li><strong>橙色圆点</strong> (锚点) - 标记位置</li>
+                        <li><strong>连接线</strong> - 连接锚点和批注框</li>
+                        <li><strong>浅黄色框</strong> - 输入批注内容</li>
+                    </ul>
+                </li>
+                <li>直接在批注框中<strong>输入文字</strong></li>
+                <li><strong>拖动橙色圆点</strong>可以移动锚点位置</li>
+                <li><strong>拖动批注框</strong>可以调整批注位置</li>
+                <li>选中后按 <kbd>Delete</kbd> 键删除</li>
+            </ol>
+        </div>
+
+        <div class="annotation-preview">
+            <h3>📐 设计规格:</h3>
+            <ul>
+                <li><strong>锚点</strong>: 10px 橙色圆点 (#FF9500)</li>
+                <li><strong>连接线</strong>: 1px 实线,橙色</li>
+                <li><strong>批注框</strong>: 浅黄色背景 (#FFF9E6),圆角 4px</li>
+                <li><strong>初始尺寸</strong>: 150×80px</li>
+                <li><strong>默认位置</strong>: 批注框在锚点右侧 30px</li>
+                <li><strong>交互</strong>: 锚点和框可独立拖动</li>
+            </ul>
+        </div>
+
+        <div class="demo">
+            <a href="canvas-editor.html" class="btn">
+                <i class="fas fa-arrow-right"></i> 打开画布编辑器测试
+            </a>
+        </div>
+
+        <div class="info">
+            <strong>💡 提示:</strong> 批注功能已完全集成到画布编辑器中,支持保存/加载和撤销/重做!
+        </div>
+    </div>
+</body>
+</html>

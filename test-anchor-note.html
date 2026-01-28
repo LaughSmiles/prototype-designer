@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试锚点注释</title>
+    <link rel="stylesheet" href="css/canvas-editor.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #canvas {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+        .test-info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 99999;
+        }
+        .test-info h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .test-info p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .test-info button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-info">
+        <h3>锚点注释测试</h3>
+        <p>点击下方按钮创建一个锚点注释</p>
+        <p>然后拖动批注框查看效果</p>
+        <button onclick="createAnchorNote()">创建锚点注释</button>
+        <button onclick="checkZIndex()">检查z-index</button>
+    </div>
+
+    <div id="canvas"></div>
+
+    <script>
+        function createAnchorNote() {
+            const canvas = document.getElementById('canvas');
+
+            // 创建测试数据
+            const testElement = {
+                id: 'test-' + Date.now(),
+                type: 'note',
+                mode: 'anchor',
+                anchor: { x: 500, y: 300 },
+                text: '这是一个测试锚点注释',
+                position: { x: 560, y: 246 },
+                width: 200,
+                height: 120
+            };
+
+            // 创建批注框
+            const div = document.createElement('div');
+            div.classList.add('canvas-element', 'note-element');
+            div.dataset.elementId = testElement.id;
+            div.dataset.mode = 'anchor';
+            div.style.left = testElement.position.x + 'px';
+            div.style.top = testElement.position.y + 'px';
+            div.style.width = testElement.width + 'px';
+            div.style.height = testElement.height + 'px';
+            div.style.zIndex = '10000';
+
+            // 创建内容区
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'note-content';
+            contentDiv.contentEditable = 'true';
+            contentDiv.textContent = testElement.text;
+            div.appendChild(contentDiv);
+
+            canvas.appendChild(div);
+
+            // 创建锚点圆点
+            const anchorDot = document.createElement('div');
+            anchorDot.className = 'note-anchor-dot';
+            anchorDot.dataset.elementId = testElement.id;
+            anchorDot.style.left = testElement.anchor.x + 'px';
+            anchorDot.style.top = testElement.anchor.y + 'px';
+            canvas.appendChild(anchorDot);
+
+            // 创建SVG连接线
+            const svgLine = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svgLine.setAttribute('class', 'note-connector-line');
+            svgLine.dataset.elementId = testElement.id;
+            svgLine.style.position = 'absolute';
+            svgLine.style.pointerEvents = 'none';
+            svgLine.style.overflow = 'visible';
+            canvas.appendChild(svgLine);
+
+            // 绘制连接线
+            updateConnectorLine(testElement, div, svgLine, anchorDot);
+
+            // 添加拖拽功能
+            addDragFunctionality(div, testElement, svgLine, anchorDot);
+            addAnchorDragFunctionality(anchorDot, testElement, svgLine, div);
+
+            console.log('✅ 创建完成:', testElement);
+        }
+
+        function updateConnectorLine(element, div, svgLine, anchorDot) {
+            // 计算锚点中心 (12px圆点,半径6px)
+            const anchorX = element.anchor.x + 6;
+            const anchorY = element.anchor.y + 6;
+
+            // 计算批注框连接点 (左侧边框中心)
+            const boxX = element.position.x;
+            const boxY = element.position.y + element.height / 2;
+
+            // 设置SVG尺寸和位置
+            const minX = Math.min(anchorX, boxX);
+            const minY = Math.min(anchorY, boxY);
+            const maxX = Math.max(anchorX, boxX);
+            const maxY = Math.max(anchorY, boxY);
+
+            const padding = 10;
+            svgLine.style.left = (minX - padding) + 'px';
+            svgLine.style.top = (minY - padding) + 'px';
+            svgLine.style.width = (maxX - minX + padding * 2) + 'px';
+            svgLine.style.height = (maxY - minY + padding * 2) + 'px';
+            svgLine.setAttribute('viewBox', `0 0 ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`);
+
+            // 绘制线条
+            svgLine.innerHTML = `
+                <line
+                    x1="${anchorX - minX + padding}"
+                    y1="${anchorY - minY + padding}"
+                    x2="${boxX - minX + padding}"
+                    y2="${boxY - minY + padding}"
+                    stroke="#FF9500"
+                    stroke-width="2"
+                />
+            `;
+        }
+
+        function addDragFunctionality(div, element, svgLine, anchorDot) {
+            let isDragging = false;
+            let startX, startY;
+            let elementOffsetX, elementOffsetY;
+
+            div.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                elementOffsetX = e.clientX - element.position.x;
+                elementOffsetY = e.clientY - element.position.y;
+
+                div.style.cursor = 'grabbing';
+
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const newX = e.clientX - elementOffsetX;
+                const newY = e.clientY - elementOffsetY;
+
+                element.position.x = newX;
+                element.position.y = newY;
+
+                div.style.left = newX + 'px';
+                div.style.top = newY + 'px';
+
+                updateConnectorLine(element, div, svgLine, anchorDot);
+
+                console.log('📦 批注框位置:', { x: newX, y: newY });
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    div.style.cursor = 'grab';
+                }
+            });
+        }
+
+        function addAnchorDragFunctionality(anchorDot, element, svgLine, div) {
+            let isDragging = false;
+            let offsetX, offsetY;
+
+            anchorDot.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isDragging = true;
+
+                const rect = anchorDot.getBoundingClientRect();
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+
+                e.preventDefault();
+                e.stopPropagation();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+
+                const canvas = document.getElementById('canvas');
+                const canvasRect = canvas.getBoundingClientRect();
+                const newX = e.clientX - canvasRect.left - offsetX;
+                const newY = e.clientY - canvasRect.top - offsetY;
+
+                element.anchor.x = newX;
+                element.anchor.y = newY;
+
+                anchorDot.style.left = newX + 'px';
+                anchorDot.style.top = newY + 'px';
+
+                updateConnectorLine(element, div, svgLine, anchorDot);
+
+                console.log('🔵 锚点位置:', { x: newX, y: newY });
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function checkZIndex() {
+            const canvas = document.getElementById('canvas');
+            const noteBox = canvas.querySelector('.note-element');
+            const anchorDot = canvas.querySelector('.note-anchor-dot');
+            const svgLine = canvas.querySelector('.note-connector-line');
+
+            console.log('=== z-index 检查 ===');
+            console.log('批注框 z-index:', window.getComputedStyle(noteBox).zIndex);
+            console.log('锚点圆点 z-index:', window.getComputedStyle(anchorDot).zIndex);
+            console.log('连接线 z-index:', window.getComputedStyle(svgLine).zIndex);
+
+            alert(`
+批注框: ${window.getComputedStyle(noteBox).zIndex}
+锚点圆点: ${window.getComputedStyle(anchorDot).zIndex}
+连接线: ${window.getComputedStyle(svgLine).zIndex}
+            `);
+        }
+    </script>
+</body>
+</html>

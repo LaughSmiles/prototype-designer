@@ -1088,8 +1088,56 @@ body {
     cursor: se-resize;
 }
 
+/* 批注标记resize手柄 */
+.annotation-resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #FF9500;
+    border-radius: 2px;
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.canvas-element.annotation-element.selected .annotation-resize-handle {
+    opacity: 1;
+}
+
+.annotation-resize-handle:hover {
+    background: #FFF4CC;
+    border-color: #FF9500;
+}
+
+/* 批注框四个角的手柄位置和光标 */
+.annotation-resize-nw {
+    top: 0;
+    left: 0;
+    cursor: nw-resize;
+}
+
+.annotation-resize-ne {
+    top: 0;
+    right: 0;
+    cursor: ne-resize;
+}
+
+.annotation-resize-sw {
+    bottom: 0;
+    left: 0;
+    cursor: sw-resize;
+}
+
+.annotation-resize-se {
+    bottom: 0;
+    right: 0;
+    cursor: se-resize;
+}
+
 /* 分辨率显示 */
-.note-size-display {
+.note-size-display,
+.annotation-size-display {
     position: absolute;
     bottom: 2px;
     left: 50%;
@@ -1106,7 +1154,8 @@ body {
     transition: opacity 0.2s;
 }
 
-.canvas-element.note-element.selected .note-size-display {
+.canvas-element.note-element.selected .note-size-display,
+.canvas-element.annotation-element.selected .annotation-size-display {
     opacity: 1;
 }
 
@@ -1774,6 +1823,7 @@ body {
 /* 批注元素容器 */
 .canvas-element.annotation-element {
     pointer-events: none;
+    z-index: 10000; /* 确保批注元素在iframe上方显示 */
 }
 
 /* 批注锚点(橙色圆点) */
@@ -1817,8 +1867,13 @@ body {
     font-size: 14px;
     font-family: inherit;
     color: #333;
+    line-height: 1.6;
+    word-wrap: break-word;
+    word-break: break-word; /* 确保长单词也会换行 */
     outline: none;
     cursor: text;
+    overflow-y: auto; /* 内容溢出时显示滚动条 */
+    padding: 8px; /* 添加内边距,避免文字贴边 */
 }
 
 .annotation-content:empty:before {
