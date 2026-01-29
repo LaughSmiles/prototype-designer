@@ -162,7 +162,7 @@ const ElementManager = {
         const BOX_HEIGHT = 120;
         const ANCHOR_OFFSET = 60;
         const ANCHOR_SIZE = 10;
-        const PADDING = 50;
+        const PADDING = 10;
 
         // 点击位置就是批注框左上角,无需计算
         // boxX, boxY 直接使用
@@ -1433,7 +1433,7 @@ const ElementManager = {
 
         // 计算批注元素的最小包围盒(参考箭头工具的实现)
         const ANCHOR_SIZE = 10;
-        const PADDING = 50;
+        const PADDING = 10;
 
         // 锚点的边界
         const anchorLeft = element.anchorX;
@@ -1745,7 +1745,7 @@ const ElementManager = {
     // 更新批注元素容器大小(如果内容超出当前容器)
     updateAnnotationContainerIfNeeded(div, element) {
         const ANCHOR_SIZE = 10;
-        const PADDING = 50;
+        const PADDING = 10;
 
         // 计算当前内容的边界
         const anchorLeft = element.anchorX;
