@@ -161,6 +161,8 @@ const ElementManager = {
         const BOX_WIDTH = 200;
         const BOX_HEIGHT = 120;
         const ANCHOR_OFFSET = 60;
+        const ANCHOR_SIZE = 10;
+        const PADDING = 50;
 
         // 点击位置就是批注框左上角,无需计算
         // boxX, boxY 直接使用
@@ -169,6 +171,22 @@ const ElementManager = {
         const anchorX = boxX - ANCHOR_OFFSET;              // boxX - 60
         const anchorY = boxY + BOX_HEIGHT / 2 - 5;         // boxY + 60 - 5
 
+        // 计算容器的最小包围盒
+        const anchorLeft = anchorX;
+        const anchorRight = anchorX + ANCHOR_SIZE;
+        const anchorTop = anchorY;
+        const anchorBottom = anchorY + ANCHOR_SIZE;
+
+        const boxLeft = boxX;
+        const boxRight = boxX + BOX_WIDTH;
+        const boxTop = boxY;
+        const boxBottom = boxY + BOX_HEIGHT;
+
+        const minX = Math.min(anchorLeft, boxLeft);
+        const maxX = Math.max(anchorRight, boxRight);
+        const minY = Math.min(anchorTop, boxTop);
+        const maxY = Math.max(anchorBottom, boxBottom);
+
         const element = {
             id: PageManager.generateElementId(),
             type: 'annotation',
@@ -176,10 +194,13 @@ const ElementManager = {
             anchorY: anchorY,
             boxX: boxX,
             boxY: boxY,
-            boxWidth: BOX_WIDTH,   // 批注框实际宽度
-            boxHeight: BOX_HEIGHT, // 批注框实际高度
-            width: 10000,          // 容器宽度(用于容纳锚点和框)
-            height: 10000,         // 容器高度
+            boxWidth: BOX_WIDTH,
+            boxHeight: BOX_HEIGHT,
+            // 容器相关信息
+            containerOffsetX: minX - PADDING,
+            containerOffsetY: minY - PADDING,
+            containerWidth: maxX - minX + PADDING * 2,
+            containerHeight: maxY - minY + PADDING * 2,
             content: ''
         };
 
@@ -1410,15 +1431,42 @@ const ElementManager = {
     renderAnnotationElement(div, element) {
         div.classList.add('annotation-element');
 
-        // 不使用包围盒,直接设置容器为固定大小,足够容纳锚点和批注框
-        // 容器大小设为画布大小,通过绝对定位来放置元素
-        div.style.left = `0px`;
-        div.style.top = `0px`;
-        div.style.width = `100%`;
-        div.style.height = `100%`;
+        // 计算批注元素的最小包围盒(参考箭头工具的实现)
+        const ANCHOR_SIZE = 10;
+        const PADDING = 50;
+
+        // 锚点的边界
+        const anchorLeft = element.anchorX;
+        const anchorRight = element.anchorX + ANCHOR_SIZE;
+        const anchorTop = element.anchorY;
+        const anchorBottom = element.anchorY + ANCHOR_SIZE;
+
+        // 批注框的边界
+        const boxLeft = element.boxX;
+        const boxRight = element.boxX + element.boxWidth;
+        const boxTop = element.boxY;
+        const boxBottom = element.boxY + element.boxHeight;
+
+        // 计算最小包围盒
+        const minX = Math.min(anchorLeft, boxLeft);
+        const maxX = Math.max(anchorRight, boxRight);
+        const minY = Math.min(anchorTop, boxTop);
+        const maxY = Math.max(anchorBottom, boxBottom);
+
+        // 设置容器为最小包围盒大小(参考箭头工具)
+        div.style.left = `${minX - PADDING}px`;
+        div.style.top = `${minY - PADDING}px`;
+        div.style.width = `${maxX - minX + PADDING * 2}px`;
+        div.style.height = `${maxY - minY + PADDING * 2}px`;
         div.style.pointerEvents = 'none'; // 容器本身不响应事件
 
-        // 创建SVG容器用于绘制连接线(覆盖整个画布)
+        // 保存容器偏移量,供后续拖拽时使用
+        element.containerOffsetX = minX - PADDING;
+        element.containerOffsetY = minY - PADDING;
+        element.containerWidth = maxX - minX + PADDING * 2;
+        element.containerHeight = maxY - minY + PADDING * 2;
+
+        // 创建SVG容器用于绘制连接线
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.classList.add('annotation-svg');
         svg.setAttribute('width', '100%');
@@ -1429,14 +1477,15 @@ const ElementManager = {
         svg.style.overflow = 'visible';
         svg.style.pointerEvents = 'none';
 
-        // 关键修复: SVG需要与canvas元素的坐标系统对齐
-        // 因为div是canvas的子元素,SVG的(0,0)对应canvas的(0,0)
-        // 所以直接使用canvas坐标即可
+        // SVG viewBox 覆盖整个容器
+        svg.setAttribute('viewBox', `0 0 ${element.containerWidth} ${element.containerHeight}`);
+
+        // 连接线的坐标需要相对于容器左上角
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', element.anchorX + 5); // 锚点中心
-        line.setAttribute('y1', element.anchorY + 5);
-        line.setAttribute('x2', element.boxX); // 批注框左边缘
-        line.setAttribute('y2', element.boxY + element.boxHeight / 2); // 批注框垂直中心
+        line.setAttribute('x1', element.anchorX - element.containerOffsetX + 5); // 锚点中心(相对于容器)
+        line.setAttribute('y1', element.anchorY - element.containerOffsetY + 5);
+        line.setAttribute('x2', element.boxX - element.containerOffsetX); // 批注框左边缘(相对于容器)
+        line.setAttribute('y2', element.boxY - element.containerOffsetY + element.boxHeight / 2); // 批注框垂直中心
         line.setAttribute('stroke', '#FF9500');
         line.setAttribute('stroke-width', '1');
         line.setAttribute('class', 'annotation-connection-line'); // 添加class方便选择
@@ -1444,12 +1493,12 @@ const ElementManager = {
 
         div.appendChild(svg);
 
-        // 创建锚点(橙色圆点) - 使用绝对定位
+        // 创建锚点(橙色圆点) - 使用绝对定位(相对于容器)
         const anchor = document.createElement('div');
         anchor.className = 'annotation-anchor';
         anchor.style.position = 'absolute';
-        anchor.style.left = `${element.anchorX}px`;
-        anchor.style.top = `${element.anchorY}px`;
+        anchor.style.left = `${element.anchorX - element.containerOffsetX}px`;
+        anchor.style.top = `${element.anchorY - element.containerOffsetY}px`;
         anchor.style.width = '10px';
         anchor.style.height = '10px';
         anchor.style.borderRadius = '50%';
@@ -1463,14 +1512,14 @@ const ElementManager = {
         this.setupAnnotationDrag(anchor, element, 'anchor');
         div.appendChild(anchor);
 
-        // 创建批注框 - 使用绝对定位
+        // 创建批注框 - 使用绝对定位(相对于容器)
         const box = document.createElement('div');
         box.className = 'annotation-box';
         box.style.position = 'absolute';
-        box.style.left = `${element.boxX}px`;
-        box.style.top = `${element.boxY}px`;
-        box.style.width = `${element.boxWidth}px`;   // 使用boxWidth
-        box.style.height = `${element.boxHeight}px`; // 使用boxHeight
+        box.style.left = `${element.boxX - element.containerOffsetX}px`;
+        box.style.top = `${element.boxY - element.containerOffsetY}px`;
+        box.style.width = `${element.boxWidth}px`;
+        box.style.height = `${element.boxHeight}px`;
         box.style.backgroundColor = '#FDEEB5';
         box.style.border = '2px solid #E8D5A3';
         box.style.borderRadius = '4px';
@@ -1618,39 +1667,44 @@ const ElementManager = {
                 data.anchorX += deltaX;
                 data.anchorY += deltaY;
 
-                // 直接更新锚点DOM位置
+                // 直接更新锚点DOM位置(相对于容器)
                 const anchorEl = div.querySelector('.annotation-anchor');
                 if (anchorEl) {
-                    anchorEl.style.left = `${data.anchorX}px`;
-                    anchorEl.style.top = `${data.anchorY}px`;
+                    anchorEl.style.left = `${data.anchorX - data.containerOffsetX}px`;
+                    anchorEl.style.top = `${data.anchorY - data.containerOffsetY}px`;
                 }
 
-                // 更新连接线起点(锚点中心)
+                // 更新连接线起点(锚点中心,相对于容器)
                 const line = div.querySelector('.annotation-connection-line');
                 if (line) {
-                    line.setAttribute('x1', data.anchorX + 5);
-                    line.setAttribute('y1', data.anchorY + 5);
+                    line.setAttribute('x1', data.anchorX - data.containerOffsetX + 5);
+                    line.setAttribute('y1', data.anchorY - data.containerOffsetY + 5);
                 }
+
+                // 检查是否需要更新容器大小
+                this.updateAnnotationContainerIfNeeded(div, data);
 
             } else if (part === 'box') {
                 // 拖动批注框:只更新批注框位置和连接线
                 data.boxX += deltaX;
                 data.boxY += deltaY;
 
-                // 直接更新批注框DOM位置
+                // 直接更新批注框DOM位置(相对于容器)
                 const boxEl = div.querySelector('.annotation-box');
                 if (boxEl) {
-                    boxEl.style.left = `${data.boxX}px`;
-                    boxEl.style.top = `${data.boxY}px`;
+                    boxEl.style.left = `${data.boxX - data.containerOffsetX}px`;
+                    boxEl.style.top = `${data.boxY - data.containerOffsetY}px`;
                 }
 
-                // 更新连接线终点(批注框左边缘中心)
+                // 更新连接线终点(批注框左边缘中心,相对于容器)
                 const line = div.querySelector('.annotation-connection-line');
                 if (line) {
-                    line.setAttribute('x2', data.boxX);
-                    // 使用boxHeight计算中心点
-                    line.setAttribute('y2', data.boxY + data.boxHeight / 2);
+                    line.setAttribute('x2', data.boxX - data.containerOffsetX);
+                    line.setAttribute('y2', data.boxY - data.containerOffsetY + data.boxHeight / 2);
                 }
+
+                // 检查是否需要更新容器大小
+                this.updateAnnotationContainerIfNeeded(div, data);
             }
 
             startX = e.clientX;
@@ -1685,6 +1739,84 @@ const ElementManager = {
             contentDiv.focus();
             // 选中所有文字,方便用户直接替换
             document.execCommand('selectAll', false, null);
+        }
+    },
+
+    // 更新批注元素容器大小(如果内容超出当前容器)
+    updateAnnotationContainerIfNeeded(div, element) {
+        const ANCHOR_SIZE = 10;
+        const PADDING = 50;
+
+        // 计算当前内容的边界
+        const anchorLeft = element.anchorX;
+        const anchorRight = element.anchorX + ANCHOR_SIZE;
+        const anchorTop = element.anchorY;
+        const anchorBottom = element.anchorY + ANCHOR_SIZE;
+
+        const boxLeft = element.boxX;
+        const boxRight = element.boxX + element.boxWidth;
+        const boxTop = element.boxY;
+        const boxBottom = element.boxY + element.boxHeight;
+
+        const minX = Math.min(anchorLeft, boxLeft);
+        const maxX = Math.max(anchorRight, boxRight);
+        const minY = Math.min(anchorTop, boxTop);
+        const maxY = Math.max(anchorBottom, boxBottom);
+
+        // 计算新的容器边界
+        const newContainerOffsetX = minX - PADDING;
+        const newContainerOffsetY = minY - PADDING;
+        const newContainerWidth = maxX - minX + PADDING * 2;
+        const newContainerHeight = maxY - minY + PADDING * 2;
+
+        // 检查是否需要更新容器(内容超出当前容器或可以缩小容器)
+        const needUpdate =
+            newContainerOffsetX < element.containerOffsetX ||
+            newContainerOffsetY < element.containerOffsetY ||
+            newContainerWidth > element.containerWidth ||
+            newContainerHeight > element.containerHeight;
+
+        if (needUpdate) {
+            // 更新容器数据
+            element.containerOffsetX = newContainerOffsetX;
+            element.containerOffsetY = newContainerOffsetY;
+            element.containerWidth = newContainerWidth;
+            element.containerHeight = newContainerHeight;
+
+            // 更新容器样式
+            div.style.left = `${newContainerOffsetX}px`;
+            div.style.top = `${newContainerOffsetY}px`;
+            div.style.width = `${newContainerWidth}px`;
+            div.style.height = `${newContainerHeight}px`;
+
+            // 更新SVG viewBox
+            const svg = div.querySelector('.annotation-svg');
+            if (svg) {
+                svg.setAttribute('viewBox', `0 0 ${newContainerWidth} ${newContainerHeight}`);
+            }
+
+            // 更新锚点位置(相对于新的容器)
+            const anchorEl = div.querySelector('.annotation-anchor');
+            if (anchorEl) {
+                anchorEl.style.left = `${element.anchorX - newContainerOffsetX}px`;
+                anchorEl.style.top = `${element.anchorY - newContainerOffsetY}px`;
+            }
+
+            // 更新批注框位置(相对于新的容器)
+            const boxEl = div.querySelector('.annotation-box');
+            if (boxEl) {
+                boxEl.style.left = `${element.boxX - newContainerOffsetX}px`;
+                boxEl.style.top = `${element.boxY - newContainerOffsetY}px`;
+            }
+
+            // 更新连接线坐标(相对于新的容器)
+            const line = div.querySelector('.annotation-connection-line');
+            if (line) {
+                line.setAttribute('x1', element.anchorX - newContainerOffsetX + 5);
+                line.setAttribute('y1', element.anchorY - newContainerOffsetY + 5);
+                line.setAttribute('x2', element.boxX - newContainerOffsetX);
+                line.setAttribute('y2', element.boxY - newContainerOffsetY + element.boxHeight / 2);
+            }
         }
     },
 
@@ -1760,20 +1892,23 @@ const ElementManager = {
                     element.boxX = newBoxX;
                     element.boxY = newBoxY;
 
-                    // 更新DOM
+                    // 更新DOM(相对于容器)
                     box.style.width = `${newWidth}px`;
                     box.style.height = `${newHeight}px`;
-                    box.style.left = `${newBoxX}px`;
-                    box.style.top = `${newBoxY}px`;
+                    box.style.left = `${newBoxX - element.containerOffsetX}px`;
+                    box.style.top = `${newBoxY - element.containerOffsetY}px`;
 
-                    // 更新连接线终点(批注框左边缘中心)
+                    // 更新连接线终点(批注框左边缘中心,相对于容器)
                     const div = document.querySelector(`[data-element-id="${element.id}"]`);
                     if (div) {
                         const line = div.querySelector('.annotation-connection-line');
                         if (line) {
-                            line.setAttribute('x2', newBoxX);
-                            line.setAttribute('y2', newBoxY + newHeight / 2);
+                            line.setAttribute('x2', newBoxX - element.containerOffsetX);
+                            line.setAttribute('y2', newBoxY - element.containerOffsetY + newHeight / 2);
                         }
+
+                        // 检查是否需要更新容器大小
+                        this.updateAnnotationContainerIfNeeded(div, element);
                     }
 
                     // 更新尺寸显示
