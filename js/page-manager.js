@@ -166,12 +166,30 @@ const PageManager = {
 
         // 加载新页面的元素(深拷贝,避免引用问题)
         if (page.elements && page.elements.length > 0) {
+            let skippedCount = 0;
+
             page.elements.forEach(element => {
+                // 验证页面元素：只渲染有效的页面元素
+                if (element.type === 'page') {
+                    const pageInfo = PageLibrary.getPageInfo(element.pageId);
+                    if (!pageInfo || pageInfo.isValid === false) {
+                        console.warn(`⚠️ 跳过无效页面元素: ${element.pageId}`);
+                        skippedCount++;
+                        return; // 跳过无效元素
+                    }
+                }
+
                 // 深拷贝元素对象,避免修改影响原始数据
                 const elementCopy = JSON.parse(JSON.stringify(element));
                 ElementManager.state.elements.push(elementCopy);
                 ElementManager.renderElement(elementCopy);
             });
+
+            // 如果有元素被跳过，显示提示
+            if (skippedCount > 0) {
+                console.warn(`⚠️ 已跳过 ${skippedCount} 个无效页面引用`);
+                PageLibrary.showHint(`⚠️ 已跳过 ${skippedCount} 个无效页面引用`);
+            }
         }
 
         // 恢复新页面的视图状态
