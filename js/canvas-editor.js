@@ -9,7 +9,7 @@ const CanvasEditor = {
         startX: 0,
         startWidthLeft: 0,
         startWidthRight: 0,
-        minWidth: 0,
+        minWidth: 15,
         maxWidth: 500
     },
 
