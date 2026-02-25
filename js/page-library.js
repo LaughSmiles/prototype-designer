@@ -14,7 +14,7 @@ const PageLibrary = {
     // 初始化(改为异步)
     async init() {
         await this.loadProjectConfig();
-        this.generatePageList();
+        await this.generatePageList();  // 等待文件验证完成
         this.initializeCategoryExpanded(); // 初始化分类展开状态
         this.renderPageLibrary();
         this.setupDragAndDrop();
@@ -68,7 +68,7 @@ const PageLibrary = {
     },
 
     // 生成页面列表(从配置文件读取)
-    generatePageList() {
+    async generatePageList() {
         if (!this.projectConfig || !this.projectConfig.pages) {
             console.warn('⚠️ 项目配置中没有页面数据');
             this.pages = [];
@@ -77,19 +77,46 @@ const PageLibrary = {
 
         const canvasSize = this.projectConfig.canvasSize || { width: 320, height: 680 };
 
-        this.pages = this.projectConfig.pages.map(pageConfig => ({
-            id: pageConfig.id,
-            name: pageConfig.name,
-            filePath: pageConfig.path || `pages/${pageConfig.category}/${pageConfig.id}.html`,
-            icon: pageConfig.icon || 'fa-file',
-            category: pageConfig.category || '未分类',
-            originalSize: {
-                width: canvasSize.width,
-                height: canvasSize.height
-            }
-        }));
+        // 并行验证所有页面文件是否存在
+        const pageValidationPromises = this.projectConfig.pages.map(async pageConfig => {
+            const filePath = pageConfig.path || `pages/${pageConfig.category}/${pageConfig.id}.html`;
+            const isValid = await this.checkPageExists(filePath);
 
-        console.log(`✅ 已生成 ${this.pages.length} 个页面列表`);
+            return {
+                id: pageConfig.id,
+                name: pageConfig.name,
+                filePath: filePath,
+                icon: pageConfig.icon || 'fa-file',
+                category: pageConfig.category || '未分类',
+                originalSize: {
+                    width: canvasSize.width,
+                    height: canvasSize.height
+                },
+                isValid: isValid  // 标记页面文件是否有效
+            };
+        });
+
+        this.pages = await Promise.all(pageValidationPromises);
+
+        // 统计无效页面数量
+        const invalidCount = this.pages.filter(p => !p.isValid).length;
+        if (invalidCount > 0) {
+            console.warn(`⚠️ 发现 ${invalidCount} 个页面文件不存在，已标记为无效`);
+            const invalidNames = this.pages.filter(p => !p.isValid).map(p => p.name).join(', ');
+            console.warn(`   无效页面: ${invalidNames}`);
+        }
+
+        console.log(`✅ 已生成 ${this.pages.length} 个页面列表 (${this.pages.length - invalidCount} 个有效)`);
+    },
+
+    // 检查页面文件是否存在
+    async checkPageExists(filePath) {
+        try {
+            const response = await fetch(filePath, { method: 'HEAD' });
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
     },
 
     // 渲染页面库
@@ -219,29 +246,45 @@ const PageLibrary = {
     createPageItem(page) {
         const item = document.createElement('div');
         item.className = 'page-item';
-        item.draggable = true;
+
+        // 根据页面有效性添加样式类
+        if (!page.isValid) {
+            item.classList.add('page-item-invalid');
+            item.draggable = false;  // 禁用拖拽
+            item.title = '页面文件不存在，无法拖拽';
+        } else {
+            item.draggable = true;
+        }
+
         item.dataset.pageId = page.id;
 
+        // 根据有效性显示不同的图标
+        const iconClass = page.isValid ? page.icon : 'fa-exclamation-triangle';
+        const nameSuffix = page.isValid ? '' : ' [文件缺失]';
+
         item.innerHTML = `
-            <i class="fas ${page.icon}"></i>
+            <i class="fas ${iconClass}"></i>
             <div class="page-item-info">
-                <div class="page-item-name">${page.name}</div>
+                <div class="page-item-name">${page.name}${nameSuffix}</div>
                 <div class="page-item-id">${page.id}</div>
             </div>
             <div class="page-usage-badge" id="badge-${page.id}">0</div>
         `;
 
-        // 拖拽开始
-        item.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('pageId', page.id);
-            e.dataTransfer.effectAllowed = 'copy';
-            item.classList.add('dragging');
-        });
+        // 只为有效页面添加拖拽事件
+        if (page.isValid) {
+            // 拖拽开始
+            item.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('pageId', page.id);
+                e.dataTransfer.effectAllowed = 'copy';
+                item.classList.add('dragging');
+            });
 
-        // 拖拽结束
-        item.addEventListener('dragend', () => {
-            item.classList.remove('dragging');
-        });
+            // 拖拽结束
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging');
+            });
+        }
 
         // 添加右键菜单事件
         item.addEventListener('contextmenu', (e) => {

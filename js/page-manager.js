@@ -690,7 +690,7 @@ const PageManager = {
     },
 
     // 获取所有页面数据(用于保存)
-    getAllPagesData() {
+    async getAllPagesData() {
         // 保存前先更新当前页面的视图状态、元素和使用计数
         const currentPage = this.getCurrentPage();
         if (currentPage) {
@@ -703,7 +703,18 @@ const PageManager = {
             console.log('💾 保存前 - 当前页面:', currentPage.name);
 
             currentPage.view = view;
-            currentPage.elements = ElementManager.getAllElements();
+            let allElements = ElementManager.getAllElements();
+
+            // 清理无效的页面引用（文件不存在的页面元素）
+            const cleanedElements = await this.cleanInvalidPageReferences(allElements);
+
+            if (cleanedElements.length !== allElements.length) {
+                const removedCount = allElements.length - cleanedElements.length;
+                console.warn(`⚠️ 保存时清理了 ${removedCount} 个无效页面引用`);
+                PageLibrary.showHint(`⚠️ 已移除 ${removedCount} 个无效页面引用`);
+            }
+
+            currentPage.elements = cleanedElements;
             // 关键:只保存当前画布页面的usageCount,每个画布页面独立计数
             currentPage.usageCount = ElementManager.getUsageCounts();
 
@@ -715,6 +726,38 @@ const PageManager = {
             currentPageId: this.currentPageId,
             globalNextElementId: this.globalNextElementId  // 保存全局元素ID计数器
         };
+    },
+
+    // 清理无效的页面引用（文件不存在的页面元素）
+    async cleanInvalidPageReferences(elements) {
+        const validElements = [];
+        let invalidCount = 0;
+
+        for (const element of elements) {
+            // 只检查页面类型的元素
+            if (element.type === 'page') {
+                const pageInfo = PageLibrary.getPageInfo(element.pageId);
+                if (pageInfo && pageInfo.isValid !== false) {
+                    // 检查文件是否真的存在
+                    const exists = await PageLibrary.checkPageExists(pageInfo.filePath);
+                    if (exists) {
+                        validElements.push(element);
+                    } else {
+                        console.warn(`⚠️ 移除无效页面元素: ${element.pageId} (${pageInfo.name})`);
+                        invalidCount++;
+                    }
+                } else {
+                    // 页面信息不存在或已标记为无效
+                    console.warn(`⚠️ 移除无效页面元素: ${element.pageId}`);
+                    invalidCount++;
+                }
+            } else {
+                // 非页面类型的元素直接保留
+                validElements.push(element);
+            }
+        }
+
+        return validElements;
     },
 
     // 设置页面数据(用于加载)

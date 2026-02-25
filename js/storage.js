@@ -61,9 +61,9 @@ const Storage = {
     },
 
     // 保存到 localStorage
-    save() {
+    async save() {
         // 获取所有页面数据
-        const pagesData = PageManager.getAllPagesData();
+        const pagesData = await PageManager.getAllPagesData();
 
         const data = {
             version: '2.0', // 升级版本号
@@ -82,9 +82,9 @@ const Storage = {
     },
 
     // 静默保存（不显示提示，用于自动保存）
-    saveSilently() {
+    async saveSilently() {
         // 获取所有页面数据
-        const pagesData = PageManager.getAllPagesData();
+        const pagesData = await PageManager.getAllPagesData();
 
         const data = {
             version: '2.0',
