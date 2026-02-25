@@ -268,7 +268,7 @@ const PageLibrary = {
                 <div class="page-item-name">${page.name}${nameSuffix}</div>
                 <div class="page-item-id">${page.id}</div>
             </div>
-            <div class="page-usage-badge" id="badge-${page.id}">0</div>
+            ${page.isValid ? `<div class="page-usage-badge" id="badge-${page.id}">0</div>` : ''}
         `;
 
         // 只为有效页面添加拖拽事件
