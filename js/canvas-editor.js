@@ -2,6 +2,17 @@
 // 负责初始化所有模块和协调各模块工作
 
 const CanvasEditor = {
+    // 侧边栏拖动状态
+    sidebarResizer: {
+        isResizingLeft: false,
+        isResizingRight: false,
+        startX: 0,
+        startWidthLeft: 0,
+        startWidthRight: 0,
+        minWidth: 0,
+        maxWidth: 500
+    },
+
     // 初始化
     async init() {
         const projectName = await this.getProjectName();
@@ -65,7 +76,11 @@ const CanvasEditor = {
             HistoryManager.init();
             console.log('✅ 历史记录管理器初始化完成');
 
-            // 9. 绑定全局快捷键
+            // 9. 初始化侧边栏拖动功能
+            this.initSidebarResizer();
+            console.log('✅ 侧边栏拖动功能初始化完成');
+
+            // 10. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
             // 注意: 不在初始化时保存空状态
@@ -181,6 +196,119 @@ const CanvasEditor = {
                 }
             });
         });
+    },
+
+    // 初始化侧边栏拖动功能
+    initSidebarResizer() {
+        const sidebarLeft = document.getElementById('sidebarLeft');
+        const sidebarRight = document.getElementById('sidebarRight');
+        const resizerLeft = document.getElementById('resizerLeft');
+        const resizerRight = document.getElementById('resizerRight');
+        const expanderLeft = document.getElementById('expanderLeft');
+        const expanderRight = document.getElementById('expanderRight');
+
+        if (!sidebarLeft || !sidebarRight || !resizerLeft || !resizerRight) {
+            console.warn('侧边栏拖动功能初始化失败：找不到必要元素');
+            return;
+        }
+
+        // 左侧边栏拖动
+        resizerLeft.addEventListener('mousedown', (e) => {
+            this.sidebarResizer.isResizingLeft = true;
+            this.sidebarResizer.startX = e.clientX;
+            this.sidebarResizer.startWidthLeft = sidebarLeft.offsetWidth;
+            resizerLeft.classList.add('resizing');
+
+            // 禁用文本选择
+            document.body.style.userSelect = 'none';
+        });
+
+        // 右侧边栏拖动
+        resizerRight.addEventListener('mousedown', (e) => {
+            this.sidebarResizer.isResizingRight = true;
+            this.sidebarResizer.startX = e.clientX;
+            this.sidebarResizer.startWidthRight = sidebarRight.offsetWidth;
+            resizerRight.classList.add('resizing');
+
+            // 禁用文本选择
+            document.body.style.userSelect = 'none';
+        });
+
+        // 鼠标移动事件
+        document.addEventListener('mousemove', (e) => {
+            // 处理左侧边栏拖动
+            if (this.sidebarResizer.isResizingLeft) {
+                const deltaX = e.clientX - this.sidebarResizer.startX;
+                const newWidth = this.sidebarResizer.startWidthLeft + deltaX;
+
+                // 限制宽度范围
+                const clampedWidth = Math.max(
+                    this.sidebarResizer.minWidth,
+                    Math.min(this.sidebarResizer.maxWidth, newWidth)
+                );
+
+                sidebarLeft.style.width = clampedWidth + 'px';
+
+                // 检查是否需要隐藏
+                if (clampedWidth <= this.sidebarResizer.minWidth) {
+                    sidebarLeft.classList.add('collapsed');
+                } else {
+                    sidebarLeft.classList.remove('collapsed');
+                }
+            }
+
+            // 处理右侧边栏拖动
+            if (this.sidebarResizer.isResizingRight) {
+                const deltaX = this.sidebarResizer.startX - e.clientX;
+                const newWidth = this.sidebarResizer.startWidthRight + deltaX;
+
+                // 限制宽度范围
+                const clampedWidth = Math.max(
+                    this.sidebarResizer.minWidth,
+                    Math.min(this.sidebarResizer.maxWidth, newWidth)
+                );
+
+                sidebarRight.style.width = clampedWidth + 'px';
+
+                // 检查是否需要隐藏
+                if (clampedWidth <= this.sidebarResizer.minWidth) {
+                    sidebarRight.classList.add('collapsed');
+                } else {
+                    sidebarRight.classList.remove('collapsed');
+                }
+            }
+        });
+
+        // 鼠标释放事件
+        document.addEventListener('mouseup', () => {
+            if (this.sidebarResizer.isResizingLeft) {
+                this.sidebarResizer.isResizingLeft = false;
+                resizerLeft.classList.remove('resizing');
+                document.body.style.userSelect = '';
+            }
+
+            if (this.sidebarResizer.isResizingRight) {
+                this.sidebarResizer.isResizingRight = false;
+                resizerRight.classList.remove('resizing');
+                document.body.style.userSelect = '';
+            }
+        });
+
+        // 左侧展开按钮
+        if (expanderLeft) {
+            expanderLeft.addEventListener('click', () => {
+                sidebarLeft.classList.remove('collapsed');
+                sidebarLeft.style.width = '180px'; // 恢复默认宽度
+            });
+        }
+
+        // 右侧展开按钮
+        if (expanderRight) {
+            expanderRight.addEventListener('click', () => {
+                sidebarRight.classList.remove('collapsed');
+                sidebarRight.style.width = '280px'; // 恢复默认宽度
+            });
+        }
     }
 };
 

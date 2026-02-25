@@ -27,6 +27,61 @@ body {
     display: flex;
     flex-direction: column;
     border-right: 2px solid #ddd;
+    position: relative;
+    flex-shrink: 0;
+    transition: width 0.15s ease-out;
+    overflow: hidden;
+}
+
+/* 左侧边栏隐藏状态 */
+.sidebar-left.collapsed {
+    width: 0 !important;
+    border-right: none;
+}
+
+/* 左侧拖动条 */
+.resizer-left {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 6px;
+    height: 100%;
+    background: transparent;
+    cursor: col-resize;
+    z-index: 10;
+    transition: background 0.2s;
+}
+
+.resizer-left:hover,
+.resizer-left.resizing {
+    background: #3498db;
+}
+
+/* 左侧展开按钮 */
+.expander-left {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 60px;
+    background: #3498db;
+    color: white;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 0 4px 4px 0;
+    z-index: 11;
+    transition: background 0.2s;
+}
+
+.expander-left:hover {
+    background: #2980b9;
+}
+
+.sidebar-left.collapsed .expander-left {
+    display: flex;
 }
 
 .toolbar-header {
@@ -793,6 +848,61 @@ body {
     border-left: 2px solid #ddd;
     display: flex;
     flex-direction: column;
+    position: relative;
+    flex-shrink: 0;
+    transition: width 0.15s ease-out;
+    overflow: hidden;
+}
+
+/* 右侧边栏隐藏状态 */
+.sidebar-right.collapsed {
+    width: 0 !important;
+    border-left: none;
+}
+
+/* 右侧拖动条 */
+.resizer-right {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 6px;
+    height: 100%;
+    background: transparent;
+    cursor: col-resize;
+    z-index: 10;
+    transition: background 0.2s;
+}
+
+.resizer-right:hover,
+.resizer-right.resizing {
+    background: #3498db;
+}
+
+/* 右侧展开按钮 */
+.expander-right {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 60px;
+    background: #3498db;
+    color: white;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px 0 0 4px;
+    z-index: 11;
+    transition: background 0.2s;
+}
+
+.expander-right:hover {
+    background: #2980b9;
+}
+
+.sidebar-right.collapsed .expander-right {
+    display: flex;
 }
 
 .page-library-header {
