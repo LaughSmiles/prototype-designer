@@ -17,6 +17,7 @@ body {
     display: flex;
     height: 100vh;
     width: 100vw;
+    position: relative;
 }
 
 /* 左侧工具栏 */
@@ -57,11 +58,11 @@ body {
     background: #3498db;
 }
 
-/* 左侧展开按钮 */
+/* 左侧展开按钮（独立于侧边栏外部） */
 .expander-left {
     position: absolute;
     top: 50%;
-    right: 0;
+    left: 0;
     transform: translateY(-50%);
     width: 20px;
     height: 60px;
@@ -72,7 +73,7 @@ body {
     justify-content: center;
     cursor: pointer;
     border-radius: 0 4px 4px 0;
-    z-index: 11;
+    z-index: 100;
     transition: background 0.2s;
 }
 
@@ -80,7 +81,14 @@ body {
     background: #2980b9;
 }
 
-.sidebar-left.collapsed .expander-left {
+/* 当左侧边栏隐藏时显示展开按钮 */
+.sidebar-left.collapsed ~ .expander-left,
+.app-container:has(.sidebar-left.collapsed) .expander-left {
+    display: flex;
+}
+
+/* 兼容不支持 :has 的浏览器 */
+.sidebar-left.collapsed + .expander-left {
     display: flex;
 }
 
@@ -878,11 +886,11 @@ body {
     background: #3498db;
 }
 
-/* 右侧展开按钮 */
+/* 右侧展开按钮（独立于侧边栏外部） */
 .expander-right {
     position: absolute;
     top: 50%;
-    left: 0;
+    right: 0;
     transform: translateY(-50%);
     width: 20px;
     height: 60px;
@@ -893,7 +901,7 @@ body {
     justify-content: center;
     cursor: pointer;
     border-radius: 4px 0 0 4px;
-    z-index: 11;
+    z-index: 100;
     transition: background 0.2s;
 }
 
@@ -901,7 +909,8 @@ body {
     background: #2980b9;
 }
 
-.sidebar-right.collapsed .expander-right {
+/* 当右侧边栏隐藏时显示展开按钮 - 使用 JavaScript 控制 */
+.sidebar-right.collapsed ~ .expander-right {
     display: flex;
 }
 

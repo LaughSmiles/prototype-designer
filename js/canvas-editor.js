@@ -212,6 +212,21 @@ const CanvasEditor = {
             return;
         }
 
+        // 更新展开按钮显示状态的函数
+        const updateExpanderVisibility = () => {
+            if (expanderLeft) {
+                expanderLeft.style.display = sidebarLeft.classList.contains('collapsed') ? 'flex' : 'none';
+            }
+            if (expanderRight) {
+                expanderRight.style.display = sidebarRight.classList.contains('collapsed') ? 'flex' : 'none';
+            }
+        };
+
+        // 监听侧边栏类变化，同步更新展开按钮显示
+        const observer = new MutationObserver(updateExpanderVisibility);
+        observer.observe(sidebarLeft, { attributes: true, attributeFilter: ['class'] });
+        observer.observe(sidebarRight, { attributes: true, attributeFilter: ['class'] });
+
         // 左侧边栏拖动
         resizerLeft.addEventListener('mousedown', (e) => {
             this.sidebarResizer.isResizingLeft = true;
