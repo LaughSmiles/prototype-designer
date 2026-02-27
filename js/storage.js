@@ -191,9 +191,9 @@ const Storage = {
     },
 
     // 导出为 JSON 文件
-    export() {
+    async export() {
         // 获取所有页面数据
-        const pagesData = PageManager.getAllPagesData();
+        const pagesData = await PageManager.getAllPagesData();
 
         const data = {
             version: '2.0',
@@ -207,7 +207,18 @@ const Storage = {
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = `canvas-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        // 使用北京时间（东8区）作为文件名
+        const beijingTime = new Date().toLocaleString('sv-SE', {
+            timeZone: 'Asia/Shanghai',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        }).replace(' ', 'T').replace(/:/g, '-');
+        a.download = `canvas-${beijingTime}.json`;
         a.click();
 
         URL.revokeObjectURL(url);
