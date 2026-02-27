@@ -12,13 +12,12 @@ const PageLibrary = {
     categoryExpanded: {},
 
     // 初始化
-    init() {
+    async init() {
         this.loadProjectConfig();
-        this.generatePageList().then(() => {
-            this.initializeCategoryExpanded();
-            this.renderPageLibrary();
-            this.setupDragAndDrop();
-        });
+        await this.generatePageList();
+        this.initializeCategoryExpanded();
+        this.renderPageLibrary();
+        this.setupDragAndDrop();
     },
 
     // 初始化分类展开状态(默认全部展开)
@@ -109,8 +108,10 @@ const PageLibrary = {
         // HTTP/HTTPS 协议下正常验证
         try {
             const response = await fetch(filePath, { method: 'HEAD' });
+            console.log(`🔍 [checkPageExists] ${filePath} - status: ${response.status}, ok: ${response.ok}`);
             return response.ok;
-        } catch {
+        } catch (error) {
+            console.error(`❌ [checkPageExists] ${filePath} - error:`, error);
             return false;
         }
     },
