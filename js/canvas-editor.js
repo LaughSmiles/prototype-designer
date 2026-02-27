@@ -14,8 +14,8 @@ const CanvasEditor = {
     },
 
     // 初始化
-    async init() {
-        const projectName = await this.getProjectName();
+    init() {
+        const projectName = this.getProjectName();
         console.log(`🎨 ${projectName}画布编辑器正在初始化...`);
 
         // 按顺序初始化各模块
@@ -30,15 +30,9 @@ const CanvasEditor = {
             });
     },
 
-    // 获取项目名称
-    async getProjectName() {
-        try {
-            const response = await fetch('project-config.json');
-            const config = await response.json();
-            return config.projectName || '画布编辑器';
-        } catch (error) {
-            return '画布编辑器';
-        }
+    // 获取项目名称 (config.js 已在页面顶部加载)
+    getProjectName() {
+        return window.PROJECT_CONFIG?.projectName || '画布编辑器';
     },
 
     // 初始化所有模块
@@ -115,8 +109,8 @@ const CanvasEditor = {
     },
 
     // 显示欢迎信息
-    async showWelcome() {
-        const projectName = await this.getProjectName();
+    showWelcome() {
+        const projectName = this.getProjectName();
         const message = `
 🎨 ${projectName}画布编辑器已就绪！
 

@@ -1,4 +1,5 @@
-{
+// 项目配置文件 (降级方案 - 用于 file:// 协议)
+window.PROJECT_CONFIG = {
   "projectName": "摄影派",
   "projectTitle": "摄影派 - 高保真原型设计",
   "projectDescription": "摄影器材租赁与分享平台原型设计系统",
@@ -261,4 +262,4 @@
       "path": "pages/profile/logistics-detail.html"
     }
   ]
-}
+};

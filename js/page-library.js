@@ -11,13 +11,14 @@ const PageLibrary = {
     // 分类展开状态(默认全部展开)
     categoryExpanded: {},
 
-    // 初始化(改为异步)
-    async init() {
-        await this.loadProjectConfig();
-        await this.generatePageList();  // 等待文件验证完成
-        this.initializeCategoryExpanded(); // 初始化分类展开状态
-        this.renderPageLibrary();
-        this.setupDragAndDrop();
+    // 初始化
+    init() {
+        this.loadProjectConfig();
+        this.generatePageList().then(() => {
+            this.initializeCategoryExpanded();
+            this.renderPageLibrary();
+            this.setupDragAndDrop();
+        });
     },
 
     // 初始化分类展开状态(默认全部展开)
@@ -30,29 +31,19 @@ const PageLibrary = {
         });
     },
 
-    // 加载项目配置文件
-    async loadProjectConfig() {
-        try {
-            const response = await fetch('project-config.json');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const config = await response.json();
-            this.projectConfig = config;
-
-            // 读取项目根路径配置
-            this.projectRootPath = config.projectRootPath || '';
-
-            console.log(`✅ 已加载项目配置: ${config.projectName} (版本 ${config.version})`);
+    // 加载项目配置 (config.js 已在页面顶部加载)
+    loadProjectConfig() {
+        if (window.PROJECT_CONFIG) {
+            this.projectConfig = window.PROJECT_CONFIG;
+            this.projectRootPath = window.PROJECT_CONFIG.projectRootPath || '';
+            console.log(`✅ 已加载项目配置: ${this.projectConfig.projectName} (版本 ${this.projectConfig.version})`);
             if (this.projectRootPath) {
                 console.log(`✅ 项目根路径: ${this.projectRootPath}`);
             }
-        } catch (error) {
-            console.error('❌ 加载项目配置失败:', error);
-            // 提供默认配置以确保框架能正常运行
+        } else {
+            console.warn('⚠️ 未找到配置，使用默认配置');
             this.projectConfig = this.getDefaultConfig();
             this.projectRootPath = '';
-            console.warn('⚠️ 使用默认配置');
         }
     },
 
@@ -111,10 +102,15 @@ const PageLibrary = {
 
     // 检查页面文件是否存在
     async checkPageExists(filePath) {
+        // file:// 协议下 fetch 会被 CORS 阻止，直接假设文件有效
+        if (window.location.protocol === 'file:') {
+            return true;
+        }
+        // HTTP/HTTPS 协议下正常验证
         try {
             const response = await fetch(filePath, { method: 'HEAD' });
             return response.ok;
-        } catch (error) {
+        } catch {
             return false;
         }
     },

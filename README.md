@@ -45,14 +45,14 @@
 
 #### 步骤3: 修改配置文件
 
-notes：可以解决ai帮你生成配置文件，提示词如下
+notes：可以让ai帮你生成配置文件，提示词如下
 
 ```
-@README.md @pages @index.html @project-config.json
-帮我配置project-config.json
+@README.md @pages @index.html
+帮我配置 config.js 文件
 ```
 
-编辑 `project-config.json`:
+编辑 `config.js`:
 
 ```json
 {
@@ -99,7 +99,7 @@ notes：可以解决ai帮你生成配置文件，提示词如下
 ```
 项目根目录/
 ├── canvas-editor.html         # 画布编辑器入口(框架核心)
-├── project-config.json        # 项目配置文件(需修改)
+├── config.js                  # 项目配置文件(需修改)
 ├── index.html                  # 项目展示页(可选)
 ├── pages/                      # 页面文件目录(需修改)
 │   ├── home.html
@@ -120,7 +120,7 @@ notes：可以解决ai帮你生成配置文件，提示词如下
 
 ### 需要修改的文件
 
-- ✏️ `project-config.json` - 项目配置
+- ✏️ `config.js` - 项目配置
 - ✏️ `pages/` - 页面文件
 - ✏️ `index.html` - 项目展示页(可选)
 
@@ -134,53 +134,54 @@ notes：可以解决ai帮你生成配置文件，提示词如下
 
 ## 🔧 配置文件详解
 
-### project-config.json 完整说明
+### config.js 完整说明
 
-```json
-{
+```javascript
+// 项目配置文件
+window.PROJECT_CONFIG = {
   // ===== 项目基本信息 =====
-  "projectName": "项目名称",              // 显示在浏览器标题和欢迎信息
-  "projectTitle": "完整标题",             // 用于文档说明
-  "projectDescription": "项目描述",       // 项目简介
-  "version": "1.0.0",                     // 版本号
+  projectName: "项目名称",              // 显示在浏览器标题和欢迎信息
+  projectTitle: "完整标题",             // 用于文档说明
+  projectDescription: "项目描述",       // 项目简介
+  version: "1.0.0",                     // 版本号
 
   // ===== 页面元素的大小 =====
-  "canvasSize": {
-    "width": 320,                         // 默认宽度(px)
-    "height": 680                         // 默认高度(px)
+  canvasSize: {
+    width: 320,                           // 默认宽度(px)
+    height: 680                           // 默认高度(px)
   },
 
   // ===== 页面分类(可选) =====
-  "categories": [
+  categories: [
     {
-      "id": "home",                       // 分类ID(唯一标识)
-      "name": "首页模块",                  // 分类显示名称
-      "order": 1                          // 显示顺序(数字越小越靠前)
+      id: "home",                       // 分类ID(唯一标识)
+      name: "首页模块",                  // 分类显示名称
+      order: 1                          // 显示顺序(数字越小越靠前)
     },
     {
-      "id": "user",
-      "name": "用户中心",
-      "order": 2
+      id: "user",
+      name: "用户中心",
+      order: 2
     }
   ],
 
   // ===== 页面列表 =====
-  "pages": [
+  pages: [
     {
-      "id": "home",                       // 页面ID(必须与文件名一致)
-      "name": "首页",                      // 页面显示名称
-      "icon": "fa-home",                  // FontAwesome图标类名
-      "category": "home"                  // 所属分类ID(对应categories中的id)
+      id: "home",                         // 页面ID(必须与文件名一致)
+      name: "首页",                        // 页面显示名称
+      icon: "fa-home",                    // FontAwesome图标类名
+      category: "home"                    // 所属分类ID(对应categories中的id)
     },
     {
-      "id": "profile",
-      "name": "个人中心",
-      "icon": "fa-user",
-      "category": "user"
+      id: "profile",
+      name: "个人中心",
+      icon: "fa-user",
+      category: "user"
     }
     // ... 更多页面
   ]
-}
+};
 ```
 
 ### 字段说明
@@ -482,11 +483,11 @@ canvasEditor_usageCount
 
 ### Q1: 页面库显示"未找到页面配置"
 
-**原因**: `project-config.json` 文件格式错误或路径不正确
+**原因**: `config.js` 文件格式错误或路径不正确
 
 **解决**:
 
-1. 检查 JSON 格式是否正确(可使用 https://jsonlint.com 验证)
+1. 检查 JavaScript 语法是否正确
 2. 确保文件在项目根目录
 3. 打开浏览器控制台查看错误信息
 

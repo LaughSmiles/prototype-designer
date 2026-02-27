@@ -5,22 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title id="pageTitle">画布编辑器</title>
 
-    <!-- 动态加载项目配置并设置标题 -->
+    <!-- 优先加载配置文件 (file:// 协议降级方案) -->
+    <script src="config.js"></script>
+
+    <!-- 设置页面标题 -->
     <script>
-        (function() {
-            fetch('project-config.json')
-                .then(response => {
-                    if (!response.ok) throw new Error('无法加载项目配置');
-                    return response.json();
-                })
-                .then(config => {
-                    document.title = `${config.projectName} - 画布编辑器`;
-                })
-                .catch(error => {
-                    console.warn('使用默认标题:', error);
-                    document.title = '画布编辑器';
-                });
-        })();
+        // config.js 已在顶部加载，直接使用
+        document.title = window.PROJECT_CONFIG ? `${window.PROJECT_CONFIG.projectName} - 画布编辑器` : '画布编辑器';
     </script>
     <script src="lib/js/tailwindcss.js"></script>
     <link rel="stylesheet" href="lib/css/all.min.css">
