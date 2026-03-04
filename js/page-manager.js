@@ -201,10 +201,31 @@ const PageManager = {
 
         console.log('✅ 视图状态已恢复, 当前zoom:', CanvasView.state.zoom, 'pan:', CanvasView.state.pan);
 
-        // 恢复新页面的使用计数
-        if (page.usageCount) {
-            ElementManager.setUsageCounts(page.usageCount);
-        }
+        // 🔧 关键修复: 根据实际加载的元素重新计算 usageCount
+        // 不再使用保存的 page.usageCount，而是从实际元素统计
+        const actualUsageCount = {};
+        PageLibrary.getAllPageIds().forEach(pageId => {
+            actualUsageCount[pageId] = 0;
+        });
+
+        // 遍历已加载的元素，统计每个页面的实际使用次数
+        ElementManager.state.elements.forEach(element => {
+            if (element.type === 'page' && element.pageId) {
+                if (actualUsageCount.hasOwnProperty(element.pageId)) {
+                    actualUsageCount[element.pageId]++;
+                }
+            }
+        });
+
+        // 更新 ElementManager 的 usageCount
+        ElementManager.state.usageCount = actualUsageCount;
+
+        // 更新所有徽章显示
+        PageLibrary.getAllPageIds().forEach(pageId => {
+            PageLibrary.updateUsageBadge(pageId, actualUsageCount[pageId] || 0);
+        });
+
+        console.log('📊 实际元素统计:', actualUsageCount);
 
         // 更新标签栏选中状态
         this.updateTabActive(pageId);
