@@ -130,6 +130,14 @@ const CanvasView = {
                 return; // 由全局监听器处理
             }
 
+            // 检查是否在批注标记内部（编辑器或预览区域）
+            const isInsideAnnotation = e.target.closest('.annotation-content-wrapper') ||
+                                        e.target.closest('.annotation-editor') ||
+                                        e.target.closest('.annotation-preview');
+            if (isInsideAnnotation) {
+                return; // 让批注标记自己处理滚动
+            }
+
             // 阻止默认行为
             e.preventDefault();
             e.stopPropagation();
@@ -393,6 +401,14 @@ const CanvasView = {
                 // 检查具体位置
                 const isInsideIframe = e.target.closest('.canvas-element.page-element iframe');
                 const isInsideCanvasWrapper = e.target.closest('#canvasWrapper');
+                const isInsideAnnotation = e.target.closest('.annotation-content-wrapper') ||
+                                           e.target.closest('.annotation-editor') ||
+                                           e.target.closest('.annotation-preview');
+
+                // 在批注标记内部：允许批注正常滚动
+                if (isInsideAnnotation) {
+                    return;
+                }
 
                 if (e.ctrlKey) {
                     // Ctrl+滚轮：画布缩放

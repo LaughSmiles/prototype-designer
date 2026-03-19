@@ -1911,6 +1911,154 @@ body {
     color: #999;
 }
 
+/* 批注内容包装器 */
+.annotation-content-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 批注工具栏 */
+.annotation-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 2px;
+    padding: 2px 4px;
+    border-bottom: 1px solid #E8D5A3;
+    margin-bottom: 4px;
+}
+
+.annotation-mode-btn {
+    padding: 2px 4px;
+    border: none;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 10px;
+    transition: all 0.2s;
+}
+
+.annotation-mode-btn:hover {
+    background: rgba(255, 149, 0, 0.1);
+    color: #FF9500;
+}
+
+.annotation-mode-btn.active {
+    background: #FF9500;
+    color: white;
+}
+
+/* 批注编辑器（Markdown 源码） */
+.annotation-editor {
+    width: 100%;
+    flex: 1;
+    font-size: 14px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    color: #333;
+    line-height: 1.6;
+    outline: none;
+    border: none;
+    resize: none;
+    background: transparent;
+    padding: 4px;
+    cursor: text;
+}
+
+.annotation-editor:focus {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* 批注预览区域（渲染后的 HTML） */
+.annotation-preview {
+    width: 100%;
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow: auto;
+    padding: 4px;
+    cursor: default;
+}
+
+.annotation-preview p {
+    margin: 0 0 8px 0;
+}
+
+.annotation-preview p:last-child {
+    margin-bottom: 0;
+}
+
+.annotation-preview h1,
+.annotation-preview h2,
+.annotation-preview h3 {
+    margin: 8px 0;
+    color: #333;
+}
+
+.annotation-preview h1 { font-size: 18px; }
+.annotation-preview h2 { font-size: 16px; }
+.annotation-preview h3 { font-size: 14px; }
+
+.annotation-preview ul,
+.annotation-preview ol {
+    margin: 4px 0;
+    padding-left: 20px;
+}
+
+.annotation-preview li {
+    margin: 2px 0;
+}
+
+.annotation-preview code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+}
+
+.annotation-preview pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.annotation-preview pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.annotation-preview blockquote {
+    border-left: 3px solid #FF9500;
+    margin: 8px 0;
+    padding-left: 12px;
+    color: #666;
+}
+
+.annotation-preview a {
+    color: #FF9500;
+    text-decoration: none;
+}
+
+.annotation-preview a:hover {
+    text-decoration: underline;
+}
+
+.annotation-preview strong {
+    font-weight: bold;
+}
+
+.annotation-preview em {
+    font-style: italic;
+}
+
+.annotation-placeholder {
+    color: #999;
+    font-style: italic;
+}
+
 /* 批注元素选中状态 */
 /* 批注元素的容器本身不显示边框,避免在画布边缘出现蓝色边框 */
 .canvas-element.annotation-element.selected {

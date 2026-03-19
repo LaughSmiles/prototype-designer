@@ -797,7 +797,7 @@ const ElementManager = {
 
             // 空格键：重置视图到50%（但不在编辑批注时）
             if ((e.code === 'Space' || e.key === ' ') &&
-                !e.target.closest('.annotation-content')) {
+                !e.target.closest('.annotation-content-wrapper')) {
                 e.preventDefault();
                 CanvasView.zoomReset50();
             }
@@ -807,7 +807,7 @@ const ElementManager = {
 
             // 快捷键切换工具
             // 只有当焦点不在批注内容区域时才触发
-            if (!e.target.closest('.annotation-content')) {
+            if (!e.target.closest('.annotation-content-wrapper')) {
                 if (e.key === '1' && !e.ctrlKey) {
                     Tools.setTool('select');
                 } else if (e.key === '2' && !e.ctrlKey) {
@@ -1304,46 +1304,133 @@ const ElementManager = {
         box.dataset.elementId = element.id;
         box.dataset.part = 'box';
 
-        // 批注框内容(可编辑)
-        const content = document.createElement('div');
-        content.className = 'annotation-content';
-        content.contentEditable = true;
-        content.style.width = '100%';
-        content.style.height = '100%';
-        content.style.fontSize = '14px';
-        content.style.fontFamily = 'inherit';
-        content.style.color = '#333';
-        content.style.outline = 'none';
-        content.textContent = element.content || '输入批注';
+        // 批注框内容区域包装器
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'annotation-content-wrapper';
+        contentWrapper.style.width = '100%';
+        contentWrapper.style.height = '100%';
+        contentWrapper.style.display = 'flex';
+        contentWrapper.style.flexDirection = 'column';
 
-        // 批注框编辑事件
-        let originalContent = element.content || '';
-        content.addEventListener('input', (e) => {
-            element.content = e.target.textContent;
-            // 自动调整批注框高度以适应内容
-            this.adjustAnnotationHeight(box, content, element);
+        // 创建工具栏
+        const toolbar = document.createElement('div');
+        toolbar.className = 'annotation-toolbar';
+        toolbar.innerHTML = `
+            <button class="annotation-mode-btn active" data-mode="edit" title="编辑模式">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="annotation-mode-btn" data-mode="preview" title="预览模式">
+                <i class="fas fa-eye"></i>
+            </button>
+        `;
+
+        // 编辑器（Markdown 源码）
+        const editor = document.createElement('textarea');
+        editor.className = 'annotation-editor';
+        editor.style.width = '100%';
+        editor.style.flex = '1';
+        editor.style.fontSize = '14px';
+        editor.style.fontFamily = 'monospace';
+        editor.style.color = '#333';
+        editor.style.outline = 'none';
+        editor.style.border = 'none';
+        editor.style.resize = 'none';
+        editor.style.backgroundColor = 'transparent';
+        editor.style.padding = '4px';
+        editor.value = element.content || '输入批注（支持 Markdown）';
+
+        // 预览区域（渲染后的 HTML）
+        const preview = document.createElement('div');
+        preview.className = 'annotation-preview';
+        preview.style.width = '100%';
+        preview.style.flex = '1';
+        preview.style.fontSize = '14px';
+        preview.style.overflow = 'auto';
+        preview.style.display = 'none';
+        preview.innerHTML = this.renderMarkdown(element.content || '输入批注（支持 Markdown）');
+
+        // 模式切换逻辑
+        let currentMode = 'edit';
+        const switchMode = (mode) => {
+            currentMode = mode;
+            if (mode === 'edit') {
+                editor.style.display = 'block';
+                preview.style.display = 'none';
+                toolbar.querySelector('[data-mode="edit"]').classList.add('active');
+                toolbar.querySelector('[data-mode="preview"]').classList.remove('active');
+            } else {
+                editor.style.display = 'none';
+                preview.style.display = 'block';
+                toolbar.querySelector('[data-mode="edit"]').classList.remove('active');
+                toolbar.querySelector('[data-mode="preview"]').classList.add('active');
+                // 更新预览内容
+                preview.innerHTML = this.renderMarkdown(editor.value);
+            }
+        };
+
+        // 工具栏按钮点击事件
+        toolbar.querySelectorAll('.annotation-mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                switchMode(btn.dataset.mode);
+            });
         });
 
-        // 失焦时保存状态
-        content.addEventListener('blur', (e) => {
-            const currentContent = e.target.textContent;
-            if (currentContent.trim() && currentContent !== '输入批注' && currentContent !== originalContent) {
+        // 编辑器输入事件
+        let originalContent = element.content || '';
+        editor.addEventListener('input', (e) => {
+            element.content = e.target.value;
+            // 自动调整批注框高度以适应内容
+            this.adjustAnnotationHeight(box, editor, element);
+        });
+
+        // 失焦时保存状态并切换到预览模式
+        editor.addEventListener('blur', (e) => {
+            const currentContent = e.target.value;
+            if (currentContent.trim() && currentContent !== '输入批注（支持 Markdown）' && currentContent !== originalContent) {
                 HistoryManager.saveState();
                 originalContent = currentContent;
             }
+            // 切换到预览模式
+            switchMode('preview');
         });
 
-        // 阻止空格键触发全局快捷键(防止视图复位)
-        // 使用捕获阶段确保在其他监听器之前拦截
-        content.addEventListener('keydown', (e) => {
+        // ESC 键切换到预览模式
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                switchMode('preview');
+                editor.blur();
+            }
+            // 阻止空格键触发全局快捷键
             if (e.key === ' ') {
                 e.stopPropagation();
-                e.stopImmediatePropagation(); // 阻止其他监听器
-                // 不阻止默认行为,让空格正常输入
             }
-        }, true); // true = 捕获阶段
+        });
 
-        box.appendChild(content);
+        // 滚轮事件阻止冒泡（防止触发画布缩放/平移）
+        editor.addEventListener('wheel', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
+
+        preview.addEventListener('wheel', (e) => {
+            e.stopPropagation();
+        }, { passive: true });
+
+        // 点击批注框进入编辑模式
+        box.addEventListener('click', (e) => {
+            if (!e.target.closest('.annotation-toolbar') &&
+                !e.target.closest('.delete-btn') &&
+                !e.target.closest('.annotation-resize-handle')) {
+                switchMode('edit');
+                editor.focus();
+            }
+        });
+
+        contentWrapper.appendChild(toolbar);
+        contentWrapper.appendChild(editor);
+        contentWrapper.appendChild(preview);
+        box.appendChild(contentWrapper);
         div.appendChild(box);
 
         // 批注框拖拽事件
@@ -1391,14 +1478,35 @@ const ElementManager = {
         });
     },
 
+    // 渲染 Markdown 为 HTML
+    renderMarkdown(text) {
+        if (!text || !text.trim()) {
+            return '<p class="annotation-placeholder">输入批注（支持 Markdown）</p>';
+        }
+        try {
+            // 使用 marked 库渲染 Markdown
+            if (typeof marked !== 'undefined') {
+                return marked.parse(text);
+            } else {
+                // 降级处理：简单的换行转换
+                return text.replace(/\n/g, '<br>');
+            }
+        } catch (e) {
+            return text.replace(/\n/g, '<br>');
+        }
+    },
+
     // 设置批注元素的拖拽逻辑(锚点和框分离拖动)
     setupAnnotationDrag(element, data, part) {
         let isDragging = false;
         let startX, startY;
 
         element.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('annotation-content')) {
-                return; // 如果点击的是可编辑内容区域,不拖拽
+            // 如果点击的是编辑器或预览区域,不拖拽
+            if (e.target.classList.contains('annotation-editor') ||
+                e.target.classList.contains('annotation-preview') ||
+                e.target.closest('.annotation-content-wrapper')) {
+                return;
             }
 
             e.preventDefault();
@@ -1509,11 +1617,11 @@ const ElementManager = {
         const div = document.querySelector(`[data-element-id="${elementId}"]`);
         if (!div) return;
 
-        const contentDiv = div.querySelector('.annotation-content');
-        if (contentDiv) {
-            contentDiv.focus();
+        const editor = div.querySelector('.annotation-editor');
+        if (editor) {
+            editor.focus();
             // 选中所有文字,方便用户直接替换
-            document.execCommand('selectAll', false, null);
+            editor.select();
         }
     },
 
