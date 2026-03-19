@@ -80,6 +80,20 @@ const Tools = {
             }
         }
 
+        // 更新 iframe 交互状态
+        // 箭头/批注工具需要禁用iframe交互，让点击穿透到canvasWrapper
+        // 选择工具需要恢复iframe交互，允许用户与页面元素交互
+        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
+        if (tool === 'arrow' || tool === 'annotation') {
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'none';
+            });
+        } else {
+            iframes.forEach(iframe => {
+                iframe.style.pointerEvents = 'auto';
+            });
+        }
+
         // 显示提示
         const toolNames = {
             'select': '选择工具',
