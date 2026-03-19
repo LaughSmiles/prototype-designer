@@ -268,30 +268,4 @@ const HistoryManager = {
         return true;
     },
 
-    // 清空历史记录
-    clear() {
-        this.historyStack = [];
-        this.currentIndex = -1;
-        console.log('🗑️ 历史记录已清空');
-    },
-
-    // 获取历史记录数量
-    getHistoryCount() {
-        return this.historyStack.length;
-    },
-
-    // 获取当前索引
-    getCurrentIndex() {
-        return this.currentIndex;
-    },
-
-    // 是否可以撤销
-    canUndo() {
-        return this.currentIndex > 0;
-    },
-
-    // 是否可以重做
-    canRedo() {
-        return this.currentIndex < this.historyStack.length - 1;
-    }
 };

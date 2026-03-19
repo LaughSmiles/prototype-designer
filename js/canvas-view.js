@@ -155,6 +155,15 @@ const CanvasView = {
 
         // 鼠标按下（开始拖动视图或元素）
         canvasWrapper.addEventListener('mousedown', (e) => {
+            // 中键：优先触发画布拖动（即使在批注标记内部）
+            if (e.button === 1) {
+                this.isPanning = true;
+                this.startPan = { x: e.clientX, y: e.clientY };
+                canvasWrapper.style.cursor = 'grabbing';
+                e.preventDefault();
+                return;
+            }
+
             // 检查是否点击了元素（包括箭头的SVG路径）
             let targetElement = e.target.closest('.canvas-element');
             let targetElementId = null;
@@ -405,8 +414,16 @@ const CanvasView = {
                                            e.target.closest('.annotation-editor') ||
                                            e.target.closest('.annotation-preview');
 
-                // 在批注标记内部：允许批注正常滚动
+                // 在批注标记内部：允许批注正常滚动，Ctrl+滚轮触发画布缩放
                 if (isInsideAnnotation) {
+                    if (e.ctrlKey) {
+                        // Ctrl + 滚轮：触发画布缩放（而不是浏览器缩放）
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.zoomAtPoint(e.clientX, e.clientY, e.deltaY > 0 ? 0.9 : 1.1);
+                        return;
+                    }
+                    // 普通滚轮：让批注自己处理
                     return;
                 }
 
@@ -554,28 +571,6 @@ const CanvasView = {
         display.textContent = `X: ${x}, Y: ${y}`;
     },
 
-    // 缩放控制按钮
-    zoomIn() {
-        this.state.zoom = Math.min(this.MAX_ZOOM, this.state.zoom * 1.2);
-        this.updateView();
-        this.updateZoomDisplay();
-        this.showZoomHint();  // 用户主动缩放,显示提示
-    },
-
-    zoomOut() {
-        this.state.zoom = Math.max(this.MIN_ZOOM, this.state.zoom / 1.2);
-        this.updateView();
-        this.updateZoomDisplay();
-        this.showZoomHint();  // 用户主动缩放,显示提示
-    },
-
-    zoomReset() {
-        this.state.zoom = 1.0;
-        this.state.pan = { x: 0, y: 0 };
-        this.updateView();
-        this.updateZoomDisplay();
-    },
-
     // 重置到50%缩放并居中
     zoomReset50() {
         this.state.zoom = 0.5;
@@ -626,19 +621,6 @@ const CanvasView = {
             // 在空白区域：显示默认箭头
             canvasWrapper.style.cursor = 'default';
         }
-    },
-
-    // 显示临时提示
-    showHint(message) {
-        const existing = document.querySelector('.temp-hint');
-        if (existing) existing.remove();
-
-        const hint = document.createElement('div');
-        hint.className = 'temp-hint';
-        hint.textContent = message;
-        document.body.appendChild(hint);
-
-        setTimeout(() => hint.remove(), 1500);
     },
 
     // 创建框选矩形

@@ -113,27 +113,6 @@ const ElementManager = {
         HistoryManager.saveState();
     },
 
-    // 添加文字元素
-    addTextElement(text, x, y) {
-        const element = {
-            id: PageManager.generateElementId(),
-            type: 'text',
-            text: text,
-            position: { x, y },
-            fontSize: 16,
-            color: '#2c3e50',
-            width: 150,
-            height: 30
-        };
-
-        this.state.elements.push(element);
-        this.renderElement(element);
-        this.updateStatusBar();
-
-        // 在添加元素之后保存状态用于撤销
-        HistoryManager.saveState();
-    },
-
     // 添加批注标记元素
     addAnnotationElement(boxX, boxY) {
         const BOX_WIDTH = 200;
@@ -899,11 +878,6 @@ const ElementManager = {
         });
     },
 
-    // 获取选中元素ID
-    getSelectedElementId() {
-        return this.state.selectedElement;
-    },
-
     // 生成箭头路径（全部使用直线）
     generateArrowPath(points, offsetX, offsetY) {
         if (points.length < 2) return '';
@@ -1408,12 +1382,24 @@ const ElementManager = {
             }
         });
 
-        // 滚轮事件阻止冒泡（防止触发画布缩放/平移）
+        // 滚轮事件处理
+        // Ctrl + 滚轮：允许浏览器缩放（不阻止冒泡）
+        // 普通滚轮：只滚动批注内容，禁止触发画布平移
         editor.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                // Ctrl + 滚轮：允许浏览器缩放
+                return;
+            }
+            // 普通滚轮：阻止冒泡
             e.stopPropagation();
         }, { passive: true });
 
         preview.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                // Ctrl + 滚轮：允许浏览器缩放
+                return;
+            }
+            // 普通滚轮：阻止冒泡
             e.stopPropagation();
         }, { passive: true });
 
@@ -1486,7 +1472,16 @@ const ElementManager = {
         try {
             // 使用 marked 库渲染 Markdown
             if (typeof marked !== 'undefined') {
-                return marked.parse(text);
+                // 预处理：将 ==高亮== 转换为 <mark>高亮</mark>
+                let processedText = text.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+
+                // 配置 marked 支持 GFM（GitHub Flavored Markdown）
+                return marked.parse(processedText, {
+                    breaks: true,        // 支持换行符转换为 <br>
+                    gfm: true,           // 启用 GitHub Flavored Markdown
+                    headerIds: false,    // 禁用标题 ID
+                    mangle: false        // 禁用邮箱混淆
+                });
             } else {
                 // 降级处理：简单的换行转换
                 return text.replace(/\n/g, '<br>');
@@ -1502,6 +1497,11 @@ const ElementManager = {
         let startX, startY;
 
         element.addEventListener('mousedown', (e) => {
+            // 中键：不拦截，让画布拖动逻辑处理
+            if (e.button === 1) {
+                return;
+            }
+
             // 如果点击的是编辑器或预览区域,不拖拽
             if (e.target.classList.contains('annotation-editor') ||
                 e.target.classList.contains('annotation-preview') ||

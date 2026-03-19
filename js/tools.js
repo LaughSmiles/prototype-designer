@@ -13,7 +13,6 @@ const Tools = {
 
     // 批注标记工具状态
     annotationState: {
-        isAdding: false
     },
 
     // 初始化
@@ -55,7 +54,7 @@ const Tools = {
 
         // 重置工具状态
         this.arrowState = { points: [], isDrawing: false };
-        this.annotationState = { isAdding: false };
+        this.annotationState = { };
 
         // 更新UI
         const buttons = document.querySelectorAll('.tool-icon-btn');
