@@ -819,24 +819,6 @@ const ElementManager = {
         return JSON.parse(JSON.stringify(this.state.elements));
     },
 
-    // 重新计算使用计数（从当前元素统计）
-    recalculateUsageCounts() {
-        // 重置计数
-        this.initializeUsageCount();
-
-        // 统计每个页面的使用次数
-        this.state.elements.forEach(element => {
-            if (element.type === 'page') {
-                this.state.usageCount[element.pageId]++;
-            }
-        });
-
-        // 更新所有徽章显示
-        Object.keys(this.state.usageCount).forEach(pageId => {
-            PageLibrary.updateUsageBadge(pageId, this.state.usageCount[pageId]);
-        });
-    },
-
     // 生成箭头路径（全部使用直线）
     generateArrowPath(points, offsetX, offsetY) {
         if (points.length < 2) return '';

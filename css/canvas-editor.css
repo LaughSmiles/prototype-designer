@@ -2054,6 +2054,140 @@ body {
     font-style: italic;
 }
 
+/* 删除线 */
+.annotation-preview del,
+.annotation-preview s {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* 高亮（==text==） */
+.annotation-preview mark {
+    background: linear-gradient(120deg, #ffeaa7 0%, #fdcb6e 100%);
+    padding: 2px 4px;
+    border-radius: 3px;
+    color: #333;
+}
+
+/* 水平分割线 */
+.annotation-preview hr {
+    border: none;
+    border-top: 1px solid #E8D5A3;
+    margin: 12px 0;
+}
+
+/* 表格 */
+.annotation-preview table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 8px 0;
+    font-size: 12px;
+}
+
+.annotation-preview th,
+.annotation-preview td {
+    border: 1px solid #E8D5A3;
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.annotation-preview th {
+    background: rgba(255, 149, 0, 0.1);
+    font-weight: bold;
+}
+
+.annotation-preview tr:nth-child(even) {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* 图片 */
+.annotation-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 4px 0;
+}
+
+/* 任务列表 */
+.annotation-preview input[type="checkbox"] {
+    margin-right: 6px;
+    accent-color: #FF9500;
+}
+
+.annotation-preview ul.contains-task-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.annotation-preview li.task-list-item {
+    display: flex;
+    align-items: flex-start;
+    margin: 4px 0;
+}
+
+/* 更多的标题级别 */
+.annotation-preview h4 { font-size: 13px; font-weight: bold; margin: 6px 0; }
+.annotation-preview h5 { font-size: 12px; font-weight: bold; margin: 6px 0; }
+.annotation-preview h6 { font-size: 11px; font-weight: bold; margin: 4px 0; color: #666; }
+
+/* 行内代码增强 */
+.annotation-preview code {
+    background: rgba(255, 149, 0, 0.1);
+    color: #d14;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+}
+
+/* 代码块增强 */
+.annotation-preview pre {
+    background: #2d2d2d;
+    color: #f8f8f2;
+    padding: 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+
+.annotation-preview pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* 引用块嵌套 */
+.annotation-preview blockquote blockquote {
+    border-left-color: #ccc;
+    margin-left: 8px;
+}
+
+/* 定义列表 */
+.annotation-preview dl {
+    margin: 8px 0;
+}
+
+.annotation-preview dt {
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.annotation-preview dd {
+    margin-left: 16px;
+    color: #666;
+}
+
+/* 脚注 */
+.annotation-preview .footnotes {
+    font-size: 11px;
+    color: #888;
+    border-top: 1px solid #E8D5A3;
+    padding-top: 8px;
+    margin-top: 16px;
+}
+
 .annotation-placeholder {
     color: #999;
     font-style: italic;
