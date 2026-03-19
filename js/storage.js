@@ -132,31 +132,6 @@ const Storage = {
         }
     },
 
-    // 从 localStorage 加载
-    load() {
-        try {
-            const saved = localStorage.getItem(this.STORAGE_KEY);
-            if (!saved) {
-                alert('没有找到保存的数据');
-                return;
-            }
-
-            const data = JSON.parse(saved);
-            this.loadData(data);
-
-            // 检测到缓存加载后,补充当前状态到历史栈
-            if (ElementManager.state.elements.length > 0) {
-                HistoryManager.saveState();
-                console.log('💾 检测到缓存加载,已补充当前状态到历史栈');
-            }
-
-            PageLibrary.showHint('✅ 数据已恢复');
-        } catch (error) {
-            console.error('加载失败:', error);
-            alert('加载失败：' + error.message);
-        }
-    },
-
     // 加载数据
     loadData(data) {
         if (!data) return;
@@ -239,20 +214,6 @@ const Storage = {
             }
         };
         reader.readAsText(file);
-    },
-
-    // 获取保存的数据（用于调试）
-    getSavedData() {
-        const saved = localStorage.getItem(this.STORAGE_KEY);
-        return saved ? JSON.parse(saved) : null;
-    },
-
-    // 清除保存的数据
-    clearSaved() {
-        if (confirm('确定要清除所有保存的数据吗？')) {
-            localStorage.removeItem(this.STORAGE_KEY);
-            PageLibrary.showHint('已清除保存的数据');
-        }
     },
 
     // 清空浏览器缓存

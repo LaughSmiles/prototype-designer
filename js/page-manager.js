@@ -25,16 +25,6 @@ const PageManager = {
         return `elem_${this.globalNextElementId++}`;
     },
 
-    // 获取当前全局元素ID计数器
-    getGlobalNextElementId() {
-        return this.globalNextElementId;
-    },
-
-    // 设置全局元素ID计数器(用于加载缓存)
-    setGlobalNextElementId(id) {
-        this.globalNextElementId = id;
-    },
-
     // 初始化
     init() {
         // 创建插入指示器
@@ -614,34 +604,12 @@ const PageManager = {
         });
     },
 
-    // 更新所有页面项的pageIndex
-    updatePageIndex() {
-        const items = this.pageListEl.querySelectorAll('.page-list-item');
-        items.forEach((item, index) => {
-            item.dataset.pageIndex = index;
-        });
-    },
-
     // 清理所有transform效果
     clearAllTransforms() {
         const items = this.pageListEl.querySelectorAll('.page-list-item');
         items.forEach(item => {
             item.style.transform = '';
         });
-    },
-
-    // 移动页面位置（数组操作）
-    movePage(fromIndex, toIndex) {
-        if (fromIndex === toIndex) return;
-
-        // 从数组中移除页面
-        const [movedPage] = this.pages.splice(fromIndex, 1);
-
-        // 在新位置插入页面
-        this.pages.splice(toIndex, 0, movedPage);
-
-        console.log(`页面已移动: ${fromIndex} -> ${toIndex}`);
-        console.log('新的页面顺序:', this.pages.map(p => p.name));
     },
 
     // 更新页面列表选中状态
