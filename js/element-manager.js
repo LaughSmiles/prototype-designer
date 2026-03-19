@@ -75,20 +75,6 @@ const ElementManager = {
         }
     },
 
-    // 获取页面使用计数
-    getUsageCount(pageId) {
-        return this.state.usageCount[pageId] || 0;
-    },
-
-    // 设置所有使用计数（用于导入数据）
-    setUsageCounts(counts) {
-        this.state.usageCount = { ...counts };
-        // 更新所有徽章显示
-        Object.keys(this.state.usageCount).forEach(pageId => {
-            PageLibrary.updateUsageBadge(pageId, this.state.usageCount[pageId]);
-        });
-    },
-
     // 获取所有使用计数（用于导出数据）
     getUsageCounts() {
         return { ...this.state.usageCount };
@@ -831,33 +817,6 @@ const ElementManager = {
     // 获取所有元素数据（用于保存）
     getAllElements() {
         return JSON.parse(JSON.stringify(this.state.elements));
-    },
-
-    // 设置元素数据（用于加载）
-    setAllElements(elements) {
-        // 清空现有元素
-        const canvas = document.getElementById('canvas');
-        const existing = canvas.querySelectorAll('.canvas-element');
-        existing.forEach(el => el.remove());
-
-        // 设置新元素
-        this.state.elements = JSON.parse(JSON.stringify(elements));
-
-        // 更新PageManager的全局元素ID计数器
-        if (elements.length > 0) {
-            const maxId = Math.max(...elements.map(e => parseInt(e.id.split('_')[1])), 0);
-            PageManager.setGlobalNextElementId(maxId + 1);
-        }
-
-        // 渲染所有元素
-        this.state.elements.forEach(element => {
-            this.renderElement(element);
-        });
-
-        // 重新计算使用计数
-        this.recalculateUsageCounts();
-
-        this.updateStatusBar();
     },
 
     // 重新计算使用计数（从当前元素统计）
