@@ -17,13 +17,6 @@
     <link rel="stylesheet" href="lib/css/all.min.css">
     <link rel="stylesheet" href="css/canvas-editor.css">
 
-    <!-- Excalidraw 手绘风格支持 -->
-    <script type="module">
-        import rough from 'https://esm.run/roughjs@4.5.2';
-        window.rough = rough;
-        window.dispatchEvent(new Event('rough-loaded'));
-    </script>
-
     <!-- 页面加载时立即设置浏览器缩放防护 -->
     <script>
         // 在DOM加载前就阻止可能的缩放行为
@@ -378,14 +371,6 @@
                     <!-- 分隔符 -->
                     <div class="status-bar-divider"></div>
 
-                    <!-- Excalidraw 模式切换 -->
-                    <button class="tool-icon-btn action-btn" id="excalidrawModeBtn" title="Excalidraw 手绘模式 (E)">
-                        <i class="fas fa-pencil-alt"></i>
-                    </button>
-
-                    <!-- 分隔符 -->
-                    <div class="status-bar-divider"></div>
-
                     <!-- 帮助按钮 -->
                     <button class="tool-icon-btn action-btn" id="helpBtn" title="使用帮助">
                         <i class="fas fa-question-circle"></i>
@@ -416,61 +401,6 @@
                         <i class="fas fa-hand-pointer"></i>
                         <p>从右侧拖拽页面到画布</p>
                         <p>或使用工具添加标注</p>
-                    </div>
-                </div>
-                
-                <!-- Excalidraw 浮动工具栏 -->
-                <div class="excalidraw-toolbar" id="excalidrawToolbar" style="display: none;">
-                    <div class="excalidraw-toolbar-section">
-                        <button class="excalidraw-tool-btn active" data-tool="select" title="选择 (V)">
-                            <i class="fas fa-mouse-pointer"></i>
-                        </button>
-                        <button class="excalidraw-tool-btn" data-tool="rectangle" title="矩形 (R)">
-                            <i class="fas fa-square"></i>
-                        </button>
-                        <button class="excalidraw-tool-btn" data-tool="ellipse" title="椭圆 (O)">
-                            <i class="fas fa-circle"></i>
-                        </button>
-                        <button class="excalidraw-tool-btn" data-tool="diamond" title="菱形 (D)">
-                            <i class="fas fa-diamond"></i>
-                        </button>
-                        <button class="excalidraw-tool-btn" data-tool="line" title="线条 (L)">
-                            <i class="fas fa-minus"></i>
-                        </button>
-                        <button class="excalidraw-tool-btn" data-tool="arrow" title="箭头 (A)">
-                            <i class="fas fa-arrow-right"></i>
-                        </button>
-                        <button class="excalidraw-tool-btn" data-tool="text" title="文本 (T)">
-                            <i class="fas fa-font"></i>
-                        </button>
-                    </div>
-                    <div class="excalidraw-toolbar-divider"></div>
-                    <div class="excalidraw-toolbar-section">
-                        <div class="excalidraw-color-picker">
-                            <label>描边:</label>
-                            <input type="color" id="excalidrawStrokeColor" value="#000000" title="描边颜色">
-                        </div>
-                        <div class="excalidraw-color-picker">
-                            <label>填充:</label>
-                            <input type="color" id="excalidrawFillColor" value="#ffffff" title="填充颜色">
-                        </div>
-                        <div class="excalidraw-slider">
-                            <label>粗细:</label>
-                            <input type="range" id="excalidrawStrokeWidth" min="1" max="10" value="2" title="线条粗细">
-                        </div>
-                        <div class="excalidraw-slider">
-                            <label>粗糙度:</label>
-                            <input type="range" id="excalidrawRoughness" min="0" max="3" step="0.5" value="1.5" title="手绘粗糙度">
-                        </div>
-                    </div>
-                    <div class="excalidraw-toolbar-divider"></div>
-                    <div class="excalidraw-toolbar-section">
-                        <button class="excalidraw-action-btn" id="excalidrawClearBtn" title="清空画布">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <button class="excalidraw-action-btn" id="excalidrawExportBtn" title="导出PNG">
-                            <i class="fas fa-download"></i>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -513,13 +443,5 @@
     <script src="js/page-manager.js"></script>
     <script src="js/history-manager.js"></script>
     <script src="js/canvas-editor.js"></script>
-    
-    <!-- Excalidraw 风格绘图模块 -->
-    <script src="js/canvas/renderer.js"></script>
-    <script src="js/elements/element-model.js"></script>
-    <script src="js/interaction/selection-manager.js"></script>
-    <script src="js/interaction/transform-manager.js"></script>
-    <script src="js/export/export-manager.js"></script>
-    <script src="js/integration/excalidraw-integration.js"></script>
 </body>
 </html>
