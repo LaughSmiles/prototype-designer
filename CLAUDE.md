@@ -4,31 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **high-fidelity prototype design project** for a photography rental and sharing app called "摄影派" (Photography School). The project consists of 33 HTML files implementing a complete mobile app UI/UX prototype designed for iPhone 15 Pro dimensions (320x680px).
+This is a **reusable high-fidelity prototype design framework** that supports rapid creation of mobile app prototypes with visual flow design. The demo project is "摄影派" (Photography School) - a photography rental and sharing app with 32 screens designed for iPhone 15 Pro dimensions (320x680px).
+
+### Key Features
+- **Configuration-driven**: Define projects via `config.js` JSON without modifying framework code
+- **Framework separation**: Framework code in `js/` is independent of project content in `pages/`
+- **Zero dependencies**: Pure frontend, no backend required
+- **No build process**: All files are standalone HTML, no compilation needed
 
 ## Project Structure
 
 ```
-生成原型图/
-├── index.html                 # Main entry point - displays all 32 screens + canvas editor link
-├── canvas-editor.html         # Canvas editor main page
-├── pages/                     # 32 individual screen files
-│   ├── 首页模块 (Home)        # 7 screens: home, search, rental-detail, etc.
-│   ├── 租赁模块 (Rental)      # 1 screen: rental-list
-│   ├── 作品模块 (Works)       # 7 screens: works, video/image details, publish flows
-│   ├── 消息模块 (Messages)    # 5 screens: messages, system, interaction, chat, etc.
-│   └── 我的模块 (Profile)     # 12 screens: profile, settings, orders, addresses, etc.
-├── js/                        # Canvas editor JavaScript modules
-│   ├── canvas-editor.js       # Main controller
+项目根目录/
+├── canvas-editor.html         # Canvas editor entry point (framework core)
+├── config.js                  # Project configuration (MODIFY THIS)
+├── index.html                  # Project showcase page
+├── pages/                      # Page files (MODIFY THIS)
+│   ├── home/                   # Home module pages
+│   ├── rental/                 # Rental module pages
+│   ├── works/                  # Works module pages
+│   ├── messages/               # Messages module pages
+│   └── profile/                # Profile module pages
+├── js/                         # Framework core code (DO NOT MODIFY)
+│   ├── canvas-editor.js       # Main controller - initializes all modules
 │   ├── page-library.js        # Page library management
 │   ├── canvas-view.js         # View operations (pan/zoom)
 │   ├── element-manager.js     # Element management
-│   ├── tools.js               # Tool system (arrow/text)
-│   └── storage.js             # Data persistence
+│   ├── page-manager.js        # Multi-page canvas management
+│   ├── tools.js               # Tool system (arrow/annotation)
+│   ├── storage.js             # Data persistence
+│   ├── history-manager.js     # Undo/redo support
+│   ├── modal-manager.js       # Modal dialogs
+│   ├── alignment-manager.js   # Element alignment guides
+│   └── virtual-scrollbar.js   # Custom scrollbar
 ├── css/
 │   └── canvas-editor.css      # Canvas editor styles
-├── data/                      # Data backup directory
-├── 页面结构图                  # MindMap documentation of the complete architecture
 └── .cursor-history.md         # Session history and development log
 ```
 
@@ -38,6 +48,45 @@ This is a **high-fidelity prototype design project** for a photography rental an
 - **Icons**: FontAwesome 6.4.0 (CDN)
 - **Images**: Unsplash API for high-quality photography content
 - **Layout**: Mobile-first responsive design with iOS-style UI components
+
+## Configuration System (config.js)
+
+The project is configured via `config.js` which defines `window.PROJECT_CONFIG`:
+
+```javascript
+window.PROJECT_CONFIG = {
+  projectName: "项目名称",           // Display name
+  projectRootPath: "E:\\path\\to",  // Absolute path for file operations
+  canvasSize: { width: 320, height: 680 },
+  categories: [
+    { id: "home", name: "首页模块", order: 1 }
+  ],
+  pages: [
+    { id: "home", name: "首页", icon: "fa-home", category: "home", path: "pages/home/home.html" }
+  ]
+}
+```
+
+**Important**: Page `id` must match the HTML filename (without extension).
+
+## Module Architecture
+
+### Initialization Order (in canvas-editor.js)
+The modules must be initialized in this specific order:
+1. `PageLibrary` - Loads config and page list
+2. `CanvasView` - View pan/zoom controls
+3. `ElementManager` - Element CRUD operations
+4. `Tools` - Arrow and annotation tools
+5. `ModalManager` - Dialog management
+6. `Storage` - Data persistence (depends on PageLibrary)
+7. `PageManager` - Multi-page canvas (depends on Storage)
+8. `HistoryManager` - Undo/redo support
+
+### Module Dependencies
+- All modules use global `window.` references (not ES modules)
+- `ElementManager` depends on `CanvasView` and `PageLibrary`
+- `Storage` depends on `PageLibrary` and `ElementManager`
+- `PageManager` depends on `Storage`
 
 ## Architecture Overview
 
@@ -120,12 +169,25 @@ The canvas editor is an **interactive prototyping tool** that allows you to:
 ```
 js/
 ├── canvas-editor.js    # Main controller - initializes all modules
-├── page-library.js     # Manages 32 page list and drag-drop
+├── page-library.js     # Manages page list and drag-drop
 ├── canvas-view.js      # Handles view pan/zoom
 ├── element-manager.js  # Creates/updates/deletes elements
-├── tools.js            # Arrow and text tools
-└── storage.js          # Save/load/export/import
+├── page-manager.js     # Multi-page canvas management
+├── tools.js            # Arrow and annotation tools
+├── storage.js          # Save/load/export/import
+├── history-manager.js  # Undo/redo functionality
+├── modal-manager.js    # Modal dialogs
+├── alignment-manager.js # Element alignment guides
+└── virtual-scrollbar.js # Custom scrollbar
 ```
+
+## Creating a New Project
+
+1. **Generate prototype HTML files** using AI with the prompt from README.md
+2. **Copy files** to `pages/` directory and update `index.html`
+3. **Configure `config.js`** with project name, categories, and pages
+4. **Fix page navigation** - ensure links work between pages
+5. **Open `canvas-editor.html`** to start using the canvas editor
 
 ## Design Specifications
 
@@ -142,30 +204,13 @@ js/
 - **Modals**: Bottom sheets with backdrop blur
 - **Cards**: White backgrounds, 20px border radius, shadow effects
 
-## File Naming Convention
+## Data Persistence
 
-All screen files follow descriptive naming:
-- `home.html` - Main home screen
-- `rental-detail.html` - Equipment rental details
-- `publish-video.html` - Video publishing interface
-- `my-orders.html` - Order management
-- etc.
-
-## Important Notes
-
-- **No Build Process**: All files are standalone HTML, no compilation needed
-- **CDN Dependencies**: TailwindCSS and FontAwesome loaded via CDN
-- **Real Images**: Uses Unsplash API for authentic photography content
-- **Interactive Elements**: Includes hover effects, transitions, and simulated interactions
-- **Modular Design**: Each screen is self-contained and can be viewed independently
+- **localStorage keys**: `canvasEditor_data`, `canvasEditor_usageCount`
+- **Export**: Ctrl+E downloads JSON file
+- **Import**: Ctrl+I loads JSON file
+- Data is auto-saved to browser localStorage
 
 ## Reference Documentation
 
-The `页面结构图` file contains the complete mind map of:
-- All 32 screens and their relationships
-- Detailed user requirements
-- Interaction logic
-- Information architecture
-- Business workflows
-
-This serves as the master reference for understanding the complete app structure and user journeys.
+The `页面结构图` file contains the complete mind map of all 32 screens and their relationships. The `README.md` file contains detailed usage instructions for the canvas editor framework.
