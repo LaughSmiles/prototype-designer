@@ -11,11 +11,6 @@ const Tools = {
         isDrawing: false
     },
 
-    // 文字卡片工具状态
-    noteState: {
-        isAdding: false
-    },
-
     // 批注标记工具状态
     annotationState: {
         isAdding: false
@@ -60,7 +55,6 @@ const Tools = {
 
         // 重置工具状态
         this.arrowState = { points: [], isDrawing: false };
-        this.noteState = { isAdding: false };
         this.annotationState = { isAdding: false };
 
         // 更新UI
@@ -81,8 +75,6 @@ const Tools = {
                 canvasWrapper.style.cursor = 'default';  // 空白区域显示箭头
             } else if (tool === 'arrow') {
                 canvasWrapper.style.cursor = 'crosshair';
-            } else if (tool === 'note') {
-                canvasWrapper.style.cursor = 'cell';  // 文字卡片工具
             } else if (tool === 'annotation') {
                 canvasWrapper.style.cursor = 'text';  // 批注标记工具
             }
@@ -92,7 +84,6 @@ const Tools = {
         const toolNames = {
             'select': '选择工具',
             'arrow': '箭头工具',
-            'note': '文字卡片',
             'annotation': '批注标记'
         };
         PageLibrary.showHint(`切换到: ${toolNames[tool]}`);
@@ -103,20 +94,18 @@ const Tools = {
         const canvasWrapper = document.getElementById('canvasWrapper');
         if (!canvasWrapper) return;
 
-        // 点击事件（用于箭头和文字卡片工具）
+        // 点击事件（用于箭头和批注标记工具）
         // 关键修复：在canvas-wrapper上监听,而不是canvas
         // 这样可以避免iframe拦截事件,确保工具在iframe上方也能正常工作
         canvasWrapper.addEventListener('click', (e) => {
             // 只在选择工具模式下才防止点击元素时触发
-            // 工具模式(箭头/文字卡片)需要在元素上方也能正常工作
+            // 工具模式(箭头/批注标记)需要在元素上方也能正常工作
             if (this.currentTool === 'select' && e.target.closest('.canvas-element')) {
                 return;
             }
 
             if (this.currentTool === 'arrow') {
                 this.handleArrowClick(e);
-            } else if (this.currentTool === 'note') {
-                this.handleNoteClick(e);
             } else if (this.currentTool === 'annotation') {
                 this.handleAnnotationClick(e);
             }
@@ -301,43 +290,6 @@ const Tools = {
         if (preview) {
             preview.remove();
         }
-    },
-
-    // 处理文字卡片点击
-    handleNoteClick(e) {
-        const canvasWrapper = document.getElementById('canvasWrapper');
-        if (!canvasWrapper) return;
-
-        const wrapperRect = canvasWrapper.getBoundingClientRect();
-        const view = CanvasView.getView();
-
-        // 计算画布内部坐标（考虑pan和zoom）
-        const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
-        const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
-
-        // 临时禁用所有iframe的交互，防止点击时触发iframe事件
-        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-        iframes.forEach(iframe => {
-            iframe.style.pointerEvents = 'none';
-        });
-
-        // 直接创建空白卡片,不需要弹窗
-        const elementId = ElementManager.addNoteElement('', x, y);
-
-        // 自动聚焦到内容区域并选中文字,同时恢复iframe交互
-        setTimeout(() => {
-            ElementManager.focusNoteContent(elementId);
-
-            // 恢复所有iframe的交互
-            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'auto';
-            });
-        }, 0);
-
-        // 切换回选择工具
-        this.setTool('select');
-        PageLibrary.showHint('文字卡片已添加,可直接输入内容');
     },
 
     // 处理批注标记点击

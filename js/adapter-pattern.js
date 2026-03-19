@@ -32,8 +32,6 @@ class ElementManagerAdapter {
             case 'text':
                 this.elementManager.addTextElement(elementData.text, elementData.x, elementData.y);
                 break;
-            case 'note':
-                return this.elementManager.addNoteElement(elementData.text, elementData.x, elementData.y);
             case 'annotation':
                 return this.elementManager.addAnnotationElement(elementData.x, elementData.y);
             default:
@@ -343,16 +341,6 @@ class Facade {
      */
     addArrow(points) {
         return this.api.elements.addElement({ type: 'arrow', points });
-    }
-
-    /**
-     * 快捷方法:添加文字卡片
-     * @param {string} text - 文本内容
-     * @param {number} x - X坐标
-     * @param {number} y - Y坐标
-     */
-    addNote(text, x, y) {
-        return this.api.elements.addElement({ type: 'note', text, x, y });
     }
 
     /**

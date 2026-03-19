@@ -234,133 +234,6 @@ class ArrowElementRenderer extends ElementRenderer {
 }
 
 /**
- * 文字卡片元素渲染器
- */
-class NoteElementRenderer extends ElementRenderer {
-    render(element, container) {
-        const div = document.createElement('div');
-        div.className = 'canvas-element note-element';
-        div.dataset.elementId = element.id;
-
-        div.style.left = `${element.position.x}px`;
-        div.style.top = `${element.position.y}px`;
-        div.style.width = `${element.width}px`;
-        div.style.height = `${element.height}px`;
-        div.style.pointerEvents = 'auto';
-
-        // 添加内容区
-        const contentDiv = this.createContentDiv(element);
-        div.appendChild(contentDiv);
-
-        // 添加拖拽手柄
-        const dragHandle = this.createDragHandle();
-        div.appendChild(dragHandle);
-
-        // 添加尺寸显示
-        const sizeDisplay = this.createSizeDisplay(element);
-        div.appendChild(sizeDisplay);
-
-        // 添加调整大小手柄
-        this.addResizeHandles(div, element);
-
-        // 添加删除按钮
-        const deleteBtn = this.createDeleteButton(element);
-        div.appendChild(deleteBtn);
-
-        // 添加点击事件
-        this.setupClickEvents(div, element);
-
-        container.appendChild(div);
-
-        return div;
-    }
-
-    createContentDiv(element) {
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'note-content';
-        contentDiv.contentEditable = true;
-        contentDiv.textContent = element.text || '输入文字';
-
-        let originalText = element.text || '';
-
-        contentDiv.addEventListener('input', (e) => {
-            element.text = e.target.textContent;
-            // 自动调整高度
-            ElementManager.adjustNoteHeight(
-                contentDiv.closest('.canvas-element'),
-                contentDiv,
-                element
-            );
-        });
-
-        contentDiv.addEventListener('blur', (e) => {
-            const currentText = e.target.textContent;
-            if (currentText.trim() && currentText !== '输入文字' && currentText !== originalText) {
-                HistoryManager.saveState();
-                originalText = currentText;
-            }
-        });
-
-        return contentDiv;
-    }
-
-    createDragHandle() {
-        const dragHandle = document.createElement('div');
-        dragHandle.className = 'note-drag-handle';
-        dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 文字';
-        return dragHandle;
-    }
-
-    createSizeDisplay(element) {
-        const sizeDisplay = document.createElement('div');
-        sizeDisplay.className = 'note-size-display';
-        sizeDisplay.textContent = `${element.width}×${element.height}`;
-        return sizeDisplay;
-    }
-
-    addResizeHandles(div, element) {
-        const corners = ['nw', 'ne', 'sw', 'se'];
-        corners.forEach(corner => {
-            const resizeHandle = document.createElement('div');
-            resizeHandle.className = `note-resize-handle note-resize-${corner}`;
-            resizeHandle.dataset.corner = corner;
-            resizeHandle.dataset.elementId = element.id;
-            div.appendChild(resizeHandle);
-        });
-    }
-
-    createDeleteButton(element) {
-        const deleteBtn = document.createElement('div');
-        deleteBtn.className = 'delete-btn';
-        deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
-        deleteBtn.style.pointerEvents = 'auto';
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            ElementManager.deleteElement(element.id);
-        });
-        return deleteBtn;
-    }
-
-    setupClickEvents(div, element) {
-        div.addEventListener('click', (e) => {
-            if (e.target.classList.contains('note-content') ||
-                e.target.classList.contains('delete-btn') ||
-                e.target.closest('.delete-btn')) {
-                return;
-            }
-
-            e.stopPropagation();
-            ElementManager.selectElement(element.id);
-        });
-
-        div.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            ElementManager.deselectElement();
-        });
-    }
-}
-
-/**
  * 批注标记元素渲染器
  */
 class AnnotationElementRenderer extends ElementRenderer {
@@ -589,7 +462,6 @@ const RendererFactory = {
     init() {
         this.register('page', new PageElementRenderer());
         this.register('arrow', new ArrowElementRenderer());
-        this.register('note', new NoteElementRenderer());
         this.register('annotation', new AnnotationElementRenderer());
     }
 };
@@ -600,7 +472,6 @@ if (typeof module !== 'undefined' && module.exports) {
         ElementRenderer,
         PageElementRenderer,
         ArrowElementRenderer,
-        NoteElementRenderer,
         AnnotationElementRenderer,
         RendererFactory
     };

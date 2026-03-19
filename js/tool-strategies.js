@@ -311,64 +311,6 @@ class ArrowToolStrategy extends ToolStrategy {
 }
 
 /**
- * 文字卡片工具策略
- */
-class NoteToolStrategy extends ToolStrategy {
-    constructor() {
-        super('note');
-    }
-
-    handleClick(e) {
-        const canvasWrapper = document.getElementById('canvasWrapper');
-        if (!canvasWrapper) return;
-
-        const wrapperRect = canvasWrapper.getBoundingClientRect();
-        const view = this.context.CanvasView.getView();
-
-        const x = (e.clientX - wrapperRect.left - view.pan.x) / view.zoom;
-        const y = (e.clientY - wrapperRect.top - view.pan.y) / view.zoom;
-
-        // 临时禁用所有iframe的交互
-        this.disableAllIframes();
-
-        // 创建空白卡片
-        const elementId = this.context.ElementManager.addNoteElement('', x, y);
-
-        // 自动聚焦并恢复iframe交互
-        setTimeout(() => {
-            this.context.ElementManager.focusNoteContent(elementId);
-            this.enableAllIframes();
-        }, 0);
-
-        // 切换回选择工具
-        this.context.Tools.setTool('select');
-        this.context.PageLibrary.showHint('文字卡片已添加,可直接输入内容');
-    }
-
-    disableAllIframes() {
-        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-        iframes.forEach(iframe => {
-            iframe.style.pointerEvents = 'none';
-        });
-    }
-
-    enableAllIframes() {
-        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-        iframes.forEach(iframe => {
-            iframe.style.pointerEvents = 'auto';
-        });
-    }
-
-    getCursor() {
-        return 'cell';
-    }
-
-    getDisplayName() {
-        return '文字卡片';
-    }
-}
-
-/**
  * 批注标记工具策略
  */
 class AnnotationToolStrategy extends ToolStrategy {
@@ -458,7 +400,6 @@ const ToolStrategyFactory = {
         const strategies = [
             new SelectToolStrategy(),
             new ArrowToolStrategy(),
-            new NoteToolStrategy(),
             new AnnotationToolStrategy()
         ];
 
@@ -475,7 +416,6 @@ if (typeof module !== 'undefined' && module.exports) {
         ToolStrategy,
         SelectToolStrategy,
         ArrowToolStrategy,
-        NoteToolStrategy,
         AnnotationToolStrategy,
         ToolStrategyFactory
     };

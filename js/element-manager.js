@@ -134,28 +134,6 @@ const ElementManager = {
         HistoryManager.saveState();
     },
 
-    // 添加文字卡片元素
-    addNoteElement(text, x, y) {
-        const element = {
-            id: PageManager.generateElementId(),
-            type: 'note',
-            text: text,
-            position: { x, y },
-            width: 200,
-            height: 120
-        };
-
-        this.state.elements.push(element);
-        this.renderElement(element);
-        this.updateStatusBar();
-
-        // 在添加元素之后保存状态用于撤销
-        HistoryManager.saveState();
-
-        // 返回元素ID,用于后续聚焦
-        return element.id;
-    },
-
     // 添加批注标记元素
     addAnnotationElement(boxX, boxY) {
         const BOX_WIDTH = 200;
@@ -385,80 +363,6 @@ const ElementManager = {
             element.width = maxX - minX + padding * 2;
             element.height = maxY - minY + padding * 2;
 
-        } else if (element.type === 'note') {
-            // 文字卡片元素
-            div.style.left = `${element.position.x}px`;
-            div.style.top = `${element.position.y}px`;
-            div.style.width = `${element.width}px`;
-            div.style.height = `${element.height}px`;
-            div.classList.add('note-element');
-
-            // 关键修复：让div响应鼠标事件,确保文字卡片在iframe上方时能被点击和编辑
-            div.style.pointerEvents = 'auto';
-
-            // 卡片内容容器
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'note-content';
-            contentDiv.contentEditable = true;
-            contentDiv.textContent = element.text || '输入文字'; // 默认文字
-
-            // 卡片编辑事件
-            let originalText = element.text || '';
-            contentDiv.addEventListener('input', (e) => {
-                element.text = e.target.textContent;
-                // 自动调整卡片高度以适应内容
-                this.adjustNoteHeight(div, contentDiv, element);
-            });
-
-            // 失焦时保存状态（如果内容不为空）
-            contentDiv.addEventListener('blur', (e) => {
-                const currentText = e.target.textContent;
-                // 只有当内容不为空，且内容真正变化了，才保存状态
-                if (currentText.trim() && currentText !== '输入文字' && currentText !== originalText) {
-                    HistoryManager.saveState();
-                    originalText = currentText; // 更新原始文本
-                }
-            });
-
-            div.appendChild(contentDiv);
-
-            // 添加拖拽手柄
-            const dragHandle = document.createElement('div');
-            dragHandle.className = 'note-drag-handle';
-            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 文字';
-            div.appendChild(dragHandle);
-
-            // 添加分辨率显示
-            const sizeDisplay = document.createElement('div');
-            sizeDisplay.className = 'note-size-display';
-            sizeDisplay.textContent = `${element.width}×${element.height}`;
-            div.appendChild(sizeDisplay);
-
-            // 添加四个角的resize手柄
-            const corners = ['nw', 'ne', 'sw', 'se'];
-            corners.forEach(corner => {
-                const resizeHandle = document.createElement('div');
-                resizeHandle.className = `note-resize-handle note-resize-${corner}`;
-                resizeHandle.dataset.corner = corner;
-                resizeHandle.dataset.elementId = element.id;
-                div.appendChild(resizeHandle);
-            });
-
-            // 添加点击选中事件
-            div.addEventListener('click', (e) => {
-                // 如果点击的是可编辑内容区域,不触发选中(让用户正常编辑)
-                if (e.target.classList.contains('note-content')) {
-                    return;
-                }
-                // 如果点击的是删除按钮,不触发选中(删除按钮有自己的逻辑)
-                if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
-                    return;
-                }
-
-                e.stopPropagation();
-                this.selectElement(element.id);
-            });
-
         } else if (element.type === 'annotation') {
             // 批注标记元素
             this.renderAnnotationElement(div, element);
@@ -656,80 +560,6 @@ const ElementManager = {
             element.position = { x: minX - padding, y: minY - padding };
             element.width = maxX - minX + padding * 2;
             element.height = maxY - minY + padding * 2;
-
-        } else if (element.type === 'note') {
-            // 文字卡片元素
-            div.style.left = `${element.position.x}px`;
-            div.style.top = `${element.position.y}px`;
-            div.style.width = `${element.width}px`;
-            div.style.height = `${element.height}px`;
-            div.classList.add('note-element');
-
-            // 关键修复：让div响应鼠标事件,确保文字卡片在iframe上方时能被点击和编辑
-            div.style.pointerEvents = 'auto';
-
-            // 卡片内容容器
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'note-content';
-            contentDiv.contentEditable = true;
-            contentDiv.textContent = element.text || '输入文字'; // 默认文字
-
-            // 卡片编辑事件
-            let originalText = element.text || '';
-            contentDiv.addEventListener('input', (e) => {
-                element.text = e.target.textContent;
-                // 自动调整卡片高度以适应内容
-                this.adjustNoteHeight(div, contentDiv, element);
-            });
-
-            // 失焦时保存状态（如果内容不为空）
-            contentDiv.addEventListener('blur', (e) => {
-                const currentText = e.target.textContent;
-                // 只有当内容不为空，且内容真正变化了，才保存状态
-                if (currentText.trim() && currentText !== '输入文字' && currentText !== originalText) {
-                    HistoryManager.saveState();
-                    originalText = currentText; // 更新原始文本
-                }
-            });
-
-            div.appendChild(contentDiv);
-
-            // 添加拖拽手柄
-            const dragHandle = document.createElement('div');
-            dragHandle.className = 'note-drag-handle';
-            dragHandle.innerHTML = '<i class="fas fa-grip-vertical"></i> 文字';
-            div.appendChild(dragHandle);
-
-            // 添加分辨率显示
-            const sizeDisplay = document.createElement('div');
-            sizeDisplay.className = 'note-size-display';
-            sizeDisplay.textContent = `${element.width}×${element.height}`;
-            div.appendChild(sizeDisplay);
-
-            // 添加四个角的resize手柄
-            const corners = ['nw', 'ne', 'sw', 'se'];
-            corners.forEach(corner => {
-                const resizeHandle = document.createElement('div');
-                resizeHandle.className = `note-resize-handle note-resize-${corner}`;
-                resizeHandle.dataset.corner = corner;
-                resizeHandle.dataset.elementId = element.id;
-                div.appendChild(resizeHandle);
-            });
-
-            // 添加点击选中事件
-            div.addEventListener('click', (e) => {
-                // 如果点击的是可编辑内容区域,不触发选中(让用户正常编辑)
-                if (e.target.classList.contains('note-content')) {
-                    return;
-                }
-                // 如果点击的是删除按钮,不触发选中(删除按钮有自己的逻辑)
-                if (e.target.classList.contains('delete-btn') || e.target.closest('.delete-btn')) {
-                    return;
-                }
-
-                e.stopPropagation();
-                this.selectElement(element.id);
-            });
 
         } else if (element.type === 'annotation') {
             // 批注标记元素
@@ -965,9 +795,8 @@ const ElementManager = {
                 Tools.setTool('select');
             }
 
-            // 空格键：重置视图到50%（但不在编辑文字卡片或批注时）
+            // 空格键：重置视图到50%（但不在编辑批注时）
             if ((e.code === 'Space' || e.key === ' ') &&
-                !e.target.closest('.note-content') &&
                 !e.target.closest('.annotation-content')) {
                 e.preventDefault();
                 CanvasView.zoomReset50();
@@ -977,15 +806,13 @@ const ElementManager = {
             // 这里不再重复绑定,避免触发两次保存
 
             // 快捷键切换工具
-            // 只有当焦点不在文字卡片内容区域时才触发
-            if (!e.target.closest('.note-content') && !e.target.closest('.annotation-content')) {
+            // 只有当焦点不在批注内容区域时才触发
+            if (!e.target.closest('.annotation-content')) {
                 if (e.key === '1' && !e.ctrlKey) {
                     Tools.setTool('select');
                 } else if (e.key === '2' && !e.ctrlKey) {
                     Tools.setTool('arrow');
                 } else if (e.key === '3' && !e.ctrlKey) {
-                    Tools.setTool('note');
-                } else if (e.key === '4' && !e.ctrlKey) {
                     Tools.setTool('annotation');
                 }
             }
@@ -1012,8 +839,6 @@ const ElementManager = {
                     info = `选中: 箭头 (点击任意位置拖动)`;
                 } else if (element.type === 'text') {
                     info = `选中: 文字`;
-                } else if (element.type === 'note') {
-                    info = `选中: 文字卡片 (拖拽手柄移动)`;
                 } else if (element.type === 'annotation') {
                     info = `选中: 批注标记 (拖动锚点或框)`;
                 }
@@ -1094,56 +919,6 @@ const ElementManager = {
         }
 
         return path;
-    },
-
-    // 聚焦到文字卡片内容区域
-    focusNoteContent(elementId) {
-        const div = document.querySelector(`[data-element-id="${elementId}"]`);
-        if (!div) return;
-
-        const contentDiv = div.querySelector('.note-content');
-        if (contentDiv) {
-            contentDiv.focus();
-            // 选中所有文字,方便用户直接替换
-            document.execCommand('selectAll', false, null);
-        }
-    },
-
-    // 自动调整文字卡片高度以适应内容(简化版:精准控制)
-    adjustNoteHeight(div, contentDiv, element) {
-        const MIN_HEIGHT = 120; // 最小高度
-        const FONT_SIZE = 14; // 字体大小
-        const LINE_HEIGHT = 1.6; // 行高倍数
-
-        // 计算一行文字的实际高度
-        const oneLineHeight = FONT_SIZE * LINE_HEIGHT; // = 22.4px
-
-        // 获取内容的实际高度(需要减去padding)
-        const paddingTop = 38; // .note-content 的 padding-top
-        const paddingBottom = 12; // .note-content 的 padding-bottom
-        const scrollHeight = contentDiv.scrollHeight;
-        const actualContentHeight = scrollHeight - paddingTop - paddingBottom;
-
-        // 计算剩余空间
-        const remainingSpace = element.height - actualContentHeight;
-
-        // 当剩余空间少于1行文字时,提前增加1行
-        if (remainingSpace < oneLineHeight) {
-            // 每次只增加1行高度,保持平滑
-            const newHeight = Math.max(element.height + oneLineHeight, MIN_HEIGHT);
-
-            // 更新元素数据
-            element.height = newHeight;
-
-            // 更新DOM样式
-            div.style.height = `${newHeight}px`;
-
-            // 更新分辨率显示
-            const sizeDisplay = div.querySelector('.note-size-display');
-            if (sizeDisplay) {
-                sizeDisplay.textContent = `${Math.round(element.width)}×${Math.round(newHeight)}`;
-            }
-        }
     },
 
     // 自动调整批注框高度以适应内容

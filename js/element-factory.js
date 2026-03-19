@@ -8,7 +8,6 @@ const ElementType = {
     PAGE: 'page',
     ARROW: 'arrow',
     TEXT: 'text',
-    NOTE: 'note',
     ANNOTATION: 'annotation'
 };
 
@@ -165,41 +164,6 @@ class TextElementCreator extends ElementCreator {
 }
 
 /**
- * 文字卡片元素创建器
- */
-class NoteElementCreator extends ElementCreator {
-    constructor() {
-        super(ElementType.NOTE);
-    }
-
-    create(text, x, y) {
-        if (!this.validate(text, x, y)) {
-            throw new Error('无效的文字卡片元素创建参数');
-        }
-
-        return {
-            type: this.type,
-            text: text,
-            position: { x, y },
-            width: 200,
-            height: 120
-        };
-    }
-
-    validate(text, x, y) {
-        return typeof text === 'string' && typeof x === 'number' && typeof y === 'number';
-    }
-
-    getDefaultConfig() {
-        return {
-            width: 200,
-            height: 120,
-            minHeight: 120
-        };
-    }
-}
-
-/**
  * 批注标记元素创建器
  */
 class AnnotationElementCreator extends ElementCreator {
@@ -312,7 +276,6 @@ const ElementFactory = {
         this.register(ElementType.PAGE, new PageElementCreator());
         this.register(ElementType.ARROW, new ArrowElementCreator());
         this.register(ElementType.TEXT, new TextElementCreator());
-        this.register(ElementType.NOTE, new NoteElementCreator());
         this.register(ElementType.ANNOTATION, new AnnotationElementCreator());
     },
 
@@ -342,7 +305,6 @@ if (typeof module !== 'undefined' && module.exports) {
         PageElementCreator,
         ArrowElementCreator,
         TextElementCreator,
-        NoteElementCreator,
         AnnotationElementCreator,
         ElementFactory
     };

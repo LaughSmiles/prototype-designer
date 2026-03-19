@@ -17,6 +17,13 @@
     <link rel="stylesheet" href="lib/css/all.min.css">
     <link rel="stylesheet" href="css/canvas-editor.css">
 
+    <!-- Excalidraw 手绘风格支持 -->
+    <script type="module">
+        import rough from 'https://esm.run/roughjs@4.5.2';
+        window.rough = rough;
+        window.dispatchEvent(new Event('rough-loaded'));
+    </script>
+
     <!-- 页面加载时立即设置浏览器缩放防护 -->
     <script>
         // 在DOM加载前就阻止可能的缩放行为
@@ -139,8 +146,7 @@
                                 <div class="help-grid">
                                     <div class="help-item"><kbd>1</kbd><span>选择工具</span></div>
                                     <div class="help-item"><kbd>2</kbd><span>箭头工具</span></div>
-                                    <div class="help-item"><kbd>3</kbd><span>文字卡片工具</span></div>
-                                    <div class="help-item"><kbd>4</kbd><span>批注标记工具</span></div>
+                                    <div class="help-item"><kbd>3</kbd><span>批注标记工具</span></div>
                                 </div>
                             </div>
 
@@ -186,7 +192,6 @@
                                 <ul class="help-list">
                                     <li><strong>添加页面</strong>: 从右侧页面库拖拽页面到画布</li>
                                     <li><strong>绘制箭头</strong>: 选择箭头工具,点击起点和终点</li>
-                                    <li><strong>添加文字卡片</strong>: 选择文字卡片工具,点击画布任意位置</li>
                                 </ul>
                             </div>
 
@@ -194,7 +199,6 @@
                                 <h3><i class="fas fa-arrows-alt"></i> 移动和调整</h3>
                                 <ul class="help-list">
                                     <li><strong>移动页面元素</strong>: 点击拖拽顶部标题栏手柄</li>
-                                    <li><strong>调整文字卡片大小</strong>: 拖拽文字卡片的四角手柄</li>
                                 </ul>
                             </div>
 
@@ -252,18 +256,9 @@
                             <div class="help-section">
                                 <h3><i class="fas fa-history"></i> 撤销/重做</h3>
                                 <ul class="help-list">
-                                    <li><strong>支持的操作</strong>: 添加/删除/移动元素、页面排序、文字卡片编辑等</li>
+                                    <li><strong>支持的操作</strong>: 添加/删除/移动元素、页面排序等</li>
                                     <li><strong>历史记录数</strong>: 最多保存50步操作历史</li>
                                     <li><strong>智能恢复</strong>: 撤销时智能复用DOM,避免iframe刷新</li>
-                                </ul>
-                            </div>
-
-                            <div class="help-section">
-                                <h3><i class="fas fa-edit"></i> 文字卡片编辑技巧</h3>
-                                <ul class="help-list">
-                                    <li><strong>输入内容</strong>: 点击文字卡片内容区域即可输入文字</li>
-                                    <li><strong>调整大小</strong>: 拖拽四角手柄可自由调整卡片尺寸</li>
-                                    <li><strong>支持数字</strong>: 文字卡片中可以正常输入数字,不会触发工具切换</li>
                                 </ul>
                             </div>
                         </div>
@@ -285,11 +280,8 @@
                                     <li><strong>Q: 为什么我的页面元素无法拖拽?</strong><br>
                                         A: 必须通过顶部标题栏手柄才能拖拽页面元素,点击其他区域无效</li>
 
-                                    <li><strong>Q: 如何在文字卡片中输入数字?</strong><br>
-                                        A: 已修复冲突,现在可以在文字卡片中正常输入数字1/2/3等</li>
-
                                     <li><strong>Q: 撤销后页面为什么会刷新?</strong><br>
-                                        A: 已优化,撤销时智能复用DOM,页面元素不会刷新,只有箭头/文字卡片等会重新渲染</li>
+                                        A: 已优化,撤销时智能复用DOM,页面元素不会刷新,只有箭头等会重新渲染</li>
                                 </ul>
                             </div>
 
@@ -359,10 +351,7 @@
                     <button class="tool-icon-btn" data-tool="arrow" title="箭头工具 (2)">
                         <i class="fas fa-arrow-right"></i>
                     </button>
-                    <button class="tool-icon-btn" data-tool="note" title="文字卡片工具 (3)">
-                        <i class="fas fa-sticky-note"></i>
-                    </button>
-                    <button class="tool-icon-btn" data-tool="annotation" title="批注标记 (4)">
+                    <button class="tool-icon-btn" data-tool="annotation" title="批注标记 (3)">
                         <i class="fas fa-tag"></i>
                     </button>
 
@@ -384,6 +373,14 @@
                     </button>
                     <button class="tool-icon-btn action-btn" id="clearBtn" title="清空画布">
                         <i class="fas fa-eraser"></i>
+                    </button>
+
+                    <!-- 分隔符 -->
+                    <div class="status-bar-divider"></div>
+
+                    <!-- Excalidraw 模式切换 -->
+                    <button class="tool-icon-btn action-btn" id="excalidrawModeBtn" title="Excalidraw 手绘模式 (E)">
+                        <i class="fas fa-pencil-alt"></i>
                     </button>
 
                     <!-- 分隔符 -->
@@ -419,6 +416,61 @@
                         <i class="fas fa-hand-pointer"></i>
                         <p>从右侧拖拽页面到画布</p>
                         <p>或使用工具添加标注</p>
+                    </div>
+                </div>
+                
+                <!-- Excalidraw 浮动工具栏 -->
+                <div class="excalidraw-toolbar" id="excalidrawToolbar" style="display: none;">
+                    <div class="excalidraw-toolbar-section">
+                        <button class="excalidraw-tool-btn active" data-tool="select" title="选择 (V)">
+                            <i class="fas fa-mouse-pointer"></i>
+                        </button>
+                        <button class="excalidraw-tool-btn" data-tool="rectangle" title="矩形 (R)">
+                            <i class="fas fa-square"></i>
+                        </button>
+                        <button class="excalidraw-tool-btn" data-tool="ellipse" title="椭圆 (O)">
+                            <i class="fas fa-circle"></i>
+                        </button>
+                        <button class="excalidraw-tool-btn" data-tool="diamond" title="菱形 (D)">
+                            <i class="fas fa-diamond"></i>
+                        </button>
+                        <button class="excalidraw-tool-btn" data-tool="line" title="线条 (L)">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                        <button class="excalidraw-tool-btn" data-tool="arrow" title="箭头 (A)">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                        <button class="excalidraw-tool-btn" data-tool="text" title="文本 (T)">
+                            <i class="fas fa-font"></i>
+                        </button>
+                    </div>
+                    <div class="excalidraw-toolbar-divider"></div>
+                    <div class="excalidraw-toolbar-section">
+                        <div class="excalidraw-color-picker">
+                            <label>描边:</label>
+                            <input type="color" id="excalidrawStrokeColor" value="#000000" title="描边颜色">
+                        </div>
+                        <div class="excalidraw-color-picker">
+                            <label>填充:</label>
+                            <input type="color" id="excalidrawFillColor" value="#ffffff" title="填充颜色">
+                        </div>
+                        <div class="excalidraw-slider">
+                            <label>粗细:</label>
+                            <input type="range" id="excalidrawStrokeWidth" min="1" max="10" value="2" title="线条粗细">
+                        </div>
+                        <div class="excalidraw-slider">
+                            <label>粗糙度:</label>
+                            <input type="range" id="excalidrawRoughness" min="0" max="3" step="0.5" value="1.5" title="手绘粗糙度">
+                        </div>
+                    </div>
+                    <div class="excalidraw-toolbar-divider"></div>
+                    <div class="excalidraw-toolbar-section">
+                        <button class="excalidraw-action-btn" id="excalidrawClearBtn" title="清空画布">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="excalidraw-action-btn" id="excalidrawExportBtn" title="导出PNG">
+                            <i class="fas fa-download"></i>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -461,5 +513,13 @@
     <script src="js/page-manager.js"></script>
     <script src="js/history-manager.js"></script>
     <script src="js/canvas-editor.js"></script>
+    
+    <!-- Excalidraw 风格绘图模块 -->
+    <script src="js/canvas/renderer.js"></script>
+    <script src="js/elements/element-model.js"></script>
+    <script src="js/interaction/selection-manager.js"></script>
+    <script src="js/interaction/transform-manager.js"></script>
+    <script src="js/export/export-manager.js"></script>
+    <script src="js/integration/excalidraw-integration.js"></script>
 </body>
 </html>
