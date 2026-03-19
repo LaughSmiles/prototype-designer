@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="css/canvas-editor.css">
 
     <!-- Markdown 解析库 -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="lib/js/marked.min.js"></script>
 
     <!-- 页面加载时立即设置浏览器缩放防护 -->
     <script>
@@ -30,6 +30,16 @@
                     // 检查是否在iframe内部
                     const isInsideIframe = e.target.closest('.canvas-element.page-element iframe');
                     const isInsideCanvasWrapper = e.target.closest('#canvasWrapper');
+                    // 检查是否在批注标记内部
+                    const isInsideAnnotation = e.target.closest('.annotation-content-wrapper') ||
+                                               e.target.closest('.annotation-editor') ||
+                                               e.target.closest('.annotation-preview');
+
+                    // 在批注标记内部：允许画布缩放（而不是浏览器缩放）
+                    if (isInsideAnnotation) {
+                        e.preventDefault(); // 阻止浏览器默认缩放
+                        // 不调用 stopImmediatePropagation()，让事件继续传播给 canvas-view.js 处理画布缩放
+                    }
 
                     if (isInsideIframe) {
                         // 在iframe内部：完全阻止浏览器缩放
