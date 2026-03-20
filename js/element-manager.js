@@ -263,7 +263,7 @@ const ElementManager = {
             const maxX = Math.max(...allX);
             const maxY = Math.max(...allY);
 
-            const padding = 50;
+            const padding = 10;
             div.style.left = `${minX - padding}px`;
             div.style.top = `${minY - padding}px`;
             div.style.width = `${maxX - minX + padding * 2}px`;
@@ -461,7 +461,7 @@ const ElementManager = {
             const maxX = Math.max(...allX);
             const maxY = Math.max(...allY);
 
-            const padding = 50;
+            const padding = 10;
             div.style.left = `${minX - padding}px`;
             div.style.top = `${minY - padding}px`;
             div.style.width = `${maxX - minX + padding * 2}px`;
