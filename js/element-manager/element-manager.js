@@ -247,11 +247,24 @@ const ElementManager = {
         let path = '';
         path += `M ${points[0].x - offsetX} ${points[0].y - offsetY}`;
 
-        for (let i = 1; i < points.length; i++) {
+        // 前面的点正常画
+        for (let i = 1; i < points.length - 1; i++) {
             const x = points[i].x - offsetX;
             const y = points[i].y - offsetY;
             path += ` L ${x} ${y}`;
         }
+
+        // 最后一个点：计算箭头根部位置，画到根部而不是终点
+        const secondLastPoint = points[points.length - 2];
+        const lastPoint = points[points.length - 1];
+        const angle = Math.atan2(lastPoint.y - secondLastPoint.y, lastPoint.x - secondLastPoint.x);
+        const headLength = 15;
+        const headAngle = Math.PI / 6;
+        const rootDistance = headLength * Math.cos(headAngle);
+
+        const rootX = lastPoint.x - rootDistance * Math.cos(angle) - offsetX;
+        const rootY = lastPoint.y - rootDistance * Math.sin(angle) - offsetY;
+        path += ` L ${rootX} ${rootY}`;
 
         return path;
     },

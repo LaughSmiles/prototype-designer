@@ -127,14 +127,16 @@ const ElementRenderer = {
         element.width = maxX - minX;
         element.height = maxY - minY;
 
-        div.style.left = `${minX}px`;
-        div.style.top = `${minY}px`;
-        div.style.width = `${element.width}px`;
-        div.style.height = `${element.height}px`;
+        const padding = 10;
+
+        div.style.left = `${minX - padding}px`;
+        div.style.top = `${minY - padding}px`;
+        div.style.width = `${element.width + padding * 2}px`;
+        div.style.height = `${element.height + padding * 2}px`;
 
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svg.setAttribute('class', 'arrow-svg');
-        svg.setAttribute('viewBox', `0 0 ${element.width} ${element.height}`);
+        svg.setAttribute('viewBox', `${-padding} ${-padding} ${element.width + padding * 2} ${element.height + padding * 2}`);
         svg.style.position = 'absolute';
         svg.style.left = '0';
         svg.style.top = '0';

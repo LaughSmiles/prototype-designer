@@ -127,34 +127,71 @@ const ToolsArrow = {
         preview.style.height = `${maxY - minY + padding * 2}px`;
         preview.setAttribute('viewBox', `${-padding} ${-padding} ${maxX - minX + padding * 2} ${maxY - minY + padding * 2}`);
 
-        // 绘制预览路径
+        // 清空预览
+        preview.innerHTML = '';
+
+        // 绘制预览路径（虚线）
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         const pathData = this.generateArrowPath(allPoints, minX, minY);
 
-        preview.innerHTML = '';
         path.setAttribute('d', pathData);
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke', '#e74c3c');
         path.setAttribute('stroke-width', '2');
         path.setAttribute('stroke-dasharray', '5,5');
         preview.appendChild(path);
+
+        // 绘制箭头头部
+        const arrowHead = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const arrowHeadPath = this.getArrowHeadPath(allPoints[allPoints.length - 2], allPoints[allPoints.length - 1], minX, minY);
+        arrowHead.setAttribute('d', arrowHeadPath);
+        arrowHead.setAttribute('fill', '#e74c3c');
+        preview.appendChild(arrowHead);
     },
 
     // 生成箭头路径（全部使用直线）
     generateArrowPath(points, offsetX, offsetY) {
         if (points.length < 2) return '';
 
-        // 所有点之间都使用直线
         let path = '';
         path += `M ${points[0].x - offsetX} ${points[0].y - offsetY}`;
 
-        for (let i = 1; i < points.length; i++) {
+        // 前面的点正常画
+        for (let i = 1; i < points.length - 1; i++) {
             const x = points[i].x - offsetX;
             const y = points[i].y - offsetY;
             path += ` L ${x} ${y}`;
         }
 
+        // 最后一个点：计算箭头根部位置，画到根部而不是终点
+        const secondLastPoint = points[points.length - 2];
+        const lastPoint = points[points.length - 1];
+        const angle = Math.atan2(lastPoint.y - secondLastPoint.y, lastPoint.x - secondLastPoint.x);
+        const headLength = 15;
+        const headAngle = Math.PI / 6;
+        const rootDistance = headLength * Math.cos(headAngle);
+
+        const rootX = lastPoint.x - rootDistance * Math.cos(angle) - offsetX;
+        const rootY = lastPoint.y - rootDistance * Math.sin(angle) - offsetY;
+        path += ` L ${rootX} ${rootY}`;
+
         return path;
+    },
+
+    // 生成箭头头部路径
+    getArrowHeadPath(fromPoint, toPoint, offsetX, offsetY) {
+        const angle = Math.atan2(toPoint.y - fromPoint.y, toPoint.x - fromPoint.x);
+        const headLength = 15;
+        const headAngle = Math.PI / 6;
+
+        const x1 = toPoint.x - offsetX;
+        const y1 = toPoint.y - offsetY;
+        const x2 = x1 - headLength * Math.cos(angle - headAngle);
+        const y2 = y1 - headLength * Math.sin(angle - headAngle);
+        const x3 = x1 - headLength * Math.cos(angle + headAngle);
+        const y3 = y1 - headLength * Math.sin(angle + headAngle);
+
+        return `M ${x1} ${y1} L ${x2} ${y2} L ${x3} ${y3} Z`;
     },
 
     // 移除箭头预览
