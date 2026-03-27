@@ -569,7 +569,7 @@
 }
 
 /* ============================================================
-   经典主题 - 完整样式覆盖（精确还原原始 UI）
+   经典主题 - 样式覆盖（尺寸与其他主题对齐）
    ============================================================ */
 
 /* ---- body ---- */
@@ -587,10 +587,6 @@
     z-index: auto;
 }
 
-:root[data-theme="classic"] .resizer-left {
-    width: 6px;
-}
-
 :root[data-theme="classic"] .resizer-left:hover,
 :root[data-theme="classic"] .resizer-left.resizing {
     background: #3498db;
@@ -598,10 +594,8 @@
 }
 
 :root[data-theme="classic"] .expander-left {
-    height: 60px;
     background: #3498db;
     color: white;
-    border-radius: 0 4px 4px 0;
     border: none;
 }
 
@@ -612,27 +606,16 @@
 
 /* ---- 工具栏头部（左侧页面管理） ---- */
 :root[data-theme="classic"] .toolbar-header {
-    padding: 20px 15px;
     background: #f8f9fa;
     border-bottom: 1px solid #e0e0e0;
-    border-radius: 8px;
-    margin: 0 0 8px 0;
 }
 
 :root[data-theme="classic"] .toolbar-header h2 {
-    font-size: 18px;
-    font-weight: 600;
-    text-align: center;
     color: #333;
-    margin: 0;
 }
 
 /* ---- 添加页面按钮 ---- */
 :root[data-theme="classic"] .add-page-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 6px;
-    border: 1px solid #ddd;
     background: white;
     color: #555;
 }
@@ -643,50 +626,32 @@
     border-color: #3498db;
 }
 
-:root[data-theme="classic"] .add-page-btn i {
-    font-size: 14px;
-}
-
 /* ---- 页面列表容器 ---- */
 :root[data-theme="classic"] .page-list-container {
     background: #f8f9fa;
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 0;
 }
 
 /* ---- 页面列表项 ---- */
-:root[data-theme="classic"] .page-list {
-    gap: 4px;
-}
-
 :root[data-theme="classic"] .page-list-item {
-    padding: 10px 12px;
     background: white;
     border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 14px;
     color: #333;
 }
 
 :root[data-theme="classic"] .page-list-item:hover {
     background: #f0f0f0;
     border-color: #3498db;
-    transform: translateX(2px);
 }
 
 :root[data-theme="classic"] .page-list-item.active {
     background: #e3f2fd;
     border-color: #3498db;
     color: #1565c0;
-    font-weight: 500;
 }
 
 :root[data-theme="classic"] .page-list-item.active::before {
-    content: '\2713';
-    font-weight: bold;
-    margin-right: 8px;
     color: #3498db;
-    font-size: 14px;
 }
 
 :root[data-theme="classic"] .page-drag-handle {
@@ -698,27 +663,18 @@
 }
 
 :root[data-theme="classic"] .drag-insert-indicator {
-    height: 3px;
     background: #2196f3;
-    border-radius: 2px;
     box-shadow: 0 2px 4px rgba(33, 150, 243, 0.3);
 }
 
 :root[data-theme="classic"] .page-list-item.drag-over {
     background: #e3f2fd;
     border-color: #2196f3;
-    transform: scale(1.02);
 }
 
 :root[data-theme="classic"] .page-list-item.drag-placeholder {
     background: #f5f5f5;
-    border: 2px dashed #ccc;
     color: #999;
-    font-size: 14px;
-}
-
-:root[data-theme="classic"] .page-list-item.drag-placeholder::before {
-    content: '\1F4CB \62D6\u62FD\u5230\u6B64\u5904';
 }
 
 /* ---- 右键菜单（页面列表） ---- */
@@ -731,8 +687,6 @@
 }
 
 :root[data-theme="classic"] .context-menu-item {
-    padding: 10px 16px;
-    font-size: 14px;
     color: #333;
 }
 
@@ -743,7 +697,6 @@
 
 :root[data-theme="classic"] .context-menu-item i {
     color: #666;
-    font-size: 12px;
 }
 
 :root[data-theme="classic"] .context-menu-item:hover i {
@@ -766,30 +719,16 @@
 
 :root[data-theme="classic"] .canvas.drag-over {
     background-color: #e3f2fd;
-    border: 2px dashed #3498db;
 }
 
 :root[data-theme="classic"] .canvas-hint {
     color: #95a5a6;
-    font-size: 16px;
-}
-
-:root[data-theme="classic"] .canvas-hint i {
-    font-size: 48px;
-    margin-bottom: 15px;
-    opacity: 0.5;
-}
-
-:root[data-theme="classic"] .canvas-hint p {
-    margin: 5px 0;
-    opacity: 1;
 }
 
 /* ---- 画布元素 ---- */
 :root[data-theme="classic"] .canvas-element.page-element {
     background: white;
     border: 2px solid #ddd;
-    border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
@@ -805,11 +744,8 @@
 
 /* ---- 拖拽手柄 ---- */
 :root[data-theme="classic"] .canvas-drag-handle {
-    height: 30px;
     background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
     border-bottom: 1px solid #dee2e6;
-    border-radius: 8px 8px 0 0;
-    font-size: 12px;
     color: #495057;
 }
 
@@ -829,13 +765,8 @@
 
 /* ---- 删除按钮 ---- */
 :root[data-theme="classic"] .canvas-element .delete-btn {
-    top: 5px;
-    right: 5px;
-    width: 20px;
-    height: 20px;
     background: #e74c3c;
     border: 2px solid white;
-    font-size: 10px;
     box-shadow: none;
 }
 
@@ -861,7 +792,6 @@
 :root[data-theme="classic"] .status-bar-center {
     border-left: 1px solid #e0e0e0;
     border-right: 1px solid #e0e0e0;
-    padding: 0 16px;
 }
 
 :root[data-theme="classic"] .status-bar-right {
@@ -870,9 +800,6 @@
 
 /* ---- 工具图标按钮 ---- */
 :root[data-theme="classic"] .tool-icon-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
     border: 1px solid #ddd;
     background: white;
     color: #555;
@@ -882,7 +809,6 @@
     background: #3498db;
     color: white;
     border-color: #3498db;
-    transform: scale(1.1);
 }
 
 :root[data-theme="classic"] .tool-icon-btn.active {
@@ -890,10 +816,6 @@
     color: white;
     border-color: #2980b9;
     box-shadow: none;
-}
-
-:root[data-theme="classic"] .tool-icon-btn i {
-    font-size: 14px;
 }
 
 /* ---- 状态栏操作按钮 ---- */
@@ -959,9 +881,7 @@
 
 /* ---- 状态栏分隔符 ---- */
 :root[data-theme="classic"] .status-bar-divider {
-    height: 36px;
     background: #ddd;
-    margin: 0 8px;
 }
 
 /* ---- 右侧边栏 ---- */
@@ -973,10 +893,6 @@
     z-index: auto;
 }
 
-:root[data-theme="classic"] .resizer-right {
-    width: 6px;
-}
-
 :root[data-theme="classic"] .resizer-right:hover,
 :root[data-theme="classic"] .resizer-right.resizing {
     background: #3498db;
@@ -984,10 +900,8 @@
 }
 
 :root[data-theme="classic"] .expander-right {
-    height: 60px;
     background: #3498db;
     color: white;
-    border-radius: 4px 0 0 4px;
     border: none;
 }
 
@@ -998,36 +912,24 @@
 
 /* ---- 页面库头部 ---- */
 :root[data-theme="classic"] .page-library-header {
-    padding: 20px 15px;
     background: #f8f9fa;
     border-bottom: 1px solid #dee2e6;
 }
 
 :root[data-theme="classic"] .page-library-header h2 {
-    font-size: 18px;
     color: #2c3e50;
 }
 
 :root[data-theme="classic"] .page-library-header span {
     background: #3498db;
     color: white;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
     border: none;
 }
 
 /* ---- 页面库列表 ---- */
-:root[data-theme="classic"] .page-library {
-    padding: 15px;
-    gap: 12px;
-}
-
 :root[data-theme="classic"] .page-item {
     background: white;
     border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 12px;
 }
 
 :root[data-theme="classic"] .page-item:hover {
@@ -1036,20 +938,15 @@
 }
 
 :root[data-theme="classic"] .page-item i {
-    font-size: 20px;
     color: #3498db;
-    width: 24px;
     opacity: 1;
 }
 
 :root[data-theme="classic"] .page-item-name {
-    font-size: 14px;
-    font-weight: 600;
     color: #2c3e50;
 }
 
 :root[data-theme="classic"] .page-item-id {
-    font-size: 11px;
     color: #95a5a6;
     font-family: monospace;
 }
@@ -1081,25 +978,13 @@
 
 /* ---- 使用计数徽章 ---- */
 :root[data-theme="classic"] .page-usage-badge {
-    min-width: 24px;
-    height: 24px;
     background: #3498db;
-    border-radius: 50%;
-    font-size: 12px;
-    padding: 0 6px;
     box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
 }
 
 /* ---- 页面分组 ---- */
-:root[data-theme="classic"] .page-group {
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
 :root[data-theme="classic"] .page-group-header {
-    padding: 10px 12px;
     background: #f8f9fa;
-    border-radius: 8px;
     border: 1px solid #e0e0e0;
 }
 
@@ -1109,32 +994,17 @@
 }
 
 :root[data-theme="classic"] .group-name {
-    font-size: 13px;
     color: #2c3e50;
 }
 
 :root[data-theme="classic"] .group-count {
-    font-size: 12px;
     color: #7f8c8d;
     background: white;
-    padding: 2px 8px;
-    border-radius: 10px;
     border: 1px solid #e0e0e0;
 }
 
 :root[data-theme="classic"] .category-toggle-icon {
-    width: 20px;
-    height: 20px;
     color: #7f8c8d;
-}
-
-:root[data-theme="classic"] .category-toggle-icon i {
-    font-size: 12px;
-}
-
-:root[data-theme="classic"] .page-group-content {
-    gap: 8px;
-    padding-left: 8px;
 }
 
 :root[data-theme="classic"] .page-group-header.dragging {
@@ -1162,13 +1032,11 @@
 }
 
 :root[data-theme="classic"] .alignment-guide.vertical {
-    width: 2px;
     border-left: 2px dashed #3498db;
     background: transparent;
 }
 
 :root[data-theme="classic"] .alignment-guide.horizontal {
-    height: 2px;
     border-top: 2px dashed #3498db;
     background: transparent;
 }
@@ -1177,9 +1045,6 @@
 :root[data-theme="classic"] .zoom-hint {
     background: rgba(0, 0, 0, 0.8);
     color: white;
-    padding: 15px 25px;
-    border-radius: 8px;
-    font-size: 18px;
     border: none;
 }
 
@@ -1188,15 +1053,12 @@
     top: 20px;
     background: #3498db;
     color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
     border: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    font-size: 14px;
 }
 
 @keyframes classicFadeInOut {
-    0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
     10%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
@@ -1208,7 +1070,6 @@
 :root[data-theme="classic"] .loading {
     background: rgba(0, 0, 0, 0.8);
     color: white;
-    border-radius: 8px;
     border: none;
 }
 
@@ -1225,7 +1086,6 @@
 :root[data-theme="classic"] .tooltip::after {
     background: #2c3e50;
     color: white;
-    border-radius: 4px;
     border: none;
     box-shadow: none;
 }
@@ -1233,7 +1093,6 @@
 /* ---- 虚拟滚动条 ---- */
 :root[data-theme="classic"] .virtual-scrollbar {
     background: rgba(0, 0, 0, 0.1);
-    border-radius: 6px;
 }
 
 :root[data-theme="classic"] .scrollbar-thumb {
@@ -1282,7 +1141,6 @@
 /* ---- 帮助模态窗口 ---- */
 :root[data-theme="classic"] .help-modal-content {
     background: white;
-    border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1290,12 +1148,10 @@
 }
 
 :root[data-theme="classic"] .help-modal-header {
-    padding: 20px 24px;
     border-bottom: 2px solid #f0f0f0;
 }
 
 :root[data-theme="classic"] .help-modal-header h2 {
-    font-size: 20px;
     color: #2c3e50;
 }
 
@@ -1306,10 +1162,7 @@
 :root[data-theme="classic"] .help-modal-close {
     background: none;
     border: none;
-    font-size: 32px;
     color: #999;
-    width: 36px;
-    height: 36px;
 }
 
 :root[data-theme="classic"] .help-modal-close:hover {
@@ -1318,32 +1171,24 @@
 }
 
 :root[data-theme="classic"] .help-section h3 {
-    font-size: 16px;
     color: #2c3e50;
-    padding-bottom: 8px;
     border-bottom: 2px solid #f0f0f0;
 }
 
 :root[data-theme="classic"] .help-section h3 i {
     color: #3498db;
-    font-size: 14px;
 }
 
 :root[data-theme="classic"] .help-item {
-    padding: 8px 12px;
     background: #f8f9fa;
-    border-radius: 6px;
-    font-size: 13px;
     border: none;
 }
 
 :root[data-theme="classic"] .help-item kbd {
     background: white;
     border: 1px solid #ddd;
-    border-radius: 4px;
     padding: 4px 8px;
     font-family: 'Courier New', monospace;
-    font-size: 12px;
     color: #e74c3c;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
@@ -1353,7 +1198,6 @@
 }
 
 :root[data-theme="classic"] .help-list li {
-    font-size: 14px;
     border-bottom: 1px dashed #eee;
 }
 
@@ -1364,12 +1208,9 @@
 /* ---- 帮助 Tab ---- */
 :root[data-theme="classic"] .help-tabs {
     border-bottom: 2px solid #e0e0e0;
-    margin-bottom: 24px;
 }
 
 :root[data-theme="classic"] .help-tab {
-    padding: 12px 16px;
-    font-size: 14px;
     color: #666;
     border-bottom: 3px solid transparent;
     bottom: -2px;
@@ -1408,7 +1249,6 @@
 /* ---- 确认弹窗 ---- */
 :root[data-theme="classic"] .confirm-modal-content {
     background: white;
-    border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1416,12 +1256,10 @@
 }
 
 :root[data-theme="classic"] .confirm-modal-header {
-    padding: 20px 24px;
     border-bottom: 2px solid #f0f0f0;
 }
 
 :root[data-theme="classic"] .confirm-modal-header h2 {
-    font-size: 20px;
     color: #2c3e50;
 }
 
@@ -1430,20 +1268,15 @@
 }
 
 :root[data-theme="classic"] .confirm-modal-body p {
-    font-size: 15px;
     color: #555;
 }
 
 :root[data-theme="classic"] .confirm-modal-footer {
-    padding: 16px 24px;
     border-top: 2px solid #f0f0f0;
 }
 
 :root[data-theme="classic"] .confirm-modal-btn {
-    padding: 10px 24px;
-    border-radius: 6px;
     border: none;
-    font-size: 14px;
 }
 
 :root[data-theme="classic"] .confirm-modal-btn.cancel {
@@ -1469,7 +1302,6 @@
 /* ---- 输入弹窗 ---- */
 :root[data-theme="classic"] .prompt-modal-content {
     background: white;
-    border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1477,15 +1309,11 @@
 }
 
 :root[data-theme="classic"] .prompt-modal-body p {
-    font-size: 15px;
     color: #555;
 }
 
 :root[data-theme="classic"] .prompt-modal-input {
-    padding: 12px 16px;
     border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 15px;
     background: white;
     color: #2c3e50;
 }
@@ -1496,24 +1324,15 @@
 }
 
 /* ---- 旧版工具栏按钮（兼容） ---- */
-:root[data-theme="classic"] .tool-buttons {
-    padding: 15px 10px;
-    gap: 8px;
-}
-
 :root[data-theme="classic"] .tool-btn {
     background: #f8f9fa;
     border: 2px solid #e0e0e0;
     color: #2c3e50;
-    padding: 12px 10px;
-    border-radius: 8px;
-    font-size: 14px;
 }
 
 :root[data-theme="classic"] .tool-btn:hover {
     background: #e9ecef;
     border-color: #3498db;
-    transform: translateY(-1px);
 }
 
 :root[data-theme="classic"] .tool-btn.active {
@@ -1523,32 +1342,18 @@
     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.4);
 }
 
-:root[data-theme="classic"] .tool-btn i {
-    width: 20px;
-}
-
 :root[data-theme="classic"] .divider {
     background: #34495e;
-    margin: 10px 15px;
-}
-
-:root[data-theme="classic"] .action-buttons {
-    padding: 15px 10px;
-    gap: 8px;
 }
 
 :root[data-theme="classic"] .action-btn {
     background: #27ae60;
     border: none;
     color: white;
-    padding: 10px 10px;
-    border-radius: 6px;
-    font-size: 13px;
 }
 
 :root[data-theme="classic"] .action-btn:hover {
     background: #2ecc71;
-    transform: translateY(-1px);
 }
 
 :root[data-theme="classic"] .action-btn-danger {
@@ -1599,37 +1404,15 @@
     background: #7f8c8d;
 }
 
-:root[data-theme="classic"] .view-controls {
-    padding: 15px 10px;
-    gap: 8px;
-}
-
-:root[data-theme="classic"] .zoom-info {
-    font-size: 12px;
-    margin-bottom: 5px;
-}
-
 :root[data-theme="classic"] .zoom-btn {
     background: #34495e;
     border: none;
     color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
 }
 
 :root[data-theme="classic"] .zoom-btn:hover {
     background: #415a77;
     color: white;
-}
-
-:root[data-theme="classic"] .help-info {
-    padding: 15px 10px;
-}
-
-:root[data-theme="classic"] .help-info h3 {
-    font-size: 13px;
-    margin-bottom: 8px;
 }
 
 :root[data-theme="classic"] .help-info li {
