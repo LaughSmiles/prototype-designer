@@ -136,6 +136,17 @@ const Storage = {
                 sidebarRight.classList.add('collapsed');
             }
 
+            // 直接设置展开按钮的显示状态
+            // 因为此时 MutationObserver 可能还未初始化，需要手动同步
+            const expanderLeft = document.getElementById('expanderLeft');
+            const expanderRight = document.getElementById('expanderRight');
+            if (expanderLeft) {
+                expanderLeft.style.display = uiState.leftCollapsed ? 'flex' : 'none';
+            }
+            if (expanderRight) {
+                expanderRight.style.display = uiState.rightCollapsed ? 'flex' : 'none';
+            }
+
             console.log('UI状态已恢复');
         } catch (error) {
             console.error('恢复UI状态失败:', error);
