@@ -340,7 +340,11 @@ const CanvasEditor = {
         const iconMap = {
             'dark': 'fas fa-sun',
             'light': 'fas fa-moon',
-            'classic': 'fas fa-th-large'
+            'classic': 'fas fa-th-large',
+            'ocean': 'fas fa-water',
+            'forest': 'fas fa-tree',
+            'sunset': 'fas fa-cloud-sun',
+            'nord': 'fas fa-snowflake'
         };
 
         // 更新选中标记（始终反映 currentTheme）

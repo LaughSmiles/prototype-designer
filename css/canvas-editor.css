@@ -268,6 +268,306 @@
     --theme-icon: "\f0fc"; /* fa-th-large - 经典主题显示"切换到暗色" */
 }
 
+/* ---- Ocean 海洋主题 ---- */
+:root[data-theme="ocean"] {
+    /* 背景层级 */
+    --bg-deepest: #0B1628;
+    --bg-deep: #0F1D32;
+    --bg-base: #132240;
+    --bg-raised: #182B4E;
+    --bg-surface: #1E335C;
+    --bg-overlay: rgba(59, 130, 246, 0.04);
+    --bg-hover: rgba(59, 130, 246, 0.08);
+    --bg-active: rgba(59, 130, 246, 0.12);
+
+    /* 文字层级 */
+    --text-primary: #E2E8F0;
+    --text-secondary: #8899B0;
+    --text-tertiary: #5A7090;
+    --text-disabled: #3A4F6A;
+
+    /* 强调色 */
+    --accent-blue: #3B82F6;
+    --accent-blue-hover: #2563EB;
+    --accent-blue-dim: rgba(59, 130, 246, 0.15);
+    --accent-green: #34D399;
+    --accent-green-dim: rgba(52, 211, 153, 0.15);
+    --accent-red: #FB7185;
+    --accent-red-dim: rgba(251, 113, 133, 0.15);
+    --accent-yellow: #FBBF24;
+    --accent-yellow-dim: rgba(251, 191, 36, 0.15);
+    --accent-cyan: #22D3EE;
+    --accent-cyan-dim: rgba(34, 211, 238, 0.15);
+    --accent-purple: #A78BFA;
+    --accent-purple-dim: rgba(167, 139, 250, 0.15);
+
+    /* 边框 */
+    --border-default: rgba(59, 130, 246, 0.1);
+    --border-hover: rgba(59, 130, 246, 0.2);
+    --border-accent: rgba(59, 130, 246, 0.4);
+    --border-subtle: rgba(59, 130, 246, 0.06);
+
+    /* 阴影 */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-glow-blue: 0 0 20px rgba(59, 130, 246, 0.25);
+
+    /* 毛玻璃 */
+    --glass-bg: rgba(15, 29, 50, 0.85);
+    --glass-bg-light: rgba(24, 43, 78, 0.9);
+    --glass-blur: blur(20px);
+
+    /* 画布网格 */
+    --canvas-dot-color: rgba(59, 130, 246, 0.06);
+
+    /* 批注框 */
+    --annotation-box-bg: #1A2744;
+    --annotation-box-border: rgba(59, 130, 246, 0.3);
+    --annotation-text: #CBD5E1;
+    --annotation-text-placeholder: #4A5E78;
+    --annotation-toolbar-border: rgba(59, 130, 246, 0.2);
+    --annotation-btn-color: #6B8AB5;
+    --annotation-heading-color: #E2E8F0;
+    --annotation-link-color: #60A5FA;
+    --annotation-del-color: #4A5E78;
+    --annotation-code-bg: rgba(59, 130, 246, 0.1);
+    --annotation-pre-bg: #0D1525;
+    --annotation-pre-text: #E2E8F0;
+    --annotation-mark-bg: linear-gradient(120deg, rgba(59, 130, 246, 0.2) 0%, rgba(96, 165, 250, 0.2) 100%);
+    --annotation-mark-color: #CBD5E1;
+    --annotation-hr-color: rgba(59, 130, 246, 0.15);
+    --annotation-table-border: rgba(59, 130, 246, 0.15);
+    --annotation-table-header-bg: rgba(59, 130, 246, 0.1);
+    --annotation-table-stripe: rgba(0, 0, 0, 0.15);
+    --annotation-blockquote-border: #3B82F6;
+    --annotation-blockquote-text: #6B8AB5;
+    --annotation-blockquote-nested-border: #1E335C;
+    --annotation-footnote-color: #4A5E78;
+    --annotation-footnote-border: rgba(59, 130, 246, 0.15);
+    --annotation-editor-bg-focus: rgba(59, 130, 246, 0.05);
+    --annotation-focus-color: rgba(59, 130, 246, 0.05);
+}
+
+/* ---- Forest 森林主题 ---- */
+:root[data-theme="forest"] {
+    --bg-deepest: #0B1A14;
+    --bg-deep: #0F221A;
+    --bg-base: #132B20;
+    --bg-raised: #183426;
+    --bg-surface: #1E3E2C;
+    --bg-overlay: rgba(34, 197, 94, 0.04);
+    --bg-hover: rgba(34, 197, 94, 0.08);
+    --bg-active: rgba(34, 197, 94, 0.12);
+
+    --text-primary: #DCFCE7;
+    --text-secondary: #7BAF90;
+    --text-tertiary: #4E8A6A;
+    --text-disabled: #2E6A4A;
+
+    --accent-blue: #22C55E;
+    --accent-blue-hover: #16A34A;
+    --accent-blue-dim: rgba(34, 197, 94, 0.15);
+    --accent-green: #4ADE80;
+    --accent-green-dim: rgba(74, 222, 128, 0.15);
+    --accent-red: #FB7185;
+    --accent-red-dim: rgba(251, 113, 133, 0.15);
+    --accent-yellow: #FACC15;
+    --accent-yellow-dim: rgba(250, 204, 21, 0.15);
+    --accent-cyan: #2DD4BF;
+    --accent-cyan-dim: rgba(45, 212, 191, 0.15);
+    --accent-purple: #C084FC;
+    --accent-purple-dim: rgba(192, 132, 252, 0.15);
+
+    --border-default: rgba(34, 197, 94, 0.1);
+    --border-hover: rgba(34, 197, 94, 0.2);
+    --border-accent: rgba(34, 197, 94, 0.4);
+    --border-subtle: rgba(34, 197, 94, 0.06);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-glow-blue: 0 0 20px rgba(34, 197, 94, 0.25);
+
+    --glass-bg: rgba(15, 34, 26, 0.85);
+    --glass-bg-light: rgba(24, 52, 38, 0.9);
+    --glass-blur: blur(20px);
+
+    --canvas-dot-color: rgba(34, 197, 94, 0.06);
+
+    --annotation-box-bg: #162E22;
+    --annotation-box-border: rgba(34, 197, 94, 0.3);
+    --annotation-text: #BBF7D0;
+    --annotation-text-placeholder: #3D7A5A;
+    --annotation-toolbar-border: rgba(34, 197, 94, 0.2);
+    --annotation-btn-color: #5EAA80;
+    --annotation-heading-color: #DCFCE7;
+    --annotation-link-color: #4ADE80;
+    --annotation-del-color: #3D7A5A;
+    --annotation-code-bg: rgba(34, 197, 94, 0.1);
+    --annotation-pre-bg: #091510;
+    --annotation-pre-text: #DCFCE7;
+    --annotation-mark-bg: linear-gradient(120deg, rgba(34, 197, 94, 0.2) 0%, rgba(74, 222, 128, 0.2) 100%);
+    --annotation-mark-color: #BBF7D0;
+    --annotation-hr-color: rgba(34, 197, 94, 0.15);
+    --annotation-table-border: rgba(34, 197, 94, 0.15);
+    --annotation-table-header-bg: rgba(34, 197, 94, 0.1);
+    --annotation-table-stripe: rgba(0, 0, 0, 0.15);
+    --annotation-blockquote-border: #22C55E;
+    --annotation-blockquote-text: #5EAA80;
+    --annotation-blockquote-nested-border: #1E3E2C;
+    --annotation-footnote-color: #3D7A5A;
+    --annotation-footnote-border: rgba(34, 197, 94, 0.15);
+    --annotation-editor-bg-focus: rgba(34, 197, 94, 0.05);
+    --annotation-focus-color: rgba(34, 197, 94, 0.05);
+}
+
+/* ---- Sunset 日落主题 ---- */
+:root[data-theme="sunset"] {
+    --bg-deepest: #1A1410;
+    --bg-deep: #221B14;
+    --bg-base: #2C2318;
+    --bg-raised: #382E20;
+    --bg-surface: #443828;
+    --bg-overlay: rgba(249, 115, 22, 0.04);
+    --bg-hover: rgba(249, 115, 22, 0.08);
+    --bg-active: rgba(249, 115, 22, 0.12);
+
+    --text-primary: #FED7AA;
+    --text-secondary: #B08A60;
+    --text-tertiary: #7A6040;
+    --text-disabled: #5A4530;
+
+    --accent-blue: #F97316;
+    --accent-blue-hover: #EA580C;
+    --accent-blue-dim: rgba(249, 115, 22, 0.15);
+    --accent-green: #4ADE80;
+    --accent-green-dim: rgba(74, 222, 128, 0.15);
+    --accent-red: #FB7185;
+    --accent-red-dim: rgba(251, 113, 133, 0.15);
+    --accent-yellow: #FACC15;
+    --accent-yellow-dim: rgba(250, 204, 21, 0.15);
+    --accent-cyan: #22D3EE;
+    --accent-cyan-dim: rgba(34, 211, 238, 0.15);
+    --accent-purple: #C084FC;
+    --accent-purple-dim: rgba(192, 132, 252, 0.15);
+
+    --border-default: rgba(249, 115, 22, 0.1);
+    --border-hover: rgba(249, 115, 22, 0.2);
+    --border-accent: rgba(249, 115, 22, 0.4);
+    --border-subtle: rgba(249, 115, 22, 0.06);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.7);
+    --shadow-glow-blue: 0 0 20px rgba(249, 115, 22, 0.25);
+
+    --glass-bg: rgba(34, 27, 20, 0.85);
+    --glass-bg-light: rgba(56, 46, 32, 0.9);
+    --glass-blur: blur(20px);
+
+    --canvas-dot-color: rgba(249, 115, 22, 0.06);
+
+    --annotation-box-bg: #2A2018;
+    --annotation-box-border: rgba(249, 115, 22, 0.3);
+    --annotation-text: #FED7AA;
+    --annotation-text-placeholder: #6A5035;
+    --annotation-toolbar-border: rgba(249, 115, 22, 0.2);
+    --annotation-btn-color: #A07A50;
+    --annotation-heading-color: #FED7AA;
+    --annotation-link-color: #FB923C;
+    --annotation-del-color: #6A5035;
+    --annotation-code-bg: rgba(249, 115, 22, 0.1);
+    --annotation-pre-bg: #15100A;
+    --annotation-pre-text: #FED7AA;
+    --annotation-mark-bg: linear-gradient(120deg, rgba(249, 115, 22, 0.2) 0%, rgba(251, 146, 60, 0.2) 100%);
+    --annotation-mark-color: #FED7AA;
+    --annotation-hr-color: rgba(249, 115, 22, 0.15);
+    --annotation-table-border: rgba(249, 115, 22, 0.15);
+    --annotation-table-header-bg: rgba(249, 115, 22, 0.1);
+    --annotation-table-stripe: rgba(0, 0, 0, 0.15);
+    --annotation-blockquote-border: #F97316;
+    --annotation-blockquote-text: #A07A50;
+    --annotation-blockquote-nested-border: #382E20;
+    --annotation-footnote-color: #6A5035;
+    --annotation-footnote-border: rgba(249, 115, 22, 0.15);
+    --annotation-editor-bg-focus: rgba(249, 115, 22, 0.05);
+    --annotation-focus-color: rgba(249, 115, 22, 0.05);
+}
+
+/* ---- Nord 北欧主题 ---- */
+:root[data-theme="nord"] {
+    --bg-deepest: #242933;
+    --bg-deep: #2E3440;
+    --bg-base: #3B4252;
+    --bg-raised: #434C5E;
+    --bg-surface: #4C566A;
+    --bg-overlay: rgba(136, 192, 208, 0.04);
+    --bg-hover: rgba(136, 192, 208, 0.08);
+    --bg-active: rgba(136, 192, 208, 0.12);
+
+    --text-primary: #ECEFF4;
+    --text-secondary: #A5B0C0;
+    --text-tertiary: #6E7A8A;
+    --text-disabled: #4C566A;
+
+    --accent-blue: #88C0D0;
+    --accent-blue-hover: #81A1C1;
+    --accent-blue-dim: rgba(136, 192, 208, 0.15);
+    --accent-green: #A3BE8C;
+    --accent-green-dim: rgba(163, 190, 140, 0.15);
+    --accent-red: #BF616A;
+    --accent-red-dim: rgba(191, 97, 106, 0.15);
+    --accent-yellow: #EBCB8B;
+    --accent-yellow-dim: rgba(235, 203, 139, 0.15);
+    --accent-cyan: #8FBCBB;
+    --accent-cyan-dim: rgba(143, 188, 187, 0.15);
+    --accent-purple: #B48EAD;
+    --accent-purple-dim: rgba(180, 142, 173, 0.15);
+
+    --border-default: rgba(136, 192, 208, 0.1);
+    --border-hover: rgba(136, 192, 208, 0.2);
+    --border-accent: rgba(136, 192, 208, 0.4);
+    --border-subtle: rgba(136, 192, 208, 0.06);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-glow-blue: 0 0 20px rgba(136, 192, 208, 0.2);
+
+    --glass-bg: rgba(46, 52, 64, 0.85);
+    --glass-bg-light: rgba(67, 76, 94, 0.9);
+    --glass-blur: blur(20px);
+
+    --canvas-dot-color: rgba(136, 192, 208, 0.06);
+
+    --annotation-box-bg: #333A48;
+    --annotation-box-border: rgba(136, 192, 208, 0.25);
+    --annotation-text: #D8DEE9;
+    --annotation-text-placeholder: #5E6A7A;
+    --annotation-toolbar-border: rgba(136, 192, 208, 0.2);
+    --annotation-btn-color: #7A8899;
+    --annotation-heading-color: #ECEFF4;
+    --annotation-link-color: #88C0D0;
+    --annotation-del-color: #5E6A7A;
+    --annotation-code-bg: rgba(136, 192, 208, 0.1);
+    --annotation-pre-bg: #1E2228;
+    --annotation-pre-text: #ECEFF4;
+    --annotation-mark-bg: linear-gradient(120deg, rgba(136, 192, 208, 0.2) 0%, rgba(143, 188, 187, 0.2) 100%);
+    --annotation-mark-color: #D8DEE9;
+    --annotation-hr-color: rgba(136, 192, 208, 0.15);
+    --annotation-table-border: rgba(136, 192, 208, 0.15);
+    --annotation-table-header-bg: rgba(136, 192, 208, 0.1);
+    --annotation-table-stripe: rgba(0, 0, 0, 0.1);
+    --annotation-blockquote-border: #88C0D0;
+    --annotation-blockquote-text: #7A8899;
+    --annotation-blockquote-nested-border: #434C5E;
+    --annotation-footnote-color: #5E6A7A;
+    --annotation-footnote-border: rgba(136, 192, 208, 0.15);
+    --annotation-editor-bg-focus: rgba(136, 192, 208, 0.05);
+    --annotation-focus-color: rgba(136, 192, 208, 0.05);
+}
+
 /* ============================================================
    经典主题 - 完整样式覆盖（精确还原原始 UI）
    ============================================================ */
