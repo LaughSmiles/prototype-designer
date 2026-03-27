@@ -324,48 +324,119 @@ const CanvasEditor = {
         }
     },
 
-    // 主题切换
+    // 主题切换（下拉菜单 + 悬浮预览 + 点击确认）
     initThemeToggle() {
         const STORAGE_KEY = 'canvasEditor_theme';
+        const dropdown = document.getElementById('themeDropdown');
+        const menu = document.getElementById('themeDropdownMenu');
         const themeBtn = document.getElementById('themeToggleBtn');
-        if (!themeBtn) return;
+        if (!dropdown || !menu || !themeBtn) return;
 
-        // 主题循环顺序
-        const themes = ['dark', 'light', 'classic'];
-        // 从 localStorage 读取保存的主题，默认 dark
-        const savedTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
-        this.applyTheme(savedTheme);
+        // 状态：currentTheme = 真正保存的主题，previewTheme = 悬浮预览的主题
+        let currentTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
+        let previewTheme = null;
+        let isMenuOpen = false;
 
-        // 点击循环切换
-        themeBtn.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme') || 'dark';
-            const currentIndex = themes.indexOf(current);
-            const next = themes[(currentIndex + 1) % themes.length];
-            this.applyTheme(next);
-            localStorage.setItem(STORAGE_KEY, next);
+        const iconMap = {
+            'dark': 'fas fa-sun',
+            'light': 'fas fa-moon',
+            'classic': 'fas fa-th-large'
+        };
+
+        // 更新选中标记（始终反映 currentTheme）
+        function updateActiveMark() {
+            const items = menu.querySelectorAll('.theme-dropdown-item');
+            items.forEach(item => {
+                const t = item.getAttribute('data-theme');
+                item.classList.toggle('active', t === currentTheme);
+            });
+        }
+
+        // 应用主题到 DOM（按钮图标始终反映 currentTheme）
+        function applyThemeToDOM(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const icon = themeBtn.querySelector('i');
+            if (icon) {
+                icon.className = iconMap[currentTheme] || 'fas fa-sun';
+            }
+        }
+
+        // 打开菜单
+        function openMenu() {
+            isMenuOpen = true;
+            menu.classList.add('open');
+            updateActiveMark();
+        }
+
+        // 关闭菜单并恢复到真正的主题
+        function closeMenu() {
+            isMenuOpen = false;
+            menu.classList.remove('open');
+            previewTheme = null;
+            // 恢复到真正的主题
+            applyThemeToDOM(currentTheme);
+        }
+
+        // 初始化主题
+        applyThemeToDOM(currentTheme);
+        updateActiveMark();
+
+        // 点击按钮 → 切换菜单
+        themeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isMenuOpen) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        });
+
+        // 菜单项交互：悬浮预览 + 点击确认
+        menu.querySelectorAll('.theme-dropdown-item').forEach(item => {
+            // 悬浮 → 临时预览该主题
+            item.addEventListener('mouseenter', () => {
+                const t = item.getAttribute('data-theme');
+                previewTheme = t;
+                applyThemeToDOM(t);
+            });
+
+            // 移开 → 恢复到真正的主题
+            item.addEventListener('mouseleave', () => {
+                previewTheme = null;
+                applyThemeToDOM(currentTheme);
+            });
+
+            // 点击 → 真正切换并保存
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const t = item.getAttribute('data-theme');
+                currentTheme = t;
+                previewTheme = null;
+                localStorage.setItem(STORAGE_KEY, t);
+                applyThemeToDOM(t);
+                updateActiveMark();
+                closeMenu();
+            });
+        });
+
+        // 点击页面其他区域 → 关闭菜单
+        document.addEventListener('click', (e) => {
+            if (isMenuOpen && !dropdown.contains(e.target)) {
+                closeMenu();
+            }
+        });
+
+        // ESC → 关闭菜单
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isMenuOpen) {
+                closeMenu();
+            }
         });
     },
 
     applyTheme(theme) {
+        // 保留兼容性，供外部调用
         document.documentElement.setAttribute('data-theme', theme);
-        const icon = document.querySelector('#themeToggleBtn i');
-        if (icon) {
-            const iconMap = {
-                'dark': 'fas fa-sun',
-                'light': 'fas fa-moon',
-                'classic': 'fas fa-th-large'
-            };
-            icon.className = iconMap[theme] || 'fas fa-sun';
-        }
-        const btn = document.getElementById('themeToggleBtn');
-        if (btn) {
-            const titleMap = {
-                'dark': '切换到亮色主题',
-                'light': '切换到经典主题',
-                'classic': '切换到暗色主题'
-            };
-            btn.title = titleMap[theme] || '切换主题';
-        }
     }
 };
 
