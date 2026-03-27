@@ -335,6 +335,11 @@ const CanvasEditor = {
             'light': 'fas fa-moon'
         };
 
+        const iconStyleMap = {
+            'dark': '#e74c3c',
+            'light': '#3498db'
+        };
+
         let currentTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
         // 兼容旧的 classic 值
         if (currentTheme === 'classic') currentTheme = 'light';
@@ -344,6 +349,7 @@ const CanvasEditor = {
             const icon = themeBtn.querySelector('i');
             if (icon) {
                 icon.className = iconMap[theme] || 'fas fa-sun';
+                icon.style.color = iconStyleMap[theme] || '';
             }
             themeBtn.title = theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题';
         }

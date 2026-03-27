@@ -4,11 +4,13 @@
 const Storage = {
     // localStorage 键名
     STORAGE_KEY: 'photographySchoolCanvas',
+    UI_STATE_KEY: 'photographySchool_uiState',
 
     // 初始化
     init() {
         this.setupEventListeners();
         this.loadAuto(); // 自动加载上次保存的数据
+        this.loadUIState(); // 恢复UI状态（侧边栏折叠等）
         this.startAutoSave(); // 启动自动保存定时器
     },
 
@@ -73,6 +75,7 @@ const Storage = {
 
         try {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+            this.saveUIState(); // 同时保存UI状态
             PageLibrary.showHint('✅ 保存成功！');
             console.log('画布数据已保存:', data);
         } catch (error) {
@@ -94,9 +97,48 @@ const Storage = {
 
         try {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+            this.saveUIState(); // 同时保存UI状态
             console.log('自动保存成功:', new Date().toLocaleTimeString());
         } catch (error) {
             console.error('自动保存失败:', error);
+        }
+    },
+
+    // 保存UI状态（侧边栏折叠等）
+    saveUIState() {
+        try {
+            const sidebarLeft = document.getElementById('sidebarLeft');
+            const sidebarRight = document.getElementById('sidebarRight');
+            const uiState = {
+                leftCollapsed: sidebarLeft ? sidebarLeft.classList.contains('collapsed') : false,
+                rightCollapsed: sidebarRight ? sidebarRight.classList.contains('collapsed') : false
+            };
+            localStorage.setItem(this.UI_STATE_KEY, JSON.stringify(uiState));
+        } catch (error) {
+            console.error('保存UI状态失败:', error);
+        }
+    },
+
+    // 恢复UI状态
+    loadUIState() {
+        try {
+            const saved = localStorage.getItem(this.UI_STATE_KEY);
+            if (!saved) return;
+
+            const uiState = JSON.parse(saved);
+            const sidebarLeft = document.getElementById('sidebarLeft');
+            const sidebarRight = document.getElementById('sidebarRight');
+
+            if (sidebarLeft && uiState.leftCollapsed) {
+                sidebarLeft.classList.add('collapsed');
+            }
+            if (sidebarRight && uiState.rightCollapsed) {
+                sidebarRight.classList.add('collapsed');
+            }
+
+            console.log('UI状态已恢复');
+        } catch (error) {
+            console.error('恢复UI状态失败:', error);
         }
     },
 
