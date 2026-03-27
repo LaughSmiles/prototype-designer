@@ -74,7 +74,11 @@ const CanvasEditor = {
             this.initSidebarResizer();
             console.log('✅ 侧边栏拖动功能初始化完成');
 
-            // 10. 绑定全局快捷键
+            // 10. 初始化主题切换
+            this.initThemeToggle();
+            console.log('✅ 主题切换功能初始化完成');
+
+            // 11. 绑定全局快捷键
             this.bindGlobalShortcuts();
 
             // 注意: 不在初始化时保存空状态
@@ -317,6 +321,50 @@ const CanvasEditor = {
                 sidebarRight.classList.remove('collapsed');
                 sidebarRight.style.width = '280px'; // 恢复默认宽度
             });
+        }
+    },
+
+    // 主题切换
+    initThemeToggle() {
+        const STORAGE_KEY = 'canvasEditor_theme';
+        const themeBtn = document.getElementById('themeToggleBtn');
+        if (!themeBtn) return;
+
+        // 主题循环顺序
+        const themes = ['dark', 'light', 'classic'];
+        // 从 localStorage 读取保存的主题，默认 dark
+        const savedTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
+        this.applyTheme(savedTheme);
+
+        // 点击循环切换
+        themeBtn.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme') || 'dark';
+            const currentIndex = themes.indexOf(current);
+            const next = themes[(currentIndex + 1) % themes.length];
+            this.applyTheme(next);
+            localStorage.setItem(STORAGE_KEY, next);
+        });
+    },
+
+    applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        const icon = document.querySelector('#themeToggleBtn i');
+        if (icon) {
+            const iconMap = {
+                'dark': 'fas fa-sun',
+                'light': 'fas fa-moon',
+                'classic': 'fas fa-th-large'
+            };
+            icon.className = iconMap[theme] || 'fas fa-sun';
+        }
+        const btn = document.getElementById('themeToggleBtn');
+        if (btn) {
+            const titleMap = {
+                'dark': '切换到亮色主题',
+                'light': '切换到经典主题',
+                'classic': '切换到暗色主题'
+            };
+            btn.title = titleMap[theme] || '切换主题';
         }
     }
 };
