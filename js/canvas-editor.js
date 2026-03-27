@@ -324,117 +324,38 @@ const CanvasEditor = {
         }
     },
 
-    // 主题切换（下拉菜单 + 悬浮预览 + 点击确认）
+    // 主题切换（点击切换 dark / light）
     initThemeToggle() {
         const STORAGE_KEY = 'canvasEditor_theme';
-        const dropdown = document.getElementById('themeDropdown');
-        const menu = document.getElementById('themeDropdownMenu');
         const themeBtn = document.getElementById('themeToggleBtn');
-        if (!dropdown || !menu || !themeBtn) return;
-
-        // 状态：currentTheme = 真正保存的主题，previewTheme = 悬浮预览的主题
-        let currentTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
-        let previewTheme = null;
-        let isMenuOpen = false;
+        if (!themeBtn) return;
 
         const iconMap = {
             'dark': 'fas fa-sun',
-            'light': 'fas fa-moon',
-            'classic': 'fas fa-th-large',
-            'ocean': 'fas fa-water',
-            'forest': 'fas fa-tree',
-            'sunset': 'fas fa-cloud-sun',
-            'nord': 'fas fa-snowflake'
+            'light': 'fas fa-moon'
         };
 
-        // 更新选中标记（始终反映 currentTheme）
-        function updateActiveMark() {
-            const items = menu.querySelectorAll('.theme-dropdown-item');
-            items.forEach(item => {
-                const t = item.getAttribute('data-theme');
-                item.classList.toggle('active', t === currentTheme);
-            });
-        }
+        let currentTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
+        // 兼容旧的 classic 值
+        if (currentTheme === 'classic') currentTheme = 'light';
 
-        // 应用主题到 DOM（按钮图标始终反映 currentTheme）
-        function applyThemeToDOM(theme) {
+        function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
             const icon = themeBtn.querySelector('i');
             if (icon) {
-                icon.className = iconMap[currentTheme] || 'fas fa-sun';
+                icon.className = iconMap[theme] || 'fas fa-sun';
             }
+            themeBtn.title = theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题';
         }
 
-        // 打开菜单
-        function openMenu() {
-            isMenuOpen = true;
-            menu.classList.add('open');
-            updateActiveMark();
-        }
+        // 初始化
+        applyTheme(currentTheme);
 
-        // 关闭菜单并恢复到真正的主题
-        function closeMenu() {
-            isMenuOpen = false;
-            menu.classList.remove('open');
-            previewTheme = null;
-            // 恢复到真正的主题
-            applyThemeToDOM(currentTheme);
-        }
-
-        // 初始化主题
-        applyThemeToDOM(currentTheme);
-        updateActiveMark();
-
-        // 点击按钮 → 切换菜单
-        themeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (isMenuOpen) {
-                closeMenu();
-            } else {
-                openMenu();
-            }
-        });
-
-        // 菜单项交互：悬浮预览 + 点击确认
-        menu.querySelectorAll('.theme-dropdown-item').forEach(item => {
-            // 悬浮 → 临时预览该主题
-            item.addEventListener('mouseenter', () => {
-                const t = item.getAttribute('data-theme');
-                previewTheme = t;
-                applyThemeToDOM(t);
-            });
-
-            // 移开 → 恢复到真正的主题
-            item.addEventListener('mouseleave', () => {
-                previewTheme = null;
-                applyThemeToDOM(currentTheme);
-            });
-
-            // 点击 → 真正切换并保存
-            item.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const t = item.getAttribute('data-theme');
-                currentTheme = t;
-                previewTheme = null;
-                localStorage.setItem(STORAGE_KEY, t);
-                applyThemeToDOM(t);
-                updateActiveMark();
-                closeMenu();
-            });
-        });
-
-        // 点击页面其他区域 → 关闭菜单
-        document.addEventListener('click', (e) => {
-            if (isMenuOpen && !dropdown.contains(e.target)) {
-                closeMenu();
-            }
-        });
-
-        // ESC → 关闭菜单
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && isMenuOpen) {
-                closeMenu();
-            }
+        // 点击切换
+        themeBtn.addEventListener('click', () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem(STORAGE_KEY, currentTheme);
+            applyTheme(currentTheme);
         });
     },
 
