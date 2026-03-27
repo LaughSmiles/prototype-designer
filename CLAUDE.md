@@ -4,213 +4,169 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **reusable high-fidelity prototype design framework** that supports rapid creation of mobile app prototypes with visual flow design. The demo project is "摄影派" (Photography School) - a photography rental and sharing app with 32 screens designed for iPhone 15 Pro dimensions (320x680px).
+This is a **reusable high-fidelity prototype design framework** for rapid creation of mobile app prototypes with visual flow design. The demo project is "摄影派" (Photography School) — a photography rental and sharing app with 32 screens designed for iPhone 15 Pro dimensions (320x680px).
 
 ### Key Features
 - **Configuration-driven**: Define projects via `config.js` JSON without modifying framework code
-- **Framework separation**: Framework code in `js/` is independent of project content in `pages/`
-- **Zero dependencies**: Pure frontend, no backend required
-- **No build process**: All files are standalone HTML, no compilation needed
+- **Framework/content separation**: Framework code in `js/` is independent of project content in `pages/`
+- **Zero dependencies, no build**: Pure frontend, all standalone HTML files, no compilation needed
+- **Dual theme system**: Dark (default, Glassmorphism) and Light (Classic) themes via `data-theme` attribute
+
+## Development Commands
+
+No build step required. Open files directly in a browser.
+
+```bash
+# View the prototype showcase
+start index.html
+
+# Open the canvas editor
+start canvas-editor.html
+```
+
+There are no tests, linter, or build commands for this project.
 
 ## Project Structure
 
 ```
-项目根目录/
-├── canvas-editor.html         # Canvas editor entry point (framework core)
+project-root/
+├── canvas-editor.html         # Canvas editor entry (framework core)
 ├── config.js                  # Project configuration (MODIFY THIS)
-├── index.html                  # Project showcase page
-├── pages/                      # Page files (MODIFY THIS)
-│   ├── home/                   # Home module pages
-│   ├── rental/                 # Rental module pages
-│   ├── works/                  # Works module pages
-│   ├── messages/               # Messages module pages
-│   └── profile/                # Profile module pages
-├── js/                         # Framework core code (DO NOT MODIFY)
-│   ├── canvas-editor.js       # Main controller - initializes all modules
-│   ├── page-library.js        # Page library management
-│   ├── canvas-view.js         # View operations (pan/zoom)
-│   ├── element-manager.js     # Element management
-│   ├── page-manager.js        # Multi-page canvas management
-│   ├── tools.js               # Tool system (arrow/annotation)
-│   ├── storage.js             # Data persistence
-│   ├── history-manager.js     # Undo/redo support
+├── index.html                 # Project showcase page
+├── pages/                     # Page HTML files (MODIFY THIS)
+│   ├── home/  rental/  works/  messages/  profile/
+├── js/                        # Framework code (DO NOT MODIFY)
+│   ├── canvas-editor.js       # Main controller, initializes all modules
+│   ├── page-library/          # Page library (config loading, rendering, drag-drop)
+│   ├── canvas-view/           # View pan/zoom (core, box-selection, events)
+│   ├── element-manager/       # Element CRUD (core, adder, renderer, annotation, keyboard)
+│   ├── page-manager/          # Multi-page canvas (core, drag-sort, context-menu)
+│   ├── tools/                 # Tool system (core, arrow, annotation)
+│   ├── storage.js             # Data persistence (save/load/export/import)
+│   ├── history-manager.js     # Undo/redo
 │   ├── modal-manager.js       # Modal dialogs
 │   ├── alignment-manager.js   # Element alignment guides
 │   └── virtual-scrollbar.js   # Custom scrollbar
 ├── css/
-│   └── canvas-editor.css      # Canvas editor styles
-└── .cursor-history.md         # Session history and development log
+│   └── canvas-editor.css      # Editor styles + theme variables
+├── lib/                       # Local copies of third-party libraries
+│   ├── js/ (tailwindcss, marked, html2canvas)
+│   └── css/ (fontawesome)
+└── .cursor-history.md         # Session history log
 ```
-
-## Key Technologies
-
-- **Styling**: TailwindCSS (CDN)
-- **Icons**: FontAwesome 6.4.0 (CDN)
-- **Images**: Unsplash API for high-quality photography content
-- **Layout**: Mobile-first responsive design with iOS-style UI components
-
-## Configuration System (config.js)
-
-The project is configured via `config.js` which defines `window.PROJECT_CONFIG`:
-
-```javascript
-window.PROJECT_CONFIG = {
-  projectName: "项目名称",           // Display name
-  projectRootPath: "E:\\path\\to",  // Absolute path for file operations
-  canvasSize: { width: 320, height: 680 },
-  categories: [
-    { id: "home", name: "首页模块", order: 1 }
-  ],
-  pages: [
-    { id: "home", name: "首页", icon: "fa-home", category: "home", path: "pages/home/home.html" }
-  ]
-}
-```
-
-**Important**: Page `id` must match the HTML filename (without extension).
 
 ## Module Architecture
 
-### Initialization Order (in canvas-editor.js)
-The modules must be initialized in this specific order:
-1. `PageLibrary` - Loads config and page list
-2. `CanvasView` - View pan/zoom controls
-3. `ElementManager` - Element CRUD operations
-4. `Tools` - Arrow and annotation tools
-5. `ModalManager` - Dialog management
-6. `Storage` - Data persistence (depends on PageLibrary)
-7. `PageManager` - Multi-page canvas (depends on Storage)
-8. `HistoryManager` - Undo/redo support
+### Script Load Order (in canvas-editor.html)
+
+Scripts are loaded as global objects (no ES modules). The load order in HTML must match:
+
+1. `config.js` — defines `window.PROJECT_CONFIG`
+2. `page-library/` — page library module
+3. `canvas-view/` — view pan/zoom
+4. `element-manager/` — element CRUD
+5. `tools/` — arrow/annotation tools
+6. `modal-manager.js` — dialogs
+7. `storage.js` — data persistence
+8. `page-manager/` — multi-page canvas
+9. `history-manager.js` — undo/redo
+10. `canvas-editor.js` — **main controller (must load last)**
+
+### Initialization Order (in canvas-editor.js `initModules()`)
+
+The `CanvasEditor.init()` method initializes modules in this specific order at DOMContentLoaded:
+
+1. `PageLibrary.init()` — loads config and renders page list (async, awaited)
+2. `CanvasView.init()`
+3. `ElementManager.init()`
+4. `Tools.init()`
+5. `ModalManager.init()`
+6. `Storage.init()` — calls `loadUIState()` then `startAutoSave()`
+7. `PageManager.init()` — depends on Storage
+8. `HistoryManager.init()`
+9. Sidebar resizer + theme toggle + global shortcuts
 
 ### Module Dependencies
-- All modules use global `window.` references (not ES modules)
-- `ElementManager` depends on `CanvasView` and `PageLibrary`
+
+All modules are global objects. Key dependency chains:
 - `Storage` depends on `PageLibrary` and `ElementManager`
 - `PageManager` depends on `Storage`
+- `ElementManager` depends on `CanvasView` and `PageLibrary`
+- `loadUIState()` (in Storage) runs **before** `initSidebarResizer()` (in CanvasEditor), so expander button visibility must be set manually in `loadUIState()`
 
-## Architecture Overview
+## Configuration System (config.js)
 
-### User端 (Consumer App) - 5 Main Modules
+Defines `window.PROJECT_CONFIG` with:
 
-1. **首页 (Home)**: Search, carousel ads, featured equipment rental, popular works
-2. **租赁 (Rental)**: Equipment browsing, filtering, detailed rental process with date selection and payment
-3. **作品 (Works)**: Social feed with image/video posts, publishing workflow, comments
-4. **消息 (Messages)**: System notifications, interactions, customer service, private chat
-5. **我的 (Profile)**: User center, orders, addresses, identity verification, data overview
+| Field | Description |
+|-------|-------------|
+| `projectName` | Display name (browser title, welcome message) |
+| `projectRootPath` | Absolute path for file operations |
+| `canvasSize` | `{ width: 320, height: 680 }` default element size |
+| `categories` | Array of `{ id, name, order }` for grouping pages |
+| `pages` | Array of `{ id, name, icon, category, path }` |
 
-### Core User Flows
+**Critical rule**: Page `id` must match the HTML filename (without `.html` extension).
 
-- **Rental Flow**: Browse → Detail → Select Period → Choose Delivery → Payment → Result
-- **Publishing Flow**: Select Type → Upload Media → Add Metadata → Publish
-- **Order Management**: View orders by status → Track logistics → Return equipment
+## Theme System
 
-## Development Commands
+Dual theme system controlled by `data-theme` attribute on `<html>`:
+- **Dark** (`data-theme="dark"`, default) — Glassmorphism style with translucent surfaces
+- **Light** (`data-theme="light"`) — Classic opaque style
 
-### Viewing the Prototype
-```bash
-# Open in browser (Windows)
-start index.html
+Theme is toggled via `#themeToggleBtn` button click, persisted to `localStorage` key `canvasEditor_theme`.
 
-# Or simply double-click index.html
-```
+CSS variables are defined in `css/canvas-editor.css` under `:root[data-theme="dark"]` and `:root[data-theme="light"]`.
 
-### Adding New Screens
-1. Create new HTML file in `/pages/` directory
-2. Follow the existing pattern: iOS status bar, TailwindCSS, FontAwesome icons
-3. Add iframe to `index.html` in the appropriate module section
-4. Update `.cursor-history.md` with changes
+## Data Persistence
 
-### Modifying Existing Screens
-- Edit files in `/pages/` directory directly
-- Use the same styling conventions (status bar height, colors, fonts)
-- Test by refreshing `index.html` in browser
+| localStorage Key | Content |
+|-----------------|---------|
+| `photographySchoolCanvas` | Canvas data (version 2.0, multi-page format with pages array) |
+| `photographySchool_uiState` | UI state (sidebar collapsed states) |
+| `canvasEditor_theme` | Current theme (`dark` or `light`) |
 
-## Canvas Editor
+Data format version `2.0` supports multiple pages. Old `1.0` format (single page with `elements` array) is auto-migrated on load. Auto-save runs every 60 seconds.
 
-### Overview
-The canvas editor is an **interactive prototyping tool** that allows you to:
-- Drag and drop pages from the library onto a canvas
-- Pan and zoom the view (Ctrl + scroll to zoom, scroll to pan)
-- Move and scale page elements
-- Add arrow and text annotations
-- Save and export canvas layouts
+## Canvas Editor Operations
 
-### How to Use
-1. **Open**: Click "进入画布编辑器" button on the main page, or open `canvas-editor.html`
-2. **Layout**: Three-column interface
-   - **Left**: Tools (Select, Arrow, Text) + Actions (Save, Export, Import, Clear) + Zoom controls
-   - **Center**: Canvas area (占满剩余空间)
-   - **Right**: Page library (all 32 pages)
-3. **Add Pages**: Drag pages from right panel to canvas
-4. **Pan View**: Mouse wheel (or middle-click and drag)
-5. **Zoom View**: Ctrl + mouse wheel
-6. **Move Elements**: Click and drag on canvas elements
-7. **Scale Elements**: Select element + Ctrl + mouse wheel (maintains aspect ratio)
-8. **Add Arrows**: Select arrow tool, click start point, click end point
-9. **Add Text**: Select text tool, click on canvas, enter text
-10. **Delete**: Select element + Delete key, or click X button
-11. **Save**: Ctrl+S or click save button (saves to localStorage)
-12. **Export**: Ctrl+E or click export button (downloads JSON)
-13. **Import**: Ctrl+I or click import button (loads JSON file)
+### Layout
+Three-column interface: Left sidebar (tools) | Center (canvas) | Right sidebar (page library). Both sidebars are collapsible with drag resizers.
 
 ### Keyboard Shortcuts
-- **S**: Select tool
-- **A**: Arrow tool
-- **T**: Text tool
+- **S/A/T**: Select / Arrow / Text tool
 - **Ctrl+S**: Save to localStorage
-- **Ctrl+E**: Export JSON
-- **Ctrl+I**: Import JSON
-- **Ctrl+0**: Reset view
+- **Ctrl+E / Ctrl+I**: Export / Import JSON
+- **Ctrl+Z / Ctrl+Y**: Undo / Redo
+- **Ctrl+滚轮**: Zoom canvas view
 - **Delete**: Delete selected element
-- **Esc**: Deselect / Cancel tool
-- **Ctrl+/**: Show help
-
-### File Structure
-```
-js/
-├── canvas-editor.js    # Main controller - initializes all modules
-├── page-library.js     # Manages page list and drag-drop
-├── canvas-view.js      # Handles view pan/zoom
-├── element-manager.js  # Creates/updates/deletes elements
-├── page-manager.js     # Multi-page canvas management
-├── tools.js            # Arrow and annotation tools
-├── storage.js          # Save/load/export/import
-├── history-manager.js  # Undo/redo functionality
-├── modal-manager.js    # Modal dialogs
-├── alignment-manager.js # Element alignment guides
-└── virtual-scrollbar.js # Custom scrollbar
-```
+- **Esc**: Deselect / cancel tool
 
 ## Creating a New Project
 
-1. **Generate prototype HTML files** using AI with the prompt from README.md
-2. **Copy files** to `pages/` directory and update `index.html`
-3. **Configure `config.js`** with project name, categories, and pages
-4. **Fix page navigation** - ensure links work between pages
-5. **Open `canvas-editor.html`** to start using the canvas editor
+1. Generate prototype HTML files using AI (prompt template in README.md)
+2. Copy files to `pages/` directory, update `index.html`
+3. Configure `config.js` with project name, categories, and pages
+4. Fix page navigation links between pages
+5. Open `canvas-editor.html` to use the canvas editor
 
 ## Design Specifications
 
 ### iPhone 15 Pro Mockup
-- **Frame**: 320px × 680px with 45px corner radius
-- **Screen**: 100% width/height, 35px corner radius
-- **Notch**: 80px × 25px centered at top
-- **Padding**: 12px around screen
+- Frame: 320px × 680px, 45px corner radius
+- Screen: 100% width/height, 35px corner radius
+- Notch: 80px × 25px centered at top
+- Status bar: 44px height with blur effect
 
-### iOS Design Patterns Used
-- **Status Bar**: 44px height, blur effect, time/battery indicators
-- **Navigation**: Back buttons, titles, action icons
-- **Tab Bar**: 5-icon bottom navigation (Home, Rental, Works, Messages, Profile)
-- **Modals**: Bottom sheets with backdrop blur
-- **Cards**: White backgrounds, 20px border radius, shadow effects
+### iOS Design Patterns
+- Navigation with back buttons and titles
+- 5-icon Tab Bar (Home, Rental, Works, Messages, Profile)
+- Bottom sheet modals with backdrop blur
+- Cards with white backgrounds, 20px border radius, shadows
 
-## Data Persistence
+## Key Technical Notes
 
-- **localStorage keys**: `canvasEditor_data`, `canvasEditor_usageCount`
-- **Export**: Ctrl+E downloads JSON file
-- **Import**: Ctrl+I loads JSON file
-- Data is auto-saved to browser localStorage
-
-## Reference Documentation
-
-The `页面结构图` file contains the complete mind map of all 32 screens and their relationships. The `README.md` file contains detailed usage instructions for the canvas editor framework.
+- **No ES modules**: All JS files define global objects, loaded via `<script>` tags
+- **Third-party libraries**: Served from `lib/` directory (not CDN) — TailwindCSS, FontAwesome 6.4.0, marked.js, html2canvas
+- **iframe-based pages**: Prototype pages are loaded inside iframes on the canvas
+- **CSS sibling selectors** for expander buttons: `.sidebar-right.collapsed ~ .expander-right` — these don't trigger when `collapsed` class is added via JS after initial render, so `loadUIState()` must manually set `expander.style.display`

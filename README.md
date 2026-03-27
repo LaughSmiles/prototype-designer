@@ -22,15 +22,16 @@
 
 提示词
 ```
-我想开发一个{XXX功能的中文App，等等自己}，现在需要输出高保真的原型图，请通过以下方式帮我完成所有界面的原型设计，并确保这些原型界面可以直接用于开发：
+我想开发一个{XXX功能的中文App，等等}，现在需要输出高保真的原型图，请通过以下方式帮我完成所有界面的原型设计，并确保这些原型界面可以直接用于开发：
 1.  用户体验分析：先分析这个App的用户需求和主要功能，确定核心交互逻辑。
 2.  产品界面规划：作为产品经理，定义关键界面，确保产品功能模块和信息架构合理。
 3.  高保真UI设计：作为UI设计师，设计贴近真实iOS设计规范的界面，使用现代化的UI元素，风格简洁，使其具有良好的视觉体验。
-4.  HTML原型实现：使用HTML+TailwindCSS(或Bootstrap)生成所有原型界面，并使用FontAwesome(或其他开源UI组件)让界面更加精美、接近真实的App设计。
+4.  HTML原型实现：使用HTML+TailwindCSS生成所有原型界面，并使用FontAwesome让界面更加精美、接近真实的App设计。注意：TailwindCSS和FontAwesome通过本地路径引入，不要使用CDN链接。
 5.  拆分代码文件，保持结构清晰：
-    -   每个界面应作为独立的HTML文件存放，例如home.html、profile.html、settings.html等。并存在在pages目录下。
+    -   每个界面应作为独立的HTML文件存放，例如home.html、profile.html、settings.html等。按模块存放在pages目录下的子目录中(如pages/home/、pages/profile/)。
     -   index.html作为主入口，不直接写入所有界面的HTML代码，而是使用iframe的方式嵌入这些HTML片段，并将所有页面直接平铺展示在index页面中，而不是跳转链接。
     -   index.html在主目录下，没有存放在pages目录中
+    -   页面HTML文件中引入资源的路径必须使用相对路径：TailwindCSS使用 `../lib/js/tailwindcss.js`，FontAwesome使用 `../lib/css/all.min.css`
 6.  真实感增强：
     -   界面尺寸应模拟iPhone 15 Pro，并让界面圆角化，使其更像真实的手机界面。
     -   使用真实的UI图片，而非占位符图片(可从Unsplash、Pexels、Apple官方UI资源中选择)。
@@ -38,27 +39,28 @@
 请按照以上要求生成完整的HTML代码，并确保其可用于实际iOS App的开发。
 ```
 
-#### 步骤2: 将ai创建的原型图复制到本项目中
+#### 步骤2: 将AI创建的原型图复制到本项目中
 
-/page目录和index.html页面
+将AI生成的 `pages/` 目录和 `index.html` 复制到项目根目录下,替换同名文件。
 
 #### 步骤3: 修改配置文件
 
 notes：可以让ai帮你生成配置文件，提示词如下
 
 ```
-@README.md @pages @index.html
+@README.md @pages @index.html @lib
 帮我配置 config.js 文件
 ```
 
 编辑 `config.js`:
 
-```json
+```javascript
 {
   "projectName": "我的新项目",
   "projectTitle": "项目标题",
   "projectDescription": "项目描述",
   "version": "1.0.0",
+  "projectRootPath": "E:\\path\\to\\project",
   "canvasSize": {
     "width": 320,
     "height": 680
@@ -75,13 +77,15 @@ notes：可以让ai帮你生成配置文件，提示词如下
       "id": "home",
       "name": "首页",
       "icon": "fa-home",
-      "category": "main"
+      "category": "main",
+      "path": "pages/home/home.html"
     },
     {
       "id": "profile",
       "name": "个人中心",
       "icon": "fa-user",
-      "category": "main"
+      "category": "main",
+      "path": "pages/profile/profile.html"
     }
   ]
 }
@@ -108,22 +112,28 @@ E:\develop\java_item\ai\prototype-desiger\pages
 项目根目录/
 ├── canvas-editor.html         # 画布编辑器入口(框架核心)
 ├── config.js                  # 项目配置文件(需修改)
-├── index.html                  # 项目展示页(可选)
-├── pages/                      # 页面文件目录(需修改)
-│   ├── home.html
-│   ├── profile.html
-│   └── ...                     # 您的页面
-├── js/                         # 框架核心代码(无需修改)
+├── index.html                 # 项目展示页(可选)
+├── pages/                     # 页面文件目录(需修改)
+│   ├── home/                  #   按模块组织
+│   ├── rental/
+│   └── ...
+├── js/                        # 框架核心代码(无需修改)
 │   ├── canvas-editor.js       # 主控制器
-│   ├── page-library.js        # 页面库管理(动态加载配置)
-│   ├── element-manager.js     # 元素管理(适配动态配置)
-│   ├── canvas-view.js         # 画布视图控制
-│   ├── tools.js               # 工具系统
+│   ├── page-library/          # 页面库(加载/渲染/拖拽)
+│   ├── canvas-view/           # 画布视图(核心/框选/事件)
+│   ├── element-manager/       # 元素管理(核心/添加/渲染/注释/键盘)
+│   ├── page-manager/          # 多页面画布(核心/拖拽排序/右键菜单)
+│   ├── tools/                 # 工具系统(核心/箭头/注释)
 │   ├── storage.js             # 数据持久化
-│   ├── virtual-scrollbar.js   # 虚拟滚动条
-│   └── alignment-manager.js   # 对齐管理器
-├── css/                        # 样式文件(无需修改)
-│   └── canvas-editor.css      # 画布编辑器样式
+│   ├── history-manager.js     # 撤销/重做
+│   ├── modal-manager.js       # 弹窗管理
+│   ├── alignment-manager.js   # 对齐管理器
+│   └── virtual-scrollbar.js   # 虚拟滚动条
+├── lib/                       # 本地第三方库
+│   ├── js/ (tailwindcss, marked, html2canvas)
+│   └── css/ (fontawesome)
+├── css/                       # 样式文件(无需修改)
+│   └── canvas-editor.css      # 画布编辑器样式(含主题变量)
 ```
 
 ### 需要修改的文件
@@ -149,6 +159,7 @@ E:\develop\java_item\ai\prototype-desiger\pages
 window.PROJECT_CONFIG = {
   // ===== 项目基本信息 =====
   projectName: "项目名称",              // 显示在浏览器标题和欢迎信息
+  projectRootPath: "E:\\path\\to",     // 项目绝对路径(用于文件操作)
   projectTitle: "完整标题",             // 用于文档说明
   projectDescription: "项目描述",       // 项目简介
   version: "1.0.0",                     // 版本号
@@ -179,7 +190,8 @@ window.PROJECT_CONFIG = {
       id: "home",                         // 页面ID(必须与文件名一致)
       name: "首页",                        // 页面显示名称
       icon: "fa-home",                    // FontAwesome图标类名
-      category: "home"                    // 所属分类ID(对应categories中的id)
+      category: "home",                   // 所属分类ID(对应categories中的id)
+      path: "pages/home/home.html"        // 页面文件路径
     },
     {
       id: "profile",
@@ -197,6 +209,7 @@ window.PROJECT_CONFIG = {
 | 字段                 | 类型   | 必填 | 说明                    |
 | -------------------- | ------ | ---- | ----------------------- |
 | `projectName`        | string | ✅    | 项目名称,用于标题和日志 |
+| `projectRootPath`    | string | ❌    | 项目绝对路径,用于文件操作 |
 | `projectTitle`       | string | ❌    | 项目完整标题            |
 | `projectDescription` | string | ❌    | 项目描述                |
 | `version`            | string | ❌    | 版本号,默认 "1.0.0"     |
@@ -211,6 +224,7 @@ window.PROJECT_CONFIG = {
 | `pages[].name`       | string | ✅    | 页面显示名称            |
 | `pages[].icon`       | string | ✅    | FontAwesome图标类名     |
 | `pages[].category`   | string | ❌    | 所属分类ID              |
+| `pages[].path`       | string | ✅    | 页面HTML文件的相对路径   |
 
 ---
 
@@ -244,8 +258,8 @@ window.PROJECT_CONFIG = {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>页面标题</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../lib/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -281,8 +295,8 @@ window.PROJECT_CONFIG = {
 
 ### 可用资源
 
-- **TailwindCSS**: 已通过CDN引入,直接使用类名
-- **FontAwesome 6.4.0**: 图标库,使用 `<i class="fas fa-xxx"></i>`
+- **TailwindCSS**: 已通过本地 `lib/js/tailwindcss.js` 引入,直接使用类名
+- **FontAwesome 6.4.0**: 图标库,使用 `<i class="fas fa-xxx"></i>`,通过 `lib/css/all.min.css` 引入
 
 ---
 
@@ -323,15 +337,9 @@ window.PROJECT_CONFIG = {
 2. 拖拽顶部的**拖拽手柄**(带有 ☰ 图标的标题栏)
 3. 移动到目标位置
 
-#### 缩放视图
+#### 缩放元素
 
-- **Ctrl + 滚轮**: 缩放整个画布视图(0.1x - 5x)
-- **空格键**: 重置视图到50%并返回中心
-
-#### 移动画布视图
-
-- **滚轮**: 上下左右移动视图
-- **中键拖动**: 拖动画布
+选中元素后,按 `Ctrl + 滚轮` 可缩放元素大小(保持宽高比)
 
 #### 添加箭头标注
 
@@ -352,16 +360,6 @@ window.PROJECT_CONFIG = {
 1. 选中要删除的元素
 2. 按 `Delete` 键
 3. 或点击元素右上角的 **×** 按钮
-
-#### 保存进度
-
-- **Ctrl + S**: 保存到浏览器缓存
-- 或点击"保存到浏览器缓存"按钮
-
-#### 导出/导入
-
-- **导出文件**: Ctrl + E (导出JSON文件)
-- **导入文件**: Ctrl + I (导入JSON文件)
 
 ---
 
@@ -398,6 +396,8 @@ window.PROJECT_CONFIG = {
 | `Ctrl + S` | 保存到浏览器缓存 |
 | `Ctrl + E` | 导出JSON文件     |
 | `Ctrl + I` | 导入JSON文件     |
+| `Ctrl + Z` | 撤销             |
+| `Ctrl + Y` | 重做             |
 
 ### 帮助
 
@@ -415,8 +415,9 @@ window.PROJECT_CONFIG = {
 
 ```javascript
 // 存储键名
-canvasEditor_data
-canvasEditor_usageCount
+photographySchoolCanvas      // 画布数据(多页面格式, version 2.0)
+photographySchool_uiState    // UI状态(侧边栏折叠状态)
+canvasEditor_theme           // 主题设置(dark/light)
 ```
 
 ### 清空缓存
@@ -425,17 +426,20 @@ canvasEditor_usageCount
 
 ### 导出/导入
 
-#### 导出
+通过快捷键 `Ctrl + E` 导出JSON文件, `Ctrl + I` 导入JSON文件。导出的文件名格式为 `canvas-时间戳.json`,导入后画布自动恢复到导出时的状态。
 
-1. 点击"导出文件"按钮
-2. 下载 JSON 文件到本地
-3. 文件名格式: `画布数据_时间戳.json`
+---
 
-#### 导入
+## 🎨 主题系统
 
-1. 点击"导入文件"按钮
-2. 选择之前导出的 JSON 文件
-3. 画布自动恢复到导出时的状态
+编辑器支持双主题切换,通过点击顶部工具栏的主题按钮切换:
+
+| 主题 | 说明 | 图标 |
+| ---- | ---- | ---- |
+| **Dark** (默认) | 暗色 Glassmorphism 风格,半透明毛玻璃效果 | ☀️ (红色) |
+| **Light** | 亮色经典风格,不透明纯色背景 | 🌙 (蓝色) |
+
+主题选择会自动保存到 `localStorage`,刷新页面后保持上次选择。
 
 ---
 
