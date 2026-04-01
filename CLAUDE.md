@@ -131,14 +131,14 @@ Data format version `2.0` supports multiple pages. Old `1.0` format (single page
 ## Canvas Editor Operations
 
 ### Layout
-Three-column interface: Left sidebar (tools) | Center (canvas) | Right sidebar (page library). Both sidebars are collapsible with drag resizers.
+Three-column interface: Left sidebar (canvas page list) | Center (canvas with top status bar containing tools) | Right sidebar (page library). Both sidebars are collapsible with drag resizers. Tools (Select/Arrow/Annotation) are in the top status bar.
 
 ### Keyboard Shortcuts
-- **S/A/T**: Select / Arrow / Text tool
+- **1/2/3**: Select / Arrow / Annotation tool
 - **Ctrl+S**: Save to localStorage
-- **Ctrl+E / Ctrl+I**: Export / Import JSON
 - **Ctrl+Z / Ctrl+Y**: Undo / Redo
 - **Ctrl+滚轮**: Zoom canvas view
+- **Space**: Reset view to 50% and center
 - **Delete**: Delete selected element
 - **Esc**: Deselect / cancel tool
 
