@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>操作日志 - 芋道管理后台</title>
+    <script src="../../lib/js/tailwindcss.js"></script>
     <link rel="stylesheet" href="../../lib/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -23,10 +24,7 @@
         .topbar-right { display: flex; align-items: center; gap: 16px; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
         .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
-        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #909399; margin-bottom: 12px; }
-        .breadcrumb a { color: #606266; text-decoration: none; }
-        .breadcrumb a:hover { color: #409eff; }
-        .search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+                                .search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
         .search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
         .search-item { display: flex; flex-direction: column; gap: 4px; }
         .search-item label { font-size: 13px; color: #606266; }
@@ -63,6 +61,11 @@
         .oper-type-update { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
         .oper-type-delete { background: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2; }
         .oper-type-export { background: #f4f4f5; color: #909399; border: 1px solid #e9e9eb; }
+            .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
+        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
+        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
+        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
     </style>
 <link rel="stylesheet" href="../../css/sidebar-menu.css">
 </head>
@@ -118,13 +121,6 @@
 
     <!-- 主内容区 -->
     <div class="main-content">
-        <!-- 面包屑 -->
-        <div class="breadcrumb">
-            <a href="../home.html"><i class="fas fa-home"></i></a>
-            <span>/</span>
-            <a href="operatelog.html">操作日志</a>
-        </div>
-
         <!-- 搜索卡片 -->
         <div class="search-card">
             <div class="search-row">

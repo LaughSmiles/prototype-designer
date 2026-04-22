@@ -24,10 +24,7 @@
         .topbar-right { display: flex; align-items: center; gap: 16px; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
         .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
-        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #909399; margin-bottom: 12px; }
-        .breadcrumb a { color: #606266; text-decoration: none; }
-        .breadcrumb a:hover { color: #409eff; }
-        .search-card { background: #fff; border-radius: 8px; padding: 20px 20px 0; margin-bottom: 16px; }
+                                .search-card { background: #fff; border-radius: 8px; padding: 20px 20px 0; margin-bottom: 16px; }
         .search-card .el-form { display: flex; flex-wrap: wrap; gap: 0; }
         .search-card .form-item { display: flex; align-items: center; margin-bottom: 16px; margin-right: 16px; }
         .search-card .form-item label { font-size: 13px; color: #606266; width: 68px; text-align: right; margin-right: 8px; flex-shrink: 0; }
@@ -40,6 +37,11 @@
         .tab-item.active { color: #409eff; border-bottom-color: #409eff; }
         .card { background: #fff; border-radius: 0 0 8px 8px; padding: 20px; }
         .chart-placeholder { height: 350px; background: #fafafa; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #c0c4cc; font-size: 14px; border: 1px dashed #dcdfe6; }
+            .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
+        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
+        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
+        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
     </style>
 </head>
 <body>
@@ -81,8 +83,6 @@
         </div>
     </div>
     <div class="main-content">
-        <div class="breadcrumb"><a href="../home.html">首页</a><span>/</span><span>CRM 系统</span><span>/</span><span style="color: #303133;">员工业绩分析</span></div>
-
         <div class="search-card">
             <div class="el-form">
                 <div class="form-item"><label>选择年份</label><input type="text" placeholder="2024"></div>

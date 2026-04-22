@@ -22,10 +22,7 @@
         .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
         .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
         .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
-        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #909399; margin-bottom: 12px; }
-        .breadcrumb a { color: #606266; text-decoration: none; }
-        .breadcrumb a:hover { color: #409eff; }
-        .search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+                                .search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
         .search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
         .search-item { display: flex; flex-direction: column; gap: 4px; }
         .search-item label { font-size: 13px; color: #606266; }
@@ -51,6 +48,11 @@
         .point-tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; display: inline-block; }
         .point-add { background: #f0f9eb; color: #67c23a; }
         .point-sub { background: #fef0f0; color: #f56c6c; }
+            .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
+        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
+        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
+        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
     </style>
 </head>
 <body>
@@ -83,7 +85,6 @@
         </div>
     </div>
     <div class="main-content">
-        <div class="breadcrumb"><a href="../home.html">首页</a><span>/</span><span>会员管理</span><span>/</span><span style="color: #303133;">积分记录</span></div>
         <div class="search-card"><div class="search-row">
             <div class="search-item"><label>用户</label><input type="text" class="form-input" placeholder="请输入用户编号"></div>
             <div class="search-item"><label>业务类型</label><select class="form-select"><option value="">请选择业务类型</option><option>购物</option><option>签到</option><option>充值</option><option>管理员手动调整</option></select></div>
