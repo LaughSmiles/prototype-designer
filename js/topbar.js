@@ -85,15 +85,18 @@
     // 暴露给 onclick（备用）
     window.toggleFullscreen = toggleFullscreen;
 
-    // ========== 全屏状态下拦截 Ctrl+S ==========
+    // ========== 全屏状态下拦截 Ctrl+S，通知父页面（画布编辑器）保存 ==========
 
     document.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            // 只在全屏状态下拦截
             if (isFullscreen()) {
                 e.preventDefault();
-                // 不 stopPropagation，让画布编辑器也能收到 Ctrl+S 触发保存
+                e.stopPropagation();
+                // 通知父页面（画布编辑器）执行保存
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'canvas-save' }, '*');
+                }
             }
         }
-    }, true); // 使用捕获阶段，确保优先于其他处理器
+    }, true);
 })();

@@ -110,6 +110,13 @@ const CanvasEditor = {
                 HistoryManager.redo();
             }
         });
+
+        // 监听 iframe 内页面全屏时发来的 Ctrl+S 保存消息
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'canvas-save') {
+                Storage.save();
+            }
+        });
     },
 
     // 显示欢迎信息
