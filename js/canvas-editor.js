@@ -109,7 +109,7 @@ const CanvasEditor = {
                 e.preventDefault();
                 HistoryManager.redo();
             }
-        });
+        }, true); // 捕获阶段，优先于浏览器默认行为（全屏下也能拦截）
 
         // 监听 iframe 内页面全屏时发来的 Ctrl+S 保存消息
         window.addEventListener('message', (e) => {
