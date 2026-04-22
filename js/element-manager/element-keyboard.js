@@ -240,14 +240,6 @@ const ElementKeyboard = {
         const overlay = document.createElement('div');
         overlay.className = 'page-fullscreen-overlay';
 
-        // 顶部工具栏
-        const toolbar = document.createElement('div');
-        toolbar.className = 'page-fullscreen-toolbar';
-        toolbar.innerHTML = `
-            <span><i class="fas fa-expand"></i> ${pageName || '页面预览'}</span>
-            <button class="page-fullscreen-close" title="关闭全屏 (Esc)"><i class="fas fa-compress"></i> 退出全屏</button>
-        `;
-
         // iframe容器
         const iframeContainer = document.createElement('div');
         iframeContainer.className = 'page-fullscreen-content';
@@ -260,25 +252,21 @@ const ElementKeyboard = {
         fullscreenIframe.style.border = 'none';
 
         iframeContainer.appendChild(fullscreenIframe);
-        overlay.appendChild(toolbar);
         overlay.appendChild(iframeContainer);
         document.body.appendChild(overlay);
 
-        // 关闭按钮
-        toolbar.querySelector('.page-fullscreen-close').addEventListener('click', () => {
-            overlay.remove();
-            this.clearFullscreenState();
-        });
+        // 显示 ESC 退出提示 toast
+        this.showFullscreenHint();
 
-        // Esc 关闭
-        const escHandler = (e) => {
+        // ESC 关闭全屏预览
+        const exitHandler = (e) => {
             if (e.key === 'Escape') {
                 overlay.remove();
                 this.clearFullscreenState();
-                document.removeEventListener('keydown', escHandler);
+                document.removeEventListener('keydown', exitHandler);
             }
         };
-        document.addEventListener('keydown', escHandler);
+        document.addEventListener('keydown', exitHandler);
 
         // 全屏状态下拦截 Ctrl+S，触发画布编辑器的保存
         const saveHandler = (e) => {
@@ -293,10 +281,11 @@ const ElementKeyboard = {
         // 在父 document 上也拦截（全屏遮罩激活时，焦点可能仍在父页面）
         document.addEventListener('keydown', saveHandler, true);
 
-        // iframe 加载完成后，向 iframe 内部注入 Ctrl+S 拦截
+        // iframe 每次加载完成后（包括页面内导航跳转），注入快捷键拦截
         fullscreenIframe.addEventListener('load', () => {
             try {
                 const iframeDoc = fullscreenIframe.contentDocument || fullscreenIframe.contentWindow.document;
+                // Ctrl+S 拦截
                 iframeDoc.addEventListener('keydown', (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
@@ -304,18 +293,71 @@ const ElementKeyboard = {
                         Storage.save();
                     }
                 }, true);
+                // ESC 退出全屏（iframe 内页面导航后焦点留在 iframe 内，父 document 收不到 keydown）
+                iframeDoc.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        window.parent.postMessage({ type: 'prototype-escape-preview' }, '*');
+                    }
+                });
             } catch (err) {
                 // 跨域 iframe 无法访问，忽略
                 console.warn('无法为跨域 iframe 注入快捷键:', err);
             }
+            // 备用方案：通过注入 <script> 标签确保 ESC 监听生效
+            // 某些情况下 contentDocument.addEventListener 可能不生效（如移动端页面无脚本上下文）
+            try {
+                const iframeDoc2 = fullscreenIframe.contentDocument || fullscreenIframe.contentWindow.document;
+                if (iframeDoc2 && iframeDoc2.head) {
+                    // 检查是否已注入过，避免重复
+                    if (!iframeDoc2.getElementById('_esc_inject_')) {
+                        const script = iframeDoc2.createElement('script');
+                        script.id = '_esc_inject_';
+                        script.textContent = "document.addEventListener('keydown',function(e){if(e.key==='Escape'){try{window.parent.postMessage({type:'prototype-escape-preview'},'*');}catch(ex){}}});";
+                        iframeDoc2.head.appendChild(script);
+                    }
+                }
+            } catch (err) {
+                // 忽略跨域访问失败
+            }
         });
 
-        // 遮罩关闭时清理 saveHandler
+        // 监听 iframe 内通过 postMessage 发来的退出预览消息
+        // （iframe 获得焦点后，父 document 收不到 keydown 事件）
+        const messageHandler = (e) => {
+            if (e.data && e.data.type === 'prototype-escape-preview') {
+                overlay.remove();
+                this.clearFullscreenState();
+            }
+        };
+        window.addEventListener('message', messageHandler);
+
+        // 遮罩关闭时清理所有事件监听
         const originalRemove = overlay.remove.bind(overlay);
         overlay.remove = function () {
             document.removeEventListener('keydown', saveHandler, true);
+            document.removeEventListener('keydown', exitHandler);
+            window.removeEventListener('message', messageHandler);
             originalRemove();
         };
+    },
+
+    // 显示全屏 Q 退出提示
+    showFullscreenHint() {
+        const hint = document.createElement('div');
+        hint.className = 'page-fullscreen-hint';
+        hint.innerHTML = '<i class="fas fa-keyboard"></i> 按 ESC 退出全屏';
+        document.body.appendChild(hint);
+
+        // 触发动画
+        requestAnimationFrame(() => {
+            hint.classList.add('show');
+        });
+
+        // 3秒后自动消失
+        setTimeout(() => {
+            hint.classList.add('hide');
+            setTimeout(() => hint.remove(), 500);
+        }, 3000);
     },
 
     // 保存全屏状态到 localStorage
@@ -372,8 +414,8 @@ const ElementKeyboard = {
             tempIframe.style.position = 'fixed';
             tempIframe.style.left = '-9999px';
             tempIframe.style.top = '0';
-            tempIframe.style.width = '320px';
-            tempIframe.style.height = '680px';
+            tempIframe.style.width = pageInfo.originalSize.width + 'px';
+            tempIframe.style.height = pageInfo.originalSize.height + 'px';
             tempIframe.style.border = 'none';
 
             document.body.appendChild(tempIframe);

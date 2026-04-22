@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **reusable high-fidelity prototype design framework** for rapid creation of mobile app prototypes with visual flow design. The demo project is "摄影派" (Photography School) — a photography rental and sharing app with 32 screens designed for iPhone 15 Pro dimensions (320x680px).
+This is a **reusable high-fidelity prototype design framework** for rapid creation of web app prototypes with visual flow design. The current project is "芋道管理后台" (Yudao Admin) — a Vue3 management dashboard prototype with 100+ screens covering system management, BPM, CRM, Mall, ERP, AI, IoT and more. Canvas dimensions are 1440×900px (desktop).
 
 ### Key Features
 - **Configuration-driven**: Define projects via `config.js` JSON without modifying framework code
@@ -34,26 +34,34 @@ project-root/
 ├── config.js                  # Project configuration (MODIFY THIS)
 ├── index.html                 # Project showcase page
 ├── pages/                     # Page HTML files (MODIFY THIS)
-│   ├── home/  rental/  works/  messages/  profile/
-├── js/                        # Framework code (DO NOT MODIFY)
+│   ├── system/ bpm/ crm/ mall/ erp/ ai/ iot/ mp/ member/ pay/ infra/ report/
+├── js/                        # Framework code
 │   ├── canvas-editor.js       # Main controller, initializes all modules
 │   ├── page-library/          # Page library (config loading, rendering, drag-drop)
 │   ├── canvas-view/           # View pan/zoom (core, box-selection, events)
 │   ├── element-manager/       # Element CRUD (core, adder, renderer, annotation, keyboard)
 │   ├── page-manager/          # Multi-page canvas (core, drag-sort, context-menu)
+│   ├── menu/                  # Dynamic sidebar menu (data, render, interaction)
 │   ├── tools/                 # Tool system (core, arrow, annotation)
 │   ├── storage.js             # Data persistence (save/load/export/import)
 │   ├── history-manager.js     # Undo/redo
 │   ├── modal-manager.js       # Modal dialogs
 │   ├── alignment-manager.js   # Element alignment guides
-│   └── virtual-scrollbar.js   # Custom scrollbar
+│   ├── virtual-scrollbar.js   # Custom scrollbar
+│   ├── prototype-components.js # Shared page interaction components (forms, deletes, tabs)
+│   └── topbar.js              # Shared topbar logic (fullscreen state, Ctrl+S intercept)
 ├── css/
-│   └── canvas-editor.css      # Editor styles + theme variables
+│   ├── canvas-editor.css      # Editor styles + theme variables
+│   └── sidebar-menu.css       # Dynamic sidebar menu styles
 ├── lib/                       # Local copies of third-party libraries
 │   ├── js/ (tailwindcss, marked, html2canvas)
 │   └── css/ (fontawesome)
 └── .cursor-history.md         # Session history log
 ```
+
+### What to modify vs. what not to modify
+- **Modify**: `config.js`, `pages/`, `index.html`
+- **Framework code** (no need to modify): `canvas-editor.html`, `js/`, `css/`, `lib/`
 
 ## Module Architecture
 
@@ -94,6 +102,21 @@ All modules are global objects. Key dependency chains:
 - `ElementManager` depends on `CanvasView` and `PageLibrary`
 - `loadUIState()` (in Storage) runs **before** `initSidebarResizer()` (in CanvasEditor), so expander button visibility must be set manually in `loadUIState()`
 
+### Dynamic Sidebar Menu System (in pages)
+
+Pages use a separate menu system loaded by each HTML page:
+- `js/menu/menu-data.js` — menu data source (mirrors database `system_menu` table)
+- `js/menu/menu-render.js` — renders sidebar HTML
+- `js/menu/menu-interaction.js` — highlight current page, collapse/expand, active states
+- `js/menu/menu.js` — entry point, exposes `SidebarMenu.init(containerId)`
+- `css/sidebar-menu.css` — menu styles
+- Pages include `<div id="sidebar-menu"></div>` and call `SidebarMenu.init('sidebar-menu')` in a `<script>` block
+
+### Shared Page Scripts
+
+- **`js/prototype-components.js`** — injected into all prototype pages, handles button clicks (add/edit forms, delete confirmations, export toasts, status toggles, search/reset), and auto-generates tab bar at top of `.main-content`
+- **`js/topbar.js`** — injected into all pages, handles fullscreen toggle + localStorage persistence and Ctrl+S intercept in fullscreen mode
+
 ## Configuration System (config.js)
 
 Defines `window.PROJECT_CONFIG` with:
@@ -102,7 +125,7 @@ Defines `window.PROJECT_CONFIG` with:
 |-------|-------------|
 | `projectName` | Display name (browser title, welcome message) |
 | `projectRootPath` | Absolute path for file operations |
-| `canvasSize` | `{ width: 320, height: 680 }` default element size |
+| `canvasSize` | `{ width: 1440, height: 900 }` default element size |
 | `categories` | Array of `{ id, name, order }` for grouping pages |
 | `pages` | Array of `{ id, name, icon, category, path }` |
 
@@ -122,9 +145,10 @@ CSS variables are defined in `css/canvas-editor.css` under `:root[data-theme="da
 
 | localStorage Key | Content |
 |-----------------|---------|
-| `photographySchoolCanvas` | Canvas data (version 2.0, multi-page format with pages array) |
-| `photographySchool_uiState` | UI state (sidebar collapsed states) |
+| `{projectName}Canvas` | Canvas data (version 2.0, multi-page format with pages array) |
+| `{projectName}_uiState` | UI state (sidebar collapsed states) |
 | `canvasEditor_theme` | Current theme (`dark` or `light`) |
+| `topbar_fullscreen` | Fullscreen state for page preview |
 
 Data format version `2.0` supports multiple pages. Old `1.0` format (single page with `elements` array) is auto-migrated on load. Auto-save runs every 60 seconds.
 
@@ -141,6 +165,34 @@ Three-column interface: Left sidebar (canvas page list) | Center (canvas with to
 - **Space**: Reset view to 50% and center
 - **Delete**: Delete selected element
 - **Esc**: Deselect / cancel tool
+- **Q**: Enter/exit in-place preview (select a page element first, press Q to enter/exit)
+- **Esc**: Exit fullscreen preview (when fullscreen overlay is open)
+
+## Page HTML Layout Pattern
+
+Each prototype page follows a consistent layout:
+
+```
+┌──────────────────────────────────────────────────┐
+│ Topbar (breadcrumbs + fullscreen/search/user)     │
+├───────────┬──────────────────────────────────────┤
+│ Sidebar   │ Main Content                          │
+│ (dynamic  │ ┌──────────────────────────────────┐ │
+│  menu)    │ │ Search form                       │ │
+│           │ ├──────────────────────────────────┤ │
+│           │ │ Toolbar (add/import/export)       │ │
+│           │ ├──────────────────────────────────┤ │
+│           │ │ Data table                        │ │
+│           │ ├──────────────────────────────────┤ │
+│           │ │ Pagination                        │ │
+│           │ └──────────────────────────────────┘ │
+└───────────┴──────────────────────────────────────┘
+```
+
+Page template references:
+- TailwindCSS: `../lib/js/tailwindcss.js` (or `../../lib/js/tailwindcss.js` from nested dirs)
+- FontAwesome: `../lib/css/all.min.css` (or `../../lib/css/all.min.css`)
+- Sidebar CSS: `../../css/sidebar-menu.css`
 
 ## Creating a New Project
 
@@ -150,23 +202,11 @@ Three-column interface: Left sidebar (canvas page list) | Center (canvas with to
 4. Fix page navigation links between pages
 5. Open `canvas-editor.html` to use the canvas editor
 
-## Design Specifications
-
-### iPhone 15 Pro Mockup
-- Frame: 320px × 680px, 45px corner radius
-- Screen: 100% width/height, 35px corner radius
-- Notch: 80px × 25px centered at top
-- Status bar: 44px height with blur effect
-
-### iOS Design Patterns
-- Navigation with back buttons and titles
-- 5-icon Tab Bar (Home, Rental, Works, Messages, Profile)
-- Bottom sheet modals with backdrop blur
-- Cards with white backgrounds, 20px border radius, shadows
-
 ## Key Technical Notes
 
 - **No ES modules**: All JS files define global objects, loaded via `<script>` tags
 - **Third-party libraries**: Served from `lib/` directory (not CDN) — TailwindCSS, FontAwesome 6.4.0, marked.js, html2canvas
-- **iframe-based pages**: Prototype pages are loaded inside iframes on the canvas
+- **iframe-based pages**: Prototype pages are loaded inside iframes on the canvas; iframe has `pointer-events: none` to allow canvas interactions. Right-click context menu provides fullscreen preview.
 - **CSS sibling selectors** for expander buttons: `.sidebar-right.collapsed ~ .expander-right` — these don't trigger when `collapsed` class is added via JS after initial render, so `loadUIState()` must manually set `expander.style.display`
+- **Fullscreen preview**: Right-click a page element's drag bar to open fullscreen overlay. Press Esc to exit. The overlay intercepts Ctrl+S to prevent browser save dialog.
+- **Menu data source**: `js/menu/menu-data.js` mirrors the database `system_menu` table. When updating pages, check that sidebar menu items match the database structure.

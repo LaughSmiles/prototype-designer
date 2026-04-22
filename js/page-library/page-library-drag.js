@@ -159,19 +159,16 @@ const PageLibraryDrag = {
             return;
         }
 
-        const pageWidth = 320;  // 页面宽度
         const gap = 50;         // 页面间距
 
         // 批量添加前保存状态(用于撤销整个批量操作)
         HistoryManager.saveState();
 
-        // 所有的页面放在一行,横向排列
-        pages.forEach((page, index) => {
-            const x = startX + index * (pageWidth + gap);
-            const y = startY;  // 所有页面y坐标相同
-
-            // 传入 false,不单独保存状态
-            ElementManager.addPageElement(page.id, x, y, false);
+        // 所有的页面放在一行,横向排列（用累加器处理不同尺寸）
+        let currentX = startX;
+        pages.forEach(page => {
+            ElementManager.addPageElement(page.id, currentX, startY, false);
+            currentX += page.originalSize.width + gap;
         });
 
         // 批量添加后再保存状态

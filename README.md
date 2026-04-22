@@ -2,7 +2,7 @@
 
 ## 📖 概述
 
-这是一个**可复用的高保真原型设计框架**,支持快速创建移动应用原型并进行可视化流程设计。
+这是一个**可复用的高保真原型设计框架**,支持快速创建Web/移动应用原型并进行可视化流程设计。当前项目包含管理后台(桌面端)和移动应用(移动端)两套原型。
 
 ### 核心特性
 
@@ -18,9 +18,13 @@
 
 ### 创建新项目(5分钟)
 
-#### 步骤1: 通过AI创建原型图
+#### 步骤1: 通过AI生成原型页面
 
-提示词
+根据项目类型选择对应的提示词模板：
+
+<details>
+<summary>📱 移动端 App 原型</summary>
+
 ```
 我想开发一个{XXX功能的中文App，等等}，现在需要输出高保真的原型图，请通过以下方式帮我完成所有界面的原型设计，并确保这些原型界面可以直接用于开发：
 1.  用户体验分析：先分析这个App的用户需求和主要功能，确定核心交互逻辑。
@@ -34,73 +38,93 @@
     -   页面HTML文件中引入资源的路径必须使用相对路径：TailwindCSS使用 `../lib/js/tailwindcss.js`，FontAwesome使用 `../lib/css/all.min.css`
 6.  真实感增强：
     -   界面尺寸应模拟iPhone 15 Pro，并让界面圆角化，使其更像真实的手机界面。
-    -   使用真实的UI图片，而非占位符图片(可从Unsplash、Pexels、Apple官方UI资源中选择)。
+    -   使用真实的UI图片，而非占位符图片(可从Unsplash、Pexels中选择)。
     -   添加顶部状态栏(模拟iOS状态栏)，并包含App导航栏(类似iOS底部TabBar)。
 请按照以上要求生成完整的HTML代码，并确保其可用于实际iOS App的开发。
 ```
 
-#### 步骤2: 将AI创建的原型图复制到本项目中
+</details>
 
-将AI生成的 `pages/` 目录和 `index.html` 复制到项目根目录下,替换同名文件。
+<details>
+<summary>🖥️ 管理后台原型</summary>
 
-#### 步骤3: 修改配置文件
+```
+我想开发一个{XXX功能的管理系统，等等}，现在需要输出高保真的原型图，请通过以下方式帮我完成所有界面的原型设计，并确保这些原型界面可以直接用于开发：
+1.  需求分析：先分析这个管理系统的用户角色和核心功能，确定主要业务流程。
+2.  界面规划：作为产品经理，定义关键页面，确保功能模块和导航结构合理。
+3.  高保真UI设计：作为UI设计师，参考主流管理后台设计风格(如Element Plus、Ant Design)，使用现代化的UI元素，风格简洁专业。
+4.  HTML原型实现：使用HTML+TailwindCSS生成所有原型页面，并使用FontAwesome图标。注意：TailwindCSS和FontAwesome通过本地路径引入，不要使用CDN链接。
+5.  拆分代码文件，保持结构清晰：
+    -   每个页面应作为独立的HTML文件存放，按模块存放在pages目录下的子目录中(如pages/system/、pages/bpm/)。
+    -   页面布局统一为：顶部导航栏 + 左侧菜单 + 右侧内容区。
+    -   页面结构统一为：搜索表单 + 操作工具栏 + 数据表格 + 分页。
+    -   页面HTML文件中引入资源的路径必须使用相对路径：TailwindCSS使用 `../../lib/js/tailwindcss.js`，FontAwesome使用 `../../lib/css/all.min.css`
+6.  交互增强：
+    -   每个表格行添加操作列(查看/编辑/删除)。
+    -   搜索和重置按钮要有真实的交互效果。
+    -   新增/编辑使用弹框形式展示表单。
+请按照以上要求生成完整的HTML代码。
+```
 
-notes：可以让ai帮你生成配置文件，提示词如下
+</details>
+
+#### 步骤2: 将原型文件复制到项目中
+
+将AI生成的文件复制到项目对应目录：
+
+```
+项目根目录/
+├── index.html        → 替换根目录的 index.html
+├── pages/            → 放入 pages/ 目录下（可创建子目录如 pages/app/、pages/admin/）
+```
+
+#### 步骤3: 配置项目
+
+可以使用AI自动生成配置，提示词：
 
 ```
 @README.md @pages @index.html @lib
 帮我配置 config.js 文件
 ```
 
-编辑 `config.js`:
+或手动编辑 `config.js`，**注意 `canvasSize` 根据项目类型选择不同尺寸**：
 
 ```javascript
-{
-  "projectName": "我的新项目",
-  "projectTitle": "项目标题",
-  "projectDescription": "项目描述",
-  "version": "1.0.0",
-  "projectRootPath": "E:\\path\\to\\project",
-  "canvasSize": {
-    "width": 320,
-    "height": 680
-  },
-  "categories": [
-    {
-      "id": "main",
-      "name": "主要功能",
-      "order": 1
-    }
+window.PROJECT_CONFIG = {
+  projectName: "我的新项目",
+  projectRootPath: "E:\\path\\to\\project",
+
+  // 移动端用这个 ↓
+  canvasSize: { width: 320, height: 680 },
+  // 管理后台用这个 ↓
+  // canvasSize: { width: 1440, height: 900 },
+
+  categories: [
+    { id: "main", name: "主要功能", order: 1 }
   ],
-  "pages": [
+  pages: [
     {
-      "id": "home",
-      "name": "首页",
-      "icon": "fa-home",
-      "category": "main",
-      "path": "pages/home/home.html"
-    },
-    {
-      "id": "profile",
-      "name": "个人中心",
-      "icon": "fa-user",
-      "category": "main",
-      "path": "pages/profile/profile.html"
+      id: "home",
+      name: "首页",
+      icon: "fa-home",
+      category: "main",
+      path: "pages/home/home.html"
     }
   ]
-}
+};
 ```
 
-#### 步骤4: 修复页面跳转和返回功能
+#### 步骤4: 修复页面导航
+
+AI生成的页面中，导航链接可能不正确。使用以下提示词修复：
 
 ```
-/plan 
-1、将页面中的链接跳转换成真实的，使得页面可以跳转
-2、页面点击返回的时候也需要可以返回
-E:\develop\java_item\ai\prototype-desiger\pages
+@pages
+1、将页面中的所有链接跳转指向真实的HTML文件路径，确保页面之间可以正常跳转
+2、每个页面点击返回按钮时能正确返回上一页
 ```
 
-#### 步骤5: 完成!
+#### 步骤5: 开始使用!
 
 打开 `canvas-editor.html` 开始使用!
 
@@ -114,8 +138,13 @@ E:\develop\java_item\ai\prototype-desiger\pages
 ├── config.js                  # 项目配置文件(需修改)
 ├── index.html                 # 项目展示页(可选)
 ├── pages/                     # 页面文件目录(需修改)
-│   ├── home/                  #   按模块组织
-│   ├── rental/
+│   ├── admin/                 #   管理后台原型(桌面端, 1440x900)
+│   ├── app/                   #   移动应用原型(移动端)
+│   │   ├── home/              #     首页模块
+│   │   ├── messages/          #     消息模块
+│   │   ├── profile/           #     个人中心模块
+│   │   ├── rental/            #     租赁模块
+│   │   └── works/             #     作品模块
 │   └── ...
 ├── js/                        # 框架核心代码(无需修改)
 │   ├── canvas-editor.js       # 主控制器
@@ -123,17 +152,21 @@ E:\develop\java_item\ai\prototype-desiger\pages
 │   ├── canvas-view/           # 画布视图(核心/框选/事件)
 │   ├── element-manager/       # 元素管理(核心/添加/渲染/注释/键盘)
 │   ├── page-manager/          # 多页面画布(核心/拖拽排序/右键菜单)
+│   ├── menu/                  # 动态侧边栏菜单(数据/渲染/交互)
 │   ├── tools/                 # 工具系统(核心/箭头/注释)
 │   ├── storage.js             # 数据持久化
 │   ├── history-manager.js     # 撤销/重做
 │   ├── modal-manager.js       # 弹窗管理
 │   ├── alignment-manager.js   # 对齐管理器
+│   ├── prototype-components.js # 共享页面交互组件(表单/弹框/标签栏)
+│   ├── topbar.js              # 共享顶栏逻辑(全屏/Ctrl+S拦截)
 │   └── virtual-scrollbar.js   # 虚拟滚动条
 ├── lib/                       # 本地第三方库
 │   ├── js/ (tailwindcss, marked, html2canvas)
 │   └── css/ (fontawesome)
 ├── css/                       # 样式文件(无需修改)
-│   └── canvas-editor.css      # 画布编辑器样式(含主题变量)
+│   ├── canvas-editor.css      # 画布编辑器样式(含主题变量)
+│   └── sidebar-menu.css       # 动态侧边栏菜单样式
 ```
 
 ### 需要修改的文件
@@ -362,6 +395,14 @@ window.PROJECT_CONFIG = {
 2. 按 `Delete` 键
 3. 或点击元素右上角的 **×** 按钮
 
+#### 预览页面
+
+1. 选中画布上的页面元素
+2. 按 `Q` 键进入预览模式(可在页面内交互操作)
+3. 再次按 `Q` 键退出预览
+
+> 也可以右键点击页面元素的拖拽手柄,选择"全屏显示"进入全屏预览。全屏预览中按 `Esc` 退出。
+
 ---
 
 ## ⌨️ 快捷键大全
@@ -387,7 +428,8 @@ window.PROJECT_CONFIG = {
 | 快捷键   | 功能              |
 | -------- | ----------------- |
 | `Delete` | 删除选中元素      |
-| `Esc`    | 取消选择/退出工具 |
+| `Esc`    | 取消选择/退出全屏预览 |
+| `Q`      | 进入/退出原位预览  |
 
 ### 数据操作
 
@@ -408,10 +450,11 @@ window.PROJECT_CONFIG = {
 数据保存在浏览器的 `localStorage` 中:
 
 ```javascript
-// 存储键名
-photographySchoolCanvas      // 画布数据(多页面格式, version 2.0)
-photographySchool_uiState    // UI状态(侧边栏折叠状态)
+// 存储键名(以 projectName 为前缀)
+{projectName}Canvas          // 画布数据(多页面格式, version 2.0)
+{projectName}_uiState        // UI状态(侧边栏折叠状态)
 canvasEditor_theme           // 主题设置(dark/light)
+topbar_fullscreen            // 全屏预览状态
 ```
 
 ### 清空缓存

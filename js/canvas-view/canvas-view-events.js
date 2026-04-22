@@ -76,14 +76,11 @@ const CanvasViewEvents = {
                 e.stopPropagation();
                 e.stopImmediatePropagation();
             }
-            // Escape 关闭预览
-            if (e.key === 'Escape') {
-                this.closePreview();
-            }
-            // Q键：选中页面后进入预览模式
+            // Q键：进入/退出预览
             if (e.key === 'q' || e.key === 'Q') {
-                if (!CanvasView.isPreviewMode) {
-                    // 获取当前选中的元素
+                if (CanvasView.isPreviewMode) {
+                    this.closePreview();
+                } else {
                     const selectedId = ElementManager.state.selectedElement ||
                         (ElementManager.state.selectedElements.length > 0 ? ElementManager.state.selectedElements[0] : null);
                     if (selectedId) {
@@ -97,7 +94,7 @@ const CanvasViewEvents = {
             }
         }, { capture: true });
 
-        // 监听来自iframe的退出预览消息（焦点在iframe内时Escape无法冒泡到父页面）
+        // 监听来自iframe的退出预览消息（焦点在iframe内时Q键无法冒泡到父页面）
         window.addEventListener('message', (e) => {
             if (e.data && e.data.type === 'prototype-escape-preview') {
                 this.closePreview();

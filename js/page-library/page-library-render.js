@@ -2,6 +2,9 @@
 // 负责页面列表的渲染、分组、分类折叠等
 
 const PageLibraryRender = {
+    // 当前设备筛选状态
+    currentDevice: 'all',
+
     // 渲染页面库
     render() {
         const container = document.getElementById('pageLibrary');
@@ -17,19 +20,86 @@ const PageLibraryRender = {
             return;
         }
 
-        countSpan.textContent = PageLibrary.pages.length;
+        // 渲染设备 Tab 栏（如果配置了 devices）
+        this.renderDeviceTabs();
 
-        // 按分类分组
+        // 按设备筛选分类
         const groupedPages = this.groupPagesByCategory();
-
-        // 获取排序后的分类ID列表
         const sortedCategoryIds = this.getSortedCategoryIds(Object.keys(groupedPages));
 
+        // 根据 currentDevice 过滤分类
+        const filteredCategoryIds = this.filterCategoriesByDevice(sortedCategoryIds);
+
+        // 更新页面计数（显示筛选后的数量）
+        const filteredPages = this.getFilteredPages();
+        countSpan.textContent = filteredPages.length;
+
         // 按排序后的顺序渲染分组
-        sortedCategoryIds.forEach(categoryId => {
+        filteredCategoryIds.forEach(categoryId => {
             const group = groupedPages[categoryId];
             const groupElement = this.createGroupElement(group);
             container.appendChild(groupElement);
+        });
+    },
+
+    // 渲染设备类型 Tab 栏
+    renderDeviceTabs() {
+        const tabsContainer = document.getElementById('deviceTabs');
+        if (!tabsContainer) return;
+
+        const devices = PageLibrary.projectConfig?.devices;
+        if (!devices || devices.length === 0) {
+            tabsContainer.style.display = 'none';
+            return;
+        }
+
+        tabsContainer.style.display = '';
+        tabsContainer.innerHTML = '';
+
+        // "全部" Tab
+        const allTab = document.createElement('button');
+        allTab.className = `device-tab ${this.currentDevice === 'all' ? 'active' : ''}`;
+        allTab.dataset.device = 'all';
+        allTab.textContent = '全部';
+        allTab.addEventListener('click', () => this.switchDevice('all'));
+        tabsContainer.appendChild(allTab);
+
+        // 各设备 Tab
+        devices.forEach(device => {
+            const tab = document.createElement('button');
+            tab.className = `device-tab ${this.currentDevice === device.id ? 'active' : ''}`;
+            tab.dataset.device = device.id;
+            tab.innerHTML = `<i class="fas ${device.icon}"></i> ${device.name}`;
+            tab.addEventListener('click', () => this.switchDevice(device.id));
+            tabsContainer.appendChild(tab);
+        });
+    },
+
+    // 切换设备筛选
+    switchDevice(deviceId) {
+        this.currentDevice = deviceId;
+        this.render();
+    },
+
+    // 根据当前设备筛选过滤分类ID
+    filterCategoriesByDevice(categoryIds) {
+        if (this.currentDevice === 'all') return categoryIds;
+
+        const categories = PageLibrary.projectConfig?.categories || [];
+        return categoryIds.filter(categoryId => {
+            const category = categories.find(c => c.id === categoryId);
+            return category?.device === this.currentDevice;
+        });
+    },
+
+    // 获取当前筛选后的页面列表
+    getFilteredPages() {
+        if (this.currentDevice === 'all') return PageLibrary.pages;
+
+        const categories = PageLibrary.projectConfig?.categories || [];
+        return PageLibrary.pages.filter(page => {
+            const category = categories.find(c => c.id === page.category);
+            return category?.device === this.currentDevice;
         });
     },
 

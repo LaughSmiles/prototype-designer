@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会员统计 - 芋道管理后台</title>
+    <script src="../../../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+                                .stat-row { display: flex; gap: 16px; margin-bottom: 16px; }
+        .stat-card { background: #fff; border-radius: 8px; padding: 20px; flex: 1; display: flex; align-items: center; }
+        .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-right: 16px; }
+        .stat-value { font-size: 26px; font-weight: 700; color: #303133; }
+        .stat-label { font-size: 13px; color: #909399; margin-top: 4px; }
+        .card { background: #fff; border-radius: 8px; padding: 20px; }
+        .card-title { font-size: 15px; font-weight: 600; color: #303133; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ebeef5; }
+        .chart-placeholder { height: 280px; background: #fafafa; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #c0c4cc; font-size: 14px; border: 1px dashed #dcdfe6; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #ebeef5; font-size: 13px; }
+        th { background: #fafafa; color: #909399; font-weight: 500; }
+        tr:hover { background: #f5f7fa; }
+            .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
+        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
+        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
+        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
+            .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; height: 100%; }
+        .topbar-right { display: flex; align-items: center; height: 100%; }
+        .custom-hover { display: flex; height: 100%; padding: 0 10px; cursor: pointer; align-items: center; transition: background 0.2s; }
+        .custom-hover:hover { background-color: #f6f6f6; }
+        .breadcrumb { display: flex; align-items: center; height: 100%; margin-left: 10px; font-size: 14px; }
+        .breadcrumb-sep { margin: 0 6px; color: #c0c4cc; }
+        .breadcrumb a { color: inherit; text-decoration: none; }
+        .breadcrumb a:hover { color: #409eff; }
+        .breadcrumb .last { color: #97a8be; }
+        .notification-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #f56c6c; border-radius: 50%; }
+        .avatar { width: 25px; height: 25px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; }
+        .username-text { padding-left: 5px; font-size: 14px; color: inherit; }
+    
+        .tenant-select { width: 180px; height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 0 30px 0 12px; font-size: 13px; color: #606266; background: #fff; outline: none; cursor: pointer; appearance: auto; }
+        .tenant-select:focus { border-color: #409eff; }
+        .tenant-wrap { position: relative; display: flex; align-items: center; margin-right: 4px; }
+        .tenant-wrap i { position: absolute; right: 10px; font-size: 12px; color: #c0c4cc; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="logo"><div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div><span class="logo-text">芋道管理后台</span></div>
+        <div id="sidebar-menu"></div>
+        <script src="../../../menu/menu.js"></script>
+        <script src="../../../js/menu/menu-data.js"></script>
+        <script src="../../../js/menu/menu-render.js"></script>
+        <script src="../../../js/menu/menu-interaction.js"></script>
+        <script src="../../../js/menu/menu.js"></script>
+        <script>document.addEventListener('DOMContentLoaded', async function(){ try{await SidebarMenu.init('sidebar-menu');}catch(e){console.error(e);} });</script>
+    </div>
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="custom-hover" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px;"></i></div>
+            <div class="breadcrumb"><a>商城系统</a><span class="breadcrumb-sep">/</span><span class="last">会员统计</span></div>
+        </div>
+                <div class="topbar-right">
+            <div class="tenant-wrap">
+                <select class="tenant-select">
+                    <option value="" disabled selected>请选择租户</option>
+                    <option value="1">芋道源码</option>
+                    <option value="2">测试租户</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="custom-hover" title="全屏"><i class="fas fa-expand" style="font-size: 18px;"></i></div>
+            <div class="custom-hover" title="搜索"><i class="fas fa-search" style="font-size: 18px;"></i></div>
+            <div class="dropdown custom-hover" title="尺寸">
+                <i class="fas fa-text-height" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>Default</a>
+                    <a>Large</a>
+                    <a>Small</a>
+                </div>
+            </div>
+            <div class="dropdown custom-hover" title="语言">
+                <i class="fas fa-language" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>简体中文</a>
+                    <a>English</a>
+                </div>
+            </div>
+            <div class="custom-hover" style="position: relative;" title="消息">
+                <i class="fas fa-bell" style="font-size: 18px;"></i>
+                <span class="notification-dot"></span>
+            </div>
+            <div class="dropdown custom-hover">
+                <div style="display: flex; align-items: center; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span class="username-text">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>开发文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="main-content">
+        <!-- 统计卡片 -->
+        <div class="stat-row">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-users"></i></div>
+                <div><div class="stat-value">28,653</div><div class="stat-label">累计会员数</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #f5f3ff; color: #8b5cf6;"><i class="fas fa-user"></i></div>
+                <div><div class="stat-value">12,580</div><div class="stat-label">累计充值人数</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fffbeb; color: #f59e0b;"><i class="fas fa-money-check-alt"></i></div>
+                <div><div class="stat-value">1,285,600.00</div><div class="stat-label">累计充值金额(元)</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #ecfdf5; color: #10b981;"><i class="fas fa-yen-sign"></i></div>
+                <div><div class="stat-value">3,568,200.00</div><div class="stat-label">累计消费金额(元)</div></div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+            <div class="card" style="flex: 3;">
+                <div class="card-title">会员概览</div>
+                <div class="chart-placeholder"><i class="fas fa-chart-bar" style="margin-right:8px;"></i>会员数量趋势图表区域</div>
+            </div>
+            <div class="card" style="flex: 1;">
+                <div class="card-title">会员终端</div>
+                <div class="chart-placeholder" style="height: 280px;"><div style="text-align:center;"><i class="fas fa-chart-pie" style="font-size:24px; margin-bottom:8px; display:block;"></i>微信小程序: 45%<br>H5: 25%<br>APP: 20%<br>PC: 10%</div></div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+            <div class="card" style="flex: 3;">
+                <div class="card-title">会员地域分布</div>
+                <div style="display: flex; gap: 16px;">
+                    <div class="chart-placeholder" style="flex:1; height: 300px;"><i class="fas fa-map-marked-alt" style="margin-right:8px;"></i>中国地图展示区域</div>
+                    <div style="flex: 1;">
+                        <table>
+                            <thead><tr><th>省份</th><th>会员数量</th><th>订单创建数量</th><th>订单支付数量</th><th>订单支付金额</th></tr></thead>
+                            <tbody>
+                                <tr><td>广东省</td><td>5,680</td><td>3,250</td><td>2,890</td><td>856,200.00</td></tr>
+                                <tr><td>浙江省</td><td>3,420</td><td>2,150</td><td>1,980</td><td>625,800.00</td></tr>
+                                <tr><td>江苏省</td><td>2,980</td><td>1,860</td><td>1,650</td><td>498,600.00</td></tr>
+                                <tr><td>北京市</td><td>2,560</td><td>1,720</td><td>1,530</td><td>468,500.00</td></tr>
+                                <tr><td>上海市</td><td>2,350</td><td>1,580</td><td>1,420</td><td>425,300.00</td></tr>
+                                <tr><td>山东省</td><td>1,890</td><td>1,120</td><td>980</td><td>286,500.00</td></tr>
+                                <tr><td>四川省</td><td>1,650</td><td>980</td><td>850</td><td>215,600.00</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="flex: 1;">
+                <div class="card-title">会员性别比例</div>
+                <div class="chart-placeholder" style="height: 300px;"><div style="text-align:center;"><i class="fas fa-venus-mars" style="font-size:24px; margin-bottom:8px; display:block;"></i>男: 42%<br>女: 55%<br>未知: 3%</div></div>
+            </div>
+        </div>
+    </div>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+</body>
+</html>

@@ -57,6 +57,25 @@ const PageLibrary = {
         };
     },
 
+    // 解析页面的画布尺寸
+    // 优先级: category 所属 device 的 canvasSize > 全局 canvasSize > 默认值
+    getCanvasSizeForPage(pageConfig) {
+        const globalSize = this.projectConfig.canvasSize || { width: 320, height: 680 };
+        const devices = this.projectConfig.devices || [];
+
+        // 查找所属分类
+        const categoryId = pageConfig.category;
+        const category = this.projectConfig.categories?.find(c => c.id === categoryId);
+
+        // 查找分类所属设备的 canvasSize
+        if (category?.device) {
+            const device = devices.find(d => d.id === category.device);
+            if (device?.canvasSize) return device.canvasSize;
+        }
+
+        return globalSize;
+    },
+
     // 生成页面列表(从配置文件读取)
     async generatePageList() {
         if (!this.projectConfig || !this.projectConfig.pages) {
@@ -65,12 +84,11 @@ const PageLibrary = {
             return;
         }
 
-        const canvasSize = this.projectConfig.canvasSize || { width: 320, height: 680 };
-
         // 并行验证所有页面文件是否存在
         const pageValidationPromises = this.projectConfig.pages.map(async pageConfig => {
             const filePath = pageConfig.path || `pages/${pageConfig.category}/${pageConfig.id}.html`;
             const isValid = await this.checkPageExists(filePath);
+            const pageSize = this.getCanvasSizeForPage(pageConfig);
 
             return {
                 id: pageConfig.id,
@@ -79,8 +97,8 @@ const PageLibrary = {
                 icon: pageConfig.icon || 'fa-file',
                 category: pageConfig.category || '未分类',
                 originalSize: {
-                    width: canvasSize.width,
-                    height: canvasSize.height
+                    width: pageSize.width,
+                    height: pageSize.height
                 },
                 isValid: isValid  // 标记页面文件是否有效
             };

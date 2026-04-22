@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服中心 - 芋道管理后台</title>
+    <script src="../../../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+                                .kefu-container { display: flex; gap: 0; height: calc(100vh - 110px); background: #fff; border-radius: 8px; overflow: hidden; }
+        .conversation-list { width: 280px; border-right: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; }
+        .conversation-header { padding: 16px; font-size: 15px; font-weight: 600; color: #303133; border-bottom: 1px solid #ebeef5; }
+        .conversation-item { padding: 12px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: 0.2s; }
+        .conversation-item:hover { background: #f5f7fa; }
+        .conversation-item.active { background: #ecf5ff; }
+        .conv-user { display: flex; align-items: center; gap: 10px; }
+        .conv-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; flex-shrink: 0; }
+        .conv-name { font-size: 14px; font-weight: 500; color: #303133; }
+        .conv-time { font-size: 11px; color: #c0c4cc; }
+        .conv-msg { font-size: 12px; color: #909399; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+        .conv-badge { background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 8px; float: right; }
+        .chat-area { flex: 1; display: flex; flex-direction: column; }
+        .chat-header { padding: 12px 20px; border-bottom: 1px solid #e8e8e8; font-size: 14px; font-weight: 500; color: #303133; }
+        .chat-messages { flex: 1; padding: 20px; overflow-y: auto; background: #f5f7fa; }
+        .msg-row { display: flex; margin-bottom: 16px; }
+        .msg-row.user { justify-content: flex-start; }
+        .msg-row.kefu { justify-content: flex-end; }
+        .msg-bubble { max-width: 60%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+        .msg-row.user .msg-bubble { background: #fff; color: #303133; border-bottom-left-radius: 4px; }
+        .msg-row.kefu .msg-bubble { background: #409eff; color: #fff; border-bottom-right-radius: 4px; }
+        .chat-input { padding: 16px 20px; border-top: 1px solid #e8e8e8; display: flex; gap: 10px; align-items: flex-end; }
+        .chat-input textarea { flex: 1; padding: 10px; border: 1px solid #dcdfe6; border-radius: 8px; font-size: 13px; resize: none; height: 60px; outline: none; }
+        .chat-input textarea:focus { border-color: #409eff; }
+        .send-btn { padding: 10px 20px; background: #409eff; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .member-info { width: 280px; border-left: 1px solid #e8e8e8; padding: 20px; overflow-y: auto; flex-shrink: 0; }
+        .info-header { text-align: center; margin-bottom: 20px; }
+        .info-avatar { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 20px; font-weight: 600; margin: 0 auto 10px; }
+        .info-name { font-size: 16px; font-weight: 600; color: #303133; }
+        .info-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px solid #f5f5f5; }
+        .info-label { color: #909399; }
+        .info-value { color: #303133; }
+            .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
+        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
+        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
+        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
+            .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; height: 100%; }
+        .topbar-right { display: flex; align-items: center; height: 100%; }
+        .custom-hover { display: flex; height: 100%; padding: 0 10px; cursor: pointer; align-items: center; transition: background 0.2s; }
+        .custom-hover:hover { background-color: #f6f6f6; }
+        .breadcrumb { display: flex; align-items: center; height: 100%; margin-left: 10px; font-size: 14px; }
+        .breadcrumb-sep { margin: 0 6px; color: #c0c4cc; }
+        .breadcrumb a { color: inherit; text-decoration: none; }
+        .breadcrumb a:hover { color: #409eff; }
+        .breadcrumb .last { color: #97a8be; }
+        .notification-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #f56c6c; border-radius: 50%; }
+        .avatar { width: 25px; height: 25px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; }
+        .username-text { padding-left: 5px; font-size: 14px; color: inherit; }
+    
+        .tenant-select { width: 180px; height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 0 30px 0 12px; font-size: 13px; color: #606266; background: #fff; outline: none; cursor: pointer; appearance: auto; }
+        .tenant-select:focus { border-color: #409eff; }
+        .tenant-wrap { position: relative; display: flex; align-items: center; margin-right: 4px; }
+        .tenant-wrap i { position: absolute; right: 10px; font-size: 12px; color: #c0c4cc; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="logo"><div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div><span class="logo-text">芋道管理后台</span></div>
+        <div id="sidebar-menu"></div>
+        <script src="../../../menu/menu.js"></script>
+        <script src="../../../js/menu/menu-data.js"></script>
+        <script src="../../../js/menu/menu-render.js"></script>
+        <script src="../../../js/menu/menu-interaction.js"></script>
+        <script src="../../../js/menu/menu.js"></script>
+        <script>document.addEventListener('DOMContentLoaded', async function(){ try{await SidebarMenu.init('sidebar-menu');}catch(e){console.error(e);} });</script>
+    </div>
+    <div class="topbar">
+        <div class="topbar-left">
+            <div class="custom-hover" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px;"></i></div>
+            <div class="breadcrumb"><a>商城系统</a><span class="breadcrumb-sep">/</span><span class="last">客服中心</span></div>
+        </div>
+                <div class="topbar-right">
+            <div class="tenant-wrap">
+                <select class="tenant-select">
+                    <option value="" disabled selected>请选择租户</option>
+                    <option value="1">芋道源码</option>
+                    <option value="2">测试租户</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="custom-hover" title="全屏"><i class="fas fa-expand" style="font-size: 18px;"></i></div>
+            <div class="custom-hover" title="搜索"><i class="fas fa-search" style="font-size: 18px;"></i></div>
+            <div class="dropdown custom-hover" title="尺寸">
+                <i class="fas fa-text-height" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>Default</a>
+                    <a>Large</a>
+                    <a>Small</a>
+                </div>
+            </div>
+            <div class="dropdown custom-hover" title="语言">
+                <i class="fas fa-language" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>简体中文</a>
+                    <a>English</a>
+                </div>
+            </div>
+            <div class="custom-hover" style="position: relative;" title="消息">
+                <i class="fas fa-bell" style="font-size: 18px;"></i>
+                <span class="notification-dot"></span>
+            </div>
+            <div class="dropdown custom-hover">
+                <div style="display: flex; align-items: center; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span class="username-text">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>开发文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+                    <div class="conv-msg">退款什么时候到账？</div>
+                </div>
+                <div class="conversation-item">
+                    <div class="conv-user"><div class="conv-avatar" style="background:#e6a23c;">王</div><div><div class="conv-name">王美丽</div><div class="conv-time">昨天</div></div><span class="conv-badge">1</span></div>
+                    <div class="conv-msg">物流信息一直不更新</div>
+                </div>
+                <div class="conversation-item">
+                    <div class="conv-user"><div class="conv-avatar" style="background:#f56c6c;">赵</div><div><div class="conv-name">赵小强</div><div class="conv-time">昨天</div></div></div>
+                    <div class="conv-msg">好的，谢谢客服</div>
+                </div>
+                <div class="conversation-item">
+                    <div class="conv-user"><div class="conv-avatar" style="background:#9c27b0;">陈</div><div><div class="conv-name">陈大伟</div><div class="conv-time">2天前</div></div></div>
+                    <div class="conv-msg">优惠券怎么使用？</div>
+                </div>
+            </div>
+
+            <!-- 聊天区域 -->
+            <div class="chat-area">
+                <div class="chat-header"><i class="fas fa-circle" style="color:#67c23a;font-size:8px;margin-right:6px;"></i> 张小花 - 会话中</div>
+                <div class="chat-messages">
+                    <div class="msg-row user"><div class="msg-bubble">您好，请问这个iPhone 15 Pro Max 256GB还有货吗？</div></div>
+                    <div class="msg-row kefu"><div class="msg-bubble">您好！请问是哪个颜色呢？目前大部分颜色都有现货的哦~</div></div>
+                    <div class="msg-row user"><div class="msg-bubble">原色钛金属的，256GB版本</div></div>
+                    <div class="msg-row kefu"><div class="msg-bubble">原色钛金属256GB有现货的，今天下单预计明天就能发货。现在下单还能参加满减活动，可以优惠200元哦！</div></div>
+                    <div class="msg-row user"><div class="msg-bubble">好的，那如果购买碎屏险的话怎么搭配？</div></div>
+                    <div class="msg-row kefu"><div class="msg-bubble">我们提供官方AppleCare+服务，可以一起购买。单独购买碎屏险也有第三方可选，价格更实惠。需要我帮您详细介绍一下吗？</div></div>
+                    <div class="msg-row user"><div class="msg-bubble">好的，请介绍一下第三方碎屏险</div></div>
+                </div>
+                <div class="chat-input">
+                    <textarea placeholder="请输入消息内容..."></textarea>
+                    <button class="send-btn"><i class="fas fa-paper-plane"></i> 发送</button>
+                </div>
+            </div>
+
+            <!-- 会员信息 -->
+            <div class="member-info">
+                <div class="info-header">
+                    <div class="info-avatar" style="background:#409eff;">张</div>
+                    <div class="info-name">张小花</div>
+                </div>
+                <div class="info-item"><span class="info-label">会员ID</span><span class="info-value">10086</span></div>
+                <div class="info-item"><span class="info-label">手机号</span><span class="info-value">138****5678</span></div>
+                <div class="info-item"><span class="info-label">注册时间</span><span class="info-value">2024-01-15</span></div>
+                <div class="info-item"><span class="info-label">会员等级</span><span class="info-value">黄金会员</span></div>
+                <div class="info-item"><span class="info-label">累计消费</span><span class="info-value">12,680.00</span></div>
+                <div class="info-item"><span class="info-label">订单数量</span><span class="info-value">28</span></div>
+                <div class="info-item"><span class="info-label">最后下单</span><span class="info-value">2024-06-18</span></div>
+            </div>
+        </div>
+    </div>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+</body>
+</html>

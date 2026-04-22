@@ -631,7 +631,7 @@
                 }
             });
 
-            // 预览模式下，Escape键通知父页面退出预览
+            // 预览模式下，Escape键通知父页面退出全屏预览
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     try {
