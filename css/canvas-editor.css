@@ -2251,6 +2251,40 @@ body {
     display: flex;
 }
 
+/* ---- 页面预览按钮 ---- */
+.canvas-element .preview-btn {
+    position: absolute;
+    top: 5px;
+    right: 32px;
+    width: 22px;
+    height: 22px;
+    background: #409EFF;
+    color: white;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.canvas-element.page-element:hover .preview-btn,
+.canvas-element.page-element.selected .preview-btn {
+    display: flex;
+    opacity: 1;
+}
+
+.canvas-element .preview-btn:hover {
+    transform: scale(1.2);
+    background: #66B1FF;
+    box-shadow: 0 2px 10px rgba(64, 158, 255, 0.6);
+}
+
 /* ============================================================
    框选矩形
    ============================================================ */

@@ -45,7 +45,7 @@ const Tools = {
             // 恢复所有iframe的交互
             const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
             iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'auto';
+                iframe.style.pointerEvents = 'none';
             });
         }
 
@@ -80,18 +80,11 @@ const Tools = {
         }
 
         // 更新 iframe 交互状态
-        // 箭头/批注工具需要禁用iframe交互，让点击穿透到canvasWrapper
-        // 选择工具需要恢复iframe交互，允许用户与页面元素交互
+        // iframe 始终禁用交互，让点击穿透到canvasWrapper
         const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-        if (tool === 'arrow' || tool === 'annotation') {
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'none';
-            });
-        } else {
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'auto';
-            });
-        }
+        iframes.forEach(iframe => {
+            iframe.style.pointerEvents = 'none';
+        });
 
         // 显示提示
         const toolNames = {

@@ -221,7 +221,14 @@ const PageLibraryRender = {
         const hint = document.createElement('div');
         hint.className = 'temp-hint';
         hint.textContent = message;
-        document.body.appendChild(hint);
+
+        // 全屏遮罩层存在时，追加到遮罩层内部，确保提示可见
+        const overlay = document.querySelector('.page-fullscreen-overlay');
+        if (overlay) {
+            overlay.appendChild(hint);
+        } else {
+            document.body.appendChild(hint);
+        }
 
         setTimeout(() => hint.remove(), 2000);
     }

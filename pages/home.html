@@ -76,6 +76,11 @@
         .tenant-select:focus { border-color: #409eff; }
         .tenant-wrap { position: relative; display: flex; align-items: center; margin-right: 4px; }
         .tenant-wrap i { position: absolute; right: 10px; font-size: 12px; color: #c0c4cc; pointer-events: none; }
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
+        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
+        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
+        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
     </style>
 </head>
 <body>
@@ -102,34 +107,58 @@
     <!-- 顶部导航栏 -->
     <div class="topbar" id="topbar">
         <div class="topbar-left">
-            <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 text-lg p-1"><i class="fas fa-bars"></i></button>
+            <div class="custom-hover" title="折叠菜单" onclick="toggleSidebar()"><i class="fas fa-outdent" style="font-size: 18px;"></i></div>
+            <div class="breadcrumb"><span class="last">首页</span></div>
         </div>
         <div class="topbar-right">
-            <div class="relative">
-                <input type="text" placeholder="搜索菜单..." class="w-48 h-8 pl-8 pr-3 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            <div class="tenant-wrap">
+                <select class="tenant-select">
+                    <option value="" disabled selected>请选择租户</option>
+                    <option value="1">芋道源码</option>
+                    <option value="2">测试租户</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
             </div>
-            <div class="notification" onclick="toggleNotify()">
-                <i class="fas fa-bell text-gray-500 text-lg"></i>
-                <span class="badge">5</span>
+            <div class="custom-hover" title="全屏"><i class="fas fa-expand" style="font-size: 18px;"></i></div>
+            <div class="custom-hover" title="搜索"><i class="fas fa-search" style="font-size: 18px;"></i></div>
+            <div class="dropdown custom-hover" title="尺寸">
+                <i class="fas fa-text-height" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>Default</a>
+                    <a>Large</a>
+                    <a>Small</a>
+                </div>
             </div>
-            <button class="text-gray-500 hover:text-gray-700"><i class="fas fa-expand text-sm"></i></button>
-            <div class="user-info" onclick="toggleUserMenu()">
-                <div class="avatar">A</div>
-                <span class="text-sm text-gray-700">Admin</span>
-                <i class="fas fa-caret-down text-gray-400 text-xs"></i>
+            <div class="dropdown custom-hover" title="语言">
+                <i class="fas fa-language" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>简体中文</a>
+                    <a>English</a>
+                </div>
+            </div>
+            <div class="custom-hover" style="position: relative;" title="消息">
+                <i class="fas fa-bell" style="font-size: 18px;"></i>
+                <span class="notification-dot"></span>
+            </div>
+            <div class="dropdown custom-hover">
+                <div style="display: flex; align-items: center; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span class="username-text">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>开发文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- 主内容区 -->
     <div class="main-content" id="mainContent">
-        <!-- 标签页栏 -->
-        <div class="tabs-bar">
-            <div class="tab-item active"><i class="fas fa-home" style="font-size:11px"></i> 首页</div>
-            <div class="tab-item">系统管理 <span class="close-btn"><i class="fas fa-times"></i></span></div>
-            <div class="tab-item">用户管理 <span class="close-btn"><i class="fas fa-times"></i></span></div>
-        </div>
+        <!-- 标签页栏由 prototype-components.js 自动生成 -->
 
         <!-- 欢迎卡片 -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;">
@@ -348,16 +377,18 @@
 
         // 通知面板
         function toggleNotify() {
-            alert('通知面板（原型演示）');
-        }
-
-        // 用户菜单
-        function toggleUserMenu() {
-            if (confirm('是否退出登录？')) {
-                window.location.href = 'login.html';
+            if (window.PrototypeDialog) {
+                window.PrototypeDialog.show({
+                    title: '消息通知',
+                    width: '420px',
+                    content: '<div style="padding:8px 0;font-size:14px;color:#606266;">暂无新消息</div>',
+                    hideCancel: true,
+                    confirmText: '知道了'
+                });
             }
         }
     </script>
-<script src="../../js/topbar.js"></script>
+<script src="../js/topbar.js"></script>
+<script src="../js/prototype-components.js"></script>
 </body>
 </html>

@@ -56,7 +56,7 @@ const ToolsArrow = {
         // 恢复所有iframe的交互
         const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
         iframes.forEach(iframe => {
-            iframe.style.pointerEvents = 'auto';
+            iframe.style.pointerEvents = 'none';
         });
 
         // 重置状态

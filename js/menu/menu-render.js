@@ -171,9 +171,12 @@ const MenuRender = {
         // 重新渲染菜单
         this.render(MenuData.getMenuTree(), this.containerId);
 
-        // 恢复高亮状态
+        // 只恢复高亮样式，不触发自动展开父级菜单
         if (this.activeMenuId) {
-            this.updateActiveItem(this.activeMenuId);
+            const activeItem = document.querySelector(`.menu-item[data-menu-id="${this.activeMenuId}"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
         }
 
         console.log(`${!currentState ? '展开' : '折叠'}菜单: ${menuId}`);

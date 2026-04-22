@@ -279,6 +279,43 @@ const ElementKeyboard = {
             }
         };
         document.addEventListener('keydown', escHandler);
+
+        // 全屏状态下拦截 Ctrl+S，触发画布编辑器的保存
+        const saveHandler = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                e.stopPropagation();
+                Storage.save();
+            }
+        };
+        // 在遮罩层上拦截（焦点在工具栏等位置时生效）
+        overlay.addEventListener('keydown', saveHandler, true);
+        // 在父 document 上也拦截（全屏遮罩激活时，焦点可能仍在父页面）
+        document.addEventListener('keydown', saveHandler, true);
+
+        // iframe 加载完成后，向 iframe 内部注入 Ctrl+S 拦截
+        fullscreenIframe.addEventListener('load', () => {
+            try {
+                const iframeDoc = fullscreenIframe.contentDocument || fullscreenIframe.contentWindow.document;
+                iframeDoc.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        Storage.save();
+                    }
+                }, true);
+            } catch (err) {
+                // 跨域 iframe 无法访问，忽略
+                console.warn('无法为跨域 iframe 注入快捷键:', err);
+            }
+        });
+
+        // 遮罩关闭时清理 saveHandler
+        const originalRemove = overlay.remove.bind(overlay);
+        overlay.remove = function () {
+            document.removeEventListener('keydown', saveHandler, true);
+            originalRemove();
+        };
     },
 
     // 保存全屏状态到 localStorage

@@ -11,6 +11,11 @@ const CanvasViewEvents = {
 
         // 鼠标滚轮事件（视图拖动 + 缩放）
         canvasWrapper.addEventListener('wheel', (e) => {
+            // 预览模式：不拦截滚轮事件，让iframe自然滚动
+            if (CanvasView.isPreviewMode) {
+                return;
+            }
+
             // 检查是否在iframe内部
             const isInsideIframe = e.target.closest('.canvas-element.page-element iframe');
             if (isInsideIframe) {
@@ -42,6 +47,10 @@ const CanvasViewEvents = {
 
         // 鼠标按下（开始拖动视图或元素）
         canvasWrapper.addEventListener('mousedown', (e) => {
+            // 预览模式：不拦截鼠标事件，让iframe自然交互
+            if (CanvasView.isPreviewMode) {
+                return;
+            }
             this.handleMouseDown(e, canvasWrapper);
         });
 
@@ -51,7 +60,7 @@ const CanvasViewEvents = {
         });
 
         // 鼠标释放
-        document.addEventListener('mouseup', () => {
+        document.addEventListener('mouseup', (e) => {
             this.handleMouseUp(canvasWrapper);
         });
 
@@ -60,15 +69,40 @@ const CanvasViewEvents = {
             this.handleGlobalWheel(e);
         }, { passive: false, capture: true });
 
-        // 额外的全局保护 - 捕获所有可能的缩放事件
+        // 阻止浏览器缩放快捷键
         document.addEventListener('keydown', (e) => {
-            // 阻止Ctrl+、Ctrl-、Ctrl0等浏览器缩放快捷键
             if (e.ctrlKey && (e.key === '+' || e.key === '=' || e.key === '-' || e.key === '0')) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
             }
+            // Escape 关闭预览
+            if (e.key === 'Escape') {
+                this.closePreview();
+            }
+            // Q键：选中页面后进入预览模式
+            if (e.key === 'q' || e.key === 'Q') {
+                if (!CanvasView.isPreviewMode) {
+                    // 获取当前选中的元素
+                    const selectedId = ElementManager.state.selectedElement ||
+                        (ElementManager.state.selectedElements.length > 0 ? ElementManager.state.selectedElements[0] : null);
+                    if (selectedId) {
+                        const element = ElementManager.getElement(selectedId);
+                        if (element && element.type === 'page') {
+                            const name = PageLibrary.getPageName(element.pageId);
+                            this.openPreview(name, selectedId);
+                        }
+                    }
+                }
+            }
         }, { capture: true });
+
+        // 监听来自iframe的退出预览消息（焦点在iframe内时Escape无法冒泡到父页面）
+        window.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'prototype-escape-preview') {
+                this.closePreview();
+            }
+        });
     },
 
     // 处理鼠标按下事件
@@ -281,11 +315,6 @@ const CanvasViewEvents = {
             alignmentManager.clearGuideLines();
             CanvasView.allElementBounds = [];
 
-            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'auto';
-            });
-
             HistoryManager.saveState();
         }
 
@@ -368,5 +397,100 @@ const CanvasViewEvents = {
         } else {
             canvasWrapper.style.cursor = 'default';
         }
+    },
+
+    // ========== 原位预览功能 ==========
+
+    // 保存预览前的状态，用于恢复
+    _previewElementId: null,
+
+    // 进入原位预览模式（保持原样，只去掉overlay让iframe可交互）
+    openPreview(pageTitle, elementId) {
+        // 如果已经在预览模式，先关闭
+        if (CanvasView.isPreviewMode) {
+            this.closePreview();
+            return;
+        }
+
+        const pageDiv = document.querySelector(`[data-element-id="${elementId}"]`);
+        if (!pageDiv) return;
+
+        // 1. 进入预览模式
+        CanvasView.isPreviewMode = true;
+        this._previewElementId = elementId;
+
+        // 2. 不改变 zoom/pan，只隐藏 overlay 让 iframe 可交互
+        const overlay = pageDiv.querySelector('.page-click-overlay');
+        if (overlay) overlay.style.display = 'none';
+        const iframe = pageDiv.querySelector('iframe');
+        if (iframe) iframe.style.pointerEvents = 'auto';
+
+        // 3. 隐藏预览按钮和删除按钮（预览中不需要）
+        pageDiv.querySelectorAll('.preview-btn, .delete-btn').forEach(btn => {
+            btn.style.display = 'none';
+        });
+
+        // 4. 显示预览工具栏
+        this._showPreviewToolbar(pageTitle);
+    },
+
+    // 显示预览工具栏
+    _showPreviewToolbar(pageTitle) {
+        // 如果已存在则移除
+        document.getElementById('preview-toolbar')?.remove();
+
+        const toolbar = document.createElement('div');
+        toolbar.id = 'preview-toolbar';
+        toolbar.style.cssText = `
+            position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+            background: #fff; padding: 6px 20px; border-radius: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15); z-index: 10000;
+            display: flex; align-items: center; gap: 12px; font-size: 13px;
+        `;
+
+        const label = document.createElement('span');
+        label.style.color = '#333';
+        label.innerHTML = `<i class="fas fa-eye" style="color:#409EFF;margin-right:4px;"></i>预览: ${pageTitle || '页面'}`;
+
+        const closeBtn = document.createElement('button');
+        closeBtn.style.cssText = `
+            border: none; background: #f56c6c; color: #fff; padding: 4px 14px;
+            border-radius: 12px; cursor: pointer; font-size: 12px;
+        `;
+        closeBtn.textContent = '退出预览';
+        closeBtn.addEventListener('click', () => this.closePreview());
+
+        toolbar.appendChild(label);
+        toolbar.appendChild(closeBtn);
+        document.body.appendChild(toolbar);
+    },
+
+    // 退出原位预览模式
+    closePreview() {
+        if (!CanvasView.isPreviewMode) return;
+
+        const pageDiv = document.querySelector(`[data-element-id="${this._previewElementId}"]`);
+
+        // 1. 退出预览模式
+        CanvasView.isPreviewMode = false;
+
+        // 2. 恢复 overlay 和 iframe 的交互状态
+        if (pageDiv) {
+            const overlay = pageDiv.querySelector('.page-click-overlay');
+            if (overlay) overlay.style.display = '';
+            const iframe = pageDiv.querySelector('iframe');
+            if (iframe) iframe.style.pointerEvents = 'none';
+
+            // 恢复按钮
+            pageDiv.querySelectorAll('.preview-btn, .delete-btn').forEach(btn => {
+                btn.style.display = '';
+            });
+        }
+
+        // 3. 移除预览工具栏
+        document.getElementById('preview-toolbar')?.remove();
+
+        // 4. 清理状态
+        this._previewElementId = null;
     }
 };

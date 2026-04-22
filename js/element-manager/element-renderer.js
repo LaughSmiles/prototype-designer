@@ -69,33 +69,33 @@ const ElementRenderer = {
         iframe.style.marginTop = '30px';
         iframe.style.border = 'none';
         iframe.style.overflow = 'auto';
-        iframe.style.pointerEvents = 'auto';
+        iframe.style.pointerEvents = 'none';
         div.appendChild(iframe);
 
-        // iframe缩放保护
-        iframe.addEventListener('load', () => {
-            try {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                iframeDoc.addEventListener('wheel', (e) => {
-                    if (e.ctrlKey) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const newEvent = new WheelEvent('wheel', {
-                            deltaX: e.deltaX,
-                            deltaY: e.deltaY,
-                            deltaZ: e.deltaZ,
-                            deltaMode: e.deltaMode,
-                            ctrlKey: e.ctrlKey,
-                            bubbles: true,
-                            cancelable: true
-                        });
-                        iframe.dispatchEvent(newEvent);
-                    }
-                }, { passive: false });
-            } catch (error) {
-                console.warn('⚠️ 无法访问iframe内部:', error);
-            }
+        // 透明点击遮罩层：覆盖在 iframe 上方，捕获鼠标事件并正常冒泡
+        const clickOverlay = document.createElement('div');
+        clickOverlay.className = 'page-click-overlay';
+        clickOverlay.style.position = 'absolute';
+        clickOverlay.style.left = '0';
+        clickOverlay.style.top = '30px';
+        clickOverlay.style.width = '100%';
+        clickOverlay.style.height = 'calc(100% - 30px)';
+        clickOverlay.style.cursor = 'inherit';
+        div.appendChild(clickOverlay);
+
+        // 预览按钮（悬停时显示，点击打开全屏预览）
+        const previewBtn = document.createElement('div');
+        previewBtn.className = 'preview-btn';
+        previewBtn.innerHTML = '<i class="fas fa-eye"></i>';
+        previewBtn.title = '全屏预览此页面';
+        previewBtn.style.pointerEvents = 'auto';
+        previewBtn.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            ev.preventDefault();
+            const name = PageLibrary.getPageName(element.pageId);
+            CanvasViewEvents.openPreview(name, element.id);
         });
+        div.appendChild(previewBtn);
 
         // 右键菜单
         div.addEventListener('contextmenu', (e) => {

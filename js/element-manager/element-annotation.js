@@ -415,7 +415,7 @@ const ElementAnnotation = {
 
                 const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
                 iframes.forEach(iframe => {
-                    iframe.style.pointerEvents = 'auto';
+                    iframe.style.pointerEvents = 'none';
                 });
 
                 HistoryManager.saveState();

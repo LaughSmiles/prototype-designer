@@ -26,6 +26,9 @@ const CanvasView = {
     boxSelectionStart: { x: 0, y: 0 },
     boxSelectionEnd: { x: 0, y: 0 },
 
+    // 预览模式状态
+    isPreviewMode: false,
+
     // 缩放限制
     MIN_ZOOM: 0.1,
     MAX_ZOOM: 5.0,
