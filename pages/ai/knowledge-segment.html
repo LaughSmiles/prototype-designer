@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库分段 - 芋道管理后台</title>
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../css/sidebar-menu.css">
+    <script src="../../lib/js/tailwindcss.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+        .menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #909399; margin-bottom: 12px; }
+        .breadcrumb a { color: #606266; text-decoration: none; }
+        .search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+        .search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .search-item { display: flex; flex-direction: column; gap: 4px; }
+        .search-item label { font-size: 13px; color: #606266; }
+        .form-input { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; width: 180px; outline: none; }
+        .form-select { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; background: #fff; width: 180px; outline: none; }
+        .table-card { background: #fff; border-radius: 4px; padding: 16px; }
+        .toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ebeef5; font-size: 13px; }
+        th { background: #fafafa; color: #909399; font-weight: 500; white-space: nowrap; }
+        tr:hover { background: #f5f7fa; }
+        .btn { padding: 7px 15px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #dcdfe6; background: #fff; color: #606266; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+        .btn-text { border: none; background: none; color: #409eff; padding: 0 4px; cursor: pointer; font-size: 13px; }
+        .btn-text.danger { color: #f56c6c; }
+        .status-tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; display: inline-block; }
+        .status-success { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
+        .status-danger { background: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2; }
+        .status-info { background: #ecf5ff; color: #409eff; border: 1px solid #d9ecff; }
+        .status-warning { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
+        .pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 13px; color: #606266; }
+        .pagination .page-btns { display: flex; gap: 4px; }
+        .pagination .page-btn { padding: 4px 10px; border: 1px solid #dcdfe6; border-radius: 3px; cursor: pointer; font-size: 13px; background: #fff; }
+        .pagination .page-btn.active { background: #409eff; color: #fff; border-color: #409eff; }
+        .content-preview { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #606266; font-size: 12px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div><span class="logo-text">芋道管理后台</span></div>
+    <div id="sidebar-menu"></div>
+    <script src="../../menu/menu.js"></script>
+    <script src="../../js/menu/menu-data.js"></script>
+    <script src="../../js/menu/menu-render.js"></script>
+    <script src="../../js/menu/menu-interaction.js"></script>
+    <script src="../../js/menu/menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try { await SidebarMenu.init('sidebar-menu'); } catch (error) { console.error('菜单加载失败:', error); }
+        });
+    </script>
+</div>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-collapse" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 16px; color: #606266; cursor: pointer;"></i></span>
+            <span style="font-size: 13px; color: #606266;">AI 模块 / 知识库分段</span>
+        </div>
+        <div class="topbar-right">
+            <span title="全屏" style="cursor: pointer;"><i class="fas fa-expand" style="font-size: 14px; color: #606266;"></i></span>
+            <span title="搜索" style="cursor: pointer;"><i class="fas fa-search" style="font-size: 14px; color: #606266;"></i></span>
+            <div style="position: relative; cursor: pointer;">
+                <i class="fas fa-bell" style="font-size: 16px; color: #606266;"></i>
+                <span style="position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px;">3</span>
+            </div>
+            <div class="dropdown">
+                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span style="font-size: 13px; color: #606266;">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="main-content">
+        <div class="breadcrumb">
+            <a href="../home.html"><i class="fas fa-home"></i></a>
+            <span>/</span>
+            <span>AI 模块</span>
+            <span>/</span>
+            <span>知识库分段</span>
+        </div>
+
+        <!-- 搜索区 -->
+        <div class="search-card">
+            <div class="search-row">
+                <div class="search-item">
+                    <label>文档名称</label>
+                    <input type="text" class="form-input" placeholder="请输入文档名称">
+                </div>
+                <div class="search-item">
+                    <label>关键词</label>
+                    <input type="text" class="form-input" placeholder="请输入搜索关键词">
+                </div>
+                <button class="btn btn-primary"><i class="fas fa-search"></i> 搜索</button>
+                <button class="btn"><i class="fas fa-redo"></i> 重置</button>
+            </div>
+        </div>
+
+        <!-- 表格区 -->
+        <div class="table-card">
+            <div class="toolbar">
+                <button class="btn"><i class="fas fa-download"></i> 导出</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>编号</th>
+                        <th>文档编号</th>
+                        <th>所属文档</th>
+                        <th>关键词</th>
+                        <th>内容</th>
+                        <th>字符数</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>8001</td>
+                        <td>3001</td>
+                        <td>Spring Boot 快速入门.md</td>
+                        <td>Spring Boot, 自动配置, Starter</td>
+                        <td><span class="content-preview">Spring Boot 通过自动配置机制，能够根据项目中引入的依赖自动完成 Bean 的配置和注册...</span></td>
+                        <td>512</td>
+                        <td><span class="status-tag status-success">已启用</span></td>
+                        <td>2026-04-15 10:00:00</td>
+                        <td>
+                            <button class="btn-text">查看</button>
+                            <button class="btn-text danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>8002</td>
+                        <td>3001</td>
+                        <td>Spring Boot 快速入门.md</td>
+                        <td>RESTful, Controller, 请求映射</td>
+                        <td><span class="content-preview">使用 @RestController 注解可以快速创建 RESTful 风格的控制器，配合 @RequestMapping...</span></td>
+                        <td>387</td>
+                        <td><span class="status-tag status-success">已启用</span></td>
+                        <td>2026-04-15 10:00:00</td>
+                        <td>
+                            <button class="btn-text">查看</button>
+                            <button class="btn-text danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>8003</td>
+                        <td>3002</td>
+                        <td>MyBatis Plus 使用手册.pdf</td>
+                        <td>MyBatis Plus, 分页查询, 条件构造</td>
+                        <td><span class="content-preview">MyBatis Plus 提供了强大的条件构造器 QueryWrapper，可以方便地实现动态 SQL 查询条件...</span></td>
+                        <td>624</td>
+                        <td><span class="status-tag status-success">已启用</span></td>
+                        <td>2026-04-14 16:30:00</td>
+                        <td>
+                            <button class="btn-text">查看</button>
+                            <button class="btn-text danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>8004</td>
+                        <td>3002</td>
+                        <td>MyBatis Plus 使用手册.pdf</td>
+                        <td>代码生成器, 模板引擎, 自动生成</td>
+                        <td><span class="content-preview">AutoGenerator 是 MyBatis Plus 的代码生成器，可以快速生成 Entity、Mapper、Service...</span></td>
+                        <td>456</td>
+                        <td><span class="status-tag status-success">已启用</span></td>
+                        <td>2026-04-14 16:30:00</td>
+                        <td>
+                            <button class="btn-text">查看</button>
+                            <button class="btn-text danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>8005</td>
+                        <td>3003</td>
+                        <td>数据库表结构设计.xlsx</td>
+                        <td>索引设计, 性能优化, 慢查询</td>
+                        <td><span class="content-preview">索引设计需要遵循最左前缀原则，避免在索引列上使用函数操作，合理使用联合索引...</span></td>
+                        <td>298</td>
+                        <td><span class="status-tag status-warning">处理中</span></td>
+                        <td>2026-04-14 14:00:00</td>
+                        <td>
+                            <button class="btn-text">查看</button>
+                            <button class="btn-text danger">删除</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>8006</td>
+                        <td>3005</td>
+                        <td>Docker 部署最佳实践.txt</td>
+                        <td>Dockerfile, 多阶段构建, 镜像优化</td>
+                        <td><span class="content-preview">使用多阶段构建可以有效减小 Docker 镜像体积，首先在构建阶段编译应用程序，然后...</span></td>
+                        <td>445</td>
+                        <td><span class="status-tag status-success">已启用</span></td>
+                        <td>2026-04-13 09:45:00</td>
+                        <td>
+                            <button class="btn-text">查看</button>
+                            <button class="btn-text danger">删除</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pagination">
+                <span>共 6 条</span>
+                <div class="page-btns">
+                    <span class="page-btn"><i class="fas fa-chevron-left"></i></span>
+                    <span class="page-btn active">1</span>
+                    <span class="page-btn"><i class="fas fa-chevron-right"></i></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

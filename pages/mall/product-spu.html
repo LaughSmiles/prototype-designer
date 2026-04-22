@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品管理 - 芋道管理后台</title>
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../lib/tailwindcss/tailwind.min.css">
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+.sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+.sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+.menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
+.menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+.menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.menu-item.active { color: #fff; background: #409eff; }
+.menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+.menu-item span { margin-left: 10px; }
+.topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+.main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+.search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+.search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.search-item { display: flex; flex-direction: column; gap: 4px; }
+.search-item label { font-size: 13px; color: #606266; }
+.form-input { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; width: 180px; outline: none; }
+.form-input:focus { border-color: #409eff; }
+.form-select { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; background: #fff; width: 180px; outline: none; }
+.search-btns { display: flex; gap: 8px; align-items: flex-end; }
+.table-card { background: #fff; border-radius: 4px; padding: 16px; }
+.toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ebeef5; font-size: 13px; }
+th { background: #fafafa; color: #909399; font-weight: 500; white-space: nowrap; }
+tr:hover { background: #f5f7fa; }
+.btn { padding: 7px 15px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #dcdfe6; background: #fff; color: #606266; display: inline-flex; align-items: center; gap: 4px; }
+.btn:hover { border-color: #409eff; color: #409eff; }
+.btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+.btn-text { border: none; background: none; color: #409eff; padding: 0 4px; cursor: pointer; font-size: 13px; }
+.btn-text.danger { color: #f56c6c; }
+.status-tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; display: inline-block; }
+.status-success { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
+.status-danger { background: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2; }
+.status-info { background: #ecf5ff; color: #409eff; border: 1px solid #d9ecff; }
+.status-warning { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
+.pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 13px; color: #606266; }
+.pagination .page-btns { display: flex; gap: 4px; }
+.pagination .page-btn { padding: 4px 10px; border: 1px solid #dcdfe6; border-radius: 3px; cursor: pointer; font-size: 13px; background: #fff; }
+.pagination .page-btn.active { background: #409eff; color: #fff; border-color: #409eff; }</style>
+<link rel="stylesheet" href="../../css/sidebar-menu.css">
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div>
+            <span class="logo-text">芋道管理后台</span>
+        </div>
+        <div id="sidebar-menu"></div>
+        <script src="../../menu/menu.js"></script>
+        <script src="../../js/menu/menu-data.js"></script>
+        <script src="../../js/menu/menu-render.js"></script>
+        <script src="../../js/menu/menu-interaction.js"></script>
+        <script src="../../js/menu/menu.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', async function() {
+                try { await SidebarMenu.init('sidebar-menu'); } catch (error) {
+                    console.error('菜单加载失败:', error);
+                }
+            });
+        </script>
+    </div>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-collapse" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 16px; color: #606266; cursor: pointer;"></i></span>
+            <span style="font-size: 13px; color: #606266;">商城管理 / 商品管理 / 商品列表</span>
+        </div>
+        <div class="topbar-right">
+            <span title="全屏" style="cursor: pointer;"><i class="fas fa-expand" style="font-size: 14px; color: #606266;"></i></span>
+            <span title="搜索" style="cursor: pointer;"><i class="fas fa-search" style="font-size: 14px; color: #606266;"></i></span>
+            <div style="position: relative; cursor: pointer;">
+                <i class="fas fa-bell" style="font-size: 16px; color: #606266;"></i>
+                <span style="position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px;">3</span>
+            </div>
+            <div class="dropdown">
+                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span style="font-size: 13px; color: #606266;">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="search-card">
+            <div class="search-row">
+                <div class="search-item"><label>商品名称</label><input type="text" class="form-input" placeholder="请输入商品名称"></div>
+                <div class="search-item"><label>商品分类</label><select class="form-select"><option value="">全部</option><option>数码电子</option><option>服装鞋帽</option><option>食品饮料</option></select></div>
+                <div class="search-item"><label>创建时间</label><input type="date" class="form-input" style="width:160px;" placeholder="开始日期"> <span style="line-height:32px;">~</span> <input type="date" class="form-input" style="width:160px;" placeholder="结束日期"></div>
+                <div class="search-btns">
+                    <button class="btn btn-primary"><i class="fas fa-search"></i> 搜索</button>
+                    <button class="btn"><i class="fas fa-redo"></i> 重置</button>
+                    <button class="btn btn-primary"><i class="fas fa-plus"></i> 新增</button>
+                    <button class="btn" style="background:#67c23a;color:#fff;border-color:#67c23a;"><i class="fas fa-download"></i> 导出</button>
+                </div>
+            </div>
+        </div>
+        <div class="table-card">
+            <div class="tabs" style="display:flex;border-bottom:2px solid #e4e7ed;margin-bottom:12px;">
+                <div class="tab-item active" style="padding:8px 16px;cursor:pointer;font-size:14px;color:#409eff;border-bottom:2px solid #409eff;margin-bottom:-2px;">出售中(56)</div>
+                <div class="tab-item" style="padding:8px 16px;cursor:pointer;font-size:14px;color:#606266;">仓库中(32)</div>
+                <div class="tab-item" style="padding:8px 16px;cursor:pointer;font-size:14px;color:#606266;">已售罄(18)</div>
+                <div class="tab-item" style="padding:8px 16px;cursor:pointer;font-size:14px;color:#606266;">警戒库存(12)</div>
+                <div class="tab-item" style="padding:8px 16px;cursor:pointer;font-size:14px;color:#606266;">回收站(8)</div>
+            </div>
+            <table><thead><tr><th style="width:40px;"></th><th>商品编号</th><th>商品信息</th><th>价格</th><th>销量</th><th>库存</th><th>排序</th><th>销售状态</th><th>创建时间</th><th>操作</th></tr></thead>
+            <tbody>
+                <tr><td style="text-align:center;color:#409eff;cursor:pointer;"><i class="fas fa-chevron-right"></i></td><td>1024</td><td><div style="display:flex;align-items:center;gap:8px;"><img src="https://via.placeholder.com/50x50" style="width:50px;height:50px;border-radius:4px;object-fit:cover;"><span>iPhone 16 Pro Max</span></div></td><td>¥9,999.00</td><td>1,205</td><td>2,350</td><td>0</td><td><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;font-size:12px;border-radius:3px;background:#409eff;color:#fff;">上架</span></td><td>2026-03-15 10:00:00</td><td><a class="btn-text">详情</a><a class="btn-text">修改</a><a class="btn-text danger">回收</a></td></tr>
+                <tr><td style="text-align:center;color:#409eff;cursor:pointer;"><i class="fas fa-chevron-right"></i></td><td>1025</td><td><div style="display:flex;align-items:center;gap:8px;"><img src="https://via.placeholder.com/50x50" style="width:50px;height:50px;border-radius:4px;object-fit:cover;"><span>MacBook Air M4</span></div></td><td>¥8,999.00</td><td>856</td><td>1,800</td><td>0</td><td><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;font-size:12px;border-radius:3px;background:#409eff;color:#fff;">上架</span></td><td>2026-03-10 14:30:00</td><td><a class="btn-text">详情</a><a class="btn-text">修改</a><a class="btn-text danger">回收</a></td></tr>
+                <tr><td style="text-align:center;color:#409eff;cursor:pointer;"><i class="fas fa-chevron-right"></i></td><td>1026</td><td><div style="display:flex;align-items:center;gap:8px;"><img src="https://via.placeholder.com/50x50" style="width:50px;height:50px;border-radius:4px;object-fit:cover;"><span>Nike Air Max 90</span></div></td><td>¥899.00</td><td>3,420</td><td>5,200</td><td>1</td><td><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;font-size:12px;border-radius:3px;background:#909399;color:#fff;">下架</span></td><td>2026-02-20 09:00:00</td><td><a class="btn-text">详情</a><a class="btn-text">修改</a><a class="btn-text danger">回收</a></td></tr>
+                <tr><td style="text-align:center;color:#409eff;cursor:pointer;"><i class="fas fa-chevron-right"></i></td><td>1027</td><td><div style="display:flex;align-items:center;gap:8px;"><img src="https://via.placeholder.com/50x50" style="width:50px;height:50px;border-radius:4px;object-fit:cover;"><span>三只松鼠坚果礼盒</span></div></td><td>¥168.00</td><td>8,900</td><td>0</td><td>2</td><td><span class="status-tag info">回收站</span></td><td>2026-01-15 16:00:00</td><td><a class="btn-text">详情</a><a class="btn-text">修改</a><a class="btn-text danger">删除</a><a class="btn-text">恢复</a></td></tr>
+            </tbody>
+            </table>
+            <div class="pagination"><span>共 156 条记录</span><div class="page-btns"><span class="page-btn"><i class="fas fa-chevron-left"></i></span><span class="page-btn active">1</span><span class="page-btn">2</span><span class="page-btn">3</span><span class="page-btn"><i class="fas fa-chevron-right"></i></span></div></div>
+        </div>
+    </div>
+</body>
+</html>

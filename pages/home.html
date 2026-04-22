@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - 芋道管理后台</title>
+    <script src="../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../lib/css/all.min.css">
+    <link rel="stylesheet" href="../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        /* 侧边栏 */
+        .sidebar { width: 210px; height: 100vh; background: #001529; transition: width 0.3s; overflow: hidden; position: fixed; left: 0; top: 0; z-index: 100; }
+        .sidebar.collapsed { width: 64px; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo img, .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; white-space: nowrap; overflow: hidden; }
+        .sidebar.collapsed .logo-text { display: none; }
+        .menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; white-space: nowrap; overflow: hidden; }
+        .sidebar.collapsed .menu-group-title { display: none; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; font-size: 14px; }
+        .sidebar.collapsed .menu-item span { display: none; }
+        .menu-sub { overflow: hidden; }
+        .menu-sub .menu-item { padding-left: 46px; font-size: 13px; }
+        /* 顶栏 */
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; transition: left 0.3s; }
+        .topbar.expanded { left: 64px; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .topbar-right .notification { position: relative; cursor: pointer; }
+        .topbar-right .notification .badge { position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px; }
+        .topbar-right .user-info { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+        .topbar-right .user-info:hover { background: #f5f5f5; }
+        /* 内容区 */
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); transition: margin-left 0.3s; }
+        .main-content.expanded { margin-left: 64px; }
+        /* 标签页 */
+        .tabs-bar { display: flex; align-items: center; background: #fff; border-radius: 4px; padding: 4px 8px; margin-bottom: 12px; gap: 4px; overflow-x: auto; }
+        .tab-item { display: flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer; color: #606266; white-space: nowrap; }
+        .tab-item:hover { background: #f5f5f5; }
+        .tab-item.active { background: #409eff; color: #fff; }
+        .tab-item .close-btn { margin-left: 4px; font-size: 10px; opacity: 0.7; }
+        .tab-item .close-btn:hover { opacity: 1; }
+        /* 统计卡片 */
+        .stat-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .stat-card .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .stat-card .stat-value { font-size: 24px; font-weight: 700; color: #303133; }
+        .stat-card .stat-label { font-size: 13px; color: #909399; margin-top: 2px; }
+        /* 快捷入口 */
+        .shortcut-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; padding: 16px; border-radius: 8px; transition: all 0.2s; }
+        .shortcut-item:hover { background: #f0f7ff; transform: translateY(-2px); }
+        .shortcut-item .shortcut-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; }
+        /* 项目卡片 */
+        .project-card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s; }
+        .project-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.12); transform: translateY(-1px); }
+        .project-card .project-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; flex-shrink: 0; }
+        /* 用户头像 */
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+        /* 面包屑 */
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #909399; margin-bottom: 12px; }
+        .breadcrumb a { color: #606266; text-decoration: none; }
+        .breadcrumb a:hover { color: #409eff; }
+    </style>
+</head>
+<body>
+        <!-- 左侧菜单 -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div>
+                <span class="logo-text">芋道管理后台</span>
+            </div>
+            <div id="sidebar-menu"></div>
+            <script src="../menu/menu.js"></script>
+            <script src="../js/menu/menu-data.js"></script>
+            <script src="../js/menu/menu-render.js"></script>
+            <script src="../js/menu/menu-interaction.js"></script>
+            <script src="../js/menu/menu.js"></script>
+            <script>
+                document.addEventListener('DOMContentLoaded', async function() {
+                    try { await SidebarMenu.init('sidebar-menu'); } catch (error) {
+                        console.error('菜单加载失败:', error);
+                    }
+                });
+            </script>
+        </div>
+    <!-- 顶部导航栏 -->
+    <div class="topbar" id="topbar">
+        <div class="topbar-left">
+            <button onclick="toggleSidebar()" class="text-gray-500 hover:text-gray-700 text-lg p-1"><i class="fas fa-bars"></i></button>
+            <div class="breadcrumb">
+                <a href="home.html"><i class="fas fa-home"></i></a>
+                <span>/</span>
+                <span>首页</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="relative">
+                <input type="text" placeholder="搜索菜单..." class="w-48 h-8 pl-8 pr-3 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            </div>
+            <div class="notification" onclick="toggleNotify()">
+                <i class="fas fa-bell text-gray-500 text-lg"></i>
+                <span class="badge">5</span>
+            </div>
+            <button class="text-gray-500 hover:text-gray-700"><i class="fas fa-expand text-sm"></i></button>
+            <div class="user-info" onclick="toggleUserMenu()">
+                <div class="avatar">A</div>
+                <span class="text-sm text-gray-700">Admin</span>
+                <i class="fas fa-caret-down text-gray-400 text-xs"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content" id="mainContent">
+        <!-- 标签页栏 -->
+        <div class="tabs-bar">
+            <div class="tab-item active"><i class="fas fa-home" style="font-size:11px"></i> 首页</div>
+            <div class="tab-item">系统管理 <span class="close-btn"><i class="fas fa-times"></i></span></div>
+            <div class="tab-item">用户管理 <span class="close-btn"><i class="fas fa-times"></i></span></div>
+        </div>
+
+        <!-- 欢迎卡片 -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff;">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold mb-2">早上好，Admin</h2>
+                    <p class="text-white text-opacity-80">芋道管理后台是一套全部开源的快速开发平台，无需授权即可使用</p>
+                </div>
+                <div class="text-6xl opacity-30"><i class="fas fa-rocket"></i></div>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-4 gap-4 mb-4">
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="stat-value">2,340</div>
+                        <div class="stat-label">访问量</div>
+                    </div>
+                    <div class="stat-icon" style="background: #ecf5ff; color: #409eff;"><i class="fas fa-eye"></i></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="stat-value">40</div>
+                        <div class="stat-label">项目数</div>
+                    </div>
+                    <div class="stat-icon" style="background: #f0f9eb; color: #67c23a;"><i class="fas fa-folder-open"></i></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="stat-value">10</div>
+                        <div class="stat-label">待办事项</div>
+                    </div>
+                    <div class="stat-icon" style="background: #fdf6ec; color: #e6a23c;"><i class="fas fa-clipboard-list"></i></div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="stat-value">256</div>
+                        <div class="stat-label">消息</div>
+                    </div>
+                    <div class="stat-icon" style="background: #fef0f0; color: #f56c6c;"><i class="fas fa-envelope"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mb-4">
+            <!-- 快捷入口 -->
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <h3 class="text-base font-semibold text-gray-800 mb-4">快捷入口</h3>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="shortcut-item">
+                        <div class="shortcut-icon" style="background: #409eff;"><i class="fas fa-home"></i></div>
+                        <span class="text-xs text-gray-600">系统首页</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-icon" style="background: #ff6b6b;"><i class="fas fa-shopping-bag"></i></div>
+                        <span class="text-xs text-gray-600">商城中心</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-icon" style="background: #7c3aed;"><i class="fas fa-brain"></i></div>
+                        <span class="text-xs text-gray-600">AI 大模型</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-icon" style="background: #3fb27f;"><i class="fas fa-cogs"></i></div>
+                        <span class="text-xs text-gray-600">ERP 系统</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-icon" style="background: #4daf1b;"><i class="fas fa-users"></i></div>
+                        <span class="text-xs text-gray-600">CRM 系统</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <div class="shortcut-icon" style="background: #1a73e8;"><i class="fas fa-microchip"></i></div>
+                        <span class="text-xs text-gray-600">IoT 物联网</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技术栈 -->
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <h3 class="text-base font-semibold text-gray-800 mb-4">技术栈</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center"><i class="fab fa-vuejs text-green-600"></i></div>
+                        <div><div class="text-sm font-medium">Vue 3</div><div class="text-xs text-gray-400">前端框架</div></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center"><i class="fab fa-elementor text-blue-600"></i></div>
+                        <div><div class="text-sm font-medium">Element Plus</div><div class="text-xs text-gray-400">UI 组件库</div></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center"><i class="fas fa-leaf text-red-500"></i></div>
+                        <div><div class="text-sm font-medium">Spring Boot 3</div><div class="text-xs text-gray-400">后端框架</div></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center"><i class="fas fa-cloud text-purple-600"></i></div>
+                        <div><div class="text-sm font-medium">Spring Cloud</div><div class="text-xs text-gray-400">微服务架构</div></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center"><i class="fas fa-database text-yellow-600"></i></div>
+                        <div><div class="text-sm font-medium">MySQL / Redis</div><div class="text-xs text-gray-400">数据存储</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 通知公告 -->
+            <div class="bg-white rounded-lg shadow-sm p-4">
+                <h3 class="text-base font-semibold text-gray-800 mb-4">通知公告</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <div class="avatar mt-0.5" style="width:28px;height:28px;font-size:10px;">芋</div>
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-700">系统支持 JDK 8/17/21，Vue 2/3</div>
+                            <div class="text-xs text-gray-400 mt-1"><i class="far fa-clock mr-1"></i>2026-04-21</div>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <div class="avatar mt-0.5" style="width:28px;height:28px;font-size:10px;background:#67c23a;">技</div>
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-700">后端提供 Spring Boot 双架构</div>
+                            <div class="text-xs text-gray-400 mt-1"><i class="far fa-clock mr-1"></i>2026-04-20</div>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <div class="avatar mt-0.5" style="width:28px;height:28px;font-size:10px;background:#e6a23c;">开</div>
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-700">全部开源，个人与企业可 100% 使用</div>
+                            <div class="text-xs text-gray-400 mt-1"><i class="far fa-clock mr-1"></i>2026-04-19</div>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3 p-2 rounded hover:bg-gray-50 cursor-pointer">
+                        <div class="avatar mt-0.5" style="width:28px;height:28px;font-size:10px;background:#f56c6c;">企</div>
+                        <div class="flex-1">
+                            <div class="text-sm text-gray-700">国内使用最广泛的快速开发平台</div>
+                            <div class="text-xs text-gray-400 mt-1"><i class="far fa-clock mr-1"></i>2026-04-18</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 项目列表 -->
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <h3 class="text-base font-semibold text-gray-800 mb-4">开源项目</h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="project-card">
+                    <div class="project-icon" style="background: #6DB33F;"><i class="fas fa-leaf"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-800 truncate">ruoyi-vue-pro</div>
+                        <div class="text-xs text-gray-400 mt-1">Spring Boot 单体架构</div>
+                    </div>
+                    <i class="fas fa-external-link-alt text-gray-300 text-xs"></i>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon" style="background: #409EFF;"><i class="fab fa-vuejs"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-800 truncate">yudao-ui-admin-vue3</div>
+                        <div class="text-xs text-gray-400 mt-1">Vue3 + Element Plus 管理后台</div>
+                    </div>
+                    <i class="fas fa-external-link-alt text-gray-300 text-xs"></i>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon" style="background: #ff4d4f;"><i class="fas fa-mobile-alt"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-800 truncate">yudao-ui-mall-uniapp</div>
+                        <div class="text-xs text-gray-400 mt-1">uni-app 商城手机端</div>
+                    </div>
+                    <i class="fas fa-external-link-alt text-gray-300 text-xs"></i>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon" style="background: #1890ff;"><i class="fas fa-cloud"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-800 truncate">yudao-cloud</div>
+                        <div class="text-xs text-gray-400 mt-1">Spring Cloud 微服务架构</div>
+                    </div>
+                    <i class="fas fa-external-link-alt text-gray-300 text-xs"></i>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon" style="background: #e18525;"><i class="fab fa-angular"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-800 truncate">yudao-ui-admin-vben</div>
+                        <div class="text-xs text-gray-400 mt-1">Vue3 + Ant Design Vue 管理后台</div>
+                    </div>
+                    <i class="fas fa-external-link-alt text-gray-300 text-xs"></i>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon" style="background: #2979ff;"><i class="fas fa-tablet-alt"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-semibold text-gray-800 truncate">yudao-ui-admin-uniapp</div>
+                        <div class="text-xs text-gray-400 mt-1">uni-app 管理手机端</div>
+                    </div>
+                    <i class="fas fa-external-link-alt text-gray-300 text-xs"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 版权信息 -->
+        <div class="text-center text-xs text-gray-400 mt-4">
+            © 2024-2026 芋道管理后台 - All Rights Reserved
+        </div>
+    </div>
+
+    <script>
+        // 侧边栏折叠
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+            document.getElementById('topbar').classList.toggle('expanded');
+            document.getElementById('mainContent').classList.toggle('expanded');
+        }
+
+        // 通知面板
+        function toggleNotify() {
+            alert('通知面板（原型演示）');
+        }
+
+        // 用户菜单
+        function toggleUserMenu() {
+            if (confirm('是否退出登录？')) {
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

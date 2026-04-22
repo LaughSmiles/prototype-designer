@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务详情 - 芋道管理后台</title>
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+        .menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .detail-card { background: #fff; border-radius: 4px; padding: 20px; margin-bottom: 12px; }
+        .detail-card h3 { font-size: 15px; color: #303133; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #ebeef5; }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .info-item { display: flex; flex-direction: column; gap: 4px; }
+        .info-item label { font-size: 12px; color: #909399; }
+        .info-item span { font-size: 13px; color: #303133; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: #606266; margin-bottom: 6px; font-weight: 500; }
+        .form-group input, .form-group textarea { width: 100%; max-width: 400px; padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; outline: none; }
+        .form-group textarea { height: 80px; resize: vertical; }
+        .action-bar { display: flex; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #ebeef5; }
+        .btn { padding: 7px 15px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #dcdfe6; background: #fff; color: #606266; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+        .btn-success { background: #67c23a; border-color: #67c23a; color: #fff; }
+        .btn-warning { background: #e6a23c; border-color: #e6a23c; color: #fff; }
+        .timeline { padding-left: 20px; border-left: 2px solid #e4e7ed; }
+        .timeline-item { position: relative; padding: 0 0 20px 20px; }
+        .timeline-item::before { content: ''; position: absolute; left: -26px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #67c23a; border: 2px solid #fff; }
+        .timeline-item.pending::before { background: #e4e7ed; }
+        .timeline-item .time { font-size: 12px; color: #909399; margin-bottom: 4px; }
+        .timeline-item .user { font-size: 13px; color: #303133; font-weight: 500; }
+        .timeline-item .desc { font-size: 12px; color: #606266; margin-top: 2px; }
+        .layout { display: flex; gap: 12px; }
+        .layout-left { flex: 1; }
+        .layout-right { width: 280px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+<div class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div><span class="logo-text">芋道管理后台</span></div>
+    <div id="sidebar-menu"></div>
+    <script src="../../menu/menu.js"></script>
+    <script src="../../js/menu/menu-data.js"></script>
+    <script src="../../js/menu/menu-render.js"></script>
+    <script src="../../js/menu/menu-interaction.js"></script>
+    <script src="../../js/menu/menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try { await SidebarMenu.init('sidebar-menu'); } catch (error) { console.error('菜单加载失败:', error); }
+        });
+    </script>
+</div>
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-collapse" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 16px; color: #606266; cursor: pointer;"></i></span>
+            <span style="font-size: 13px; color: #606266;">BPM 流程 / 任务详情</span>
+        </div>
+        <div class="topbar-right">
+            <span title="全屏" style="cursor: pointer;"><i class="fas fa-expand" style="font-size: 14px; color: #606266;"></i></span>
+            <span title="搜索" style="cursor: pointer;"><i class="fas fa-search" style="font-size: 14px; color: #606266;"></i></span>
+            <div style="position: relative; cursor: pointer;">
+                <i class="fas fa-bell" style="font-size: 16px; color: #606266;"></i>
+                <span style="position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px;">3</span>
+            </div>
+            <div class="dropdown">
+                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span style="font-size: 13px; color: #606266;">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="layout">
+            <div class="layout-left">
+                <div class="detail-card">
+                    <h3>任务信息</h3>
+                    <div class="info-grid">
+                        <div class="info-item"><label>任务名称</label><span>请假审批</span></div>
+                        <div class="info-item"><label>流程名称</label><span>OA请假流程</span></div>
+                        <div class="info-item"><label>发起人</label><span>张三</span></div>
+                        <div class="info-item"><label>发起时间</label><span>2026-04-18 09:30:00</span></div>
+                        <div class="info-item"><label>任务状态</label><span><span class="status-tag" style="background:#fdf6ec;color:#e6a23c;border:1px solid #faecd8;padding:2px 8px;border-radius:3px;font-size:12px;">审批中</span></span></div>
+                        <div class="info-item"><label>当前节点</label><span>部门经理审批</span></div>
+                    </div>
+                </div>
+                <div class="detail-card">
+                    <h3>审批表单</h3>
+                    <div class="form-group"><label>请假类型</label><input type="text" value="事假" readonly></div>
+                    <div class="form-group"><label>开始时间</label><input type="text" value="2026-04-20 09:00" readonly></div>
+                    <div class="form-group"><label>结束时间</label><input type="text" value="2026-04-22 18:00" readonly></div>
+                    <div class="form-group"><label>请假事由</label><textarea readonly>家中有事需要处理，特此请假3天，望批准。</textarea></div>
+                    <div class="form-group"><label>审批意见</label><textarea placeholder="请输入审批意见..."></textarea></div>
+                    <div class="action-bar">
+                        <button class="btn btn-success"><i class="fas fa-check"></i> 通过</button>
+                        <button class="btn btn-warning"><i class="fas fa-times"></i> 驳回</button>
+                        <button class="btn"><i class="fas fa-share"></i> 转办</button>
+                    </div>
+                </div>
+            </div>
+            <div class="layout-right">
+                <div class="detail-card">
+                    <h3>审批流程</h3>
+                    <div class="timeline">
+                        <div class="timeline-item"><div class="time">2026-04-18 09:30</div><div class="user">张三</div><div class="desc">发起请假申请</div></div>
+                        <div class="timeline-item"><div class="time">2026-04-18 10:15</div><div class="user">李四 (直属主管)</div><div class="desc">审批通过 - 同意请假</div></div>
+                        <div class="timeline-item"><div class="time">2026-04-18 14:00</div><div class="user">王五 (部门经理)</div><div class="desc" style="color:#e6a23c;">待审批</div></div>
+                        <div class="timeline-item pending"><div class="time">-</div><div class="user">人事部</div><div class="desc">备案（自动）</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

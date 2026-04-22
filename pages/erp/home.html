@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ERP首页 - 芋道管理后台</title>
+    <link rel="stylesheet" href="../../lib/css/all.min.css"><link rel="stylesheet" href="../../css/sidebar-menu.css"><link rel="stylesheet" href="../../lib/tailwindcss/tailwind.min.css">
+    <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; } .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; } .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); } .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; } .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; } .menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; } .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; } .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); } .menu-item.active { color: #fff; background: #409eff; } .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; } .menu-item span { margin-left: 10px; } .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; } .topbar-left { display: flex; align-items: center; gap: 12px; } .topbar-right { display: flex; align-items: center; gap: 16px; } .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; } .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .stat-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+        .stat-card { background: #fff; border-radius: 4px; padding: 20px; flex: 1; min-width: 200px; }
+        .stat-card .label { font-size: 13px; color: #909399; margin-bottom: 8px; }
+        .stat-card .value { font-size: 24px; font-weight: 600; color: #303133; }
+        .chart-row { display: flex; gap: 16px; margin-bottom: 16px; }
+        .chart-card { background: #fff; border-radius: 4px; padding: 20px; flex: 1; }
+        .chart-card .chart-title { font-size: 15px; font-weight: 500; color: #303133; margin-bottom: 16px; }
+        .chart-placeholder { height: 250px; background: #fafafa; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #c0c4cc; font-size: 14px; border: 1px dashed #e4e7ed; }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar"><div class="logo"><div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div><span class="logo-text">芋道管理后台</span></div><div id="sidebar-menu"></div><script src="../../menu/menu.js"></script><script src="../../js/menu/menu-data.js"></script><script src="../../js/menu/menu-render.js"></script><script src="../../js/menu/menu-interaction.js"></script><script src="../../js/menu/menu.js"></script><script>document.addEventListener('DOMContentLoaded',async function(){try{await SidebarMenu.init('sidebar-menu')}catch(e){console.error('菜单加载失败:',e)}});</script></div>
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-collapse" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 16px; color: #606266; cursor: pointer;"></i></span>
+            <span style="font-size: 13px; color: #606266;">ERP系统 / 首页</span>
+        </div>
+        <div class="topbar-right">
+            <span title="全屏" style="cursor: pointer;"><i class="fas fa-expand" style="font-size: 14px; color: #606266;"></i></span>
+            <span title="搜索" style="cursor: pointer;"><i class="fas fa-search" style="font-size: 14px; color: #606266;"></i></span>
+            <div style="position: relative; cursor: pointer;">
+                <i class="fas fa-bell" style="font-size: 16px; color: #606266;"></i>
+                <span style="position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px;">3</span>
+            </div>
+            <div class="dropdown">
+                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span style="font-size: 13px; color: #606266;">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="stat-row">
+            <div class="stat-card"><div class="label">今日销售</div><div class="value" style="color:#409eff;">￥12,580.00</div></div>
+            <div class="stat-card"><div class="label">昨日销售</div><div class="value" style="color:#67c23a;">￥9,830.00</div></div>
+            <div class="stat-card"><div class="label">今日采购</div><div class="value" style="color:#e6a23c;">￥6,720.00</div></div>
+            <div class="stat-card"><div class="label">昨日采购</div><div class="value" style="color:#909399;">￥5,480.00</div></div>
+        </div>
+        <div class="stat-row">
+            <div class="stat-card"><div class="label">本月销售</div><div class="value">￥358,200.00</div></div>
+            <div class="stat-card"><div class="label">今年销售</div><div class="value">￥4,125,800.00</div></div>
+            <div class="stat-card"><div class="label">本月采购</div><div class="value">￥156,800.00</div></div>
+            <div class="stat-card"><div class="label">今年采购</div><div class="value">￥1,892,500.00</div></div>
+        </div>
+        <div class="chart-row">
+            <div class="chart-card"><div class="chart-title"><i class="fas fa-chart-line" style="color:#409eff;margin-right:8px;"></i>销售统计</div><div class="chart-placeholder"><i class="fas fa-chart-area" style="font-size:48px;margin-right:12px;"></i>销售时段统计图表</div></div>
+            <div class="chart-card"><div class="chart-title"><i class="fas fa-chart-bar" style="color:#e6a23c;margin-right:8px;"></i>采购统计</div><div class="chart-placeholder"><i class="fas fa-chart-bar" style="font-size:48px;margin-right:12px;"></i>采购时段统计图表</div></div>
+        </div>
+    </div>
+</body>
+</html>

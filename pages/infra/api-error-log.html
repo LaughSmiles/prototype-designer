@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 错误日志 - 芋道管理后台</title>
+    <script src="../../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+        .menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #909399; margin-bottom: 12px; }
+        .breadcrumb a { color: #606266; text-decoration: none; }
+        .breadcrumb a:hover { color: #409eff; }
+        .search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+        .search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .search-item { display: flex; flex-direction: column; gap: 4px; }
+        .search-item label { font-size: 13px; color: #606266; }
+        .form-input { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; width: 180px; outline: none; }
+        .form-input:focus { border-color: #409eff; }
+        .form-select { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; background: #fff; width: 180px; outline: none; }
+        .form-select:focus { border-color: #409eff; }
+        .search-btns { display: flex; gap: 8px; align-items: flex-end; }
+        .table-card { background: #fff; border-radius: 4px; padding: 16px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ebeef5; font-size: 13px; }
+        th { background: #fafafa; color: #909399; font-weight: 500; white-space: nowrap; }
+        tr:hover { background: #f5f7fa; }
+        .btn { padding: 7px 15px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #dcdfe6; background: #fff; color: #606266; display: inline-flex; align-items: center; gap: 4px; }
+        .btn:hover { border-color: #409eff; color: #409eff; }
+        .btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+        .btn-primary:hover { background: #66b1ff; border-color: #66b1ff; }
+        .btn-success { background: #67c23a; border-color: #67c23a; color: #fff; }
+        .btn-text { border: none; background: none; color: #409eff; padding: 0 4px; cursor: pointer; font-size: 13px; }
+        .btn-text:hover { color: #66b1ff; }
+        .status-tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; display: inline-block; }
+        .status-success { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
+        .status-danger { background: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2; }
+        .status-warning { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
+        .status-info { background: #f4f4f5; color: #909399; border: 1px solid #e9e9eb; }
+        .pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 13px; color: #606266; }
+        .pagination .page-btns { display: flex; gap: 4px; }
+        .pagination .page-btn { padding: 4px 10px; border: 1px solid #dcdfe6; border-radius: 3px; cursor: pointer; font-size: 13px; background: #fff; }
+        .pagination .page-btn:hover { color: #409eff; border-color: #409eff; }
+        .pagination .page-btn.active { background: #409eff; color: #fff; border-color: #409eff; }
+    </style>
+</head>
+<body>
+    <!-- 左侧菜单 -->
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div>
+            <span class="logo-text">芋道管理后台</span>
+        </div>
+        <div id="sidebar-menu"></div>
+        <script src="../../menu/menu.js"></script>
+        <script src="../../js/menu/menu-data.js"></script>
+        <script src="../../js/menu/menu-render.js"></script>
+        <script src="../../js/menu/menu-interaction.js"></script>
+        <script src="../../js/menu/menu.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', async function() {
+                try { await SidebarMenu.init('sidebar-menu'); } catch (error) { console.error('菜单初始化失败:', error); }
+            });
+        </script>
+    </div>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-collapse" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 16px; color: #606266; cursor: pointer;"></i></span>
+            <span style="font-size: 13px; color: #606266;">基础设施 / API 错误日志</span>
+        </div>
+        <div class="topbar-right">
+            <span title="全屏" style="cursor: pointer;"><i class="fas fa-expand" style="font-size: 14px; color: #606266;"></i></span>
+            <span title="搜索" style="cursor: pointer;"><i class="fas fa-search" style="font-size: 14px; color: #606266;"></i></span>
+            <div style="position: relative; cursor: pointer;">
+                <i class="fas fa-bell" style="font-size: 16px; color: #606266;"></i>
+                <span style="position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px;">3</span>
+            </div>
+            <div class="dropdown">
+                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span style="font-size: 13px; color: #606266;">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <div class="breadcrumb">
+            <a href="../home.html">首页</a>
+            <span>/</span>
+            <span>基础设施</span>
+            <span>/</span>
+            <span style="color: #303133;">API 错误日志</span>
+        </div>
+
+        <!-- 搜索栏 -->
+        <div class="search-card">
+            <div class="search-row">
+                <div class="search-item">
+                    <label>用户编号</label>
+                    <input type="text" class="form-input" placeholder="请输入用户编号">
+                </div>
+                <div class="search-item">
+                    <label>用户类型</label>
+                    <select class="form-select">
+                        <option value="">请选择</option>
+                        <option value="1">管理员</option>
+                        <option value="2">会员</option>
+                    </select>
+                </div>
+                <div class="search-item">
+                    <label>应用名</label>
+                    <input type="text" class="form-input" placeholder="请输入应用名">
+                </div>
+                <div class="search-item">
+                    <label>异常时间</label>
+                    <input type="date" class="form-input" style="width: 160px;">
+                </div>
+                <div class="search-item">
+                    <label>处理状态</label>
+                    <select class="form-select">
+                        <option value="">请选择</option>
+                        <option value="0">未处理</option>
+                        <option value="1">已处理</option>
+                        <option value="2">已忽略</option>
+                    </select>
+                </div>
+                <div class="search-btns">
+                    <button class="btn btn-primary"><i class="fas fa-search"></i> 搜索</button>
+                    <button class="btn"><i class="fas fa-redo"></i> 重置</button>
+                    <button class="btn btn-success"><i class="fas fa-download"></i> 导出</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>日志编号</th>
+                        <th>用户编号</th>
+                        <th>用户类型</th>
+                        <th>应用名</th>
+                        <th>请求方法</th>
+                        <th>请求地址</th>
+                        <th>异常发生时间</th>
+                        <th>异常名</th>
+                        <th>处理状态</th>
+                        <th style="width: 180px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>256</td>
+                        <td>1</td>
+                        <td><span class="status-tag status-success">管理员</span></td>
+                        <td>yudao-server</td>
+                        <td>POST</td>
+                        <td>/admin-api/system/user/create</td>
+                        <td>2024-07-01 14:32:18</td>
+                        <td>NullPointerException</td>
+                        <td><span class="status-tag status-info">未处理</span></td>
+                        <td>
+                            <button class="btn-text"><i class="fas fa-eye"></i> 详细</button>
+                            <button class="btn-text"><i class="fas fa-check"></i> 已处理</button>
+                            <button class="btn-text"><i class="fas fa-ban"></i> 已忽略</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>255</td>
+                        <td>2</td>
+                        <td><span class="status-tag status-danger">会员</span></td>
+                        <td>yudao-app</td>
+                        <td>GET</td>
+                        <td>/app-api/product/detail</td>
+                        <td>2024-07-01 13:15:42</td>
+                        <td>ServiceException</td>
+                        <td><span class="status-tag status-success">已处理</span></td>
+                        <td>
+                            <button class="btn-text"><i class="fas fa-eye"></i> 详细</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>254</td>
+                        <td>1</td>
+                        <td><span class="status-tag status-success">管理员</span></td>
+                        <td>yudao-server</td>
+                        <td>PUT</td>
+                        <td>/admin-api/system/role/update</td>
+                        <td>2024-07-01 11:08:55</td>
+                        <td>IllegalArgumentException</td>
+                        <td><span class="status-tag status-info">未处理</span></td>
+                        <td>
+                            <button class="btn-text"><i class="fas fa-eye"></i> 详细</button>
+                            <button class="btn-text"><i class="fas fa-check"></i> 已处理</button>
+                            <button class="btn-text"><i class="fas fa-ban"></i> 已忽略</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>253</td>
+                        <td>3</td>
+                        <td><span class="status-tag status-success">管理员</span></td>
+                        <td>yudao-server</td>
+                        <td>DELETE</td>
+                        <td>/admin-api/system/dept/delete</td>
+                        <td>2024-07-01 10:45:30</td>
+                        <td>DataAccessException</td>
+                        <td><span class="status-tag status-warning">已忽略</span></td>
+                        <td>
+                            <button class="btn-text"><i class="fas fa-eye"></i> 详细</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>252</td>
+                        <td>1</td>
+                        <td><span class="status-tag status-success">管理员</span></td>
+                        <td>yudao-server</td>
+                        <td>GET</td>
+                        <td>/admin-api/infra/file/list</td>
+                        <td>2024-07-01 09:22:10</td>
+                        <td>IOException</td>
+                        <td><span class="status-tag status-success">已处理</span></td>
+                        <td>
+                            <button class="btn-text"><i class="fas fa-eye"></i> 详细</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <span>共 256 条</span>
+                <div class="page-btns">
+                    <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
+                    <button class="page-btn active">1</button>
+                    <button class="page-btn">2</button>
+                    <button class="page-btn">3</button>
+                    <button class="page-btn">...</button>
+                    <button class="page-btn">26</button>
+                    <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

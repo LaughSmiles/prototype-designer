@@ -22,11 +22,33 @@ const PageLibraryRender = {
         // 按分类分组
         const groupedPages = this.groupPagesByCategory();
 
-        // 渲染分组
-        Object.keys(groupedPages).forEach(categoryId => {
+        // 获取排序后的分类ID列表
+        const sortedCategoryIds = this.getSortedCategoryIds(Object.keys(groupedPages));
+
+        // 按排序后的顺序渲染分组
+        sortedCategoryIds.forEach(categoryId => {
             const group = groupedPages[categoryId];
             const groupElement = this.createGroupElement(group);
             container.appendChild(groupElement);
+        });
+    },
+
+    // 获取排序后的分类ID列表（按 categories 的 order 字段排序）
+    getSortedCategoryIds(categoryIds) {
+        if (!PageLibrary.projectConfig || !PageLibrary.projectConfig.categories) {
+            return categoryIds; // 没有分类配置，返回原顺序
+        }
+
+        // 按照 categories 数组的 order 字段排序
+        return categoryIds.sort((a, b) => {
+            const categoryA = PageLibrary.projectConfig.categories.find(c => c.id === a);
+            const categoryB = PageLibrary.projectConfig.categories.find(c => c.id === b);
+
+            // 如果找不到分类配置，放在最后
+            const orderA = categoryA ? categoryA.order : 9999;
+            const orderB = categoryB ? categoryB.order : 9999;
+
+            return orderA - orderB; // 从小到大排序
         });
     },
 

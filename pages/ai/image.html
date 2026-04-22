@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 绘图 - 芋道管理后台</title>
+    <link rel="stylesheet" href="../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../css/sidebar-menu.css">
+    <link rel="stylesheet" href="../../lib/tailwindcss/tailwind.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+        .menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+
+        /* Image Generation Layout */
+        .image-container { display: flex; margin-left: 210px; margin-top: 50px; height: calc(100vh - 50px); }
+        .image-sidebar { width: 340px; background: #fff; border-right: 1px solid #e8e8e8; overflow-y: auto; flex-shrink: 0; padding: 20px; }
+        .param-section { margin-bottom: 20px; }
+        .param-section-title { font-size: 13px; font-weight: 500; color: #303133; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .param-section-title i { color: #409eff; font-size: 12px; }
+        .param-label { font-size: 12px; color: #909399; margin-bottom: 6px; display: block; }
+        .param-input { width: 100%; padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; outline: none; }
+        .param-input:focus { border-color: #409eff; }
+        .param-textarea { width: 100%; padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; outline: none; resize: vertical; min-height: 80px; line-height: 1.5; font-family: inherit; }
+        .param-textarea:focus { border-color: #409eff; }
+        .param-select { width: 100%; padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; background: #fff; outline: none; }
+        .param-row { display: flex; gap: 12px; }
+        .param-row .param-group { flex: 1; }
+        .param-group .param-label { font-size: 12px; color: #909399; margin-bottom: 6px; display: block; }
+        .param-slider { width: 100%; margin-top: 4px; }
+        .param-slider-value { font-size: 12px; color: #409eff; font-weight: 500; float: right; }
+        .generate-btn { width: 100%; padding: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+        .generate-btn:hover { opacity: 0.9; }
+        .image-main { flex: 1; display: flex; flex-direction: column; background: #f5f5f5; overflow-y: auto; }
+        .image-main-header { padding: 16px 20px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .image-main-header h3 { font-size: 14px; color: #303133; font-weight: 500; }
+        .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 20px; }
+        .image-card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .image-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+        .image-card .img-placeholder { width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; font-size: 48px; color: #dcdfe6; }
+        .image-card .img-placeholder.bg1 { background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%); }
+        .image-card .img-placeholder.bg2 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+        .image-card .img-placeholder.bg3 { background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%); }
+        .image-card .img-placeholder.bg4 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .image-card .img-placeholder.bg5 { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
+        .image-card .img-placeholder.bg6 { background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); }
+        .image-card .img-info { padding: 10px 12px; }
+        .image-card .img-info .img-prompt { font-size: 12px; color: #606266; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .image-card .img-info .img-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+        .image-card .img-info .img-size { font-size: 11px; color: #c0c4cc; }
+        .image-card .img-info .img-actions { display: flex; gap: 8px; }
+        .image-card .img-info .img-actions i { font-size: 12px; color: #909399; cursor: pointer; }
+        .image-card .img-info .img-actions i:hover { color: #409eff; }
+        .image-card .img-placeholder i { font-size: 48px; color: rgba(255,255,255,0.5); }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div><span class="logo-text">芋道管理后台</span></div>
+    <div id="sidebar-menu"></div>
+    <script src="../../menu/menu.js"></script>
+    <script src="../../js/menu/menu-data.js"></script>
+    <script src="../../js/menu/menu-render.js"></script>
+    <script src="../../js/menu/menu-interaction.js"></script>
+    <script src="../../js/menu/menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try { await SidebarMenu.init('sidebar-menu'); } catch (error) { console.error('菜单加载失败:', error); }
+        });
+    </script>
+</div>
+
+    <!-- 绘图主体 -->
+    <div class="image-container">
+        <!-- 左侧参数面板 -->
+        <div class="image-sidebar">
+            <div class="param-section">
+                <div class="param-section-title"><i class="fas fa-robot"></i> 模型选择</div>
+                <select class="param-select">
+                    <option>DALL-E 3</option>
+                    <option>Stable Diffusion XL</option>
+                    <option>Midjourney v6</option>
+                    <option>文心一格</option>
+                </select>
+            </div>
+
+            <div class="param-section">
+                <div class="param-section-title"><i class="fas fa-pen"></i> 提示词</div>
+                <span class="param-label">描述你想要生成的图片内容</span>
+                <textarea class="param-textarea" placeholder="例如：一只可爱的橘猫坐在窗台上，阳光洒在身上，背景是蓝天白云，动漫风格，高清细节...">一只可爱的橘猫坐在窗台上，阳光洒在身上，背景是蓝天白云，动漫风格，高清细节</textarea>
+            </div>
+
+            <div class="param-section">
+                <div class="param-section-title"><i class="fas fa-ban"></i> 反向提示词</div>
+                <span class="param-label">描述你不想出现在图片中的内容</span>
+                <textarea class="param-textarea" style="min-height:50px;" placeholder="例如：模糊、低质量、变形...">模糊、低质量、变形、水印</textarea>
+            </div>
+
+            <div class="param-section">
+                <div class="param-section-title"><i class="fas fa-expand"></i> 图片尺寸</div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <span class="param-label">宽度</span>
+                        <select class="param-select">
+                            <option>512</option>
+                            <option>768</option>
+                            <option selected>1024</option>
+                            <option>1536</option>
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <span class="param-label">高度</span>
+                        <select class="param-select">
+                            <option>512</option>
+                            <option>768</option>
+                            <option selected>1024</option>
+                            <option>1536</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="param-section">
+                <div class="param-section-title"><i class="fas fa-sliders-h"></i> 生成参数</div>
+                <div class="param-group" style="margin-bottom: 12px;">
+                    <span class="param-label">采样步数 <span class="param-slider-value">30</span></span>
+                    <input type="range" class="param-slider" min="10" max="50" value="30">
+                </div>
+                <div class="param-group" style="margin-bottom: 12px;">
+                    <span class="param-label">引导系数 (CFG Scale) <span class="param-slider-value">7.5</span></span>
+                    <input type="range" class="param-slider" min="1" max="20" value="7.5" step="0.5">
+                </div>
+                <div class="param-group">
+                    <span class="param-label">生成数量</span>
+                    <select class="param-select">
+                        <option>1 张</option>
+                        <option selected>2 张</option>
+                        <option>4 张</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="generate-btn"><i class="fas fa-magic"></i> 开始生成</button>
+        </div>
+
+        <!-- 右侧图片展示 -->
+        <div class="image-main">
+            <div class="image-main-header">
+                <h3>生成结果</h3>
+                <span style="font-size:12px;color:#909399;">本次共生成 6 张图片</span>
+            </div>
+            <div class="image-grid">
+                <div class="image-card">
+                    <div class="img-placeholder bg1"><i class="fas fa-image"></i></div>
+                    <div class="img-info">
+                        <div class="img-prompt">一只可爱的橘猫坐在窗台上，阳光洒在身上...</div>
+                        <div class="img-meta">
+                            <span class="img-size">1024 x 1024</span>
+                            <div class="img-actions">
+                                <i class="fas fa-download" title="下载"></i>
+                                <i class="fas fa-heart" title="收藏"></i>
+                                <i class="fas fa-share-alt" title="分享"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="image-card">
+                    <div class="img-placeholder bg2"><i class="fas fa-image"></i></div>
+                    <div class="img-info">
+                        <div class="img-prompt">一只可爱的橘猫坐在窗台上，阳光洒在身上...</div>
+                        <div class="img-meta">
+                            <span class="img-size">1024 x 1024</span>
+                            <div class="img-actions">
+                                <i class="fas fa-download" title="下载"></i>
+                                <i class="fas fa-heart" title="收藏"></i>
+                                <i class="fas fa-share-alt" title="分享"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="image-card">
+                    <div class="img-placeholder bg3"><i class="fas fa-image"></i></div>
+                    <div class="img-info">
+                        <div class="img-prompt">一只可爱的橘猫坐在窗台上，阳光洒在身上...</div>
+                        <div class="img-meta">
+                            <span class="img-size">1024 x 1024</span>
+                            <div class="img-actions">
+                                <i class="fas fa-download" title="下载"></i>
+                                <i class="fas fa-heart" title="收藏"></i>
+                                <i class="fas fa-share-alt" title="分享"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="image-card">
+                    <div class="img-placeholder bg4"><i class="fas fa-image"></i></div>
+                    <div class="img-info">
+                        <div class="img-prompt">一座被樱花环绕的日式古寺，宁静祥和...</div>
+                        <div class="img-meta">
+                            <span class="img-size">1024 x 1024</span>
+                            <div class="img-actions">
+                                <i class="fas fa-download" title="下载"></i>
+                                <i class="fas fa-heart" title="收藏"></i>
+                                <i class="fas fa-share-alt" title="分享"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="image-card">
+                    <div class="img-placeholder bg5"><i class="fas fa-image"></i></div>
+                    <div class="img-info">
+                        <div class="img-prompt">一座被樱花环绕的日式古寺，宁静祥和...</div>
+                        <div class="img-meta">
+                            <span class="img-size">1024 x 1024</span>
+                            <div class="img-actions">
+                                <i class="fas fa-download" title="下载"></i>
+                                <i class="fas fa-heart" title="收藏"></i>
+                                <i class="fas fa-share-alt" title="分享"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="image-card">
+                    <div class="img-placeholder bg6"><i class="fas fa-image"></i></div>
+                    <div class="img-info">
+                        <div class="img-prompt">未来城市的赛博朋克夜景，霓虹灯闪烁...</div>
+                        <div class="img-meta">
+                            <span class="img-size">1024 x 1024</span>
+                            <div class="img-actions">
+                                <i class="fas fa-download" title="下载"></i>
+                                <i class="fas fa-heart" title="收藏"></i>
+                                <i class="fas fa-share-alt" title="分享"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

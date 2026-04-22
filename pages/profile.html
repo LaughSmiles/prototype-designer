@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 芋道管理后台</title>
+    <script src="../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../lib/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        /* 顶部导航栏 */
+        .top-nav {
+            background: #fff;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+        }
+
+        /* 卡片样式 */
+        .card {
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(0, 0, 0, 0.06);
+            transition: box-shadow 0.3s;
+        }
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+            color: #303133;
+        }
+        .card-body {
+            padding: 20px;
+        }
+
+        /* 头像区域 */
+        .avatar-wrapper {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 16px;
+            position: relative;
+            cursor: pointer;
+        }
+        .avatar-wrapper img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #e8e8e8;
+        }
+        .avatar-overlay {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .avatar-wrapper:hover .avatar-overlay {
+            opacity: 1;
+        }
+
+        /* 用户信息列表 */
+        .info-list {
+            list-style: none;
+            padding: 0;
+        }
+        .info-list li {
+            padding: 12px 0;
+            border-top: 1px solid #f0f0f0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #606266;
+        }
+        .info-list li + li {
+            border-top: none;
+        }
+        .info-list li i {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+            color: #909399;
+        }
+        .info-list .info-value {
+            margin-left: auto;
+            color: #303133;
+            font-weight: 500;
+        }
+
+        /* Tab 样式 */
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #606266;
+            font-size: 14px;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .tab-btn:hover {
+            color: #409eff;
+        }
+        .tab-btn.active {
+            color: #409eff;
+            border-bottom-color: #409eff;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+            padding: 8px 0;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 表单样式 */
+        .form-group {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .form-label {
+            width: 200px;
+            text-align: right;
+            padding-right: 16px;
+            line-height: 36px;
+            font-size: 14px;
+            color: #606266;
+            flex-shrink: 0;
+        }
+        .form-label .required {
+            color: #f56c6c;
+            margin-right: 4px;
+        }
+        .form-input {
+            flex: 1;
+            max-width: 400px;
+            padding: 8px 12px;
+            border: 1px solid #dcdfe6;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: all 0.3s;
+            outline: none;
+            height: 36px;
+        }
+        .form-input:focus {
+            border-color: #409eff;
+            box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+        }
+        .form-input.error {
+            border-color: #f56c6c;
+        }
+        .form-error {
+            color: #f56c6c;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+        .form-error.show {
+            display: block;
+        }
+
+        /* 单选按钮 */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            line-height: 36px;
+        }
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: #606266;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 6px;
+            accent-color: #409eff;
+        }
+
+        /* 按钮 */
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #409eff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #66b1ff;
+        }
+        .btn-danger {
+            background: #f56c6c;
+            color: white;
+            margin-left: 12px;
+        }
+        .btn-danger:hover {
+            background: #f78989;
+        }
+        .btn-link {
+            background: none;
+            border: none;
+            color: #409eff;
+            cursor: pointer;
+            padding: 0;
+            font-size: 13px;
+        }
+        .btn-link:hover {
+            color: #66b1ff;
+            text-decoration: underline;
+        }
+
+        /* 社交绑定表格 */
+        .social-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .social-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            color: #606266;
+        }
+        .social-table tr:last-child td {
+            border-bottom: none;
+        }
+        .social-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .bind-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-bound {
+            color: #67c23a;
+            font-weight: 500;
+        }
+        .badge-unbound {
+            color: #909399;
+        }
+
+        /* Toast 消息 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 12px 24px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            z-index: 9999;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast-success {
+            background: #67c23a;
+        }
+        .toast-error {
+            background: #f56c6c;
+        }
+
+        /* 密码强度指示器 */
+        .password-strength {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .strength-bar {
+            height: 4px;
+            flex: 1;
+            background: #e8e8e8;
+            border-radius: 2px;
+            transition: background 0.3s;
+        }
+        .strength-bar.weak {
+            background: #f56c6c;
+        }
+        .strength-bar.medium {
+            background: #e6a23c;
+        }
+        .strength-bar.strong {
+            background: #67c23a;
+        }
+        .strength-text {
+            font-size: 12px;
+            margin-top: 4px;
+            color: #909399;
+        }
+
+        /* 头像上传弹窗 */
+        .avatar-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar-modal.show {
+            display: flex;
+        }
+        .avatar-modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            width: 400px;
+            text-align: center;
+        }
+        .avatar-upload-area {
+            width: 200px;
+            height: 200px;
+            border: 2px dashed #dcdfe6;
+            border-radius: 8px;
+            margin: 16px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .avatar-upload-area:hover {
+            border-color: #409eff;
+        }
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-nav">
+        <div class="flex items-center">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center mr-3">
+                <i class="fas fa-cube text-white text-sm"></i>
+            </div>
+            <span class="text-lg font-semibold text-gray-800">芋道管理后台</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-600">欢迎，Admin</span>
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-user text-blue-600 text-sm"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面主体 -->
+    <div class="p-6 flex gap-4" style="max-height: calc(100vh - 56px); overflow-y: auto;">
+        <!-- 左侧用户信息卡片 -->
+        <div class="card w-1/3 flex-shrink-0" style="max-width: 380px;">
+            <div class="card-header">
+                <span>用户信息</span>
+            </div>
+            <div class="card-body">
+                <!-- 头像 -->
+                <div class="avatar-wrapper" onclick="openAvatarModal()">
+                    <img id="userAvatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect fill='%23409eff' width='120' height='120'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='40' font-family='Arial'%3EA%3C/text%3E%3C/svg%3E" alt="用户头像">
+                    <div class="avatar-overlay">
+                        <i class="fas fa-camera text-white text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- 用户信息列表 -->
+                <ul class="info-list" id="userInfoList">
+                    <li>
+                        <i class="fas fa-user"></i>
+                        <span>用户名称</span>
+                        <span class="info-value">admin</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>手机号码</span>
+                        <span class="info-value">15601691300</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-envelope"></i>
+                        <span>用户邮箱</span>
+                        <span class="info-value">admin@yudao.com</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-sitemap"></i>
+                        <span>所属部门</span>
+                        <span class="info-value">研发部</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-briefcase"></i>
+                        <span>所属岗位</span>
+                        <span class="info-value">技术负责人</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-users"></i>
+                        <span>所属角色</span>
+                        <span class="info-value">超级管理员</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>创建日期</span>
+                        <span class="info-value">2024-01-01 00:00:00</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 右侧内容卡片 -->
+        <div class="card flex-1">
+            <div class="card-body">
+                <!-- Tab 导航 -->
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab(this, 'basicInfo')">
+                        <i class="fas fa-id-card mr-1"></i> 基本信息
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(this, 'resetPwd')">
+                        <i class="fas fa-lock mr-1"></i> 修改密码
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(this, 'userSocial')">
+                        <i class="fas fa-share-alt mr-1"></i> 社交登录
+                    </button>
+                </div>
+
+                <!-- 基本信息 Tab -->
+                <div id="tab-basicInfo" class="tab-content active">
+                    <form id="basicInfoForm" onsubmit="handleBasicInfoSubmit(event)">
+                        <div class="form-group">
+                            <label class="form-label"><span class="required">*</span>用户昵称</label>
+                            <div>
+                                <input type="text" class="form-input" id="nickname" value="芋道源码" placeholder="请输入用户昵称" required>
+                                <div class="form-error" id="nicknameError">请输入用户昵称</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><span class="required">*</span>手机号码</label>
+                            <div>
+                                <input type="tel" class="form-input" id="mobile" value="15601691300" placeholder="请输入手机号码" required>
+                                <div class="form-error" id="mobileError">请输入正确的手机号码</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><span class="required">*</span>用户邮箱</label>
+                            <div>
+                                <input type="email" class="form-input" id="email" value="admin@yudao.com" placeholder="请输入用户邮箱" required>
+                                <div class="form-error" id="emailError">请输入正确的邮箱地址</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">性别</label>
+                            <div class="radio-group">
+                                <label>
+                                    <input type="radio" name="sex" value="1"> 男
+                                </label>
+                                <label>
+                                    <input type="radio" name="sex" value="2"> 女
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"></label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check mr-1"></i> 保存
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="resetBasicInfo()">
+                                    <i class="fas fa-redo mr-1"></i> 重置
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 修改密码 Tab -->
+                <div id="tab-resetPwd" class="tab-content">
+                    <form id="resetPwdForm" onsubmit="handleResetPwdSubmit(event)">
+                        <div class="form-group">
+                            <label class="form-label"><span class="required">*</span>旧密码</label>
+                            <div>
+                                <div style="position: relative; max-width: 400px;">
+                                    <input type="password" class="form-input" id="oldPassword" placeholder="请输入旧密码" required style="width: 100%; padding-right: 36px;">
+                                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer" onclick="togglePassword('oldPassword', this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-error" id="oldPasswordError">请输入旧密码（4-16位）</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><span class="required">*</span>新密码</label>
+                            <div>
+                                <div style="position: relative; max-width: 400px;">
+                                    <input type="password" class="form-input" id="newPassword" placeholder="请输入新密码" required style="width: 100%; padding-right: 36px;" oninput="checkPasswordStrength(this.value)">
+                                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer" onclick="togglePassword('newPassword', this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="password-strength" id="passwordStrength" style="max-width: 400px;">
+                                    <div class="strength-bar" id="str1"></div>
+                                    <div class="strength-bar" id="str2"></div>
+                                    <div class="strength-bar" id="str3"></div>
+                                    <div class="strength-bar" id="str4"></div>
+                                    <div class="strength-bar" id="str5"></div>
+                                </div>
+                                <div class="strength-text" id="strengthText"></div>
+                                <div class="form-error" id="newPasswordError">请输入新密码（4-16位）</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><span class="required">*</span>确认密码</label>
+                            <div>
+                                <div style="position: relative; max-width: 400px;">
+                                    <input type="password" class="form-input" id="confirmPassword" placeholder="请再次输入新密码" required style="width: 100%; padding-right: 36px;" oninput="checkPasswordMatch()">
+                                    <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer" onclick="togglePassword('confirmPassword', this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-error" id="confirmPasswordError">两次输入的密码不一致</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"></label>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-check mr-1"></i> 保存
+                                </button>
+                                <button type="button" class="btn btn-danger" onclick="resetPasswordForm()">
+                                    <i class="fas fa-redo mr-1"></i> 重置
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 社交登录 Tab -->
+                <div id="tab-userSocial" class="tab-content">
+                    <table class="social-table">
+                        <tbody id="socialTableBody">
+                            <!-- 微信 -->
+                            <tr>
+                                <td style="width: 60px; text-align: center; color: #909399;">1</td>
+                                <td>
+                                    <span class="social-icon" style="background: #07c160;">
+                                        <i class="fab fa-weixin"></i>
+                                    </span>
+                                    <span style="vertical-align: middle;">微信</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <span class="bind-status badge-bound">
+                                        <i class="fas fa-check-circle"></i> 已绑定
+                                    </span>
+                                    <button class="btn-link ml-2" onclick="unbindSocial('微信')">（解绑）</button>
+                                </td>
+                            </tr>
+                            <!-- QQ -->
+                            <tr>
+                                <td style="width: 60px; text-align: center; color: #909399;">2</td>
+                                <td>
+                                    <span class="social-icon" style="background: #12b7f5;">
+                                        <i class="fab fa-qq"></i>
+                                    </span>
+                                    <span style="vertical-align: middle;">QQ</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <span class="bind-status badge-unbound">
+                                        <i class="fas fa-times-circle"></i> 未绑定
+                                    </span>
+                                    <button class="btn-link ml-2" onclick="bindSocial('QQ')">（绑定）</button>
+                                </td>
+                            </tr>
+                            <!-- 微博 -->
+                            <tr>
+                                <td style="width: 60px; text-align: center; color: #909399;">3</td>
+                                <td>
+                                    <span class="social-icon" style="background: #e6162d;">
+                                        <i class="fab fa-weibo"></i>
+                                    </span>
+                                    <span style="vertical-align: middle;">微博</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <span class="bind-status badge-unbound">
+                                        <i class="fas fa-times-circle"></i> 未绑定
+                                    </span>
+                                    <button class="btn-link ml-2" onclick="bindSocial('微博')">（绑定）</button>
+                                </td>
+                            </tr>
+                            <!-- 钉钉 -->
+                            <tr>
+                                <td style="width: 60px; text-align: center; color: #909399;">4</td>
+                                <td>
+                                    <span class="social-icon" style="background: #0082ef;">
+                                        <i class="fas fa-comment-dots"></i>
+                                    </span>
+                                    <span style="vertical-align: middle;">钉钉</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <span class="bind-status badge-unbound">
+                                        <i class="fas fa-times-circle"></i> 未绑定
+                                    </span>
+                                    <button class="btn-link ml-2" onclick="bindSocial('钉钉')">（绑定）</button>
+                                </td>
+                            </tr>
+                            <!-- 企业微信 -->
+                            <tr>
+                                <td style="width: 60px; text-align: center; color: #909399;">5</td>
+                                <td>
+                                    <span class="social-icon" style="background: #07c160;">
+                                        <i class="fas fa-building"></i>
+                                    </span>
+                                    <span style="vertical-align: middle;">企业微信</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <span class="bind-status badge-unbound">
+                                        <i class="fas fa-times-circle"></i> 未绑定
+                                    </span>
+                                    <button class="btn-link ml-2" onclick="bindSocial('企业微信')">（绑定）</button>
+                                </td>
+                            </tr>
+                            <!-- 飞书 -->
+                            <tr>
+                                <td style="width: 60px; text-align: center; color: #909399;">6</td>
+                                <td>
+                                    <span class="social-icon" style="background: #3370ff;">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </span>
+                                    <span style="vertical-align: middle;">飞书</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <span class="bind-status badge-unbound">
+                                        <i class="fas fa-times-circle"></i> 未绑定
+                                    </span>
+                                    <button class="btn-link ml-2" onclick="bindSocial('飞书')">（绑定）</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 头像上传弹窗 -->
+    <div class="avatar-modal" id="avatarModal">
+        <div class="avatar-modal-content">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">修改头像</h3>
+            <div class="avatar-upload-area" onclick="document.getElementById('avatarFileInput').click()">
+                <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                <p class="text-sm text-gray-500">点击上传头像</p>
+                <p class="text-xs text-gray-400 mt-1">支持 JPG/PNG 格式</p>
+            </div>
+            <input type="file" id="avatarFileInput" accept="image/*" style="display: none;" onchange="previewAvatar(event)">
+            <img id="avatarPreview" class="avatar-preview" style="display: none;" alt="预览">
+            <div class="flex justify-end gap-2 mt-4">
+                <button class="btn btn-danger" onclick="closeAvatarModal()">取消</button>
+                <button class="btn btn-primary" onclick="uploadAvatar()">确认上传</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 消息 -->
+    <div class="toast toast-success" id="toastSuccess">
+        <i class="fas fa-check-circle mr-2"></i>
+        <span id="toastSuccessText">操作成功</span>
+    </div>
+    <div class="toast toast-error" id="toastError">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        <span id="toastErrorText">操作失败</span>
+    </div>
+
+    <script>
+        // ==================== Tab 切换 ====================
+        function switchTab(element, tabName) {
+            // 移除所有 active 类
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            // 激活当前 Tab
+            element.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        // ==================== Toast 消息 ====================
+        function showToast(type, message) {
+            const toast = document.getElementById(type === 'success' ? 'toastSuccess' : 'toastError');
+            const textEl = document.getElementById(type === 'success' ? 'toastSuccessText' : 'toastErrorText');
+            textEl.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // ==================== 基本信息表单 ====================
+        // 初始数据
+        const initialBasicInfo = {
+            nickname: '芋道源码',
+            mobile: '15601691300',
+            email: 'admin@yudao.com',
+            sex: '1'
+        };
+
+        function handleBasicInfoSubmit(event) {
+            event.preventDefault();
+
+            // 表单验证
+            let isValid = true;
+            const nickname = document.getElementById('nickname').value.trim();
+            const mobile = document.getElementById('mobile').value.trim();
+            const email = document.getElementById('email').value.trim();
+
+            // 昵称验证
+            if (!nickname) {
+                showFieldError('nickname', 'nicknameError');
+                isValid = false;
+            } else {
+                hideFieldError('nickname', 'nicknameError');
+            }
+
+            // 手机号验证
+            if (!mobile || !/^1[3-9]\d{9}$/.test(mobile)) {
+                showFieldError('mobile', 'mobileError');
+                isValid = false;
+            } else {
+                hideFieldError('mobile', 'mobileError');
+            }
+
+            // 邮箱验证
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showFieldError('email', 'emailError');
+                isValid = false;
+            } else {
+                hideFieldError('email', 'emailError');
+            }
+
+            if (isValid) {
+                showToast('success', '基本信息修改成功');
+                // 更新左侧用户信息显示
+                updateUserInfo();
+            }
+        }
+
+        function resetBasicInfo() {
+            document.getElementById('nickname').value = initialBasicInfo.nickname;
+            document.getElementById('mobile').value = initialBasicInfo.mobile;
+            document.getElementById('email').value = initialBasicInfo.email;
+            document.querySelector('input[name="sex"][value="1"]').checked = true;
+            // 清除错误状态
+            hideFieldError('nickname', 'nicknameError');
+            hideFieldError('mobile', 'mobileError');
+            hideFieldError('email', 'emailError');
+        }
+
+        function updateUserInfo() {
+            const nickname = document.getElementById('nickname').value;
+            const mobile = document.getElementById('mobile').value;
+            const email = document.getElementById('email').value;
+
+            // 更新左侧信息列表
+            const items = document.querySelectorAll('#userInfoList li');
+            items[0].querySelector('.info-value').textContent = 'admin'; // 用户名不变
+            items[1].querySelector('.info-value').textContent = mobile;
+            items[2].querySelector('.info-value').textContent = email;
+        }
+
+        function showFieldError(inputId, errorId) {
+            document.getElementById(inputId).classList.add('error');
+            document.getElementById(errorId).classList.add('show');
+        }
+
+        function hideFieldError(inputId, errorId) {
+            document.getElementById(inputId).classList.remove('error');
+            document.getElementById(errorId).classList.remove('show');
+        }
+
+        // ==================== 修改密码表单 ====================
+        function handleResetPwdSubmit(event) {
+            event.preventDefault();
+
+            const oldPwd = document.getElementById('oldPassword').value;
+            const newPwd = document.getElementById('newPassword').value;
+            const confirmPwd = document.getElementById('confirmPassword').value;
+            let isValid = true;
+
+            // 旧密码验证
+            if (!oldPwd || oldPwd.length < 4 || oldPwd.length > 16) {
+                showFieldError('oldPassword', 'oldPasswordError');
+                isValid = false;
+            } else {
+                hideFieldError('oldPassword', 'oldPasswordError');
+            }
+
+            // 新密码验证
+            if (!newPwd || newPwd.length < 4 || newPwd.length > 16) {
+                showFieldError('newPassword', 'newPasswordError');
+                isValid = false;
+            } else {
+                hideFieldError('newPassword', 'newPasswordError');
+            }
+
+            // 确认密码验证
+            if (!confirmPwd || newPwd !== confirmPwd) {
+                showFieldError('confirmPassword', 'confirmPasswordError');
+                isValid = false;
+            } else {
+                hideFieldError('confirmPassword', 'confirmPasswordError');
+            }
+
+            if (isValid) {
+                showToast('success', '密码修改成功');
+                resetPasswordForm();
+            }
+        }
+
+        function resetPasswordForm() {
+            document.getElementById('resetPwdForm').reset();
+            hideFieldError('oldPassword', 'oldPasswordError');
+            hideFieldError('newPassword', 'newPasswordError');
+            hideFieldError('confirmPassword', 'confirmPasswordError');
+            // 清除密码强度
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById('str' + i).className = 'strength-bar';
+            }
+            document.getElementById('strengthText').textContent = '';
+        }
+
+        // 密码强度检测
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            const bars = [];
+            for (let i = 1; i <= 5; i++) {
+                bars.push(document.getElementById('str' + i));
+            }
+
+            if (!password) {
+                bars.forEach(bar => bar.className = 'strength-bar');
+                document.getElementById('strengthText').textContent = '';
+                return;
+            }
+
+            // 长度
+            if (password.length >= 4) strength++;
+            if (password.length >= 8) strength++;
+            // 包含小写
+            if (/[a-z]/.test(password)) strength++;
+            // 包含大写
+            if (/[A-Z]/.test(password)) strength++;
+            // 包含数字
+            if (/[0-9]/.test(password)) strength++;
+            // 包含特殊字符
+            if (/[^a-zA-Z0-9]/.test(password)) strength++;
+
+            const level = Math.min(Math.ceil(strength / 1.5), 5);
+            const labels = ['', '非常弱', '弱', '中等', '强', '非常强'];
+            const colors = ['', 'weak', 'weak', 'medium', 'strong', 'strong'];
+
+            bars.forEach((bar, i) => {
+                if (i < level) {
+                    bar.className = 'strength-bar ' + colors[level];
+                } else {
+                    bar.className = 'strength-bar';
+                }
+            });
+
+            document.getElementById('strengthText').textContent = '密码强度：' + labels[level];
+        }
+
+        // 确认密码匹配检查
+        function checkPasswordMatch() {
+            const newPwd = document.getElementById('newPassword').value;
+            const confirmPwd = document.getElementById('confirmPassword').value;
+            if (confirmPwd && newPwd !== confirmPwd) {
+                document.getElementById('confirmPassword').classList.add('error');
+            } else {
+                document.getElementById('confirmPassword').classList.remove('error');
+            }
+        }
+
+        // 密码显示/隐藏切换
+        function togglePassword(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        }
+
+        // ==================== 社交账号绑定 ====================
+        function bindSocial(platform) {
+            showToast('success', '正在跳转至' + platform + '授权页面...');
+            // 模拟绑定操作
+            setTimeout(() => {
+                showToast('success', platform + '绑定成功');
+            }, 1500);
+        }
+
+        function unbindSocial(platform) {
+            if (confirm('确定要解绑' + platform + '吗？解绑后将无法使用' + platform + '登录。')) {
+                showToast('success', platform + '解绑成功');
+            }
+        }
+
+        // ==================== 头像上传 ====================
+        function openAvatarModal() {
+            document.getElementById('avatarModal').classList.add('show');
+        }
+
+        function closeAvatarModal() {
+            document.getElementById('avatarModal').classList.remove('show');
+            document.getElementById('avatarPreview').style.display = 'none';
+            document.getElementById('avatarFileInput').value = '';
+        }
+
+        function previewAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('avatarPreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function uploadAvatar() {
+            const preview = document.getElementById('avatarPreview');
+            if (preview.style.display === 'none' || !preview.src) {
+                showToast('error', '请先选择要上传的头像');
+                return;
+            }
+            // 更新头像显示
+            document.getElementById('userAvatar').src = preview.src;
+            closeAvatarModal();
+            showToast('success', '头像修改成功');
+        }
+
+        // ==================== 页面初始化 ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // 默认选中男性
+            document.querySelector('input[name="sex"][value="1"]').checked = true;
+
+            // 输入框实时清除错误
+            ['nickname', 'mobile', 'email', 'oldPassword', 'newPassword', 'confirmPassword'].forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('input', function() {
+                        this.classList.remove('error');
+                        const errorEl = document.getElementById(id + 'Error');
+                        if (errorEl) errorEl.classList.remove('show');
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

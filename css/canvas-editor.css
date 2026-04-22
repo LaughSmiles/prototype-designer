@@ -1950,9 +1950,9 @@ body {
     flex-direction: column;
     gap: 4px;
     padding-left: 4px;
-    overflow: hidden;
+    overflow-y: auto;
     transition: all var(--transition-slow);
-    max-height: 2000px;
+    max-height: 5000px;
     opacity: 1;
 }
 
@@ -1974,6 +1974,121 @@ body {
 .page-group-header.dragging .group-count,
 .page-group-header.dragging .category-toggle-icon {
     color: var(--accent-blue);
+}
+
+/* ============================================================
+   动态侧边栏菜单样式
+   ============================================================ */
+
+/* 菜单容器 */
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 8px 0;
+}
+
+/* 菜单项 */
+.menu-item {
+    position: relative;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+}
+
+.menu-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    position: relative;
+}
+
+/* 菜单图标 */
+.menu-icon {
+    font-size: 16px;
+    color: var(--text-secondary);
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* 菜单名称 */
+.menu-name {
+    flex: 1;
+    /* font-size: inherit;  使用继承，不设置固定大小 */
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 展开/折叠图标 */
+.menu-toggle-icon {
+    font-size: 12px;
+    color: var(--text-secondary);
+    width: 16px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: transform var(--transition-slow);
+}
+
+.menu-toggle-icon[data-expanded="true"] {
+    transform: rotate(0deg);
+}
+
+.menu-toggle-icon[data-expanded="false"] {
+    transform: rotate(-90deg);
+}
+
+/* 层级缩进 */
+.menu-item.level-0 > .menu-content {
+    padding-left: 16px;
+}
+
+.menu-item.level-1 > .menu-content {
+    padding-left: 48px;
+}
+
+.menu-item.level-2 > .menu-content {
+    padding-left: 80px;
+}
+
+.menu-item.level-3 > .menu-content {
+    padding-left: 112px;
+}
+
+/* 子菜单容器 */
+.menu-children {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+    max-height: 5000px;
+    opacity: 1;
+    transition: all var(--transition-slow);
+}
+
+.menu-children.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
+/* 悬停状态 */
+.menu-item:hover > .menu-content {
+    background: var(--bg-hover);
+}
+
+/* 高亮状态 */
+.menu-item.active > .menu-content {
+    background: var(--accent-blue-dim);
+}
+
+.menu-item.active > .menu-content .menu-icon,
+.menu-item.active > .menu-content .menu-name,
+.menu-item.active > .menu-content .menu-toggle-icon {
+    color: var(--accent-blue);
+    font-weight: 500;
 }
 
 /* ============================================================
@@ -2315,7 +2430,61 @@ body {
 }
 
 /* ============================================================
-   帮助模态窗口
+   页面全屏预览
+   ============================================================ */
+.page-fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-fullscreen-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border-default);
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.page-fullscreen-toolbar span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.page-fullscreen-close {
+    background: transparent;
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    padding: 5px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition-fast);
+}
+
+.page-fullscreen-close:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.page-fullscreen-content {
+    flex: 1;
+    overflow: hidden;
+}
    ============================================================ */
 .help-modal {
     display: none;

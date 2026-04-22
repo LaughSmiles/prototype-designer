@@ -14,6 +14,7 @@ const ElementManager = {
     // 初始化
     init() {
         ElementKeyboard.setupKeyboardEvents();
+        ElementKeyboard.restoreFullscreenState();
         this.initializeUsageCount();
     },
 

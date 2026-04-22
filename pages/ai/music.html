@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 音乐 - 芋道管理后台</title>
+    <link rel="stylesheet" href="../../lib/fontawesome/all.min.css">
+    <link rel="stylesheet" href="../../css/sidebar-menu.css">
+    <script src="../../lib/tailwindcss/tailwind.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
+        .menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
+        .menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
+        .menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
+        .menu-item.active { color: #fff; background: #409eff; }
+        .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
+        .menu-item span { margin-left: 10px; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #909399; margin-bottom: 12px; }
+        .breadcrumb a { color: #606266; text-decoration: none; }
+        .music-container { display: flex; gap: 16px; height: calc(100vh - 50px - 32px - 28px); }
+        .music-left { width: 300px; background: #fff; border-radius: 4px; padding: 20px; flex-shrink: 0; overflow-y: auto; }
+        .music-left h3 { font-size: 15px; font-weight: 600; color: #303133; margin-bottom: 16px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: #606266; margin-bottom: 6px; font-weight: 500; }
+        .form-select { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; background: #fff; width: 100%; outline: none; }
+        .form-textarea { padding: 8px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; width: 100%; outline: none; resize: vertical; min-height: 120px; font-family: inherit; }
+        .form-textarea:focus { border-color: #409eff; }
+        .form-input { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; width: 100%; outline: none; }
+        .btn { padding: 7px 15px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #dcdfe6; background: #fff; color: #606266; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+        .btn-primary:hover { background: #66b1ff; border-color: #66b1ff; }
+        .btn-lg { padding: 10px 24px; font-size: 14px; }
+        .music-right { flex: 1; background: #fff; border-radius: 4px; padding: 20px; overflow-y: auto; }
+        .music-right h3 { font-size: 15px; font-weight: 600; color: #303133; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .music-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .music-card { border: 1px solid #ebeef5; border-radius: 8px; overflow: hidden; transition: box-shadow 0.2s; }
+        .music-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .music-cover { width: 100%; height: 120px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; position: relative; }
+        .music-cover.c2 { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .music-cover.c3 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .music-cover.c4 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .music-cover.c5 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .music-cover.c6 { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+        .music-cover i { font-size: 36px; color: rgba(255,255,255,0.8); }
+        .music-cover .play-btn { position: absolute; bottom: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.2s; }
+        .music-cover .play-btn:hover { transform: scale(1.1); }
+        .music-cover .play-btn i { font-size: 14px; color: #409eff; }
+        .music-info { padding: 12px; }
+        .music-info .music-title { font-size: 14px; font-weight: 600; color: #303133; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .music-info .music-meta { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #909399; }
+        .music-info .music-style { background: #f0f2f5; padding: 1px 8px; border-radius: 10px; font-size: 11px; }
+        .progress-bar { width: 100%; height: 3px; background: #ebeef5; margin-top: 8px; border-radius: 2px; }
+        .progress-bar .progress { height: 100%; background: #409eff; border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+    <div class="logo"><div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div><span class="logo-text">芋道管理后台</span></div>
+    <div id="sidebar-menu"></div>
+    <script src="../../menu/menu.js"></script>
+    <script src="../../js/menu/menu-data.js"></script>
+    <script src="../../js/menu/menu-render.js"></script>
+    <script src="../../js/menu/menu-interaction.js"></script>
+    <script src="../../js/menu/menu.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            try { await SidebarMenu.init('sidebar-menu'); } catch (error) { console.error('菜单加载失败:', error); }
+        });
+    </script>
+</div>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <span class="topbar-collapse" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 16px; color: #606266; cursor: pointer;"></i></span>
+            <span style="font-size: 13px; color: #606266;">AI 模块 / AI 音乐</span>
+        </div>
+        <div class="topbar-right">
+            <span title="全屏" style="cursor: pointer;"><i class="fas fa-expand" style="font-size: 14px; color: #606266;"></i></span>
+            <span title="搜索" style="cursor: pointer;"><i class="fas fa-search" style="font-size: 14px; color: #606266;"></i></span>
+            <div style="position: relative; cursor: pointer;">
+                <i class="fas fa-bell" style="font-size: 16px; color: #606266;"></i>
+                <span style="position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px;">3</span>
+            </div>
+            <div class="dropdown">
+                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+                    <div class="avatar">芋</div>
+                    <span style="font-size: 13px; color: #606266;">芋道源码</span>
+                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
+                </div>
+                <div class="dropdown-menu" style="right: 0; left: auto;">
+                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>文档</a>
+                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
+                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="main-content">
+        <!-- 面包屑 -->
+        <div class="breadcrumb">
+            <a href="../home.html"><i class="fas fa-home"></i></a>
+            <span>/</span>
+            <span>AI 模块</span>
+            <span>/</span>
+            <span>AI 音乐</span>
+        </div>
+
+        <div class="music-container">
+            <!-- 左侧：音乐参数 -->
+            <div class="music-left">
+                <h3><i class="fas fa-sliders-h" style="color:#409eff;margin-right:6px;"></i>创作参数</h3>
+                <div class="form-group">
+                    <label>音乐风格</label>
+                    <select class="form-select">
+                        <option>流行</option>
+                        <option>古典</option>
+                        <option>摇滚</option>
+                        <option>电子</option>
+                        <option>爵士</option>
+                        <option>民谣</option>
+                        <option>R&B</option>
+                        <option>嘻哈</option>
+                        <option>轻音乐</option>
+                        <option>古风</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>情感基调</label>
+                    <select class="form-select">
+                        <option>欢快</option>
+                        <option>忧伤</option>
+                        <option>激昂</option>
+                        <option>舒缓</option>
+                        <option>浪漫</option>
+                        <option>神秘</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>歌词内容</label>
+                    <textarea class="form-textarea" placeholder="请输入歌词内容，留空则自动生成歌词...&#10;&#10;示例：&#10;春天的风轻轻吹过&#10;带走了冬天的寒冷&#10;你的笑容如阳光般温暖..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>时长设置</label>
+                    <select class="form-select">
+                        <option>30 秒</option>
+                        <option selected>1 分钟</option>
+                        <option>2 分钟</option>
+                        <option>3 分钟</option>
+                        <option>5 分钟</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>乐器偏好</label>
+                    <select class="form-select">
+                        <option>自动选择</option>
+                        <option>钢琴</option>
+                        <option>吉他</option>
+                        <option>小提琴</option>
+                        <option>电子合成器</option>
+                        <option>古筝</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>歌曲标题</label>
+                    <input type="text" class="form-input" placeholder="请输入歌曲标题（可选）">
+                </div>
+                <div style="text-align:right;margin-top:16px;">
+                    <button class="btn btn-primary btn-lg" style="width:100%;justify-content:center;"><i class="fas fa-magic"></i> 生成音乐</button>
+                </div>
+            </div>
+
+            <!-- 右侧：生成的音乐列表 -->
+            <div class="music-right">
+                <h3>
+                    <span><i class="fas fa-headphones" style="color:#409eff;margin-right:6px;"></i>我的音乐</span>
+                    <span style="font-size:12px;color:#909399;font-weight:400;">共 6 首</span>
+                </h3>
+                <div class="music-grid">
+                    <!-- 歌曲1 -->
+                    <div class="music-card">
+                        <div class="music-cover">
+                            <i class="fas fa-music"></i>
+                            <div class="play-btn"><i class="fas fa-play"></i></div>
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">春日漫步</div>
+                            <div class="music-meta">
+                                <span>1:32</span>
+                                <span class="music-style">流行</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress" style="width:0%;"></div></div>
+                        </div>
+                    </div>
+                    <!-- 歌曲2 -->
+                    <div class="music-card">
+                        <div class="music-cover c2">
+                            <i class="fas fa-music"></i>
+                            <div class="play-btn"><i class="fas fa-play"></i></div>
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">星空下的约定</div>
+                            <div class="music-meta">
+                                <span>2:45</span>
+                                <span class="music-style">浪漫</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress" style="width:0%;"></div></div>
+                        </div>
+                    </div>
+                    <!-- 歌曲3 -->
+                    <div class="music-card">
+                        <div class="music-cover c3">
+                            <i class="fas fa-music"></i>
+                            <div class="play-btn"><i class="fas fa-play"></i></div>
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">城市脉搏</div>
+                            <div class="music-meta">
+                                <span>3:10</span>
+                                <span class="music-style">电子</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress" style="width:0%;"></div></div>
+                        </div>
+                    </div>
+                    <!-- 歌曲4 -->
+                    <div class="music-card">
+                        <div class="music-cover c4">
+                            <i class="fas fa-music"></i>
+                            <div class="play-btn"><i class="fas fa-play"></i></div>
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">山水之间</div>
+                            <div class="music-meta">
+                                <span>2:58</span>
+                                <span class="music-style">古风</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress" style="width:0%;"></div></div>
+                        </div>
+                    </div>
+                    <!-- 歌曲5 -->
+                    <div class="music-card">
+                        <div class="music-cover c5">
+                            <i class="fas fa-music"></i>
+                            <div class="play-btn"><i class="fas fa-play"></i></div>
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">追光者</div>
+                            <div class="music-meta">
+                                <span>1:55</span>
+                                <span class="music-style">摇滚</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress" style="width:0%;"></div></div>
+                        </div>
+                    </div>
+                    <!-- 歌曲6 -->
+                    <div class="music-card">
+                        <div class="music-cover c6">
+                            <i class="fas fa-music"></i>
+                            <div class="play-btn"><i class="fas fa-play"></i></div>
+                        </div>
+                        <div class="music-info">
+                            <div class="music-title">午后咖啡</div>
+                            <div class="music-meta">
+                                <span>2:20</span>
+                                <span class="music-style">轻音乐</span>
+                            </div>
+                            <div class="progress-bar"><div class="progress" style="width:0%;"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

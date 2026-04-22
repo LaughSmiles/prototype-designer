@@ -318,7 +318,7 @@ const CanvasViewEvents = {
         }
 
         if (e.ctrlKey) {
-            if (isInsideCanvasWrapper && !isInsideIframe) {
+            if (isInsideCanvasWrapper) {
                 e.preventDefault();
                 e.stopPropagation();
                 CanvasView.zoomAtPoint(e.clientX, e.clientY, e.deltaY > 0 ? 0.9 : 1.1);
@@ -327,7 +327,7 @@ const CanvasViewEvents = {
         } else {
             if (isInsideIframe) {
                 return;
-            } else if (isInsideCanvasWrapper && !isInsideIframe) {
+            } else if (isInsideCanvasWrapper) {
                 e.preventDefault();
                 e.stopPropagation();
                 CanvasView.state.pan.x -= e.deltaX;

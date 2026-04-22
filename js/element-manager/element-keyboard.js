@@ -85,6 +85,18 @@ const ElementKeyboard = {
             menu.appendChild(screenshotItem);
         }
 
+        // 全屏显示菜单项
+        if (iframe) {
+            const fullscreenItem = document.createElement('div');
+            fullscreenItem.className = 'context-menu-item';
+            fullscreenItem.innerHTML = '<i class="fas fa-expand"></i><span>全屏显示</span>';
+            fullscreenItem.addEventListener('click', () => {
+                this.toggleFullscreen(iframe, element);
+                menu.remove();
+            });
+            menu.appendChild(fullscreenItem);
+        }
+
         document.body.appendChild(menu);
 
         // 点击其他地方关闭菜单
@@ -193,6 +205,119 @@ const ElementKeyboard = {
         } catch (error) {
             console.error('截图失败:', error);
             PageLibrary.showHint(`❌ 截图失败: ${error.message}`);
+        }
+    },
+
+    // localStorage 键名
+    FULLSCREEN_STORAGE_KEY: 'prototypeFullscreenState',
+
+    // 全屏显示页面
+    toggleFullscreen(iframe, element) {
+        if (!iframe) return;
+
+        const elementDiv = iframe.closest('.canvas-element');
+        if (!elementDiv) return;
+
+        // 检查是否已经全屏
+        const existingOverlay = document.querySelector('.page-fullscreen-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+            this.clearFullscreenState();
+            return;
+        }
+
+        // 保存全屏状态到 localStorage
+        const iframeSrc = iframe.src;
+        const pageName = PageLibrary.getPageName(element.pageId);
+        this.saveFullscreenState(iframeSrc, pageName);
+
+        // 创建全屏遮罩
+        this.createFullscreenOverlay(iframeSrc, pageName);
+    },
+
+    // 创建全屏遮罩层
+    createFullscreenOverlay(iframeSrc, pageName) {
+        const overlay = document.createElement('div');
+        overlay.className = 'page-fullscreen-overlay';
+
+        // 顶部工具栏
+        const toolbar = document.createElement('div');
+        toolbar.className = 'page-fullscreen-toolbar';
+        toolbar.innerHTML = `
+            <span><i class="fas fa-expand"></i> ${pageName || '页面预览'}</span>
+            <button class="page-fullscreen-close" title="关闭全屏 (Esc)"><i class="fas fa-compress"></i> 退出全屏</button>
+        `;
+
+        // iframe容器
+        const iframeContainer = document.createElement('div');
+        iframeContainer.className = 'page-fullscreen-content';
+
+        // 创建新iframe加载页面
+        const fullscreenIframe = document.createElement('iframe');
+        fullscreenIframe.src = iframeSrc;
+        fullscreenIframe.style.width = '100%';
+        fullscreenIframe.style.height = '100%';
+        fullscreenIframe.style.border = 'none';
+
+        iframeContainer.appendChild(fullscreenIframe);
+        overlay.appendChild(toolbar);
+        overlay.appendChild(iframeContainer);
+        document.body.appendChild(overlay);
+
+        // 关闭按钮
+        toolbar.querySelector('.page-fullscreen-close').addEventListener('click', () => {
+            overlay.remove();
+            this.clearFullscreenState();
+        });
+
+        // Esc 关闭
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                this.clearFullscreenState();
+                document.removeEventListener('keydown', escHandler);
+            }
+        };
+        document.addEventListener('keydown', escHandler);
+    },
+
+    // 保存全屏状态到 localStorage
+    saveFullscreenState(iframeSrc, pageName) {
+        try {
+            const state = {
+                iframeSrc: iframeSrc,
+                pageName: pageName,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(this.FULLSCREEN_STORAGE_KEY, JSON.stringify(state));
+        } catch (e) {
+            console.warn('保存全屏状态失败:', e);
+        }
+    },
+
+    // 清除全屏状态
+    clearFullscreenState() {
+        try {
+            localStorage.removeItem(this.FULLSCREEN_STORAGE_KEY);
+        } catch (e) {
+            console.warn('清除全屏状态失败:', e);
+        }
+    },
+
+    // 恢复全屏状态（页面加载时调用）
+    restoreFullscreenState() {
+        try {
+            const saved = localStorage.getItem(this.FULLSCREEN_STORAGE_KEY);
+            if (!saved) return;
+
+            const state = JSON.parse(saved);
+            if (state && state.iframeSrc) {
+                this.createFullscreenOverlay(state.iframeSrc, state.pageName);
+                console.log('✅ 已恢复全屏状态:', state.pageName);
+            }
+        } catch (e) {
+            console.warn('恢复全屏状态失败:', e);
+            this.clearFullscreenState();
         }
     },
 
