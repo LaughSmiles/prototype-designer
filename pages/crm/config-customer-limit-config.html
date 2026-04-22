@@ -21,10 +21,17 @@
         .menu-item.active { color: #fff; background: #409eff; }
         .menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
         .menu-item span { margin-left: 10px; }
-        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
-        .topbar-left { display: flex; align-items: center; gap: 12px; }
-        .topbar-right { display: flex; align-items: center; gap: 16px; }
-        .avatar { width: 30px; height: 30px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+                .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
+        .custom-hover { display: flex; height: 100%; padding: 0 10px; cursor: pointer; align-items: center; transition: background 0.2s; }
+        .custom-hover:hover { background-color: #f6f6f6; }
+        .breadcrumb { display: flex; align-items: center; height: 100%; margin-left: 10px; font-size: 14px; }
+        .breadcrumb-sep { margin: 0 6px; color: #c0c4cc; }
+        .breadcrumb a { color: inherit; text-decoration: none; }
+        .breadcrumb a:hover { color: #409eff; }
+        .breadcrumb .last { color: #97a8be; }
+        .notification-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #f56c6c; border-radius: 50%; }
+        .username-text { padding-left: 5px; font-size: 14px; color: inherit; }
+                .avatar { width: 25px; height: 25px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; }
         .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
         .tab-card { background: #fff; border-radius: 4px; }
         .tab-header { display: flex; border-bottom: 2px solid #e4e7ed; }
@@ -69,20 +76,20 @@
     </div>
     <div class="topbar">
         <div class="topbar-left">
-            <span class="topbar-collapse" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 16px; color: #606266; cursor: pointer;"></i></span>
-            <span style="font-size: 13px; color: #606266;">CRM系统 / 系统配置 / 客户限制配置</span>
+            <div class="custom-hover" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px;"></i></div>
+            <div class="breadcrumb"><a>CRM系统</a><span class="breadcrumb-sep">/</span><a>系统配置</a><span class="breadcrumb-sep">/</span><span class="last">客户限制配置</span></div>
         </div>
         <div class="topbar-right">
-            <span title="全屏" style="cursor: pointer;"><i class="fas fa-expand" style="font-size: 14px; color: #606266;"></i></span>
-            <span title="搜索" style="cursor: pointer;"><i class="fas fa-search" style="font-size: 14px; color: #606266;"></i></span>
-            <div style="position: relative; cursor: pointer;">
-                <i class="fas fa-bell" style="font-size: 16px; color: #606266;"></i>
-                <span style="position: absolute; top: -6px; right: -8px; background: #f56c6c; color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 8px;">3</span>
+            <div class="custom-hover" title="全屏"><i class="fas fa-expand" style="font-size: 18px;"></i></div>
+            <div class="custom-hover" title="搜索"><i class="fas fa-search" style="font-size: 18px;"></i></div>
+            <div class="custom-hover" style="position: relative;" title="消息">
+                <i class="fas fa-bell" style="font-size: 18px;"></i>
+                <span class="notification-dot"></span>
             </div>
-            <div class="dropdown">
-                <div style="display: flex; align-items: center; gap: 8px; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
+            <div class="dropdown custom-hover">
+                <div style="display: flex; align-items: center; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
                     <div class="avatar">芋</div>
-                    <span style="font-size: 13px; color: #606266;">芋道源码</span>
+                    <span class="username-text">芋道源码</span>
                     <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
                 </div>
                 <div class="dropdown-menu" style="right: 0; left: auto;">
