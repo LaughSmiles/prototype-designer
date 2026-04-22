@@ -59,6 +59,11 @@ tr:hover { background: #f5f7fa; }
         .notification-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #f56c6c; border-radius: 50%; }
         .avatar { width: 25px; height: 25px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; }
         .username-text { padding-left: 5px; font-size: 14px; color: inherit; }
+    
+        .tenant-select { width: 180px; height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 0 30px 0 12px; font-size: 13px; color: #606266; background: #fff; outline: none; cursor: pointer; appearance: auto; }
+        .tenant-select:focus { border-color: #409eff; }
+        .tenant-wrap { position: relative; display: flex; align-items: center; margin-right: 4px; }
+        .tenant-wrap i { position: absolute; right: 10px; font-size: 12px; color: #c0c4cc; pointer-events: none; }
     </style><link rel="stylesheet" href="../../css/sidebar-menu.css">
 </head>
 <body><div class="sidebar" id="sidebar">
@@ -86,9 +91,32 @@ tr:hover { background: #f5f7fa; }
             <div class="custom-hover" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px;"></i></div>
             <div class="breadcrumb"><a>支付管理</a><span class="breadcrumb-sep">/</span><a>支付管理</a><span class="breadcrumb-sep">/</span><span class="last">应用信息</span></div>
         </div>
-        <div class="topbar-right">
+                <div class="topbar-right">
+            <div class="tenant-wrap">
+                <select class="tenant-select">
+                    <option value="" disabled selected>请选择租户</option>
+                    <option value="1">芋道源码</option>
+                    <option value="2">测试租户</option>
+                </select>
+                <i class="fas fa-chevron-down"></i>
+            </div>
             <div class="custom-hover" title="全屏"><i class="fas fa-expand" style="font-size: 18px;"></i></div>
             <div class="custom-hover" title="搜索"><i class="fas fa-search" style="font-size: 18px;"></i></div>
+            <div class="dropdown custom-hover" title="尺寸">
+                <i class="fas fa-text-height" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>Default</a>
+                    <a>Large</a>
+                    <a>Small</a>
+                </div>
+            </div>
+            <div class="dropdown custom-hover" title="语言">
+                <i class="fas fa-language" style="font-size: 18px;"></i>
+                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
+                    <a>简体中文</a>
+                    <a>English</a>
+                </div>
+            </div>
             <div class="custom-hover" style="position: relative;" title="消息">
                 <i class="fas fa-bell" style="font-size: 18px;"></i>
                 <span class="notification-dot"></span>
@@ -101,7 +129,7 @@ tr:hover { background: #f5f7fa; }
                 </div>
                 <div class="dropdown-menu" style="right: 0; left: auto;">
                     <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
-                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>文档</a>
+                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>开发文档</a>
                     <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
                     <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
                 </div>
