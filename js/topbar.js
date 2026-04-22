@@ -92,7 +92,7 @@
             // 只在全屏状态下拦截
             if (isFullscreen()) {
                 e.preventDefault();
-                e.stopPropagation();
+                // 不 stopPropagation，让画布编辑器也能收到 Ctrl+S 触发保存
             }
         }
     }, true); // 使用捕获阶段，确保优先于其他处理器
