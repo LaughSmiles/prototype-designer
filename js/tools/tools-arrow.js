@@ -19,12 +19,6 @@ const ToolsArrow = {
             Tools.arrowState.points = [{ x, y }];
             Tools.arrowState.isDrawing = true;
 
-            // 临时禁用所有iframe的交互，防止绘制时触发iframe滚动
-            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'none';
-            });
-
             // 创建临时预览线
             this.createArrowPreview();
 
@@ -52,12 +46,6 @@ const ToolsArrow = {
 
         // 创建箭头元素
         ElementManager.addArrowElement(Tools.arrowState.points);
-
-        // 恢复所有iframe的交互
-        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-        iframes.forEach(iframe => {
-            iframe.style.pointerEvents = 'none';
-        });
 
         // 重置状态
         Tools.arrowState.points = [];

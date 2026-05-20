@@ -98,12 +98,6 @@ const CanvasViewBoxSelection = {
             // 移除透明覆盖层
             this.removeBoxSelectionOverlay();
 
-            // 恢复所有iframe的交互
-            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'none';
-            });
-
             // 恢复所有批注元素的交互
             const annotationElements = document.querySelectorAll('.annotation-box, .annotation-anchor');
             annotationElements.forEach(element => {
@@ -141,12 +135,6 @@ const CanvasViewBoxSelection = {
 
         // 移除透明覆盖层
         this.removeBoxSelectionOverlay();
-
-        // 恢复所有iframe的交互
-        const iframes2 = document.querySelectorAll('.canvas-element.page-element iframe');
-        iframes2.forEach(iframe => {
-            iframe.style.pointerEvents = 'none';
-        });
 
         // 恢复所有批注元素的交互
         const annotationElements = document.querySelectorAll('.annotation-box, .annotation-anchor');

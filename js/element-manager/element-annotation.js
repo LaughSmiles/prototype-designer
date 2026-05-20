@@ -348,11 +348,6 @@ const ElementAnnotation = {
 
             ElementManager.selectElement(data.id);
 
-            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'none';
-            });
-
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
         });
@@ -412,11 +407,6 @@ const ElementAnnotation = {
                 isDragging = false;
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
-
-                const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-                iframes.forEach(iframe => {
-                    iframe.style.pointerEvents = 'none';
-                });
 
                 HistoryManager.saveState();
             }

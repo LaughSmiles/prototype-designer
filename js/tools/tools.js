@@ -41,12 +41,6 @@ const Tools = {
             ToolsArrow.removeArrowPreview();
             this.arrowState.points = [];
             this.arrowState.isDrawing = false;
-
-            // 恢复所有iframe的交互
-            const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-            iframes.forEach(iframe => {
-                iframe.style.pointerEvents = 'none';
-            });
         }
 
         // 更新状态
@@ -78,13 +72,6 @@ const Tools = {
                 canvasWrapper.style.cursor = 'text';  // 批注标记工具
             }
         }
-
-        // 更新 iframe 交互状态
-        // iframe 始终禁用交互，让点击穿透到canvasWrapper
-        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-        iframes.forEach(iframe => {
-            iframe.style.pointerEvents = 'none';
-        });
 
         // 显示提示
         const toolNames = {

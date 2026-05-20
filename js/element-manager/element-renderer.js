@@ -69,7 +69,6 @@ const ElementRenderer = {
         iframe.style.marginTop = '30px';
         iframe.style.border = 'none';
         iframe.style.overflow = 'auto';
-        iframe.style.pointerEvents = 'none';
         div.appendChild(iframe);
 
         // 透明点击遮罩层：覆盖在 iframe 上方，捕获鼠标事件并正常冒泡

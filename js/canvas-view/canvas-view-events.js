@@ -189,12 +189,6 @@ const CanvasViewEvents = {
                     CanvasView.allElementBounds = [];
                 }
 
-                // 临时禁用所有iframe的交互，防止拖拽时触发滚动
-                const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-                iframes.forEach(iframe => {
-                    iframe.style.pointerEvents = 'none';
-                });
-
                 e.preventDefault();
                 e.stopPropagation();
             }
@@ -224,12 +218,6 @@ const CanvasViewEvents = {
             x: e.clientX - wrapperRect.left,
             y: e.clientY - wrapperRect.top
         };
-
-        // 临时禁用所有iframe的交互
-        const iframes = document.querySelectorAll('.canvas-element.page-element iframe');
-        iframes.forEach(iframe => {
-            iframe.style.pointerEvents = 'none';
-        });
 
         // 临时禁用所有批注元素的交互
         const annotationElements = document.querySelectorAll('.annotation-box, .annotation-anchor');
@@ -353,41 +341,6 @@ const CanvasViewEvents = {
 
         if (!isInsideEditor) return;
 
-        // 预览模式：转发滚轮事件到预览iframe，解决iframe内滚动失效问题
-        if (CanvasView.isPreviewMode) {
-            if (e.ctrlKey) {
-                // Ctrl+滚轮：阻止浏览器缩放
-                e.preventDefault();
-                return;
-            }
-            if (CanvasViewEvents._previewElementId) {
-                const previewDiv = document.querySelector(`[data-element-id="${CanvasViewEvents._previewElementId}"]`);
-                const iframe = previewDiv?.querySelector('iframe');
-                if (iframe && iframe.contentWindow) {
-                    const iframeRect = iframe.getBoundingClientRect();
-                    const inIframe = e.clientX >= iframeRect.left && e.clientX <= iframeRect.right &&
-                                     e.clientY >= iframeRect.top && e.clientY <= iframeRect.bottom;
-                    if (inIframe) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // 将delta转换为像素
-                        let dy = e.deltaY;
-                        let dx = e.deltaX;
-                        if (e.deltaMode === 1) { // DOM_DELTA_LINE
-                            dy *= 40;
-                            dx *= 40;
-                        } else if (e.deltaMode === 2) { // DOM_DELTA_PAGE
-                            dy *= iframe.contentWindow.innerHeight;
-                            dx *= iframe.contentWindow.innerWidth;
-                        }
-                        iframe.contentWindow.scrollBy(dx, dy);
-                        return;
-                    }
-                }
-            }
-            return;
-        }
-
         const isInsideIframe = e.target.closest('.canvas-element.page-element iframe');
         const isInsideCanvasWrapper = e.target.closest('#canvasWrapper');
         const isInsideAnnotation = e.target.closest('.annotation-content-wrapper') ||
@@ -482,7 +435,6 @@ const CanvasViewEvents = {
         if (overlay) overlay.style.display = 'none';
         const iframe = pageDiv.querySelector('iframe');
         if (iframe) {
-            iframe.style.pointerEvents = 'auto';
             iframe.focus();
         }
 
@@ -539,8 +491,6 @@ const CanvasViewEvents = {
         if (pageDiv) {
             const overlay = pageDiv.querySelector('.page-click-overlay');
             if (overlay) overlay.style.display = '';
-            const iframe = pageDiv.querySelector('iframe');
-            if (iframe) iframe.style.pointerEvents = 'none';
 
             // 恢复按钮
             pageDiv.querySelectorAll('.preview-btn, .delete-btn').forEach(btn => {
