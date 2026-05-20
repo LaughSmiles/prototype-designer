@@ -10,6 +10,7 @@ package-lock.json
 
 # Data
 data/
+yudao-ui-admin-vue3/
 
 # OS
 .DS_Store

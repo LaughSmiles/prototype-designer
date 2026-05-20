@@ -63,6 +63,20 @@
     -   每个表格行添加操作列(查看/编辑/删除)。
     -   搜索和重置按钮要有真实的交互效果。
     -   新增/编辑使用弹框形式展示表单。
+7.  数据配置（重要）：
+    -   引入侧边栏菜单系统（5个模块）：
+        *   <link rel="stylesheet" href="../../../css/sidebar-menu.css">
+        *   <script src="../../../menu/menu.js">（菜单配置数据）
+        *   <script src="../../../js/menu/menu-data.js">（菜单数据处理）
+        *   <script src="../../../js/menu/menu-render.js">（菜单渲染）
+        *   <script src="../../../js/menu/menu-interaction.js">（菜单交互）
+        *   <script src="../../../js/menu/menu.js">（菜单入口）
+    -   引入页面交互组件（3个文件）：
+        *   <script src="../../../js/topbar.js">（顶栏全屏功能）
+        *   <script src="../../../js/page-fields-config.js">（表单字段配置，需先运行脚本生成）
+        *   <script src="../../../js/prototype-components.js">（按钮交互组件，必须最后加载）
+    -   在页面中添加菜单容器：<div id="sidebar-menu"></div>
+    -   在 DOMContentLoaded 后初始化：await SidebarMenu.init('sidebar-menu');
 请按照以上要求生成完整的HTML代码。
 ```
 
@@ -113,6 +127,111 @@ window.PROJECT_CONFIG = {
   ]
 };
 ```
+
+#### 步骤 3.5：配置管理后台数据（仅管理后台需要）
+
+> 如果你的项目类型是"管理后台"，需要额外配置菜单和表单数据。
+
+##### 3.5.1 配置菜单数据
+
+创建 `menu/menu.js` 文件，定义侧边栏菜单结构：
+
+```javascript
+window.SIDEBAR_MENU = [
+  {
+    id: "system",
+    name: "系统管理",
+    icon: "fa-cog",
+    path: null,
+    order: 0,
+    parentId: null,
+    children: [
+      { id: "system-user", name: "用户管理", icon: "fa-user", path: "admin/system/user.html", order: 0, parentId: "system" },
+      { id: "system-role", name: "角色管理", icon: "fa-user-shield", path: "admin/system/role.html", order: 1, parentId: "system" },
+      // ... 更多菜单项
+    ]
+  }
+];
+```
+
+**菜单项字段说明**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | string | ✅ | 唯一标识符 |
+| `name` | string | ✅ | 显示名称 |
+| `icon` | string | ✅ | Font Awesome 图标类名 |
+| `path` | string/null | ❌ | 页面路径（null 表示父菜单） |
+| `order` | number | ❌ | 排序（数字越小越靠前） |
+| `parentId` | string/null | ❌ | 父菜单 ID（null 表示顶级） |
+| `children` | array | ❌ | 子菜单数组 |
+
+##### 3.5.2 生成表单字段配置
+
+如果你的项目有对应的 Vue3 管理后台项目（如 `yudao-ui-admin-vue3`）：
+
+1. **将 Vue Form 组件复制到项目根目录**：
+   ```
+   项目根目录/
+   └── yudao-ui-admin-vue3/
+       └── src/views/
+           └── system/userForm.vue
+   ```
+
+2. **运行字段提取脚本**：
+   ```bash
+   cd tools
+   node extract-form-fields.js
+   ```
+
+3. **脚本会自动生成** `js/page-fields-config.js`，包含所有页面的：
+   - 表单字段定义（label, type, required, options）
+   - 表头列表（headers）
+   - 实体名称（entityName）
+
+**如果没有 Vue3 项目**：表单将使用通用默认字段（名称、编码、排序、状态、备注）。
+
+##### 3.5.3 注入配置引用到 HTML 页面
+
+**方法1：自动注入（推荐）**
+
+运行脚本自动将配置文件引用注入到所有 HTML 页面：
+```bash
+cd tools
+node inject-config-reference.js
+```
+
+**方法2：手动添加**
+
+在每个 HTML 页面的 `</body>` 前，按以下顺序添加（**注意顺序不能错**）：
+```html
+<!-- 1. 菜单配置 -->
+<script src="../../../menu/menu.js"></script>
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+
+<!-- 2. 顶栏功能 -->
+<script src="../../../js/topbar.js"></script>
+
+<!-- 3. 表单配置（必须在 prototype-components.js 之前） -->
+<script src="../../../js/page-fields-config.js"></script>
+
+<!-- 4. 交互组件（必须最后加载） -->
+<script src="../../../js/prototype-components.js"></script>
+```
+
+##### 3.5.4 验证配置
+
+打开一个管理后台页面，检查：
+- [ ] 左侧菜单正确显示
+- [ ] 点击菜单可切换页面
+- [ ] 新增按钮弹出表单，字段与配置一致
+- [ ] 编辑按钮可回填数据
+- [ ] 状态开关显示正确实体名
+
+---
 
 #### 步骤4: 修复页面导航
 

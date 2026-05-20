@@ -196,13 +196,17 @@
 
         // 新增/编辑表单弹框
         form(options) {
-            const { title = '新增', fields = [] } = options;
+            const { title = '新增', fields = [], data = null } = options;
             let formHtml = '<div class="proto-form">';
             fields.forEach(field => {
                 const required = field.required ? '<span style="color:#f56c6c;">*</span>' : '';
+
+                // 获取字段值（用于编辑回填）
+                const fieldValue = data && data[field.label] ? data[field.label] : '';
+
                 if (field.type === 'select') {
                     const optionsHtml = (field.options || []).map(o =>
-                        `<option value="${o}">${o}</option>`
+                        `<option value="${o}"${fieldValue === o ? ' selected' : ''}>${o}</option>`
                     ).join('');
                     formHtml += `
                         <div class="proto-form-item">
@@ -213,19 +217,25 @@
                     formHtml += `
                         <div class="proto-form-item">
                             <label>${required}${field.label}</label>
-                            <textarea class="proto-form-textarea" rows="3" placeholder="请输入${field.label}"></textarea>
+                            <textarea class="proto-form-textarea" rows="3" placeholder="请输入${field.label}">${fieldValue}</textarea>
                         </div>`;
                 } else if (field.type === 'date') {
                     formHtml += `
                         <div class="proto-form-item">
                             <label>${required}${field.label}</label>
-                            <input type="date" class="proto-form-input" placeholder="请选择${field.label}">
+                            <input type="date" class="proto-form-input" value="${fieldValue}" placeholder="请选择${field.label}">
+                        </div>`;
+                } else if (field.type === 'number') {
+                    formHtml += `
+                        <div class="proto-form-item">
+                            <label>${required}${field.label}</label>
+                            <input type="number" class="proto-form-input" value="${fieldValue}" placeholder="请输入${field.label}">
                         </div>`;
                 } else {
                     formHtml += `
                         <div class="proto-form-item">
                             <label>${required}${field.label}</label>
-                            <input type="text" class="proto-form-input" placeholder="请输入${field.label}">
+                            <input type="text" class="proto-form-input" value="${fieldValue}" placeholder="请输入${field.label}">
                         </div>`;
                 }
             });
@@ -280,6 +290,17 @@
                     btn.addEventListener('click', (e) => {
                         e.preventDefault();
                         Dialog.success('导出成功');
+                    });
+                }
+            });
+
+            // 导入按钮
+            document.querySelectorAll('.btn-warning').forEach(btn => {
+                const text = btn.textContent.trim();
+                if (text.includes('导入')) {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.handleImport(btn);
                     });
                 }
             });
@@ -340,66 +361,105 @@
             document.querySelectorAll('.status-switch input').forEach(sw => {
                 sw.addEventListener('change', () => {
                     const state = sw.checked ? '开启' : '关闭';
-                    Dialog.confirm(`确定要${state}该用户吗？`, () => {
+                    const entityName = this.getEntityName();
+                    Dialog.confirm(`确定要${state}${entityName}吗？`, () => {
                         Dialog.success(`已${state}`);
                     });
                 });
+            });
+
+            // "更多"下拉菜单按钮
+            document.querySelectorAll('.dropdown > .btn-text, .dropdown > button').forEach(btn => {
+                const text = btn.textContent.trim();
+                if (text.includes('更多')) {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const menu = btn.nextElementSibling || btn.parentElement.querySelector('.dropdown-menu');
+                        if (menu) {
+                            // 关闭其他菜单
+                            document.querySelectorAll('.dropdown-menu').forEach(m => {
+                                if (m !== menu) m.style.display = 'none';
+                            });
+                            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                        }
+                    });
+                }
+            });
+
+            // 点击页面其他地方关闭所有下拉菜单
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+            });
+
+            // 处理下拉菜单中的操作项
+            document.querySelectorAll('.dropdown-menu a, .dropdown-menu .dropdown-item').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const text = link.textContent.trim();
+                    const row = link.closest('tr');
+
+                    if (text.includes('删除')) {
+                        Dialog.confirm('确定要删除吗？', () => Dialog.success('删除成功'));
+                    } else if (text.includes('重置密码')) {
+                        Dialog.form({
+                            title: '重置密码',
+                            fields: [{ label: '新密码', required: true, type: 'input' }],
+                            onConfirm: () => Dialog.success('密码重置成功')
+                        });
+                    } else if (text.includes('分配角色')) {
+                        Dialog.form({
+                            title: '分配角色',
+                            fields: [{ label: '角色', type: 'select', options: ['超级管理员', '普通角色', '租户管理员'] }],
+                            onConfirm: () => Dialog.success('分配成功')
+                        });
+                    } else {
+                        Dialog.success(`${text}操作成功`);
+                    }
+
+                    // 关闭菜单
+                    link.closest('.dropdown-menu').style.display = 'none';
+                });
+            });
+        },
+
+        // 处理导入按钮
+        handleImport(btn) {
+            Dialog.show({
+                title: '导入',
+                width: '480px',
+                content: `
+                    <div class="proto-upload">
+                        <div class="proto-upload-area">
+                            <i class="fas fa-cloud-upload-alt" style="font-size:40px;color:#c0c4cc;"></i>
+                            <p>将文件拖到此处，或 <em>点击上传</em></p>
+                            <input type="file" style="display:none" accept=".xlsx,.xls">
+                        </div>
+                        <div style="margin-top:12px;font-size:13px;color:#606266;">
+                            <a href="#" style="color:#409eff;">下载模板</a>
+                        </div>
+                    </div>`,
+                confirmText: '确 定',
+                onConfirm: () => {
+                    Dialog.success('导入成功');
+                }
             });
         },
 
         // 根据页面标题生成表单字段
         getPageFields() {
             const title = document.title.replace(' - 芋道管理后台', '');
-            const fieldMap = {
-                '用户管理': [
-                    { label: '用户名称', required: true },
-                    { label: '用户昵称', required: true },
-                    { label: '手机号码' },
-                    { label: '部门', type: 'select', options: ['深圳总公司', '研发部门', '市场部门', '测试部门'] },
-                    { label: '状态', type: 'select', options: ['开启', '关闭'] }
-                ],
-                '角色管理': [
-                    { label: '角色名称', required: true },
-                    { label: '角色标识', required: true },
-                    { label: '显示顺序', required: true },
-                    { label: '状态', type: 'select', options: ['开启', '关闭'] },
-                    { label: '备注', type: 'textarea' }
-                ],
-                '菜单管理': [
-                    { label: '菜单名称', required: true },
-                    { label: '路由地址' },
-                    { label: '权限标识' },
-                    { label: '排序', required: true },
-                    { label: '类型', type: 'select', options: ['目录', '菜单', '按钮'] }
-                ],
-                '部门管理': [
-                    { label: '部门名称', required: true },
-                    { label: '负责人' },
-                    { label: '联系电话' },
-                    { label: '邮箱' },
-                    { label: '排序', required: true }
-                ],
-                '岗位管理': [
-                    { label: '岗位编码', required: true },
-                    { label: '岗位名称', required: true },
-                    { label: '显示顺序', required: true },
-                    { label: '状态', type: 'select', options: ['开启', '关闭'] }
-                ],
-                '字典管理': [
-                    { label: '字典名称', required: true },
-                    { label: '字典类型', required: true },
-                    { label: '状态', type: 'select', options: ['开启', '关闭'] },
-                    { label: '备注', type: 'textarea' }
-                ],
-                '通知公告': [
-                    { label: '公告标题', required: true },
-                    { label: '公告类型', type: 'select', options: ['通知', '公告'] },
-                    { label: '状态', type: 'select', options: ['开启', '关闭'] },
-                    { label: '内容', type: 'textarea' }
-                ]
-            };
 
-            // 通用列表页面字段
+            // 1. 优先从外部配置查找
+            if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
+                return window.PAGE_FIELDS_CONFIG[title].fields;
+            }
+
+            // 2. 从 HTML <th> 表头自动推断
+            const autoFields = this.inferFieldsFromHeaders();
+            if (autoFields.length > 0) return autoFields;
+
+            // 3. 兜底通用字段
             const defaultFields = [
                 { label: '名称', required: true },
                 { label: '编码' },
@@ -408,7 +468,92 @@
                 { label: '备注', type: 'textarea' }
             ];
 
-            return fieldMap[title] || defaultFields;
+            return defaultFields;
+        },
+
+        // 从 HTML <th> 表头自动推断字段
+        inferFieldsFromHeaders() {
+            const headers = this.getTableHeaders();
+            if (!headers || headers.length === 0) return [];
+
+            const fields = [];
+            const seenLabels = new Set();
+
+            for (const header of headers) {
+                // 跳过 ID、时间、操作类字段
+                if (header.includes('编号') || header.includes('ID') ||
+                    header.includes('时间') || header.includes('日期') ||
+                    header.includes('创建人') || header.includes('更新') ||
+                    header.includes('操作') || header === '') {
+                    continue;
+                }
+
+                // 避免重复字段
+                if (seenLabels.has(header)) continue;
+                seenLabels.add(header);
+
+                let type = 'input';
+                if (header.includes('状态')) {
+                    type = 'select';
+                } else if (header.includes('备注') || header.includes('描述') || header.includes('内容')) {
+                    type = 'textarea';
+                } else if (header.includes('时间') || header.includes('日期')) {
+                    type = 'date';
+                }
+
+                const field = { label: header, type };
+
+                // 名称、编码类字段通常必填
+                if (header.includes('名称') || header.includes('编码')) {
+                    field.required = true;
+                }
+
+                // 状态字段添加选项
+                if (header.includes('状态')) {
+                    field.options = ['开启', '关闭'];
+                }
+
+                fields.push(field);
+            }
+
+            // 如果推断不出字段，返回空数组（使用兜底）
+            return fields;
+        },
+
+        // 获取表头列表
+        getTableHeaders() {
+            const title = document.title.replace(' - 芋道管理后台', '');
+
+            // 优先从外部配置获取
+            if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
+                return window.PAGE_FIELDS_CONFIG[title].headers;
+            }
+
+            // 从 DOM 提取
+            const ths = document.querySelectorAll('table thead th');
+            const headers = [];
+            ths.forEach(th => {
+                const text = th.textContent.trim();
+                if (text && text !== '操作') {
+                    headers.push(text);
+                }
+            });
+
+            return headers;
+        },
+
+        // 获取实体名称（用于提示文案）
+        getEntityName() {
+            const title = document.title.replace(' - 芋道管理后台', '');
+
+            // 优先从外部配置获取
+            if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
+                const entityName = window.PAGE_FIELDS_CONFIG[title].entityName;
+                if (entityName) return entityName;
+            }
+
+            // 从标题推断（去掉"管理"后缀）
+            return title.replace(/管理$/, '') || title || '该项';
         },
 
         handleAdd(btn) {
@@ -423,33 +568,90 @@
         },
 
         handleEdit(btn) {
+            const row = btn.closest('tr');
+            if (!row) {
+                Dialog.form({
+                    title: '编辑',
+                    fields: this.getPageFields(),
+                    onConfirm: () => Dialog.success('修改成功')
+                });
+                return;
+            }
+
             const fields = this.getPageFields();
+            const headers = this.getTableHeaders();
+            const rowData = this.extractRowData(row, headers);
+
             Dialog.form({
                 title: '编辑',
                 fields,
+                data: rowData,
                 onConfirm: () => {
                     Dialog.success('修改成功');
                 }
             });
         },
 
+        // 从表格行提取数据
+        extractRowData(row, headers) {
+            const cells = row.querySelectorAll('td');
+            const data = {};
+            const cellIndex = 0;
+
+            cells.forEach((cell, index) => {
+                // 跳过 checkbox 列
+                if (cell.querySelector('input[type=checkbox]')) return;
+
+                // 跳过包含操作的列
+                const text = cell.textContent.trim();
+                if (text.includes('修改') || text.includes('删除') ||
+                    text.includes('更多') || text.includes('详情')) return;
+
+                // 按表头映射字段
+                if (cellIndex < headers.length) {
+                    const header = headers[cellIndex];
+                    // 去除状态标签的文本（如 "开启"/span"）
+                    let value = text;
+                    if (cell.querySelector('.dict-tag') || cell.querySelector('span')) {
+                        value = cell.textContent.trim();
+                    }
+                    data[header] = value;
+                }
+            });
+
+            return data;
+        },
+
         handleDetail(btn) {
             const row = btn.closest('tr');
             if (!row) return;
+            const headers = this.getTableHeaders();
             const cells = row.querySelectorAll('td');
-            let detailHtml = '<div class="proto-detail">';
+
+            let detailHtml = '<div class="proto-detail-grid">';
             cells.forEach((cell, index) => {
-                if (index === 0) return; // 跳过 checkbox
-                const text = cell.textContent.trim();
-                if (text && !text.includes('修改') && !text.includes('更多')) {
-                    detailHtml += `<div class="proto-detail-item"><span class="proto-detail-label">${text}</span></div>`;
-                }
+                if (index >= headers.length) return;
+                const headerText = headers[index];
+                if (!headerText) return;
+
+                // 跳过 checkbox、操作列等
+                if (headerText.includes('操作') || cell.querySelector('input[type=checkbox]')) return;
+
+                const value = cell.textContent.trim();
+                // 跳过空值和按钮文本
+                if (!value || value.includes('修改') || value.includes('更多') || value.includes('详情') || value.includes('删除')) return;
+
+                detailHtml += `
+                    <div class="proto-detail-item">
+                        <span class="proto-detail-label">${headerText}</span>
+                        <span class="proto-detail-value">${value}</span>
+                    </div>`;
             });
             detailHtml += '</div>';
 
             Dialog.show({
                 title: '详情',
-                width: '520px',
+                width: '600px',
                 content: detailHtml,
                 hideCancel: true,
                 confirmText: '关 闭'
@@ -590,6 +792,51 @@
             .proto-detail { display: flex; flex-direction: column; gap: 8px; }
             .proto-detail-item { padding: 8px 12px; background: #fafafa; border-radius: 4px; font-size: 13px; color: #606266; }
             .proto-detail-label { color: #303133; }
+
+            /* 详情网格布局（字段名: 值） */
+            .proto-detail-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px 16px;
+            }
+            .proto-detail-grid .proto-detail-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            .proto-detail-value {
+                color: #303133;
+                font-weight: 500;
+            }
+
+            /* 导入弹窗 */
+            .proto-upload {
+                padding: 16px;
+            }
+            .proto-upload-area {
+                border: 2px dashed #d9d9d9;
+                border-radius: 6px;
+                padding: 32px 16px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .proto-upload-area:hover {
+                border-color: #409eff;
+                background: #f0f9ff;
+            }
+            .proto-upload-area i {
+                margin-bottom: 12px;
+            }
+            .proto-upload-area p {
+                margin: 0;
+                font-size: 13px;
+                color: #606266;
+            }
+            .proto-upload-area em {
+                color: #409eff;
+                font-style: normal;
+            }
         `;
         document.head.appendChild(style);
     }
