@@ -1,0 +1,284 @@
+[     116ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ http://127.0.0.1:5500/lib/js/tailwindcss.js:63
+[     235ms] [LOG] Live reload enabled. @ http://127.0.0.1:5500/canvas-editor.html:521
+[     237ms] [LOG] 🎨 芋道管理后台画布编辑器正在初始化... @ http://127.0.0.1:5500/js/canvas-editor.js:18
+[     237ms] [LOG] ✅ 已加载项目配置: 芋道管理后台 (版本 2.0.0) @ http://127.0.0.1:5500/js/page-library/page-library.js:37
+[     237ms] [LOG] ✅ 项目根路径: E:\develop\java_item\ai\prototype-desiger @ http://127.0.0.1:5500/js/page-library/page-library.js:39
+[     269ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     269ms] [LOG] 🔍 [checkPageExists] pages/app/home/search.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     270ms] [LOG] 🔍 [checkPageExists] pages/app/home/comment-list.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     270ms] [LOG] 🔍 [checkPageExists] pages/app/home/rental-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     275ms] [LOG] 🔍 [checkPageExists] pages/app/home/store-info.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     278ms] [LOG] 🔍 [checkPageExists] pages/app/home/select-rental-period.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     278ms] [LOG] 🔍 [checkPageExists] pages/app/home/payment-result.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     278ms] [LOG] 🔍 [checkPageExists] pages/app/rental/rental-list.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     279ms] [LOG] 🔍 [checkPageExists] pages/app/works/works.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     281ms] [LOG] 🔍 [checkPageExists] pages/app/works/publish-work-select.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     281ms] [LOG] 🔍 [checkPageExists] pages/app/works/publish-image.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     282ms] [LOG] 🔍 [checkPageExists] pages/app/works/publish-video.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     283ms] [LOG] 🔍 [checkPageExists] pages/app/works/image-work-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     284ms] [LOG] 🔍 [checkPageExists] pages/app/works/video-work-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     284ms] [LOG] 🔍 [checkPageExists] pages/app/works/delivery-method.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     284ms] [LOG] 🔍 [checkPageExists] pages/app/messages/messages.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     284ms] [LOG] 🔍 [checkPageExists] pages/app/messages/system-message.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     287ms] [LOG] 🔍 [checkPageExists] pages/app/messages/interaction-message.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     287ms] [LOG] 🔍 [checkPageExists] pages/app/messages/private-chat.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     289ms] [LOG] 🔍 [checkPageExists] pages/app/messages/customer-service.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     289ms] [LOG] 🔍 [checkPageExists] pages/app/profile/edit-profile.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     289ms] [LOG] 🔍 [checkPageExists] pages/app/profile/profile.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     291ms] [LOG] 🔍 [checkPageExists] pages/app/profile/data-overview.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     292ms] [LOG] 🔍 [checkPageExists] pages/app/profile/my-orders.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     292ms] [LOG] 🔍 [checkPageExists] pages/app/profile/logistics-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     294ms] [LOG] 🔍 [checkPageExists] pages/app/profile/address-manage.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     304ms] [LOG] 🔍 [checkPageExists] pages/app/profile/store-address.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     304ms] [LOG] 🔍 [checkPageExists] pages/app/profile/edit-address.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     304ms] [LOG] 🔍 [checkPageExists] pages/app/profile/identity-verify.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     305ms] [LOG] 🔍 [checkPageExists] pages/app/profile/identity-verified.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     305ms] [LOG] 🔍 [checkPageExists] pages/app/profile/settings.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     305ms] [LOG] 🔍 [checkPageExists] pages/admin/error/403.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     305ms] [LOG] 🔍 [checkPageExists] pages/app/profile/about-us.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     305ms] [LOG] 🔍 [checkPageExists] pages/admin/error/500.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     305ms] [LOG] 🔍 [checkPageExists] pages/admin/error/404.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     306ms] [LOG] 🔍 [checkPageExists] pages/admin/login.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     306ms] [LOG] 🔍 [checkPageExists] pages/admin/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     306ms] [LOG] 🔍 [checkPageExists] pages/admin/profile.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     307ms] [LOG] 🔍 [checkPageExists] pages/admin/redirect.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     308ms] [LOG] 🔍 [checkPageExists] pages/admin/system/dict-data.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     308ms] [LOG] 🔍 [checkPageExists] pages/admin/system/errorcode.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     308ms] [LOG] 🔍 [checkPageExists] pages/admin/system/tenant.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     309ms] [LOG] 🔍 [checkPageExists] pages/admin/system/tenant-package.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     310ms] [LOG] 🔍 [checkPageExists] pages/admin/system/role.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     311ms] [LOG] 🔍 [checkPageExists] pages/admin/system/user.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     311ms] [LOG] 🔍 [checkPageExists] pages/admin/system/dept.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     326ms] [LOG] 🔍 [checkPageExists] pages/admin/system/menu.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     326ms] [LOG] 🔍 [checkPageExists] pages/admin/system/post.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     326ms] [LOG] 🔍 [checkPageExists] pages/admin/system/dict.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     327ms] [LOG] 🔍 [checkPageExists] pages/admin/system/mail-account.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     327ms] [LOG] 🔍 [checkPageExists] pages/admin/system/mail-template.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     327ms] [LOG] 🔍 [checkPageExists] pages/admin/system/mail-log.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     327ms] [LOG] 🔍 [checkPageExists] pages/admin/system/notice.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     327ms] [LOG] 🔍 [checkPageExists] pages/admin/system/sms-template.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     328ms] [LOG] 🔍 [checkPageExists] pages/admin/system/sms-channel.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     328ms] [LOG] 🔍 [checkPageExists] pages/admin/system/sms-log.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     328ms] [LOG] 🔍 [checkPageExists] pages/admin/system/notify-template.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     328ms] [LOG] 🔍 [checkPageExists] pages/admin/system/notify-message.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     329ms] [LOG] 🔍 [checkPageExists] pages/admin/system/loginlog.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     329ms] [LOG] 🔍 [checkPageExists] pages/admin/system/operatelog.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     329ms] [LOG] 🔍 [checkPageExists] pages/admin/system/social-user.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     329ms] [LOG] 🔍 [checkPageExists] pages/admin/system/social-client.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     330ms] [LOG] 🔍 [checkPageExists] pages/admin/system/oauth2-client.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     330ms] [LOG] 🔍 [checkPageExists] pages/admin/system/oauth2-token.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     330ms] [LOG] 🔍 [checkPageExists] pages/admin/system/area.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     330ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/chat.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     331ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/chat-manager.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     331ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/image.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     331ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/image-manager.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     332ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/image-square.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     332ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/knowledge.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     333ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/knowledge-document.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     334ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/knowledge-segment.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     334ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/mindmap.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     334ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/mindmap-manager.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     335ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/workflow.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     337ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/write.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     338ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/write-manager.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     339ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/music.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     339ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/model.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     340ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/music-manager.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     341ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/api-key.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     341ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/chat-role.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     342ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/model.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     342ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/model-definition.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     344ms] [LOG] 🔍 [checkPageExists] pages/admin/ai/tool.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     344ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/model-form.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     344ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/form.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     345ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/form-editor.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     345ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/task-my.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     346ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/task-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     346ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/oa-leave.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     347ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/oa-leave-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     348ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/oa-leave-create.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     349ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/group.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     349ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/category.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     349ms] [LOG] 🔍 [checkPageExists] pages/admin/bpm/process-expression.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     351ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/product-spu-form.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     351ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/product-spu.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     352ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/product-category.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     353ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/order.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     353ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/order-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     353ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/product-property.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     355ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/after-sale.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     355ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/after-sale-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     355ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/coupon.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     356ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/discount-activity.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     356ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/seckill.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     358ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/reward-activity.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     358ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/bargain.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     359ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/point.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     359ms] [LOG] 🔍 [checkPageExists] pages/admin/mall/diy-template.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     360ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/customer.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     361ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/customer-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     361ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/contact.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     362ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/business.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     362ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/business-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     363ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/contract.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     363ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/contract-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     364ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/clue.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     365ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/receivable.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     366ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/receivable-plan.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     367ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/clue-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     368ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/product.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     368ms] [LOG] 🔍 [checkPageExists] pages/admin/crm/statistics.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     369ms] [LOG] 🔍 [checkPageExists] pages/admin/member/user.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     369ms] [LOG] 🔍 [checkPageExists] pages/admin/member/user-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     370ms] [LOG] 🔍 [checkPageExists] pages/admin/member/level.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     371ms] [LOG] 🔍 [checkPageExists] pages/admin/member/tag.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     371ms] [LOG] 🔍 [checkPageExists] pages/admin/pay/app.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     373ms] [LOG] 🔍 [checkPageExists] pages/admin/member/group.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     373ms] [LOG] 🔍 [checkPageExists] pages/admin/pay/channel.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     375ms] [LOG] 🔍 [checkPageExists] pages/admin/pay/merchant.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     375ms] [LOG] 🔍 [checkPageExists] pages/admin/pay/order.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     376ms] [LOG] 🔍 [checkPageExists] pages/admin/pay/transfer.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     376ms] [LOG] 🔍 [checkPageExists] pages/admin/pay/cashier.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     377ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/codegen.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     379ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/codegen-edit.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     381ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/job.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     382ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/job-log.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     383ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/file.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     383ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/file-config.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     384ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/api-log.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     386ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/config.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     388ms] [LOG] 🔍 [checkPageExists] pages/admin/infra/test.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     388ms] [LOG] 🔍 [checkPageExists] pages/admin/iot/device.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     390ms] [LOG] 🔍 [checkPageExists] pages/admin/iot/device-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     391ms] [LOG] 🔍 [checkPageExists] pages/admin/iot/product.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     391ms] [LOG] 🔍 [checkPageExists] pages/admin/iot/product-detail.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     394ms] [LOG] 🔍 [checkPageExists] pages/admin/iot/firmware.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     394ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/product.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     394ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/product-category.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     396ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/warehouse.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     399ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/supplier.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     401ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/product-unit.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     403ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/purchase-order.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     405ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/purchase-in.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     405ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/purchase-return.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     407ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/sale-customer.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     413ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/sale-order.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     413ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/sale-out.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     416ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/stock.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     416ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/sale-return.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     417ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/stock-check.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     417ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/stock-in.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     418ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/stock-out.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     424ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/stock-move.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     425ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/stock-record.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     426ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/finance-receipt.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     426ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/finance-payment.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     427ms] [LOG] 🔍 [checkPageExists] pages/admin/report/goview.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     429ms] [LOG] 🔍 [checkPageExists] pages/admin/erp/finance-account.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     430ms] [LOG] 🔍 [checkPageExists] pages/admin/report/jmreport.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     431ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/account.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     431ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/menu.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     432ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/message.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     432ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/auto-reply.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     434ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/message-template.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     434ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/material.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     435ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/draft.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     436ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/free-publish.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     436ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/tag.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     437ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/user.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     437ms] [LOG] 🔍 [checkPageExists] pages/admin/mp/statistics.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[     437ms] [LOG] ✅ 已生成 184 个页面列表 (184 个有效) @ http://127.0.0.1:5500/js/page-library/page-library.js:116
+[     444ms] [LOG] ✅ 页面库初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:42
+[     514ms] [LOG] ✅ 画布视图初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:46
+[     515ms] [LOG] ✅ 元素管理初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:50
+[     516ms] [LOG] ✅ 工具系统初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:54
+[     516ms] [LOG] ✅ 弹窗管理器初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:58
+[     516ms] [LOG] 📖 准备恢复页面: 页面1 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:380
+[     516ms] [LOG] 📖 视图状态: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:381
+[     536ms] [LOG] 切换到页面: 页面1 {id: page_1, name: 页面1, view: Object, elements: Array(1), usageCount: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:191
+[     536ms] [LOG] 数据加载完成: {version: 2.0, timestamp: 2026-05-20T18:13:12.492Z, pages: Array(1), currentPageId: page_1, globalNextElementId: 6} @ http://127.0.0.1:5500/js/storage.js:217
+[     537ms] [LOG] 💾 初始化历史栈,保存空状态 @ http://127.0.0.1:5500/js/history-manager.js:56
+[     537ms] [LOG] 📸 捕获状态: 1个元素 [首页] @ http://127.0.0.1:5500/js/history-manager.js:116
+[     537ms] [LOG] 💾 历史记录已保存 (2/2) @ http://127.0.0.1:5500/js/history-manager.js:78
+[     537ms] [LOG] 💾 检测到缓存加载,已补充当前状态到历史栈 @ http://127.0.0.1:5500/js/storage.js:176
+[     537ms] [LOG] 自动加载完成: {version: 2.0, timestamp: 2026-05-20T18:13:12.492Z, pages: Array(1), currentPageId: page_1, globalNextElementId: 6} @ http://127.0.0.1:5500/js/storage.js:180
+[     537ms] [LOG] UI状态已恢复 @ http://127.0.0.1:5500/js/storage.js:149
+[     537ms] [LOG] ✅ 自动保存已启动，每1分钟保存一次 @ http://127.0.0.1:5500/js/storage.js:161
+[     537ms] [LOG] ✅ 数据持久化初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:62
+[     538ms] [LOG] ✅ 页面管理器初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:66
+[     538ms] [LOG] ✅ 历史记录管理器初始化完成 @ http://127.0.0.1:5500/js/history-manager.js:18
+[     538ms] [LOG] ✅ 历史记录管理器初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:70
+[     538ms] [LOG] ✅ 侧边栏拖动功能初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:74
+[     538ms] [LOG] ✅ 主题切换功能初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:78
+[     541ms] [LOG] ✅ 所有模块初始化完成 @ http://127.0.0.1:5500/js/canvas-editor.js:23
+[     541ms] [LOG] 
+🎨 芋道管理后台画布编辑器已就绪！
+
+📌 快速开始：
+1. 从右侧页面库拖拽页面到画布
+2. 使用左侧工具添加箭头或文字标注
+3. Ctrl+滚轮：缩放视图
+4. 滚轮：拖动视图
+5. Ctrl+S：保存进度
+
+💡 提示：
+- 选中元素后，Delete键删除
+- 选中元素后，Ctrl+滚轮缩放元素
+- 双击元素取消选择
+         @ http://127.0.0.1:5500/js/canvas-editor.js:140
+[     578ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:5500/favicon.ico:0
+[     601ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ http://127.0.0.1:5500/lib/js/tailwindcss.js:63
+[    8514ms] [LOG] 📸 捕获状态: 2个元素 [首页, 首页] @ http://127.0.0.1:5500/js/history-manager.js:116
+[    8514ms] [LOG] 💾 历史记录已保存 (3/3) @ http://127.0.0.1:5500/js/history-manager.js:78
+[    8543ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ http://127.0.0.1:5500/lib/js/tailwindcss.js:63
+[   60541ms] [LOG] 💾 保存前 - CanvasView.state.zoom: 0.24031285716237744 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:295
+[   60541ms] [LOG] 💾 保存前 - CanvasView.state.pan: {x: 446.1310199548857, y: 179.30686233968424} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:296
+[   60541ms] [LOG] 💾 保存前 - getView() 返回: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:299
+[   60541ms] [LOG] 💾 保存前 - 当前页面: 页面1 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:300
+[   60545ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[   60548ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[   60548ms] [LOG] 💾 保存后 - currentPage.view: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:316
+[   60555ms] [LOG] 自动保存成功: 02:40:33 @ http://127.0.0.1:5500/js/storage.js:100
+[  120542ms] [LOG] 💾 保存前 - CanvasView.state.zoom: 0.24031285716237744 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:295
+[  120542ms] [LOG] 💾 保存前 - CanvasView.state.pan: {x: 446.1310199548857, y: 179.30686233968424} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:296
+[  120542ms] [LOG] 💾 保存前 - getView() 返回: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:299
+[  120542ms] [LOG] 💾 保存前 - 当前页面: 页面1 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:300
+[  120546ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  120548ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  120548ms] [LOG] 💾 保存后 - currentPage.view: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:316
+[  120548ms] [LOG] 自动保存成功: 02:41:33 @ http://127.0.0.1:5500/js/storage.js:100
+[  180543ms] [LOG] 💾 保存前 - CanvasView.state.zoom: 0.24031285716237744 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:295
+[  180543ms] [LOG] 💾 保存前 - CanvasView.state.pan: {x: 446.1310199548857, y: 79.30686233968424} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:296
+[  180543ms] [LOG] 💾 保存前 - getView() 返回: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:299
+[  180543ms] [LOG] 💾 保存前 - 当前页面: 页面1 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:300
+[  180548ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  180550ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  180550ms] [LOG] 💾 保存后 - currentPage.view: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:316
+[  180551ms] [LOG] 自动保存成功: 02:42:33 @ http://127.0.0.1:5500/js/storage.js:100
+[  240553ms] [LOG] 💾 保存前 - CanvasView.state.zoom: 0.24031285716237744 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:295
+[  240553ms] [LOG] 💾 保存前 - CanvasView.state.pan: {x: 446.1310199548857, y: 79.30686233968424} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:296
+[  240553ms] [LOG] 💾 保存前 - getView() 返回: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:299
+[  240553ms] [LOG] 💾 保存前 - 当前页面: 页面1 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:300
+[  240558ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  240562ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  240562ms] [LOG] 💾 保存后 - currentPage.view: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:316
+[  240563ms] [LOG] 自动保存成功: 02:43:33 @ http://127.0.0.1:5500/js/storage.js:100
+[  300549ms] [LOG] 💾 保存前 - CanvasView.state.zoom: 0.24031285716237744 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:295
+[  300549ms] [LOG] 💾 保存前 - CanvasView.state.pan: {x: 446.1310199548857, y: -20.693137660315756} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:296
+[  300549ms] [LOG] 💾 保存前 - getView() 返回: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:299
+[  300549ms] [LOG] 💾 保存前 - 当前页面: 页面1 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:300
+[  300555ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  300560ms] [LOG] 🔍 [checkPageExists] pages/app/home/home.html - status: 200, ok: true @ http://127.0.0.1:5500/js/page-library/page-library.js:128
+[  300560ms] [LOG] 💾 保存后 - currentPage.view: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:316
+[  300560ms] [LOG] 自动保存成功: 02:44:33 @ http://127.0.0.1:5500/js/storage.js:100
+[  354507ms] [LOG] 📸 捕获状态: 1个元素 [首页] @ http://127.0.0.1:5500/js/history-manager.js:116
+[  354507ms] [LOG] 💾 历史记录已保存 (4/4) @ http://127.0.0.1:5500/js/history-manager.js:78
+[  357010ms] [WARNING] cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation @ http://127.0.0.1:5500/lib/js/tailwindcss.js:63
+[  360443ms] [LOG] 📸 捕获状态: 0个元素 [] @ http://127.0.0.1:5500/js/history-manager.js:116
+[  360443ms] [LOG] 💾 历史记录已保存 (5/5) @ http://127.0.0.1:5500/js/history-manager.js:78
+[  360553ms] [LOG] 💾 保存前 - CanvasView.state.zoom: 0.24031285716237744 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:295
+[  360553ms] [LOG] 💾 保存前 - CanvasView.state.pan: {x: 446.1310199548857, y: 79.30686233968424} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:296
+[  360553ms] [LOG] 💾 保存前 - getView() 返回: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:299
+[  360553ms] [LOG] 💾 保存前 - 当前页面: 页面1 @ http://127.0.0.1:5500/js/page-manager/page-manager.js:300
+[  360553ms] [LOG] 💾 保存后 - currentPage.view: {zoom: 0.24031285716237744, pan: Object} @ http://127.0.0.1:5500/js/page-manager/page-manager.js:316
+[  360553ms] [LOG] 自动保存成功: 02:45:33 @ http://127.0.0.1:5500/js/storage.js:100

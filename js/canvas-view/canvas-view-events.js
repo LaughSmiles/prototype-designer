@@ -11,8 +11,11 @@ const CanvasViewEvents = {
 
         // 鼠标滚轮事件（视图拖动 + 缩放）
         canvasWrapper.addEventListener('wheel', (e) => {
-            // 预览模式：不拦截滚轮事件，让iframe自然滚动
+            // 预览模式：不拦截滚轮事件，让iframe自然滚动，但仍需阻止Ctrl+滚轮缩放浏览器
             if (CanvasView.isPreviewMode) {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                }
                 return;
             }
 
@@ -92,6 +95,10 @@ const CanvasViewEvents = {
                     }
                 }
             }
+            // Esc键：退出预览
+            if (e.key === 'Escape' && CanvasView.isPreviewMode) {
+                this.closePreview();
+            }
         }, { capture: true });
 
         // 监听来自iframe的退出预览消息（焦点在iframe内时Q键无法冒泡到父页面）
@@ -100,6 +107,25 @@ const CanvasViewEvents = {
                 this.closePreview();
             }
         });
+
+        // ========== 禁止移动端双指缩放和双击缩放 ==========
+
+        // 禁止双指缩放
+        document.addEventListener('touchmove', function (e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 禁止双击缩放
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (e) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
     },
 
     // 处理鼠标按下事件
@@ -327,6 +353,41 @@ const CanvasViewEvents = {
 
         if (!isInsideEditor) return;
 
+        // 预览模式：转发滚轮事件到预览iframe，解决iframe内滚动失效问题
+        if (CanvasView.isPreviewMode) {
+            if (e.ctrlKey) {
+                // Ctrl+滚轮：阻止浏览器缩放
+                e.preventDefault();
+                return;
+            }
+            if (CanvasViewEvents._previewElementId) {
+                const previewDiv = document.querySelector(`[data-element-id="${CanvasViewEvents._previewElementId}"]`);
+                const iframe = previewDiv?.querySelector('iframe');
+                if (iframe && iframe.contentWindow) {
+                    const iframeRect = iframe.getBoundingClientRect();
+                    const inIframe = e.clientX >= iframeRect.left && e.clientX <= iframeRect.right &&
+                                     e.clientY >= iframeRect.top && e.clientY <= iframeRect.bottom;
+                    if (inIframe) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // 将delta转换为像素
+                        let dy = e.deltaY;
+                        let dx = e.deltaX;
+                        if (e.deltaMode === 1) { // DOM_DELTA_LINE
+                            dy *= 40;
+                            dx *= 40;
+                        } else if (e.deltaMode === 2) { // DOM_DELTA_PAGE
+                            dy *= iframe.contentWindow.innerHeight;
+                            dx *= iframe.contentWindow.innerWidth;
+                        }
+                        iframe.contentWindow.scrollBy(dx, dy);
+                        return;
+                    }
+                }
+            }
+            return;
+        }
+
         const isInsideIframe = e.target.closest('.canvas-element.page-element iframe');
         const isInsideCanvasWrapper = e.target.closest('#canvasWrapper');
         const isInsideAnnotation = e.target.closest('.annotation-content-wrapper') ||
@@ -420,7 +481,10 @@ const CanvasViewEvents = {
         const overlay = pageDiv.querySelector('.page-click-overlay');
         if (overlay) overlay.style.display = 'none';
         const iframe = pageDiv.querySelector('iframe');
-        if (iframe) iframe.style.pointerEvents = 'auto';
+        if (iframe) {
+            iframe.style.pointerEvents = 'auto';
+            iframe.focus();
+        }
 
         // 3. 隐藏预览按钮和删除按钮（预览中不需要）
         pageDiv.querySelectorAll('.preview-btn, .delete-btn').forEach(btn => {

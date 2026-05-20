@@ -99,4 +99,38 @@
             }
         }
     }, true);
+
+    // ========== 禁止 Ctrl + 鼠标滚轮 / Ctrl+± 键盘缩放页面 ==========
+
+    document.addEventListener('wheel', function (e) {
+        if (e.ctrlKey) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) &&
+            (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+            e.preventDefault();
+        }
+    });
+
+    // ========== 禁止移动端双指缩放和双击缩放 ==========
+
+    // 禁止双指缩放
+    document.addEventListener('touchmove', function (e) {
+        if (e.touches.length > 1) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // 禁止双击缩放
+    var lastTouchEnd = 0;
+    document.addEventListener('touchend', function (e) {
+        var now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+            e.preventDefault();
+        }
+        lastTouchEnd = now;
+    }, false);
 })();
