@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>摄影派 - 高保真原型展示</title>
-    <script src="lib/js/tailwindcss.js"></script>
+    <title>芋道管理后台 & 摄影派 - 高保真原型设计</title>
     <link rel="stylesheet" href="lib/css/all.min.css">
+    <!-- 页面清单的唯一来源：必须在本页任何渲染逻辑之前加载 -->
+    <script src="config.js"></script>
     <style>
         * {
             margin: 0;
@@ -38,9 +39,100 @@
             opacity: 0.9;
         }
 
+        .header-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .header-actions a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            color: #667eea;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+
+        .header-actions a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+
+        .device-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .device-tab {
+            padding: 12px 30px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .device-tab:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .device-tab.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .device-section {
+            display: none;
+        }
+
+        .device-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            margin: 40px 0 20px 0;
+            padding: 15px 25px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            max-width: 1800px;
+            margin-left: auto;
+            margin-right: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .screens-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .admin-screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(900px, 1fr));
             gap: 25px;
             max-width: 1800px;
             margin: 0 auto;
@@ -68,8 +160,13 @@
             border-radius: 10px;
             color: white;
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
+        /* 手机框架样式 */
         .phone-frame {
             width: 320px;
             height: 680px;
@@ -78,6 +175,7 @@
             padding: 12px;
             box-shadow: inset 0 0 0 2px #333;
             position: relative;
+            margin: 0 auto;
         }
 
         .phone-frame::before {
@@ -109,321 +207,362 @@
             border-radius: 35px;
         }
 
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: white;
-            margin: 40px 0 20px 0;
-            padding: 15px 25px;
-            background: rgba(255,255,255,0.15);
+        /* 桌面端框架样式 */
+        .desktop-frame {
+            width: 100%;
+            height: 500px;
+            background: #1a1a2e;
             border-radius: 15px;
-            backdrop-filter: blur(10px);
-            max-width: 1800px;
+            padding: 8px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+
+        .desktop-frame-header {
+            height: 30px;
+            background: #2d2d44;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+        }
+
+        .desktop-frame-header span {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .desktop-frame-header span:nth-child(1) { background: #ff5f57; }
+        .desktop-frame-header span:nth-child(2) { background: #febc2e; }
+        .desktop-frame-header span:nth-child(3) { background: #28c840; }
+
+        .desktop-frame-title {
+            flex: 1;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .desktop-screen {
+            height: calc(100% - 30px);
+            background: #fff;
+            border-radius: 0 0 10px 10px;
+            overflow: hidden;
+        }
+
+        .desktop-screen iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .category-count {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            font-weight: normal;
+        }
+
+        .empty-category {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.6);
+            grid-column: 1 / -1;
+        }
+
+        /* 统计信息 */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.15);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item i {
+            font-size: 1.2rem;
+        }
+
+        /* 页头搜索框 */
+        .search-input {
+            width: 240px;
+            padding: 9px 14px;
+            font-size: 0.9rem;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            outline: none;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* 分类折叠 */
+        .category-section {
+            margin-bottom: 20px;
+        }
+
+        .category-header {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .category-header .toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .category-section.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .category-section.collapsed .screens-grid {
+            display: none;
+        }
+
+        .collapse-hint {
+            font-size: 0.8rem;
+            opacity: 0.7;
             margin-left: auto;
-            margin-right: auto;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>📷 摄影派 App</h1>
-        <p>高保真原型设计展示 - iPhone 15 Pro 尺寸</p>
-        <div style="margin-top: 15px;">
-            <a href="canvas-editor.html" style="display: inline-block; background: white; color: #667eea; padding: 12px 24px; border-radius: 25px; text-decoration: none; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s;">
+        <h1>📷 摄影派 & 🖥️ 芋道管理后台</h1>
+        <p>高保真原型设计展示 - 移动端 + 桌面端</p>
+        <div class="stats">
+            <div class="stat-item">
+                <i class="fas fa-mobile-alt"></i>
+                <span>移动端 <span id="app-count">0</span> 个页面</span>
+            </div>
+            <div class="stat-item">
+                <i class="fas fa-desktop"></i>
+                <span>桌面端 <span id="admin-count">0</span> 个页面</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <input class="search-input" type="search" placeholder="搜索页面名称 / 路径…"
+                   oninput="filterPages(this.value)" aria-label="搜索页面">
+            <a href="canvas-editor.html">
                 <i class="fas fa-palette"></i> 进入画布编辑器
             </a>
         </div>
     </div>
 
-    <!-- 首页模块 -->
-    <div class="section-title">
-        <i class="fas fa-home"></i> 首页模块
-    </div>
-    <div class="screens-grid">
-        <div class="screen-wrapper">
-            <div class="screen-title">首页</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/home/home.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">搜索页面</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/home/search.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">租赁详情</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/home/rental-detail.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">选择租期</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/home/select-rental-period.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">支付结果</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/home/payment-result.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">门店信息</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/home/store-info.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">评论列表</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/home/comment-list.html"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 设备切换 Tab 与各分类区块均由 config.js 在运行时生成，此处不硬编码页面清单 -->
+    <div class="device-tabs" id="deviceTabs"></div>
 
-    <!-- 租赁模块 -->
-    <div class="section-title">
-        <i class="fas fa-camera"></i> 租赁模块
-    </div>
-    <div class="screens-grid">
-        <div class="screen-wrapper">
-            <div class="screen-title">租赁列表</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/rental/rental-list.html"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 移动端展示 -->
+    <div id="app-section" class="device-section active"></div>
 
-    <!-- 作品模块 -->
-    <div class="section-title">
-        <i class="fas fa-images"></i> 作品模块
-    </div>
-    <div class="screens-grid">
-        <div class="screen-wrapper">
-            <div class="screen-title">作品首页</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/works/works.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">视频作品详情</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/works/video-work-detail.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">图文作品详情</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/works/image-work-detail.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">发布作品(选择)</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/works/publish-work-select.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">发布视频</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/works/publish-video.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">发布图片</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/works/publish-image.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">收货方式</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/works/delivery-method.html"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- 桌面端展示 -->
+    <div id="admin-section" class="device-section"></div>
 
-    <!-- 消息模块 -->
-    <div class="section-title">
-        <i class="fas fa-comment"></i> 消息模块
-    </div>
-    <div class="screens-grid">
-        <div class="screen-wrapper">
-            <div class="screen-title">消息首页</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/messages/messages.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">系统消息</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/messages/system-message.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">互动消息</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/messages/interaction-message.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">在线客服</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/messages/customer-service.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">私聊</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/messages/private-chat.html"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+<script>
+        /**
+         * 总览页渲染逻辑
+         *
+         * 页面清单、分类与设备信息全部来自 config.js（window.PROJECT_CONFIG），
+         * 本文件不再硬编码任何页面数据 —— 新增页面只需改 config.js，本页自动同步。
+         */
+        (function () {
+            'use strict';
 
-    <!-- 我的模块 -->
-    <div class="section-title">
-        <i class="fas fa-user"></i> 我的模块
-    </div>
-    <div class="screens-grid">
-        <div class="screen-wrapper">
-            <div class="screen-title">我的页面</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/profile.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">设置</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/settings.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">实名认证(未完成)</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/identity-verify.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">实名认证(已完成)</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/identity-verified.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">地址管理</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/address-manage.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">编辑地址</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/edit-address.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">门店地址</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/store-address.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">关于我们</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/about-us.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">个人信息编辑</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/edit-profile.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">数据概览</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/data-overview.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">我的订单</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/my-orders.html"></iframe>
-                </div>
-            </div>
-        </div>
-        <div class="screen-wrapper">
-            <div class="screen-title">查看物流</div>
-            <div class="phone-frame">
-                <div class="phone-screen">
-                    <iframe src="pages/profile/logistics-detail.html"></iframe>
-                </div>
-            </div>
-        </div>
-    </div>
+            var cfg = window.PROJECT_CONFIG;
+            if (!cfg || !Array.isArray(cfg.pages)) {
+                document.body.insertAdjacentHTML(
+                    'afterbegin',
+                    '<div style="padding:24px;color:#c0392b;font:14px/1.6 sans-serif">' +
+                        '✗ 未读取到 window.PROJECT_CONFIG，请确认 config.js 已正确加载且在 index.html 之前。</div>'
+                );
+                return;
+            }
+
+            var devices = Array.isArray(cfg.devices) && cfg.devices.length
+                ? cfg.devices
+                : [{ id: 'admin', name: '桌面端', icon: 'fa-desktop' }];
+            var cats = (cfg.categories || []).slice().sort(function (a, b) {
+                return (a.order || 0) - (b.order || 0);
+            });
+            var pages = cfg.pages || [];
+
+            var DEFAULT_DEVICE = devices[0].id;
+            var currentDevice = DEFAULT_DEVICE;
+            var keyword = '';
+
+            /** 分类 id → 分类对象 */
+            var catById = {};
+            cats.forEach(function (c) { catById[c.id] = c; });
+
+            /** 某设备下的分类及其页面（已按关键词过滤，空分类不展示） */
+            function groupsOf(device) {
+                return cats
+                    .filter(function (c) { return (c.device || DEFAULT_DEVICE) === device; })
+                    .map(function (c) {
+                        var list = pages.filter(function (p) {
+                            if (p.category !== c.id) return false;
+                            if (!keyword) return true;
+                            var hay = (p.name + ' ' + p.id + ' ' + p.path).toLowerCase();
+                            return hay.indexOf(keyword) >= 0;
+                        });
+                        return { category: c, pages: list };
+                    })
+                    .filter(function (g) { return g.pages.length > 0; });
+            }
+
+            function esc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) {
+                    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+                });
+            }
+
+            /** 卡片渲染：移动端套手机边框，桌面端套 macOS 标题栏。
+             *  264 个页面若一次性创建 iframe 会让首屏极慢（浏览器渲染/截图均会超时），
+             *  因此先渲染占位容器，滚动进入视口附近时再真正挂载 iframe。 */
+            function renderCard(page) {
+                var title = '<div class="screen-title"><i class="fas ' + esc(page.icon || 'fa-file') + '"></i> ' + esc(page.name) + '</div>';
+                var frame = currentDevice === 'app'
+                    ? '<div class="phone-frame"><div class="phone-screen" data-src="' + esc(page.path) + '"></div></div>'
+                    : '<div class="desktop-frame">' +
+                          '<div class="desktop-frame-header"><span></span><span></span><span></span>' +
+                          '<div class="desktop-frame-title">' + esc(page.path) + '</div></div>' +
+                          '<div class="desktop-screen" data-src="' + esc(page.path) + '"></div>' +
+                      '</div>';
+                return '<div class="screen-wrapper">' + title + frame + '</div>';
+            }
+
+            /** 进入视口附近时把占位容器替换为真实 iframe */
+            var lazyObserver = ('IntersectionObserver' in window)
+                ? new IntersectionObserver(function (entries) {
+                      entries.forEach(function (e) {
+                          if (!e.isIntersecting) return;
+                          var el = e.target;
+                          lazyObserver.unobserve(el);
+                          var src = el.getAttribute('data-src');
+                          if (!src) return;
+                          el.removeAttribute('data-src');
+                          var f = document.createElement('iframe');
+                          f.src = src;
+                          f.loading = 'lazy';
+                          f.title = el.getAttribute('data-title') || '';
+                          el.appendChild(f);
+                      });
+                  }, { rootMargin: '400px 0px' })
+                : null;
+
+            /** 为所有占位容器挂上观察器；不支持 IntersectionObserver 时直接全部挂载 */
+            function mountLazyFrames(root) {
+                var pending = root.querySelectorAll('[data-src]');
+                if (!pending.length) return;
+                if (!lazyObserver) {
+                    pending.forEach(function (el) {
+                        var f = document.createElement('iframe');
+                        f.src = el.getAttribute('data-src');
+                        f.loading = 'lazy';
+                        el.appendChild(f);
+                    });
+                    return;
+                }
+                pending.forEach(function (el) { lazyObserver.observe(el); });
+            }
+
+            function renderDeviceSection(device) {
+                var groups = groupsOf(device);
+                if (!groups.length) {
+                    return '<div class="section-title">' + (keyword ? '没有匹配「' + esc(keyword) + '」的页面' : '该设备下暂无页面') + '</div>';
+                }
+                var gridClass = device === 'app' ? 'screens-grid' : 'admin-screens-grid';
+                return groups.map(function (g) {
+                    var head =
+                        '<div class="section-title category-header" onclick="toggleCategory(this)">' +
+                            '<i class="fas fa-folder-open"></i> ' + esc(g.category.name || g.category.id) +
+                            '<span class="category-count">(' + g.pages.length + ' 个页面)</span>' +
+                            '<i class="fas fa-chevron-down toggle-icon"></i>' +
+                            '<span class="collapse-hint">点击折叠</span>' +
+                        '</div>';
+                    return head + '<div class="' + gridClass + '">' + g.pages.map(renderCard).join('') + '</div>';
+                }).join('');
+            }
+
+            function renderDeviceTabs() {
+                document.getElementById('deviceTabs').innerHTML = devices.map(function (d) {
+                    return '<button class="device-tab' + (d.id === currentDevice ? ' active' : '') +
+                           '" data-device="' + esc(d.id) + '">' +
+                           '<i class="fas ' + esc(d.icon || 'fa-desktop') + '"></i> ' + esc(d.name) +
+                           '</button>';
+                }).join('');
+
+                document.querySelectorAll('.device-tab').forEach(function (tab) {
+                    tab.onclick = function () { showDevice(tab.dataset.device); };
+                });
+            }
+
+            function renderTotals() {
+                devices.forEach(function (d) {
+                    var el = document.getElementById(d.id + '-count');
+                    if (!el) return;
+                    el.textContent = pages.filter(function (p) {
+                        var c = catById[p.category];
+                        return c && (c.device || DEFAULT_DEVICE) === d.id;
+                    }).length;
+                });
+            }
+
+            function render() {
+                renderDeviceTabs();
+                devices.forEach(function (d) {
+                    var el = document.getElementById(d.id + '-section');
+                    if (!el) return;
+                    el.innerHTML = renderDeviceSection(d.id);
+                    mountLazyFrames(el);
+                });
+                renderTotals();
+            }
+
+            function showDevice(device) {
+                if (!devices.some(function (d) { return d.id === device; })) return;
+                currentDevice = device;
+                document.querySelectorAll('.device-tab').forEach(function (t) {
+                    t.classList.toggle('active', t.dataset.device === device);
+                });
+                document.querySelectorAll('.device-section').forEach(function (s) {
+                    s.classList.toggle('active', s.id === device + '-section');
+                });
+            }
+
+            /** 折叠/展开分类 */
+            window.toggleCategory = function (header) {
+                header.parentElement.classList.toggle('collapsed');
+            };
+
+            /** 切换设备（同时暴露到 window，便于调试与外部调用） */
+            window.showDevice = showDevice;
+
+            /** 搜索：按名称 / id / 路径过滤 */
+            window.filterPages = function (value) {
+                keyword = String(value || '').trim().toLowerCase();
+                render();
+            };
+
+            render();
+        })();
+    </script>
 </body>
 </html>
