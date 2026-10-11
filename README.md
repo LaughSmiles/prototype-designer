@@ -64,16 +64,17 @@
     -   搜索和重置按钮要有真实的交互效果。
     -   新增/编辑使用弹框形式展示表单。
 7.  数据配置（重要）：
-    -   引入侧边栏菜单系统（5个模块）：
+    -   引入侧边栏菜单系统（数据层必须先于引擎层加载）：
         *   <link rel="stylesheet" href="../../../css/sidebar-menu.css">
-        *   <script src="../../../menu/menu.js">（菜单配置数据）
-        *   <script src="../../../js/menu/menu-data.js">（菜单数据处理）
+        *   <script src="../../../menu/menu.js">（菜单配置数据，定义 window.SIDEBAR_MENU）
+        *   <script src="../../../js/menu/menu-data.js">（读取上述数据并建树）
         *   <script src="../../../js/menu/menu-render.js">（菜单渲染）
         *   <script src="../../../js/menu/menu-interaction.js">（菜单交互）
         *   <script src="../../../js/menu/menu.js">（菜单入口）
-    -   引入页面交互组件（3个文件）：
+    -   引入页面交互组件（按此顺序）：
         *   <script src="../../../js/topbar.js">（顶栏全屏功能）
-        *   <script src="../../../js/page-fields-config.js">（表单字段配置，需先运行脚本生成）
+        *   <script src="../../../js/debug.js">（调试日志开关，必须先于下面两个）
+        *   <script src="../../../js/page-fields-config.js">（表单字段配置，由 tools/extract-form-fields.js 生成）
         *   <script src="../../../js/prototype-components.js">（按钮交互组件，必须最后加载）
     -   在页面中添加菜单容器：<div id="sidebar-menu"></div>
     -   在 DOMContentLoaded 后初始化：await SidebarMenu.init('sidebar-menu');
@@ -108,10 +109,14 @@ window.PROJECT_CONFIG = {
   projectName: "我的新项目",
   projectRootPath: "E:\\path\\to\\project",
 
-  // 移动端用这个 ↓
-  canvasSize: { width: 320, height: 680 },
-  // 管理后台用这个 ↓
-  // canvasSize: { width: 1440, height: 900 },
+  // 画布默认尺寸。推荐改用 devices[] 声明多端，避免移动端/桌面端混用同一个尺寸：
+  canvasSize: { width: 1440, height: 900 },
+
+  // 可选：声明多设备后，编辑器与总览页会出现设备切换 Tab
+  devices: [
+    { id: "app",   name: "移动端", icon: "fa-mobile-alt", canvasSize: { width: 375, height: 812 } },
+    { id: "admin", name: "桌面端", icon: "fa-desktop" }   // 不写 canvasSize 则继承上面的 canvasSize
+  ],
 
   categories: [
     { id: "main", name: "主要功能", order: 1 }
@@ -181,8 +186,12 @@ window.SIDEBAR_MENU = [
 2. **运行字段提取脚本**：
    ```bash
    cd tools
-   node extract-form-fields.js
+   node extract-form-fields.js --views-root=<你的Vue工程>/src/views
    ```
+
+   ⚠️ 真实 Vue 工程通常被 `.gitignore` 排除、不会入库。**找不到时脚本会直接报错退出**，
+   而不是悄悄降级——因为降级产物（全靠表头推断）会丢掉控件类型、必填、字典选项等真实信息。
+   确需降级时显式加 `--allow-fallback`。
 
 3. **脚本会自动生成** `js/page-fields-config.js`，包含所有页面的：
    - 表单字段定义（label, type, required, options）
@@ -205,7 +214,7 @@ node inject-config-reference.js
 
 在每个 HTML 页面的 `</body>` 前，按以下顺序添加（**注意顺序不能错**）：
 ```html
-<!-- 1. 菜单配置 -->
+<!-- 1. 菜单配置（menu/menu.js 是数据层，必须先于引擎层） -->
 <script src="../../../menu/menu.js"></script>
 <script src="../../../js/menu/menu-data.js"></script>
 <script src="../../../js/menu/menu-render.js"></script>
@@ -215,12 +224,20 @@ node inject-config-reference.js
 <!-- 2. 顶栏功能 -->
 <script src="../../../js/topbar.js"></script>
 
-<!-- 3. 表单配置（必须在 prototype-components.js 之前） -->
+<!-- 3. 调试开关（必须先于下面两个） -->
+<script src="../../../js/debug.js"></script>
+
+<!-- 4. 表单配置（必须在 prototype-components.js 之前） -->
 <script src="../../../js/page-fields-config.js"></script>
 
-<!-- 4. 交互组件（必须最后加载） -->
+<!-- 5. 交互组件（必须最后加载） -->
 <script src="../../../js/prototype-components.js"></script>
 ```
+
+> 上面的路径是 `pages/admin/<模块>/` 下的写法（**三段** `../`）。
+> 若页面直接放在 `pages/admin/` 下，改用 `../../`；移动端页面放在 `pages/app/<模块>/`，
+> 用 `../../../` 引用 `lib/`、`css/`、`js/`，但**不引入**菜单与表单配置脚本。
+> 写错层级不会报错，只会静默失效——改完务必跑 `node tools/check-references.js`。
 
 ##### 3.5.4 验证配置
 
@@ -254,35 +271,50 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 ```
 项目根目录/
 ├── canvas-editor.html         # 画布编辑器入口(框架核心)
-├── config.js                  # 项目配置文件(需修改)
-├── index.html                 # 项目展示页(可选)
+├── config.js                  # 项目配置文件(需修改) —— 页面清单的唯一来源
+├── index.html                 # 项目展示页(读取 config.js 自动渲染，无需维护页面列表)
 ├── pages/                     # 页面文件目录(需修改)
 │   ├── admin/                 #   管理后台原型(桌面端, 1440x900)
-│   ├── app/                   #   移动应用原型(移动端)
-│   │   ├── home/              #     首页模块
-│   │   ├── messages/          #     消息模块
-│   │   ├── profile/           #     个人中心模块
-│   │   ├── rental/            #     租赁模块
-│   │   └── works/             #     作品模块
-│   └── ...
+│   │   ├── mall(43) system(26) infra(25) crm(24) erp(23) ai(20) bpm(15)
+│   │   ├── iot(14) mp(11) member(10) pay(10) report(4) error(3)
+│   │   └── login.html home.html profile.html redirect.html
+│   └── app/                   #   移动应用原型(移动端, 375x812)
+│       ├── home/              #     首页模块
+│       ├── messages/          #     消息模块
+│       ├── profile/           #     个人中心模块
+│       ├── rental/            #     租赁模块
+│       └── works/             #     作品模块
+├── menu/                      # 侧边栏菜单【数据层】(需修改)
+│   └── menu.js                #   window.SIDEBAR_MENU，镜像数据库 system_menu 表
+├── tools/                     # 校验与维护脚本(无 npm scripts，手动 node 运行)
+│   ├── check-config.js        #   校验 config.js 与 pages/ 一致性
+│   ├── check-references.js    #   校验/修复页面内所有本地引用
+│   ├── inject-config-reference.js  # 批量注入 page-fields-config.js 引用
+│   ├── extract-form-fields.js #   从真实 Vue 工程提取表单字段
+│   └── localize-images.js     #   外部图片本地化到 lib/images/
 ├── js/                        # 框架核心代码(无需修改)
+│   ├── debug.js               # 调试日志开关(需最先加载)
 │   ├── canvas-editor.js       # 主控制器
 │   ├── page-library/          # 页面库(加载/渲染/拖拽)
 │   ├── canvas-view/           # 画布视图(核心/框选/事件)
 │   ├── element-manager/       # 元素管理(核心/添加/渲染/注释/键盘)
 │   ├── page-manager/          # 多页面画布(核心/拖拽排序/右键菜单)
-│   ├── menu/                  # 动态侧边栏菜单(数据/渲染/交互)
+│   ├── menu/                  # 动态侧边栏菜单【引擎层】(建树/渲染/交互/入口)
 │   ├── tools/                 # 工具系统(核心/箭头/注释)
 │   ├── storage.js             # 数据持久化
 │   ├── history-manager.js     # 撤销/重做
 │   ├── modal-manager.js       # 弹窗管理
 │   ├── alignment-manager.js   # 对齐管理器
+│   ├── page-fields-config.js  # 表单字段配置(生成物, 驱动弹窗表单自动生成)
 │   ├── prototype-components.js # 共享页面交互组件(表单/弹框/标签栏)
 │   ├── topbar.js              # 共享顶栏逻辑(全屏/Ctrl+S拦截)
 │   └── virtual-scrollbar.js   # 虚拟滚动条
-├── lib/                       # 本地第三方库
-│   ├── js/ (tailwindcss, marked, html2canvas)
-│   └── css/ (fontawesome)
+├── lib/                       # 本地第三方库与图片(无需修改)
+│   ├── js/ (tailwindcss 3.4.17, marked 15.0.12, html2canvas 1.4.1)
+│   ├── css/ (fontawesome 6.4.0)
+│   ├── webfonts/ (3 个 woff2)
+│   ├── images/ (本地化的页面图片)
+│   └── NOTICE.md              # 第三方署名声明
 ├── css/                       # 样式文件(无需修改)
 │   ├── canvas-editor.css      # 画布编辑器样式(含主题变量)
 │   └── sidebar-menu.css       # 动态侧边栏菜单样式
@@ -290,15 +322,20 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 
 ### 需要修改的文件
 
-- ✏️ `config.js` - 项目配置
+- ✏️ `config.js` - 项目配置（页面清单的唯一来源）
 - ✏️ `pages/` - 页面文件
-- ✏️ `index.html` - 项目展示页(可选)
+- ✏️ `menu/menu.js` - 侧边栏菜单数据
+- ✏️ `index.html` - 项目展示页（一般无需改，已改为自动读取 `config.js`）
 
 ### 无需修改的文件(框架核心)
 
 - 🔒 `canvas-editor.html` - 画布编辑器
 - 🔒 `js/` - JavaScript 模块
 - 🔒 `css/` - 样式文件
+- 🔒 `lib/` - 第三方库
+
+> 全部第三方库与页面图片都在 `lib/` 下，**不依赖任何 CDN**，项目可完全离线运行。
+> 第三方署名要求见 [`lib/NOTICE.md`](lib/NOTICE.md)。
 
 ---
 
@@ -569,12 +606,19 @@ window.PROJECT_CONFIG = {
 数据保存在浏览器的 `localStorage` 中:
 
 ```javascript
-// 存储键名(以 projectName 为前缀)
-{projectName}Canvas          // 画布数据(多页面格式, version 2.0)
-{projectName}_uiState        // UI状态(侧边栏折叠状态)
-canvasEditor_theme           // 主题设置(dark/light)
-topbar_fullscreen            // 全屏预览状态
+// 存储键名（{projectName} 取自 config.js 的 projectName，运行时派生）
+{projectName}Canvas            // 画布数据(多页面格式, version 2.0)
+{projectName}_uiState          // UI状态(侧边栏折叠状态)
+canvasEditor_theme             // 主题设置(dark/light)
+sidebarMenuExpanded            // 侧边栏菜单折叠状态
+topbar_fullscreen              // 顶栏全屏状态
+prototypeFullscreenState       // 全屏状态缓存
+prototypeDebug                 // 调试日志开关('1' = 开启)
 ```
+
+> `{projectName}` 由 `PROJECT_CONFIG.projectName` 在运行时派生，因此把本框架复制到新项目并改名后，
+> 已保存的画布数据依然能被找到。历史版本曾把它硬编码成 `photographySchoolCanvas`，
+> 现由 `Storage.migrateLegacyKeys()` 在首次加载时自动迁移。
 
 ### 清空缓存
 
@@ -582,7 +626,7 @@ topbar_fullscreen            // 全屏预览状态
 
 ### 导出/导入
 
-通过快捷键 `Ctrl + E` 导出JSON文件, `Ctrl + I` 导入JSON文件。导出的文件名格式为 `canvas-时间戳.json`,导入后画布自动恢复到导出时的状态。
+顶部状态栏有「导出 / 导入」两个按钮，也可直接用快捷键 `Ctrl + E` 导出 JSON、`Ctrl + I` 导入 JSON。导出的文件名格式为 `canvas-时间戳.json`，导入后画布自动恢复到导出时的状态。
 
 ---
 
@@ -675,13 +719,20 @@ topbar_fullscreen            // 全屏预览状态
 
 ### Q3: 拖拽页面后显示为空白
 
-**原因**: iframe 加载失败
+**原因**: iframe 加载失败。最常见的是**相对路径层级写错**——`pages/admin/<模块>/` 下的页面需要 **三段** `../`，写成两段不会报错，只是静默加载失败。
 
 **解决**:
 
-1. 检查页面文件路径
-2. 打开浏览器控制台查看错误
-3. 确保使用 `http://` 或 `https://` 协议(不是 `file://`)
+1. 运行校验脚本，它会逐条解析所有本地引用并报告失效项：
+   ```bash
+   cd tools
+   node check-references.js            # 仅检查
+   node check-references.js --repair   # 自动修正可识别的失效引用
+   ```
+2. 对照 `CLAUDE.md` 的「Page template references」确认模板引用（页面在 `pages/admin/<模块>/` 用 `../../../`，`pages/admin/` 根级用 `../../`）
+3. 确认 `config.js` 中该页面的 `path` 与磁盘上的真实位置一致：`node tools/check-config.js`
+
+> 直接双击 HTML 用 `file://` 打开是**支持的**，`page-library.js` 内置了 file:// 降级逻辑，无需起本地服务器。
 
 ### Q4: 快捷键不生效
 
@@ -732,3 +783,9 @@ topbar_fullscreen            // 全屏预览状态
 ## 📄 许可
 
 本框架可自由使用和修改,用于学习和商业项目。
+
+⚠️ 仓库根目录暂未提供 `LICENSE` 文件（授权条款待项目所有者确定）。
+若需要对外分发，请先补上明确的许可证文件，并注意本仓库内**再分发的第三方组件**
+（TailwindCSS / Font Awesome / marked / html2canvas）各自附带的许可义务，
+完整清单见 [`lib/NOTICE.md`](lib/NOTICE.md)——其中 Font Awesome 图标为
+**CC BY 4.0（必须署名）**、字体为 **SIL OFL 1.1（须随包分发许可证全文）**。
