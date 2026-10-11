@@ -16,16 +16,16 @@ const CanvasEditor = {
     // 初始化
     init() {
         const projectName = this.getProjectName();
-        console.log(`🎨 ${projectName}画布编辑器正在初始化...`);
+        Debug.log(`🎨 ${projectName}画布编辑器正在初始化...`);
 
         // 按顺序初始化各模块
         this.initModules()
             .then(() => {
-                console.log('✅ 所有模块初始化完成');
+                Debug.log('✅ 所有模块初始化完成');
                 this.showWelcome();
             })
             .catch(error => {
-                console.error('❌ 初始化失败:', error);
+                Debug.error('❌ 初始化失败:', error);
                 alert('初始化失败：' + error.message);
             });
     },
@@ -40,43 +40,43 @@ const CanvasEditor = {
         try {
             // 1. 页面库 (必须等待加载完成,因为其他模块依赖它)
             await PageLibrary.init();
-            console.log('✅ 页面库初始化完成');
+            Debug.log('✅ 页面库初始化完成');
 
             // 2. 画布视图
             CanvasView.init();
-            console.log('✅ 画布视图初始化完成');
+            Debug.log('✅ 画布视图初始化完成');
 
             // 3. 元素管理
             ElementManager.init();
-            console.log('✅ 元素管理初始化完成');
+            Debug.log('✅ 元素管理初始化完成');
 
             // 4. 工具系统
             Tools.init();
-            console.log('✅ 工具系统初始化完成');
+            Debug.log('✅ 工具系统初始化完成');
 
             // 5. 弹窗管理器
             ModalManager.init();
-            console.log('✅ 弹窗管理器初始化完成');
+            Debug.log('✅ 弹窗管理器初始化完成');
 
             // 6. 数据持久化 (必须在页面库之后,因为恢复数据需要页面信息)
             Storage.init();
-            console.log('✅ 数据持久化初始化完成');
+            Debug.log('✅ 数据持久化初始化完成');
 
             // 7. 页面管理器 (必须在Storage之后,因为需要加载数据)
             PageManager.init();
-            console.log('✅ 页面管理器初始化完成');
+            Debug.log('✅ 页面管理器初始化完成');
 
             // 8. 历史记录管理器
             HistoryManager.init();
-            console.log('✅ 历史记录管理器初始化完成');
+            Debug.log('✅ 历史记录管理器初始化完成');
 
             // 9. 初始化侧边栏拖动功能
             this.initSidebarResizer();
-            console.log('✅ 侧边栏拖动功能初始化完成');
+            Debug.log('✅ 侧边栏拖动功能初始化完成');
 
             // 10. 初始化主题切换
             this.initThemeToggle();
-            console.log('✅ 主题切换功能初始化完成');
+            Debug.log('✅ 主题切换功能初始化完成');
 
             // 11. 绑定全局快捷键
             this.bindGlobalShortcuts();
@@ -109,6 +109,19 @@ const CanvasEditor = {
                 e.preventDefault();
                 HistoryManager.redo();
             }
+
+            // Ctrl+E: 导出 JSON（与顶部按钮一致）
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                Storage.export();
+            }
+
+            // Ctrl+I: 导入 JSON（与顶部按钮一致）
+            if (e.ctrlKey && e.key === 'i') {
+                e.preventDefault();
+                const fileInput = document.getElementById('fileInput');
+                if (fileInput) fileInput.click();
+            }
         }, true); // 捕获阶段，优先于浏览器默认行为（全屏下也能拦截）
 
         // 监听 iframe 内页面全屏时发来的 Ctrl+S 保存消息
@@ -138,7 +151,7 @@ const CanvasEditor = {
 - 双击元素取消选择
         `;
 
-        console.log(message);
+        Debug.log(message);
         PageLibrary.showHint(`${projectName}画布编辑器已就绪！`);
     },
 
@@ -213,7 +226,7 @@ const CanvasEditor = {
         const expanderRight = document.getElementById('expanderRight');
 
         if (!sidebarLeft || !sidebarRight || !resizerLeft || !resizerRight) {
-            console.warn('侧边栏拖动功能初始化失败：找不到必要元素');
+            Debug.warn('侧边栏拖动功能初始化失败：找不到必要元素');
             return;
         }
 

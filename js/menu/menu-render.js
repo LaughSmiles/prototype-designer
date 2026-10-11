@@ -18,7 +18,7 @@ const MenuRender = {
     // 初始化
     init() {
         this.loadExpandedState();
-        console.log('✅ MenuRender 初始化完成');
+        Debug.log('✅ MenuRender 初始化完成');
     },
 
     // 加载展开状态
@@ -27,10 +27,10 @@ const MenuRender = {
             const saved = localStorage.getItem(this.storageKey);
             if (saved) {
                 this.expandedState = JSON.parse(saved);
-                console.log('✅ 已加载菜单展开状态');
+                Debug.log('✅ 已加载菜单展开状态');
             }
         } catch (error) {
-            console.warn('⚠️ 加载展开状态失败:', error);
+            Debug.warn('⚠️ 加载展开状态失败:', error);
             this.expandedState = {};
         }
     },
@@ -40,14 +40,14 @@ const MenuRender = {
         try {
             localStorage.setItem(this.storageKey, JSON.stringify(this.expandedState));
         } catch (error) {
-            console.warn('⚠️ 保存展开状态失败:', error);
+            Debug.warn('⚠️ 保存展开状态失败:', error);
         }
     },
 
     // 主渲染方法
     render(menuData, containerId) {
         if (!menuData || menuData.length === 0) {
-            console.warn('⚠️ 菜单数据为空，无法渲染');
+            Debug.warn('⚠️ 菜单数据为空，无法渲染');
             return;
         }
 
@@ -57,7 +57,7 @@ const MenuRender = {
 
         const container = document.getElementById(this.containerId);
         if (!container) {
-            console.error(`❌ 找不到菜单容器: #${this.containerId}`);
+            Debug.error(`❌ 找不到菜单容器: #${this.containerId}`);
             return;
         }
 
@@ -71,7 +71,7 @@ const MenuRender = {
             container.appendChild(menuElement);
         });
 
-        console.log(`✅ 菜单渲染完成，共 ${menuData.length} 个顶级菜单`);
+        Debug.log(`✅ 菜单渲染完成，共 ${menuData.length} 个顶级菜单`);
     },
 
     // 递归渲染菜单项
@@ -179,7 +179,7 @@ const MenuRender = {
             }
         }
 
-        console.log(`${!currentState ? '展开' : '折叠'}菜单: ${menuId}`);
+        Debug.log(`${!currentState ? '展开' : '折叠'}菜单: ${menuId}`);
     },
 
     // 更新当前高亮项

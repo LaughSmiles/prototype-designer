@@ -3,15 +3,65 @@
 
 const Storage = {
     // localStorage 键名
-    STORAGE_KEY: 'photographySchoolCanvas',
-    UI_STATE_KEY: 'photographySchool_uiState',
+    // 键名随项目名派生，使框架可整体复制到新项目而不丢数据。
+    // （历史上此处硬编码为上一个项目的名 'photographySchool*'，换项目后会孤立所有已保存数据）
+    get STORAGE_KEY() {
+        return `${this.projectName}Canvas`;
+    },
+
+    get UI_STATE_KEY() {
+        return `${this.projectName}_uiState`;
+    },
+
+    /**
+     * 读取项目名。config.js 必须先于本模块加载（canvas-editor.html 已保证这一点），
+     * 仍保留兜底以防配置缺失。
+     */
+    get projectName() {
+        if (!this._projectName) {
+            const cfg = window.PROJECT_CONFIG || {};
+            this._projectName = cfg.projectName || 'untitledProject';
+        }
+        return this._projectName;
+    },
+
+    // 旧版本硬编码的键名，检测到则自动迁移，避免升级后数据丢失
+    LEGACY_KEYS: [
+        { data: 'photographySchoolCanvas', ui: 'photographySchool_uiState' },
+    ],
 
     // 初始化
     init() {
+        this.migrateLegacyKeys();
         this.setupEventListeners();
         this.loadAuto(); // 自动加载上次保存的数据
         this.loadUIState(); // 恢复UI状态（侧边栏折叠等）
         this.startAutoSave(); // 启动自动保存定时器
+    },
+
+    /**
+     * 把历史遗留键名下的数据迁移到当前项目键名。
+     * 仅在新键尚不存在时执行，且迁移成功后清除旧键，避免重复占用与歧义。
+     */
+    migrateLegacyKeys() {
+        for (const legacy of this.LEGACY_KEYS) {
+            if (legacy.data === this.STORAGE_KEY) continue;
+
+            const legacyRaw = localStorage.getItem(legacy.data);
+            if (!legacyRaw) continue;
+
+            if (!localStorage.getItem(this.STORAGE_KEY)) {
+                localStorage.setItem(this.STORAGE_KEY, legacyRaw);
+                Debug.warn(`[Storage] 已将画布数据从旧键 "${legacy.data}" 迁移到 "${this.STORAGE_KEY}"`);
+            }
+
+            if (legacy.ui && localStorage.getItem(legacy.ui) && !localStorage.getItem(this.UI_STATE_KEY)) {
+                localStorage.setItem(this.UI_STATE_KEY, localStorage.getItem(legacy.ui));
+            }
+
+            localStorage.removeItem(legacy.data);
+            if (legacy.ui) localStorage.removeItem(legacy.ui);
+        }
     },
 
     // 设置事件监听器
@@ -77,9 +127,9 @@ const Storage = {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
             this.saveUIState(); // 同时保存UI状态
             PageLibrary.showHint('✅ 保存成功！');
-            console.log('画布数据已保存:', data);
+            Debug.log('画布数据已保存:', data);
         } catch (error) {
-            console.error('保存失败:', error);
+            Debug.error('保存失败:', error);
             alert('保存失败：' + error.message);
         }
     },
@@ -98,9 +148,9 @@ const Storage = {
         try {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
             this.saveUIState(); // 同时保存UI状态
-            console.log('自动保存成功:', new Date().toLocaleTimeString());
+            Debug.log('自动保存成功:', new Date().toLocaleTimeString());
         } catch (error) {
-            console.error('自动保存失败:', error);
+            Debug.error('自动保存失败:', error);
         }
     },
 
@@ -115,7 +165,7 @@ const Storage = {
             };
             localStorage.setItem(this.UI_STATE_KEY, JSON.stringify(uiState));
         } catch (error) {
-            console.error('保存UI状态失败:', error);
+            Debug.error('保存UI状态失败:', error);
         }
     },
 
@@ -147,9 +197,9 @@ const Storage = {
                 expanderRight.style.display = uiState.rightCollapsed ? 'flex' : 'none';
             }
 
-            console.log('UI状态已恢复');
+            Debug.log('UI状态已恢复');
         } catch (error) {
-            console.error('恢复UI状态失败:', error);
+            Debug.error('恢复UI状态失败:', error);
         }
     },
 
@@ -159,7 +209,7 @@ const Storage = {
             this.saveSilently();
         }, 60000); // 60000毫秒 = 1分钟
 
-        console.log('✅ 自动保存已启动，每1分钟保存一次');
+        Debug.log('✅ 自动保存已启动，每1分钟保存一次');
     },
 
     // 自动加载（页面加载时）
@@ -174,14 +224,14 @@ const Storage = {
                 // 检测到缓存加载后,补充当前状态到历史栈
                 if (ElementManager.state.elements.length > 0) {
                     HistoryManager.saveState();
-                    console.log('💾 检测到缓存加载,已补充当前状态到历史栈');
+                    Debug.log('💾 检测到缓存加载,已补充当前状态到历史栈');
                 }
 
                 PageLibrary.showHint('✅ 已恢复上次的画布');
-                console.log('自动加载完成:', data);
+                Debug.log('自动加载完成:', data);
             }
         } catch (error) {
-            console.error('自动加载失败:', error);
+            Debug.error('自动加载失败:', error);
         }
     },
 
@@ -192,7 +242,7 @@ const Storage = {
         // 检测数据版本并迁移
         if (data.version === '1.0' || (!data.pages && data.elements)) {
             // 旧数据格式: 单页面,需要迁移
-            console.log('检测到旧数据格式,正在迁移...');
+            Debug.log('检测到旧数据格式,正在迁移...');
 
             const migratedData = {
                 pages: [{
@@ -206,7 +256,7 @@ const Storage = {
             };
 
             PageManager.setPagesData(migratedData);
-            console.log('旧数据已迁移到新格式');
+            Debug.log('旧数据已迁移到新格式');
         } else if (data.version === '2.0' && data.pages) {
             // 新数据格式: 多页面
             PageManager.setPagesData(data);
@@ -215,7 +265,7 @@ const Storage = {
             PageManager.init();
         }
 
-        console.log('数据加载完成:', data);
+        Debug.log('数据加载完成:', data);
     },
 
     // 导出为 JSON 文件
@@ -262,7 +312,7 @@ const Storage = {
                 this.loadData(data);
                 PageLibrary.showHint('✅ 导入成功');
             } catch (error) {
-                console.error('导入失败:', error);
+                Debug.error('导入失败:', error);
                 alert('文件格式错误：' + error.message);
             }
         };
@@ -282,13 +332,13 @@ const Storage = {
                     const saved = localStorage.getItem(this.STORAGE_KEY);
                     if (saved === null) {
                         PageLibrary.showHint('✅ 浏览器缓存已清空');
-                        console.log('浏览器缓存已清空');
+                        Debug.log('浏览器缓存已清空');
                     } else {
                         PageLibrary.showHint('❌ 清空失败');
-                        console.error('清空缓存失败');
+                        Debug.error('清空缓存失败');
                     }
                 } catch (error) {
-                    console.error('清空缓存失败:', error);
+                    Debug.error('清空缓存失败:', error);
                     alert('清空缓存失败：' + error.message);
                 }
             }

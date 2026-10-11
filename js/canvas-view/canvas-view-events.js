@@ -436,6 +436,23 @@ const CanvasViewEvents = {
         const iframe = pageDiv.querySelector('iframe');
         if (iframe) {
             iframe.focus();
+
+            // 在 iframe 内容文档上监听 ESC/Q 键，解决焦点在 iframe 内时父文档收不到键盘事件的问题
+            const onIframeKeydown = (e) => {
+                if (e.key === 'Escape' || e.key === 'q' || e.key === 'Q') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.postMessage({ type: 'prototype-escape-preview' }, '*');
+                }
+            };
+            // 保存引用以便退出时移除
+            this._previewIframeKeydownHandler = onIframeKeydown;
+            this._previewIframe = iframe;
+            try {
+                iframe.contentDocument?.addEventListener('keydown', onIframeKeydown, true);
+            } catch (err) {
+                // 跨域 iframe 无法访问 contentDocument，忽略
+            }
         }
 
         // 3. 隐藏预览按钮和删除按钮（预览中不需要）
@@ -498,10 +515,23 @@ const CanvasViewEvents = {
             });
         }
 
-        // 3. 移除预览工具栏
+        // 3. 移除 iframe 内的键盘监听器
+        if (this._previewIframeKeydownHandler && this._previewIframe) {
+            try {
+                this._previewIframe.contentDocument?.removeEventListener(
+                    'keydown', this._previewIframeKeydownHandler, true
+                );
+            } catch (err) {
+                // 跨域 iframe 忽略
+            }
+            this._previewIframeKeydownHandler = null;
+            this._previewIframe = null;
+        }
+
+        // 4. 移除预览工具栏
         document.getElementById('preview-toolbar')?.remove();
 
-        // 4. 清理状态
+        // 5. 清理状态
         this._previewElementId = null;
     }
 };

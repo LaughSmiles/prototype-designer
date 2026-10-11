@@ -20,11 +20,11 @@ const SidebarMenu = {
     // 初始化菜单系统
     async init(containerId) {
         if (this.initialized) {
-            console.warn('⚠️ SidebarMenu 已经初始化');
+            Debug.warn('⚠️ SidebarMenu 已经初始化');
             return;
         }
 
-        console.log('🚀 初始化动态侧边栏菜单系统...');
+        Debug.log('🚀 初始化动态侧边栏菜单系统...');
 
         try {
             // 1. 初始化数据层
@@ -44,11 +44,11 @@ const SidebarMenu = {
             this.calculateStats();
 
             this.initialized = true;
-            console.log(`✅ 动态侧边栏菜单系统初始化完成 (v${this.version})`);
+            Debug.log(`✅ 动态侧边栏菜单系统初始化完成 (v${this.version})`);
             this.logStats();
 
         } catch (error) {
-            console.error('❌ SidebarMenu 初始化失败:', error);
+            Debug.error('❌ SidebarMenu 初始化失败:', error);
             throw error;
         }
     },
@@ -56,18 +56,18 @@ const SidebarMenu = {
     // 重新渲染菜单
     refresh(containerId) {
         if (!this.initialized) {
-            console.warn('⚠️ SidebarMenu 未初始化，无法刷新');
+            Debug.warn('⚠️ SidebarMenu 未初始化，无法刷新');
             return;
         }
 
-        console.log('🔄 刷新菜单...');
+        Debug.log('🔄 刷新菜单...');
 
         const menuTree = MenuData.getMenuTree();
         MenuRender.render(menuTree, containerId || 'sidebar-menu');
         MenuInteraction.highlightCurrentPage();
 
         this.calculateStats();
-        console.log('✅ 菜单刷新完成');
+        Debug.log('✅ 菜单刷新完成');
     },
 
     // 计算统计信息
@@ -115,7 +115,7 @@ const SidebarMenu = {
 
     // 记录统计信息到控制台
     logStats() {
-        console.log(`📊 菜单统计:`, {
+        Debug.log(`📊 菜单统计:`, {
             总菜单数: this.stats.totalMenus,
             顶级菜单: this.stats.topLevelMenus,
             最大层级: this.stats.maxLevel,

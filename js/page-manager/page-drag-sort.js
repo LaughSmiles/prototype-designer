@@ -61,7 +61,7 @@ const PageDragSort = {
         event.target.classList.add('dragging');
 
         pageManager.hideInsertIndicator();
-        console.log(`开始拖拽页面 ${fromIndex}`);
+        Debug.log(`开始拖拽页面 ${fromIndex}`);
     },
 
     // 拖拽经过目标元素
@@ -136,7 +136,7 @@ const PageDragSort = {
         // 保存状态用于撤销
         HistoryManager.saveState();
 
-        console.log('拖拽放置完成');
+        Debug.log('拖拽放置完成');
     },
 
     // 拖拽进入目标元素
@@ -157,7 +157,7 @@ const PageDragSort = {
         delete pageManager._dragFromIndex;
         delete pageManager._draggingItem;
 
-        console.log('拖拽结束');
+        Debug.log('拖拽结束');
     },
 
     // 容器上的拖拽经过事件
@@ -222,7 +222,7 @@ const PageDragSort = {
         this.syncPageData(pageManager);
         HistoryManager.saveState();
 
-        console.log('容器拖拽放置完成');
+        Debug.log('容器拖拽放置完成');
     },
 
     // 同步页面数据

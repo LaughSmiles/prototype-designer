@@ -146,7 +146,7 @@ const PageManager = {
                 if (element.type === 'page') {
                     const pageInfo = PageLibrary.getPageInfo(element.pageId);
                     if (!pageInfo || pageInfo.isValid === false) {
-                        console.warn(`⚠️ 跳过无效页面元素: ${element.pageId}`);
+                        Debug.warn(`⚠️ 跳过无效页面元素: ${element.pageId}`);
                         skippedCount++;
                         return;
                     }
@@ -158,7 +158,7 @@ const PageManager = {
             });
 
             if (skippedCount > 0) {
-                console.warn(`⚠️ 已跳过 ${skippedCount} 个无效页面引用`);
+                Debug.warn(`⚠️ 已跳过 ${skippedCount} 个无效页面引用`);
                 PageLibrary.showHint(`⚠️ 已跳过 ${skippedCount} 个无效页面引用`);
             }
         }
@@ -189,7 +189,7 @@ const PageManager = {
         this.updateTabActive(pageId);
         ElementManager.updateStatusBar();
 
-        console.log(`切换到页面: ${page.name}`, page);
+        Debug.log(`切换到页面: ${page.name}`, page);
     },
 
     // 重命名页面
@@ -293,12 +293,12 @@ const PageManager = {
     async getAllPagesData() {
         const currentPage = this.getCurrentPage();
         if (currentPage) {
-            console.log('💾 保存前 - CanvasView.state.zoom:', CanvasView.state.zoom);
-            console.log('💾 保存前 - CanvasView.state.pan:', CanvasView.state.pan);
+            Debug.log('💾 保存前 - CanvasView.state.zoom:', CanvasView.state.zoom);
+            Debug.log('💾 保存前 - CanvasView.state.pan:', CanvasView.state.pan);
 
             const view = CanvasView.getView();
-            console.log('💾 保存前 - getView() 返回:', view);
-            console.log('💾 保存前 - 当前页面:', currentPage.name);
+            Debug.log('💾 保存前 - getView() 返回:', view);
+            Debug.log('💾 保存前 - 当前页面:', currentPage.name);
 
             currentPage.view = view;
             let allElements = ElementManager.getAllElements();
@@ -307,14 +307,14 @@ const PageManager = {
 
             if (cleanedElements.length !== allElements.length) {
                 const removedCount = allElements.length - cleanedElements.length;
-                console.warn(`⚠️ 保存时清理了 ${removedCount} 个无效页面引用`);
+                Debug.warn(`⚠️ 保存时清理了 ${removedCount} 个无效页面引用`);
                 PageLibrary.showHint(`⚠️ 已移除 ${removedCount} 个无效页面引用`);
             }
 
             currentPage.elements = cleanedElements;
             currentPage.usageCount = ElementManager.getUsageCounts();
 
-            console.log('💾 保存后 - currentPage.view:', currentPage.view);
+            Debug.log('💾 保存后 - currentPage.view:', currentPage.view);
         }
 
         return {
@@ -337,11 +337,11 @@ const PageManager = {
                     if (exists) {
                         validElements.push(element);
                     } else {
-                        console.warn(`⚠️ 移除无效页面元素: ${element.pageId} (${pageInfo.name})`);
+                        Debug.warn(`⚠️ 移除无效页面元素: ${element.pageId} (${pageInfo.name})`);
                         invalidCount++;
                     }
                 } else {
-                    console.warn(`⚠️ 移除无效页面元素: ${element.pageId}`);
+                    Debug.warn(`⚠️ 移除无效页面元素: ${element.pageId}`);
                     invalidCount++;
                 }
             } else {
@@ -378,8 +378,8 @@ const PageManager = {
         this.renderTabs();
 
         const currentPage = this.pages.find(p => p.id === this.currentPageId);
-        console.log('📖 准备恢复页面:', currentPage?.name);
-        console.log('📖 视图状态:', currentPage?.view);
+        Debug.log('📖 准备恢复页面:', currentPage?.name);
+        Debug.log('📖 视图状态:', currentPage?.view);
 
         this.switchPage(this.currentPageId);
     },

@@ -16,7 +16,7 @@ const HistoryManager = {
 
     // 初始化
     init() {
-        console.log('✅ 历史记录管理器初始化完成');
+        Debug.log('✅ 历史记录管理器初始化完成');
     },
 
     // 保存当前状态到历史记录
@@ -54,7 +54,7 @@ const HistoryManager = {
 
             this.historyStack.push(emptyState);
             this.currentIndex = 0;
-            console.log('💾 初始化历史栈,保存空状态');
+            Debug.log('💾 初始化历史栈,保存空状态');
             // 不 return,继续执行保存当前状态
         }
 
@@ -76,7 +76,7 @@ const HistoryManager = {
             this.currentIndex--;
         }
 
-        console.log(`💾 历史记录已保存 (${this.currentIndex + 1}/${this.historyStack.length})`);
+        Debug.log(`💾 历史记录已保存 (${this.currentIndex + 1}/${this.historyStack.length})`);
     },
 
     // 捕获当前完整状态
@@ -114,7 +114,7 @@ const HistoryManager = {
             return el.type;
         }).join(', ');
 
-        console.log(`📸 捕获状态: ${state.elements.length}个元素 [${elementNames}]`);
+        Debug.log(`📸 捕获状态: ${state.elements.length}个元素 [${elementNames}]`);
 
         return state;
     },
@@ -222,9 +222,9 @@ const HistoryManager = {
                 }
             }
 
-            console.log('✅ 状态已恢复');
+            Debug.log('✅ 状态已恢复');
         } catch (error) {
-            console.error('❌ 恢复状态失败:', error);
+            Debug.error('❌ 恢复状态失败:', error);
         } finally {
             this.isUndoingOrRedoing = false;
         }
@@ -233,7 +233,7 @@ const HistoryManager = {
     // 撤销
     undo() {
         if (this.currentIndex <= 0) {
-            console.log('⚠️ 没有更多历史记录可以撤销');
+            Debug.log('⚠️ 没有更多历史记录可以撤销');
             PageLibrary.showHint('没有更多历史记录');
             return false;
         }
@@ -243,7 +243,7 @@ const HistoryManager = {
         this.restoreState(state);
 
         const time = new Date(state.timestamp).toLocaleTimeString();
-        console.log(`↩️ 撤销到 ${time}`);
+        Debug.log(`↩️ 撤销到 ${time}`);
         PageLibrary.showHint(`已撤销 (${this.currentIndex}/${this.historyStack.length - 1})`);
 
         return true;
@@ -252,7 +252,7 @@ const HistoryManager = {
     // 重做
     redo() {
         if (this.currentIndex >= this.historyStack.length - 1) {
-            console.log('⚠️ 没有更多历史记录可以重做');
+            Debug.log('⚠️ 没有更多历史记录可以重做');
             PageLibrary.showHint('没有更多历史记录');
             return false;
         }
@@ -262,7 +262,7 @@ const HistoryManager = {
         this.restoreState(state);
 
         const time = new Date(state.timestamp).toLocaleTimeString();
-        console.log(`↪️ 重做到 ${time}`);
+        Debug.log(`↪️ 重做到 ${time}`);
         PageLibrary.showHint(`已重做 (${this.currentIndex}/${this.historyStack.length - 1})`);
 
         return true;

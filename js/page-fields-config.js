@@ -2,39 +2,7 @@
 // 从 Vue Form 组件提取的表单字段配置
 
 window.PAGE_FIELDS_CONFIG = {
-    "跳转中...": {
-        "headers": [],
-        "entityName": "跳转中...",
-        "fields": [
-            {
-                "label": "名称",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "编码",
-                "type": "input"
-            },
-            {
-                "label": "排序",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "状态",
-                "type": "select",
-                "options": [
-                    "开启",
-                    "关闭"
-                ]
-            },
-            {
-                "label": "备注",
-                "type": "textarea"
-            }
-        ]
-    },
-    "用户管理": {
+"用户管理": {
         "headers": [
             "用户编号",
             "用户名称",
@@ -5681,103 +5649,7 @@ window.PAGE_FIELDS_CONFIG = {
             }
         ]
     },
-    "500 服务器错误": {
-        "headers": [],
-        "entityName": "500 服务器错误",
-        "fields": [
-            {
-                "label": "名称",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "编码",
-                "type": "input"
-            },
-            {
-                "label": "排序",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "状态",
-                "type": "select",
-                "options": [
-                    "开启",
-                    "关闭"
-                ]
-            },
-            {
-                "label": "备注",
-                "type": "textarea"
-            }
-        ]
-    },
-    "404 页面不存在": {
-        "headers": [],
-        "entityName": "404 页面不存在",
-        "fields": [
-            {
-                "label": "名称",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "编码",
-                "type": "input"
-            },
-            {
-                "label": "排序",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "状态",
-                "type": "select",
-                "options": [
-                    "开启",
-                    "关闭"
-                ]
-            },
-            {
-                "label": "备注",
-                "type": "textarea"
-            }
-        ]
-    },
-    "403 无权限": {
-        "headers": [],
-        "entityName": "403 无权限",
-        "fields": [
-            {
-                "label": "名称",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "编码",
-                "type": "input"
-            },
-            {
-                "label": "排序",
-                "required": true,
-                "type": "input"
-            },
-            {
-                "label": "状态",
-                "type": "select",
-                "options": [
-                    "开启",
-                    "关闭"
-                ]
-            },
-            {
-                "label": "备注",
-                "type": "textarea"
-            }
-        ]
-    },
-    "仓库管理": {
+"仓库管理": {
         "headers": [
             "编号",
             "仓库名称",
@@ -9466,4 +9338,4 @@ window.PAGE_FIELDS_CONFIG = {
     }
 };
 
-console.log('字段配置加载完成:', Object.keys(window.PAGE_FIELDS_CONFIG).length, '个页面');
+Debug.log('字段配置加载完成:', Object.keys(window.PAGE_FIELDS_CONFIG).length, '个页面');

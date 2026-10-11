@@ -266,7 +266,7 @@ const PageLibraryRender = {
         // 重新渲染页面库
         this.render();
 
-        console.log(`${PageLibrary.categoryExpanded[categoryId] ? '展开' : '折叠'}分类: ${categoryId}`);
+        Debug.log(`${PageLibrary.categoryExpanded[categoryId] ? '展开' : '折叠'}分类: ${categoryId}`);
     },
 
     // 更新页面使用计数徽章

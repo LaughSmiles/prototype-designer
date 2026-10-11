@@ -13,7 +13,7 @@ const MenuInteraction = {
             this.highlightCurrentPage();
         });
 
-        console.log('✅ MenuInteraction 初始化完成');
+        Debug.log('✅ MenuInteraction 初始化完成');
     },
 
     // 高亮当前页面
@@ -47,9 +47,9 @@ const MenuInteraction = {
 
         if (menuItem) {
             MenuRender.updateActiveItem(menuItem.id);
-            console.log(`✅ 高亮菜单: ${menuItem.name} (${menuItem.id})`);
+            Debug.log(`✅ 高亮菜单: ${menuItem.name} (${menuItem.id})`);
         } else {
-            console.debug(`ℹ️ 当前页面未匹配到菜单: ${menuPath}`);
+            Debug.log(`ℹ️ 当前页面未匹配到菜单: ${menuPath}`);
         }
     },
 
@@ -67,7 +67,7 @@ const MenuInteraction = {
             const targetPath = this.resolveRelativePath(menuItem.path);
             window.location.href = targetPath;
         } catch (error) {
-            console.error('❌ 页面跳转失败:', error);
+            Debug.error('❌ 页面跳转失败:', error);
         }
     },
 

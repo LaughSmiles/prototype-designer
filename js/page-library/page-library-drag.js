@@ -107,7 +107,7 @@ const PageLibraryDrag = {
                 expandTimeout = setTimeout(() => {
                     PageLibrary.categoryExpanded[categoryId] = true;
                     PageLibraryRender.render();
-                    console.log(`拖拽时自动展开分类: ${categoryId}`);
+                    Debug.log(`拖拽时自动展开分类: ${categoryId}`);
                 }, 500);
             }
         });
@@ -140,7 +140,7 @@ const PageLibraryDrag = {
         e.dataTransfer.effectAllowed = 'copy';
 
         e.target.classList.add('dragging');
-        console.log(`开始拖拽分类: ${group.name} (${pages.length}个页面)`);
+        Debug.log(`开始拖拽分类: ${group.name} (${pages.length}个页面)`);
     },
 
     // 处理单个页面项拖拽开始
@@ -155,7 +155,7 @@ const PageLibraryDrag = {
         const pages = PageLibrary.getPagesInCategory(categoryId);
 
         if (pages.length === 0) {
-            console.warn(`分类 ${categoryId} 下没有页面`);
+            Debug.warn(`分类 ${categoryId} 下没有页面`);
             return;
         }
 
@@ -181,6 +181,6 @@ const PageLibraryDrag = {
         // 显示提示
         PageLibraryRender.showHint(`已添加 ${pages.length} 个页面(${categoryName})`);
 
-        console.log(`批量添加完成: ${categoryName} (${pages.length}个页面)`);
+        Debug.log(`批量添加完成: ${categoryName} (${pages.length}个页面)`);
     }
 };

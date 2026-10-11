@@ -35,12 +35,12 @@ const PageLibrary = {
         if (window.PROJECT_CONFIG) {
             this.projectConfig = window.PROJECT_CONFIG;
             this.projectRootPath = window.PROJECT_CONFIG.projectRootPath || '';
-            console.log(`✅ 已加载项目配置: ${this.projectConfig.projectName} (版本 ${this.projectConfig.version})`);
+            Debug.log(`✅ 已加载项目配置: ${this.projectConfig.projectName} (版本 ${this.projectConfig.version})`);
             if (this.projectRootPath) {
-                console.log(`✅ 项目根路径: ${this.projectRootPath}`);
+                Debug.log(`✅ 项目根路径: ${this.projectRootPath}`);
             }
         } else {
-            console.warn('⚠️ 未找到配置，使用默认配置');
+            Debug.warn('⚠️ 未找到配置，使用默认配置');
             this.projectConfig = this.getDefaultConfig();
             this.projectRootPath = '';
         }
@@ -79,7 +79,7 @@ const PageLibrary = {
     // 生成页面列表(从配置文件读取)
     async generatePageList() {
         if (!this.projectConfig || !this.projectConfig.pages) {
-            console.warn('⚠️ 项目配置中没有页面数据');
+            Debug.warn('⚠️ 项目配置中没有页面数据');
             this.pages = [];
             return;
         }
@@ -109,12 +109,12 @@ const PageLibrary = {
         // 统计无效页面数量
         const invalidCount = this.pages.filter(p => !p.isValid).length;
         if (invalidCount > 0) {
-            console.warn(`⚠️ 发现 ${invalidCount} 个页面文件不存在，已标记为无效`);
+            Debug.warn(`⚠️ 发现 ${invalidCount} 个页面文件不存在，已标记为无效`);
             const invalidNames = this.pages.filter(p => !p.isValid).map(p => p.name).join(', ');
-            console.warn(`   无效页面: ${invalidNames}`);
+            Debug.warn(`   无效页面: ${invalidNames}`);
         }
 
-        console.log(`✅ 已生成 ${this.pages.length} 个页面列表 (${this.pages.length - invalidCount} 个有效)`);
+        Debug.log(`✅ 已生成 ${this.pages.length} 个页面列表 (${this.pages.length - invalidCount} 个有效)`);
     },
 
     // 检查页面文件是否存在
@@ -126,10 +126,10 @@ const PageLibrary = {
         // HTTP/HTTPS 协议下正常验证
         try {
             const response = await fetch(filePath, { method: 'HEAD' });
-            console.log(`🔍 [checkPageExists] ${filePath} - status: ${response.status}, ok: ${response.ok}`);
+            Debug.log(`🔍 [checkPageExists] ${filePath} - status: ${response.status}, ok: ${response.ok}`);
             return response.ok;
         } catch (error) {
-            console.error(`❌ [checkPageExists] ${filePath} - error:`, error);
+            Debug.error(`❌ [checkPageExists] ${filePath} - error:`, error);
             return false;
         }
     },
@@ -175,7 +175,7 @@ const PageLibrary = {
         }
 
         // 如果没有配置项目根路径,返回相对路径
-        console.warn('⚠️ 未配置 projectRootPath,返回相对路径');
+        Debug.warn('⚠️ 未配置 projectRootPath,返回相对路径');
         return relativePath;
     },
 

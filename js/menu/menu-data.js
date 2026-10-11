@@ -16,21 +16,21 @@ const MenuData = {
     async init() {
         await this.loadMenuConfig();
         this.buildMenuTree();
-        console.log(`✅ MenuData 初始化完成，共 ${this.menuTree.length} 个顶级菜单`);
+        Debug.log(`✅ MenuData 初始化完成，共 ${this.menuTree.length} 个顶级菜单`);
     },
 
     // 加载菜单配置
     loadMenuConfig() {
         // 检查配置文件是否存在
         if (!window.SIDEBAR_MENU) {
-            console.warn('⚠️ 未找到菜单配置 window.SIDEBAR_MENU，使用兜底菜单');
+            Debug.warn('⚠️ 未找到菜单配置 window.SIDEBAR_MENU，使用兜底菜单');
             this.menuData = this.getFallbackMenu();
             return Promise.resolve();
         }
 
         // 加载配置数据
         this.menuData = window.SIDEBAR_MENU;
-        console.log(`✅ 已加载菜单配置，共 ${this.menuData.length} 个菜单项`);
+        Debug.log(`✅ 已加载菜单配置，共 ${this.menuData.length} 个菜单项`);
         return Promise.resolve();
     },
 
@@ -39,7 +39,7 @@ const MenuData = {
     // 需要递归展平所有嵌套项，统一建立映射和父子关系
     buildMenuTree() {
         if (!this.menuData || this.menuData.length === 0) {
-            console.warn('⚠️ 菜单数据为空，无法构建树结构');
+            Debug.warn('⚠️ 菜单数据为空，无法构建树结构');
             this.menuTree = [];
             return;
         }
@@ -84,7 +84,7 @@ const MenuData = {
                 if (parentMenu) {
                     parentMenu.children.push(menuItem);
                 } else {
-                    console.warn(`⚠️ 找不到父菜单: ${menu.parentId}，菜单 ${menu.id} 将作为顶级菜单`);
+                    Debug.warn(`⚠️ 找不到父菜单: ${menu.parentId}，菜单 ${menu.id} 将作为顶级菜单`);
                     rootMenus.push(menuItem);
                 }
             }
@@ -93,7 +93,7 @@ const MenuData = {
         // 按 order 字段排序
         this.menuTree = this.sortMenus(rootMenus);
 
-        console.log(`✅ 已构建菜单树，共 ${this.menuTree.length} 个顶级菜单，路径映射 ${Object.keys(this.pathToMenuMap).length} 条`);
+        Debug.log(`✅ 已构建菜单树，共 ${this.menuTree.length} 个顶级菜单，路径映射 ${Object.keys(this.pathToMenuMap).length} 条`);
     },
 
     // 递归排序菜单
@@ -120,7 +120,7 @@ const MenuData = {
     // 验证菜单项格式
     validateMenuItem(menu) {
         if (!menu.id || !menu.name) {
-            console.error(`❌ 菜单项格式错误，缺少必需字段:`, menu);
+            Debug.error(`❌ 菜单项格式错误，缺少必需字段:`, menu);
             return false;
         }
         return true;
@@ -191,7 +191,7 @@ const MenuData = {
 
     // 获取默认配置(降级方案)
     getFallbackMenu() {
-        console.warn('⚠️ 使用兜底菜单配置');
+        Debug.warn('⚠️ 使用兜底菜单配置');
         return [
             {
                 id: "home",

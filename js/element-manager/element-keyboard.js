@@ -203,7 +203,7 @@ const ElementKeyboard = {
             }, 'image/png', 1.0);
 
         } catch (error) {
-            console.error('截图失败:', error);
+            Debug.error('截图失败:', error);
             PageLibrary.showHint(`❌ 截图失败: ${error.message}`);
         }
     },
@@ -301,7 +301,7 @@ const ElementKeyboard = {
                 });
             } catch (err) {
                 // 跨域 iframe 无法访问，忽略
-                console.warn('无法为跨域 iframe 注入快捷键:', err);
+                Debug.warn('无法为跨域 iframe 注入快捷键:', err);
             }
             // 备用方案：通过注入 <script> 标签确保 ESC 监听生效
             // 某些情况下 contentDocument.addEventListener 可能不生效（如移动端页面无脚本上下文）
@@ -370,7 +370,7 @@ const ElementKeyboard = {
             };
             localStorage.setItem(this.FULLSCREEN_STORAGE_KEY, JSON.stringify(state));
         } catch (e) {
-            console.warn('保存全屏状态失败:', e);
+            Debug.warn('保存全屏状态失败:', e);
         }
     },
 
@@ -379,7 +379,7 @@ const ElementKeyboard = {
         try {
             localStorage.removeItem(this.FULLSCREEN_STORAGE_KEY);
         } catch (e) {
-            console.warn('清除全屏状态失败:', e);
+            Debug.warn('清除全屏状态失败:', e);
         }
     },
 
@@ -392,10 +392,10 @@ const ElementKeyboard = {
             const state = JSON.parse(saved);
             if (state && state.iframeSrc) {
                 this.createFullscreenOverlay(state.iframeSrc, state.pageName);
-                console.log('✅ 已恢复全屏状态:', state.pageName);
+                Debug.log('✅ 已恢复全屏状态:', state.pageName);
             }
         } catch (e) {
-            console.warn('恢复全屏状态失败:', e);
+            Debug.warn('恢复全屏状态失败:', e);
             this.clearFullscreenState();
         }
     },
@@ -433,7 +433,7 @@ const ElementKeyboard = {
             document.body.removeChild(tempIframe);
 
         } catch (error) {
-            console.error('截图失败:', error);
+            Debug.error('截图失败:', error);
             PageLibrary.showHint(`❌ 截图失败: ${error.message}`);
         }
     }
