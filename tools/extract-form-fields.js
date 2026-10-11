@@ -1,12 +1,26 @@
 /**
- * 从 Vue Form 组件提取表单字段，生成 page-fields-config.js
+ * extract-form-fields.js
+ *
+ * 从真实业务前端的 Vue Form 组件提取表单字段，生成 page-fields-config.js。
  *
  * 输入：
- * - pages/admin 目录下的所有 HTML 文件（提取 title 和 th）
- * - yudao-ui-admin-vue3/src/views 目录下的所有 Form.vue 文件
+ *   - pages/admin 目录下的所有 HTML 文件（提取 title 与 <th> 表头）
+ *   - 真实 Vue 工程的 views 目录下的所有 *Form.vue 文件（字段与控件类型的权威来源）
  *
  * 输出：
- * - js/page-fields-config.js
+ *   - js/page-fields-config.js
+ *
+ * 重要：真实 Vue 工程（默认为 yudao-ui-admin-vue3）不入库且常被 .gitignore 忽略。
+ * 一旦它缺失，脚本会退化为「仅由表头推断字段」，产出的配置质量显著下降且**不会报错**，
+ * 这正是历史上配置失真的根因。因此这里改为：默认直接报错退出，
+ * 只有显式传入 --allow-fallback 才允许降级运行。
+ *
+ * 用法：
+ *   node tools/extract-form-fields.js [--views-root=<path>] [--allow-fallback] [--dry-run]
+ *
+ *   --views-root=<path>  指定真实 Vue 工程的 views 目录（默认 ../yudao-ui-admin-vue3/src/views）
+ *   --allow-fallback     真实 Vue 工程缺失时仍继续（降级为表头推断，仅供应急）
+ *   --dry-run            只报告将要生成的内容，不写盘
  */
 
 const fs = require('fs');
@@ -14,8 +28,49 @@ const path = require('path');
 
 // 配置路径
 const PAGES_ROOT = path.join(__dirname, '../pages/admin');
-const VIEWS_ROOT = path.join(__dirname, '../yudao-ui-admin-vue3/src/views');
+const DEFAULT_VIEWS_ROOT = path.join(__dirname, '../yudao-ui-admin-vue3/src/views');
 const OUTPUT_FILE = path.join(__dirname, '../js/page-fields-config.js');
+
+const argv = process.argv.slice(2);
+const viewsRootArg = argv.find((a) => a.startsWith('--views-root='));
+const VIEWS_ROOT = viewsRootArg
+    ? path.resolve(process.cwd(), viewsRootArg.split('=').slice(1).join('='))
+    : DEFAULT_VIEWS_ROOT;
+const ALLOW_FALLBACK = argv.includes('--allow-fallback');
+const DEBUG = argv.includes('--debug');
+const DRY_RUN = argv.includes('--dry-run');
+
+/** 校验真实 Vue 工程是否可用；不可用且未显式允许降级时直接退出 */
+function assertViewsRootUsable() {
+    const viewsExists = fs.existsSync(VIEWS_ROOT);
+    const projectRoot = path.resolve(VIEWS_ROOT, '../..');
+    const projectExists = fs.existsSync(projectRoot);
+
+    if (viewsExists) {
+        const n = globFiles(VIEWS_ROOT, '**/*Form.vue').length;
+        if (n > 0) {
+            console.log(`✓ 真实 Vue 工程可用: ${projectRoot}（${n} 个 Form 组件）`);
+            return true;
+        }
+        console.warn(`⚠ views 目录存在但未找到任何 *Form.vue: ${VIEWS_ROOT}`);
+    } else {
+        console.error(`✗ 找不到真实 Vue 工程的 views 目录: ${VIEWS_ROOT}`);
+        console.error(`  该工程通常不入库（见 .gitignore 的 yudao-ui-admin-vue3/ 条目）。`);
+    }
+
+    if (ALLOW_FALLBACK) {
+        console.warn('\n⚠ 已指定 --allow-fallback：继续运行，但所有字段将由 <th> 表头推断，');
+        console.warn('  控件类型、必填、字典选项等真实信息会丢失，产物质量显著下降。\n');
+        return false;
+    }
+
+    console.error('\n为避免产出失真的配置，脚本已中止。');
+    console.error('请选择其一：');
+    console.error('  1) 克隆/软链真实 Vue 工程到项目根目录的 yudao-ui-admin-vue3/，然后重跑；');
+    console.error('  2) 用 --views-root=<path> 指向其 views 目录；');
+    console.error('  3) 确知后果时，加 --allow-fallback 降级运行。\n');
+    process.exit(1);
+}
 
 // 字典类型到选项的映射
 const DICT_OPTIONS = {
@@ -143,13 +198,9 @@ function scanVueForms() {
 
     console.log(`  找到 ${vueFiles.length} 个 Vue Form 组件`);
     console.log(`  formFilesMap 有 ${formFilesMap.size} 个模块`);
-    formFilesMap.forEach((files, module) => {
-        console.log(`    ${module}: ${files.length} 个`);
-        // Debug: 输出system模块的Form文件名
-        if (module === 'system') {
-            console.log(`      system Forms: ${files.map(f => path.basename(f.relPath)).join(', ')}`);
-        }
-    });
+    if (formFilesMap.size === 0) {
+        console.warn('    ⚠ 未匹配到任何模块，字段将退化为表头推断');
+    }
 }
 
 /**
@@ -247,7 +298,7 @@ function findFormForPage(pageTitle) {
     const formFiles = formFilesMap.get(module);
 
     if (!formFiles || formFiles.length === 0) {
-        console.log(`    [DEBUG] ${pageTitle}: module=${module}, no form files found`);
+        if (DEBUG) console.log(`    [DEBUG] ${pageTitle}: module=${module}, no form files found`);
         return null;
     }
 
@@ -262,7 +313,7 @@ function findFormForPage(pageTitle) {
         const formNameNormalized = formName.toLowerCase().replace(/-/g, '');
         const targetNameNormalized = targetName.toLowerCase().replace(/-/g, '');
         if (formNameNormalized === targetNameNormalized) {
-            console.log(`    [DEBUG] ${pageTitle}: matched ${formFile.relPath} (exact)`);
+            if (DEBUG) console.log(`    [DEBUG] ${pageTitle}: matched ${formFile.relPath} (exact)`);
             return formFile;
         }
     }
@@ -275,7 +326,7 @@ function findFormForPage(pageTitle) {
             const formName = path.basename(parts[1], '.vue');
             const targetName = pageName + 'Form';
             if (formName.toLowerCase() === targetName.toLowerCase()) {
-                console.log(`    [DEBUG] ${pageTitle}: matched ${formFile.relPath} (subdir)`);
+                if (DEBUG) console.log(`    [DEBUG] ${pageTitle}: matched ${formFile.relPath} (subdir)`);
                 return formFile;
             }
         }
@@ -287,12 +338,12 @@ function findFormForPage(pageTitle) {
         const pageNameLower = pageName.toLowerCase().replace(/-/g, '');
         const formNameNormalized = formName.replace(/-/g, '').replace('form', '');
         if (formName.includes(pageNameLower) || formNameNormalized.includes(pageNameLower) || pageNameLower.includes(formNameNormalized)) {
-            console.log(`    [DEBUG] ${pageTitle}: matched ${formFile.relPath} (fuzzy)`);
+            if (DEBUG) console.log(`    [DEBUG] ${pageTitle}: matched ${formFile.relPath} (fuzzy)`);
             return formFile;
         }
     }
 
-    console.log(`    [DEBUG] ${pageTitle}: no match found (pageName=${pageName}, forms=${formFiles.map(f => path.basename(f.relPath)).join(', ')})`);
+    if (DEBUG) console.log(`    [DEBUG] ${pageTitle}: no match found (pageName=${pageName}, forms=${formFiles.map(f => path.basename(f.relPath)).join(', ')})`);
     return null;
 }
 
@@ -338,11 +389,17 @@ window.PAGE_FIELDS_CONFIG = ${JSON.stringify(config, null, 4)};
 console.log('字段配置加载完成:', Object.keys(window.PAGE_FIELDS_CONFIG).length, '个页面');
 `;
 
-    fs.writeFileSync(OUTPUT_FILE, output, 'utf-8');
-
-    console.log(`  生成完成: ${OUTPUT_FILE}`);
+    if (DRY_RUN) {
+        console.log('  (dry-run 模式，未写入文件)');
+    } else {
+        fs.writeFileSync(OUTPUT_FILE, output, 'utf-8');
+        console.log(`  生成完成: ${OUTPUT_FILE}`);
+    }
     console.log(`  有 Form 组件: ${withForm} 个页面`);
     console.log(`  无 Form 组件: ${withoutForm} 个页面（使用表头推断）`);
+    if (withoutForm > 0) {
+        console.warn(`  ⚠ ${withoutForm} 个页面依赖表头推断，其控件类型/必填/字典选项可能与真实系统不符。`);
+    }
 }
 
 /**
@@ -416,6 +473,9 @@ function globFiles(root, pattern) {
 function main() {
     console.log('========== 开始提取表单字段 ==========');
     console.log();
+
+    // 真实 Vue 工程缺失时默认中止，避免静默产出低质量配置
+    assertViewsRootUsable();
 
     scanHtmlPages();
     scanVueForms();
