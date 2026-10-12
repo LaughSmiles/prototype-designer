@@ -6,6 +6,24 @@
 (function () {
     'use strict';
 
+    // 页面标题 → PAGE_FIELDS_CONFIG 查表键。
+    // 后缀优先按 PROJECT_CONFIG.projectName 精确截断（config.js 通常不在独立页里加载，
+    // 此时退化为「截掉结尾的 ' - 任意段'」）。不再写死项目名：
+    // 一旦改名，写死的截断就会失配，查表键退化成 "<页面名> - <项目名>" 整串，
+    // 表单和表头静默降级为猜测 <th>，且不报任何错。
+    function getPageTitleKey() {
+        let title = document.title.trim();
+        const name = (window.PROJECT_CONFIG || {}).projectName;
+        if (name) {
+            const suffix = ' - ' + name;
+            if (title.endsWith(suffix)) return title.slice(0, -suffix.length).trim();
+            return title;
+        }
+        // 无配置：截掉最后一个 ' - xxx' 段（页面名本身不含 ' - '）
+        const idx = title.lastIndexOf(' - ');
+        return (idx > 0) ? title.slice(0, idx).trim() : title;
+    }
+
     // ========== 标签栏 ==========
     const TabBar = {
         storageKey: 'prototype_open_tabs',
@@ -14,7 +32,7 @@
         },
         getTabs() {
             // 从页面标题推断当前页面
-            const title = document.title.replace(' - 芋道管理后台', '');
+            const title = getPageTitleKey();
             const currentPath = window.location.pathname;
 
             // 默认标签列表
@@ -448,7 +466,7 @@
 
         // 根据页面标题生成表单字段
         getPageFields() {
-            const title = document.title.replace(' - 芋道管理后台', '');
+            const title = getPageTitleKey();
 
             // 1. 优先从外部配置查找
             if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
@@ -522,7 +540,7 @@
 
         // 获取表头列表
         getTableHeaders() {
-            const title = document.title.replace(' - 芋道管理后台', '');
+            const title = getPageTitleKey();
 
             // 优先从外部配置获取
             if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
@@ -544,7 +562,7 @@
 
         // 获取实体名称（用于提示文案）
         getEntityName() {
-            const title = document.title.replace(' - 芋道管理后台', '');
+            const title = getPageTitleKey();
 
             // 优先从外部配置获取
             if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {

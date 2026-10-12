@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **reusable high-fidelity prototype design framework** for rapid creation of web app prototypes with visual flow design. The current project is "芋道管理后台" (Yudao Admin) & "摄影派" (mobile app) — **264 prototype pages total**:
+This is a **reusable high-fidelity prototype design framework** for rapid creation of web app prototypes with visual flow design. The current project is **"拾光社区"** — a Xiaohongshu-style community product benchmark — **15 prototype pages total**:
 
-- **232 desktop pages** under `pages/admin/` — a Vue3 management dashboard covering system management, BPM, CRM, Mall, ERP, AI, IoT, WeChat MP, member, pay, infra and reports. Canvas 1440×900.
-- **32 mobile pages** under `pages/app/` — the "摄影派" camera-rental app. Canvas 375×812, driven by the `devices` entry in `config.js`.
+- **7 mobile pages** under `pages/app/` — the 拾光社区 community App (发现 / 笔记详情 / 搜索 / 发布 / 消息 / 我 / 他人主页). Canvas 375×812, driven by the `devices` entry in `config.js`.
+- **8 desktop pages** under `pages/admin/` — the 社区运营运营后台 (数据看板 / 笔记管理 / 内容审核 / 用户管理 / 评论管理 / 话题标签 / 举报处理 / 敏感词风控). Canvas 1440×900.
 
 ### Key Features
 - **Configuration-driven**: Define projects via `config.js` JSON without modifying framework code
@@ -21,7 +21,7 @@ This is a **reusable high-fidelity prototype design framework** for rapid creati
 No build step required. Open files directly in a browser.
 
 ```bash
-# View the prototype showcase (renders all 264 pages from config.js)
+# View the prototype showcase (renders all 15 pages from config.js)
 start index.html
 
 # Open the canvas editor
@@ -67,14 +67,13 @@ project-root/
 ├── config.js                  # Project configuration (MODIFY THIS) — single source of truth
 ├── index.html                 # Project showcase page (reads config.js, no hardcoded page list)
 ├── pages/                     # Page HTML files (MODIFY THIS)
-│   ├── admin/                 # 232 desktop pages
-│   │   ├── mall(43) system(26) infra(25) crm(24) erp(23) ai(20) bpm(15)
-│   │   ├── iot(14) mp(11) member(10) pay(10) report(4) error(3)
-│   │   └── login.html home.html profile.html redirect.html
-│   └── app/                   # 32 mobile pages
-│       └── home(7) rental(1) works(7) messages(5) profile(12)
+│   ├── admin/                 # 8 desktop pages
+│   │   ├── dashboard.html note.html audit.html user.html
+│   │   └── comment.html topic.html report.html risk.html
+│   └── app/                   # 7 mobile pages
+│       └── discover note-detail search publish message profile user-home
 ├── menu/                      # Menu DATA source (MODIFY THIS)
-│   └── menu.js                # window.SIDEBAR_MENU, 251 entries, mirrors system_menu table
+│   └── menu.js                # window.SIDEBAR_MENU，菜单数据源（手工维护，无生成脚本）
 ├── tools/                     # Node maintenance scripts (no npm scripts; run manually)
 ├── js/                        # Framework code
 │   ├── debug.js               # Debug log gate (load first)
@@ -90,7 +89,7 @@ project-root/
 │   ├── modal-manager.js       # Modal dialogs
 │   ├── alignment-manager.js   # Element alignment guides
 │   ├── virtual-scrollbar.js   # Custom scrollbar
-│   ├── page-fields-config.js  # Generated form/header config (215 entities)
+│   ├── page-fields-config.js  # Form/header config (222 entities; 7 手工补写于社区后台)
 │   ├── prototype-components.js # Shared page interaction components (forms, deletes, tabs)
 │   └── topbar.js              # Shared topbar logic (fullscreen state, Ctrl+S intercept)
 ├── css/
@@ -107,7 +106,7 @@ project-root/
 ```
 
 ### What to modify vs. what not to modify
-- **Modify**: `config.js`, `pages/`, `index.html`
+- **Modify**: `config.js`, `pages/`, `menu/`, `index.html`
 - **Framework code** (no need to modify): `canvas-editor.html`, `js/`, `css/`, `lib/`
 
 ## Module Architecture
@@ -165,7 +164,7 @@ All modules are global objects. Key dependency chains:
 The menu system is **data + engine**, split across two directories. Load order matters: the data file must load first.
 
 **Data layer** (define before anything reads it):
-- `menu/menu.js` — defines `window.SIDEBAR_MENU` (251 entries, mirrors the database `system_menu` table; supports nested `children`). ⚠️ This is the actual **data source**.
+- `menu/menu.js` — defines `window.SIDEBAR_MENU`（**手工维护**的菜单数据源，无上游生成脚本；支持嵌套 `children`）。⚠️ This is the actual **data source**.
 
 **Engine layer**:
 - `js/menu/menu-data.js` — **consumes** `window.SIDEBAR_MENU`, builds the 3-level tree + path→menu map
@@ -189,7 +188,7 @@ Mobile pages (`pages/app/`) do **not** use the menu system.
 ### Shared Page Scripts
 
 - **`js/debug.js`** — debug gate; desktop pages must load it before the scripts below
-- **`js/page-fields-config.js`** — `window.PAGE_FIELDS_CONFIG`: 215 entities mapping a page title to `{ entityName, fields[], headers[] }`. Consumed by `prototype-components.js` to **auto-generate** add/edit forms and table headers. Keys are Chinese page titles, so renaming a page title silently breaks its form (the code falls back to `<th>`-header inference).
+- **`js/page-fields-config.js`** — `window.PAGE_FIELDS_CONFIG`: 222 entities mapping a page title to `{ entityName, fields[], headers[] }`. Consumed by `prototype-components.js` to **auto-generate** add/edit forms and table headers. Keys are Chinese page titles, so renaming a page title silently breaks its form (the code falls back to `<th>`-header inference).
 - **`js/prototype-components.js`** — injected into all prototype pages, handles button clicks (add/edit forms, delete confirmations, export toasts, status toggles, search/reset), and auto-generates tab bar at top of `.main-content`
 - **`js/topbar.js`** — injected into all pages, handles fullscreen toggle + localStorage persistence and Ctrl+S intercept in fullscreen mode
 
@@ -357,5 +356,6 @@ Mobile pages (`pages/app/<module>/`) use `../../../` for `lib/`, `css/`, `js/` b
 - **iframe-based pages**: prototype pages are loaded inside iframes on the canvas. The iframes stay `pointer-events: auto`; interaction blocking in edit mode is handled by the `.page-click-overlay` overlay instead. (Toggling iframe `pointer-events` was removed on purpose — it freezes the scroll compositor, see Chrome bug interact.js #605 and `.cursor-history.md` 2026-05-21 03:20.) Right-click a page element's drag bar for the fullscreen preview.
 - **CSS sibling selectors** for expander buttons: `.sidebar-right.collapsed ~ .expander-right` — these don't trigger when `collapsed` class is added via JS after initial render, so `loadUIState()` must manually set `expander.style.display`
 - **Fullscreen preview**: Right-click a page element's drag bar to open fullscreen overlay. Press Esc to exit. The overlay intercepts Ctrl+S to prevent browser save dialog.
-- **Menu data source**: `menu/menu.js` mirrors the database `system_menu` table; `js/menu/*` is only the rendering engine. When updating pages, check that sidebar menu items match the database structure.
+- **Menu data source**: `menu/menu.js` is the single **hand-maintained** menu source (no generator script in this repo); `js/menu/*` is only the rendering engine. Every desktop page registered in `config.js` must also appear here, otherwise the sidebar cannot reach it.
+- **Title suffix follows `projectName`**: pages are `<title>页面名 - <PROJECT_CONFIG.projectName></title>`. `prototype-components.js`'s `getPageTitleKey()` and the guard plugin both derive the suffix from `config.js`, so renaming the project needs no code change — but a suffix that does not match `projectName` exactly silently breaks form generation.
 - **Logging**: use `Debug.log/warn/error`, never raw `console.*` (see Debug Logging).

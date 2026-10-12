@@ -20,7 +20,7 @@ const PAGES_ROOT = path.join(PROJECT_ROOT, 'pages');
 const IMG_DIR = path.join(PROJECT_ROOT, 'lib', 'images');
 const DRY_RUN = process.argv.includes('--dry-run');
 
-const IMAGE_HOSTS = ['images.unsplash.com', 'picsum.photos', 'api.dicebear.com'];
+const IMAGE_HOSTS = ['images.unsplash.com', 'images.pexels.com', 'picsum.photos', 'api.dicebear.com'];
 const DEAD_HOSTS = ['via.placeholder.com'];
 
 function walk(dir, out = []) {
