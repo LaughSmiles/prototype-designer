@@ -312,7 +312,7 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 │   ├── css/ (fontawesome 6.4.0)
 │   ├── webfonts/ (3 个 woff2)
 │   ├── images/ (本地化的页面图片)
-│   └── NOTICE.md              # 第三方署名声明
+│   └── AGENTS.md              # 素材获取规范 + 第三方署名声明
 ├── css/                       # 样式文件(无需修改)
 │   ├── canvas-editor.css      # 画布编辑器样式(含主题变量)
 │   └── sidebar-menu.css       # 动态侧边栏菜单样式
@@ -333,7 +333,7 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 - 🔒 `lib/` - 第三方库
 
 > 全部第三方库与页面图片都在 `lib/` 下，**不依赖任何 CDN**，项目可完全离线运行。
-> 第三方署名要求见 [`lib/NOTICE.md`](lib/NOTICE.md)。
+> 第三方署名要求与素材获取规范见 [`lib/AGENTS.md`](lib/AGENTS.md)。
 
 ---
 
@@ -785,5 +785,5 @@ prototypeDebug                 // 调试日志开关('1' = 开启)
 ⚠️ 仓库根目录暂未提供 `LICENSE` 文件（授权条款待项目所有者确定）。
 若需要对外分发，请先补上明确的许可证文件，并注意本仓库内**再分发的第三方组件**
 （TailwindCSS / Font Awesome / marked / html2canvas）各自附带的许可义务，
-完整清单见 [`lib/NOTICE.md`](lib/NOTICE.md)——其中 Font Awesome 图标为
+完整清单见 [`lib/AGENTS.md`](lib/AGENTS.md)——其中 Font Awesome 图标为
 **CC BY 4.0（必须署名）**、字体为 **SIL OFL 1.1（须随包分发许可证全文）**。

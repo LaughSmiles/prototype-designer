@@ -4,10 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **reusable high-fidelity prototype design framework** for rapid creation of web app prototypes with visual flow design. The current project is **"拾光社区"** — a Xiaohongshu-style community product benchmark — **15 prototype pages total**:
+This is a **reusable high-fidelity prototype design framework** for rapid creation of web app prototypes with visual flow design. It is currently an **empty skeleton awaiting a new product definition** — the previous product was archived and cleared:
 
-- **7 mobile pages** under `pages/app/` — the 拾光社区 community App (发现 / 笔记详情 / 搜索 / 发布 / 消息 / 我 / 他人主页). Canvas 375×812, driven by the `devices` entry in `config.js`.
-- **8 desktop pages** under `pages/admin/` — the 社区运营运营后台 (数据看板 / 笔记管理 / 内容审核 / 用户管理 / 评论管理 / 话题标签 / 举报处理 / 敏感词风控). Canvas 1440×900.
+- **0 prototype pages** — `pages/` holds only `.gitkeep`. `config.js` carries the placeholder `projectName: "待定"` with empty `categories[]` / `pages[]`, and `menu/menu.js` has an empty `SIDEBAR_MENU`.
+- **To start a product**: set `projectName` / `projectTitle` / `projectDescription` in `config.js`, fill `categories[]` + `pages[]`, rebuild `menu/menu.js` for desktop pages, and add HTML under `pages/admin/` or `pages/app/`.
+- **Assets cleared** — `lib/images/` and `lib/videos/` are empty. Localize media before referencing it; the acquisition channels (Pexels / Unsplash, MCP first) are documented in `lib/AGENTS.md` §5.
+- **Framework intact** — `js/`, `css/`, `lib/`, `canvas-editor.html` are untouched and product-agnostic; the guard-plugin contract still applies.
 
 ### Key Features
 - **Configuration-driven**: Define projects via `config.js` JSON without modifying framework code
@@ -21,7 +23,7 @@ This is a **reusable high-fidelity prototype design framework** for rapid creati
 No build step required. Open files directly in a browser.
 
 ```bash
-# View the prototype showcase (renders all 15 pages from config.js)
+# View the prototype showcase (renders every page registered in config.js)
 start index.html
 
 # Open the canvas editor
@@ -66,12 +68,10 @@ project-root/
 ├── canvas-editor.html         # Canvas editor entry (framework core)
 ├── config.js                  # Project configuration (MODIFY THIS) — single source of truth
 ├── index.html                 # Project showcase page (reads config.js, no hardcoded page list)
-├── pages/                     # Page HTML files (MODIFY THIS)
-│   ├── admin/                 # 8 desktop pages
-│   │   ├── dashboard.html note.html audit.html user.html
-│   │   └── comment.html topic.html report.html risk.html
-│   └── app/                   # 7 mobile pages
-│       └── discover note-detail search publish message profile user-home
+├── pages/                     # Page HTML files (MODIFY THIS) — 当前只有 .gitkeep
+│   ├── admin/                 # 桌面页（1440×900）；根级页用 ../../，pages/admin/<module>/ 用 ../../../
+│   │   └── home.html          # 约定：后台首页放根级，TabBar 会按页面深度算到它
+│   └── app/                   # 移动端页（375×812），不加载菜单与 page-fields-config
 ├── menu/                      # Menu DATA source (MODIFY THIS)
 │   └── menu.js                # window.SIDEBAR_MENU，菜单数据源（手工维护，无生成脚本）
 ├── tools/                     # Node maintenance scripts (no npm scripts; run manually)
@@ -89,7 +89,7 @@ project-root/
 │   ├── modal-manager.js       # Modal dialogs
 │   ├── alignment-manager.js   # Element alignment guides
 │   ├── virtual-scrollbar.js   # Custom scrollbar
-│   ├── page-fields-config.js  # Form/header config (222 entities; 7 手工补写于社区后台)
+│   ├── page-fields-config.js  # Form/header config（约 225 个通用实体；产品专属 key 需手工补写在文件末尾）
 │   ├── prototype-components.js # Shared page interaction components (forms, deletes, tabs)
 │   └── topbar.js              # Shared topbar logic (fullscreen state, Ctrl+S intercept)
 ├── css/
@@ -99,8 +99,8 @@ project-root/
 │   ├── js/ (tailwindcss 3.4.17, marked 15.0.12, html2canvas 1.4.1)
 │   ├── css/ (fontawesome 6.4.0)
 │   ├── webfonts/ (3 woff2)
-│   ├── images/ (localized page images)
-│   └── NOTICE.md              # Third-party attribution (required by CC BY 4.0 / OFL)
+│   ├── images/ · videos/      # 本地化素材（当前为空，获取渠道见 lib/AGENTS.md §5）
+│   └── AGENTS.md              # 素材获取规范（图片/视频渠道）+ 第三方署名（CC BY 4.0 / OFL / Pexels）
 ├── tools/                     # Node check & maintenance scripts
 └── .cursor-history.md         # Session history log
 ```
@@ -188,7 +188,7 @@ Mobile pages (`pages/app/`) do **not** use the menu system.
 ### Shared Page Scripts
 
 - **`js/debug.js`** — debug gate; desktop pages must load it before the scripts below
-- **`js/page-fields-config.js`** — `window.PAGE_FIELDS_CONFIG`: 222 entities mapping a page title to `{ entityName, fields[], headers[] }`. Consumed by `prototype-components.js` to **auto-generate** add/edit forms and table headers. Keys are Chinese page titles, so renaming a page title silently breaks its form (the code falls back to `<th>`-header inference).
+- **`js/page-fields-config.js`** — `window.PAGE_FIELDS_CONFIG`: 225 entities mapping a page title to `{ entityName, fields[], headers[] }`. Consumed by `prototype-components.js` to **auto-generate** add/edit forms and table headers. Keys are Chinese page titles, so renaming a page title silently breaks its form (the code falls back to `<th>`-header inference). Product-specific keys must be hand-written **at the end of the object literal**, on purpose: a later duplicate key wins, so they override the generic extracted entities (`用户管理` / `角色管理` / `菜单管理`) that would otherwise shadow them.
 - **`js/prototype-components.js`** — injected into all prototype pages, handles button clicks (add/edit forms, delete confirmations, export toasts, status toggles, search/reset), and auto-generates tab bar at top of `.main-content`
 - **`js/topbar.js`** — injected into all pages, handles fullscreen toggle + localStorage persistence and Ctrl+S intercept in fullscreen mode
 
@@ -212,7 +212,8 @@ Defines `window.PROJECT_CONFIG` with:
 
 1. `path` must point to a file that really exists (relative to project root). Validate with `node tools/check-config.js`.
 2. `category` must be one of `categories[].id`.
-3. `id` must be **unique**; by convention it is `<category>-<page-name>` (id `system-user` → path `pages/admin/system/user.html`). ⚠️ The id does **not** have to equal the filename — several pages deliberately differ (`mall-kefu` → `mall/kefu.html`, `infra-log` → `infra/log.html`, id `home` → `pages/admin/home.html`).
+3. `id` must be **unique**; by convention it is `<category>-<page-name>` (id `system-user` → path `pages/admin/system/user.html`). ⚠️ The id does **not** have to equal the filename — matching is by `path`, not `id`.
+   ⚠️ `pages/admin/system/{user,role,menu}.html` filenames are **load-bearing**: `prototype-components.js` hardcodes its fake tab paths as `system/user.html` / `system/role.html` / `system/menu.html`. Renaming them makes those tabs 404.
 4. Every HTML file under `pages/` should be registered; `check-config.js` reports unregistered files as orphan errors.
 
 ## Theme System
@@ -351,8 +352,9 @@ Mobile pages (`pages/app/<module>/`) use `../../../` for `lib/`, `css/`, `js/` b
 ## Key Technical Notes
 
 - **No ES modules**: All JS files define global objects, loaded via `<script>` tags
-- **Third-party libraries**: served from `lib/` (not CDN) — TailwindCSS 3.4.17, Font Awesome 6.4.0, marked 15.0.12, html2canvas 1.4.1. See `lib/NOTICE.md` for attribution requirements.
-- **Page images**: localized under `lib/images/`, managed by `tools/localize-images.js`. The project renders fully offline.
+- **Third-party libraries**: served from `lib/` (not CDN) — TailwindCSS 3.4.17, Font Awesome 6.4.0, marked 15.0.12, html2canvas 1.4.1. See `lib/AGENTS.md` for attribution requirements.
+- **Page media**: localized under `lib/images/` and `lib/videos/` (currently **empty**). The prototype renders fully offline, so **every** page asset must be downloaded locally before it is referenced — acquisition channels (Pexels / Unsplash, MCP first; Pexels is the only video source) are documented in `lib/AGENTS.md` §5. Pages reference photos via inline `background-image:url('../../../lib/images/...')` and clips via `<video src poster autoplay muted loop playsinline>`, so **deleting any file leaves a blank block**.
+- **⚠️ Tailwind class-name collisions silently break custom CSS**: every page loads the Tailwind Play CDN, which injects its generated stylesheet **after** the page's own `<style>`. Any custom class that happens to equal a bare Tailwind utility gets overridden. This already bit the project: `.grid{column-count:3}` was killed by Tailwind's `.grid{display:grid}` (3-column waterfall collapsed to 1 column), and `.ring` / `.outline` collided the same way. **Before naming a custom class**, avoid at least: `grid flex block inline hidden table contents static fixed absolute relative sticky visible invisible container isolate italic underline truncate uppercase transform transition border shadow filter resize grow shrink ring outline`. Prefix project classes instead (`.wf`, `.orb`, `.kwclear`, `.gallery` …).
 - **iframe-based pages**: prototype pages are loaded inside iframes on the canvas. The iframes stay `pointer-events: auto`; interaction blocking in edit mode is handled by the `.page-click-overlay` overlay instead. (Toggling iframe `pointer-events` was removed on purpose — it freezes the scroll compositor, see Chrome bug interact.js #605 and `.cursor-history.md` 2026-05-21 03:20.) Right-click a page element's drag bar for the fullscreen preview.
 - **CSS sibling selectors** for expander buttons: `.sidebar-right.collapsed ~ .expander-right` — these don't trigger when `collapsed` class is added via JS after initial render, so `loadUIState()` must manually set `expander.style.display`
 - **Fullscreen preview**: Right-click a page element's drag bar to open fullscreen overlay. Press Esc to exit. The overlay intercepts Ctrl+S to prevent browser save dialog.

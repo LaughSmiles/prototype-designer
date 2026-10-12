@@ -2,12 +2,14 @@
  * 将页面中引用外部图片服务的地址改写为本地资源，使原型完全离线可用。
  *
  * 处理两类：
- *   1. 仍在服务的图床（picsum.photos / api.dicebear.com / images.unsplash.com）
+ *   1. 仍在服务的图床（images.unsplash.com / images.pexels.com / picsum.photos / api.dicebear.com）
  *      —— 下载到 lib/images/，保持原始尺寸。
  *   2. 已停服的服务（via.placeholder.com，2024 年已关停）
  *      —— 生成本地 SVG 占位图，不依赖任何外部服务。
  *
- * 不处理：可点击的演示链接（href 指向 localhost / example.com 等），它们本就该联网。
+ * 不处理：
+ *   - 可点击的演示链接（href 指向 localhost / example.com 等），它们本就该联网。
+ *   - 视频（videos.pexels.com 不在 IMAGE_HOSTS 内，会被静默跳过，须自行下载）。
  *
  * 用法： node tools/localize-images.js [--dry-run]
  */

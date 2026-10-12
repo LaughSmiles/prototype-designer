@@ -345,8 +345,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>📐 高保真原型 · 等待新产品定义</h1>
-        <p>页面已全部清空</p>
+        <h1 id="showcaseTitle">📐 高保真原型</h1>
+        <p id="showcaseDesc"></p>
         <div class="stats">
             <div class="stat-item">
                 <i class="fas fa-mobile-alt"></i>
@@ -394,6 +394,13 @@
                 );
                 return;
             }
+
+            // 标题与副标题同样取自 config.js，避免换产品后这里留下一句过期的旧文案
+            var h1 = document.getElementById('showcaseTitle');
+            if (h1 && cfg.projectTitle) h1.textContent = '📐 ' + cfg.projectTitle;
+            var desc = document.getElementById('showcaseDesc');
+            if (desc) desc.textContent = cfg.projectDescription || '';
+            if (cfg.projectTitle) document.title = cfg.projectTitle;
 
             var devices = Array.isArray(cfg.devices) && cfg.devices.length
                 ? cfg.devices
