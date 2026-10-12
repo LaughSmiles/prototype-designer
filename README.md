@@ -76,10 +76,29 @@
     -   引入页面交互组件（按此顺序）：
         *   <script src="../../../js/topbar.js">（顶栏全屏功能）
         *   <script src="../../../js/debug.js">（调试日志开关，必须先于下面两个）
-        *   <script src="../../../js/page-fields-config.js">（表单字段配置，框架自带的通用实体库，文件末尾可追加本产品的 key）
         *   <script src="../../../js/prototype-components.js">（按钮交互组件，必须最后加载）
     -   在页面中添加菜单容器：<div id="sidebar-menu"></div>
     -   在 DOMContentLoaded 后初始化：await SidebarMenu.init('sidebar-menu');
+9.	表单定义（重要，必须由你在页面里写）：
+    -   表格和表单是两回事：表格是「读」，只读列（编号/时间/操作列/状态标签）不进表单；
+        表单是「写」，密码这类字段只出现在表单、表格里绝不显示。所以框架不可能从 <th> 反推出表单。
+    -   在 <script src="prototype-components.js"> 之前，写入本页的表单定义：
+        *   <script>
+              window.PROTO_FORM = {
+                  entityName: "订单",
+                  fields: [
+                      { label: "客户名称", type: "input", required: true },
+                      { label: "金额",     type: "number" },
+                      { label: "状态",     type: "select", options: ["待付款", "已付款", "已取消"] }
+                  ]
+              };
+            </script>
+    -   两条铁律（违反不会报错，只会静默失效）：
+        *   每个 field.label 必须与表格中对应的 <th> 文字【一字不差】，否则「编辑」回填为空。
+        *   只写「新增时该填什么」，不要把编号、创建时间、操作列写进 fields。
+    -   type 可选值：input / textarea / number / date / select / radio / checkbox
+        （select、radio、checkbox 必须给 options；radio 无 options 会退化成文本框）
+    -   不写这一段时表单不会坏，但会退化为「按表头猜字段」，控件类型多半是错的。
 请按照以上要求生成完整的HTML代码。
 ```
 
@@ -173,19 +192,33 @@ window.SIDEBAR_MENU = [
 | `parentId` | string/null | ❌ | 父菜单 ID（null 表示顶级） |
 | `children` | array | ❌ | 子菜单数组 |
 
-##### 3.5.2 注入配置引用到 HTML 页面
+##### 3.5.2 表单定义（由 AI 在页面里直接写）
 
-**方法1：自动注入（推荐）**
+框架**不再预置任何表单词汇表**。每一页的新增/编辑表单，由 AI 在生成该页时一并写进页面：
 
-运行脚本自动将配置文件引用注入到所有 HTML 页面：
-```bash
-cd tools
-node inject-config-reference.js
+```html
+<!-- 必须放在 prototype-components.js 之前 -->
+<script>
+  window.PROTO_FORM = {
+    entityName: "订单",
+    fields: [
+      { label: "客户名称", type: "input", required: true },
+      { label: "金额",     type: "number" },
+      { label: "状态",     type: "select", options: ["待付款", "已付款", "已取消"] }
+    ]
+  };
+</script>
+<script src="../../../js/prototype-components.js"></script>
 ```
 
-**方法2：手动添加**
+之所以要写：表格是「读」，表单是「写」，两者字段集合**并不相同**——编号、创建时间、操作列只在表格里；
+密码、邮箱这类只进表单。`<th>状态</th>` 也推不出下拉框的选项。框架无法从表格反推出表单。
 
-在每个 HTML 页面的 `</body>` 前，按以下顺序添加（**注意顺序不能错**）：
+> 不写这段**不会报错**，但表单会退化为「按 `<th>` 猜字段」，控件类型多半是错的。
+> 守卫插件会在你写入页面时直接报出来。
+
+**加载顺序**（桌面页，完整清单）：
+
 ```html
 <!-- 1. 菜单配置（menu/menu.js 是数据层，必须先于引擎层） -->
 <script src="../../../menu/menu.js"></script>
@@ -200,8 +233,7 @@ node inject-config-reference.js
 <!-- 3. 调试开关（必须先于下面两个） -->
 <script src="../../../js/debug.js"></script>
 
-<!-- 4. 表单配置（必须在 prototype-components.js 之前） -->
-<script src="../../../js/page-fields-config.js"></script>
+<!-- 4. 本页表单定义（见上，必须在第 5 项之前） -->
 
 <!-- 5. 交互组件（必须最后加载） -->
 <script src="../../../js/prototype-components.js"></script>
@@ -209,7 +241,7 @@ node inject-config-reference.js
 
 > 上面的路径是 `pages/admin/<模块>/` 下的写法（**三段** `../`）。
 > 若页面直接放在 `pages/admin/` 下，改用 `../../`；移动端页面放在 `pages/app/<模块>/`，
-> 用 `../../../` 引用 `lib/`、`css/`、`js/`，但**不引入**菜单与表单配置脚本。
+> 用 `../../../` 引用 `lib/`、`css/`、`js/`，但**不引入**菜单与表单相关脚本。
 > 写错层级不会报错，只会静默失效——改完务必跑 `node tools/check-references.js`。
 
 ##### 3.5.3 验证配置
@@ -217,8 +249,8 @@ node inject-config-reference.js
 打开一个管理后台页面，检查：
 - [ ] 左侧菜单正确显示
 - [ ] 点击菜单可切换页面
-- [ ] 新增按钮弹出表单，字段与配置一致
-- [ ] 编辑按钮可回填数据
+- [ ] 新增按钮弹出表单，字段与页面表格对得上
+- [ ] 编辑按钮能正确回填每一列（回填为空 = `field.label` 与 `<th>` 文字不一致）
 - [ ] 状态开关显示正确实体名
 
 ---
@@ -254,7 +286,6 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 ├── tools/                     # 校验与维护脚本(无 npm scripts，手动 node 运行)
 │   ├── check-config.js        #   校验 config.js 与 pages/ 一致性
 │   ├── check-references.js    #   校验/修复页面内所有本地引用
-│   ├── inject-config-reference.js  # 批量注入 page-fields-config.js 引用
 │   └── localize-images.js     #   外部图片本地化到 lib/images/
 ├── js/                        # 框架核心代码(无需修改)
 │   ├── debug.js               # 调试日志开关(需最先加载)
@@ -269,8 +300,7 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 │   ├── history-manager.js     # 撤销/重做
 │   ├── modal-manager.js       # 弹窗管理
 │   ├── alignment-manager.js   # 对齐管理器
-│   ├── page-fields-config.js  # 表单字段配置(框架自带通用实体库，末尾可追加本产品 key)
-│   ├── prototype-components.js # 共享页面交互组件(表单/弹框/标签栏)
+│   ├── prototype-components.js # 共享页面交互组件(表单/弹框/标签栏；读页面内联的 PROTO_FORM)
 │   ├── topbar.js              # 共享顶栏逻辑(全屏/Ctrl+S拦截)
 │   └── virtual-scrollbar.js   # 虚拟滚动条
 ├── lib/                       # 本地第三方库与图片(无需修改)

@@ -44,11 +44,7 @@ node check-config.js
 node check-references.js
 node check-references.js --repair
 
-# 3) Re-inject page-fields-config.js references (--dry-run to preview)
-node inject-config-reference.js --dry-run
-node inject-config-reference.js
-
-# 4) Re-download / re-localize external images
+# 3) Re-download / re-localize external images
 node localize-images.js --dry-run
 ```
 
@@ -66,7 +62,7 @@ project-root/
 ├── pages/                     # Page HTML files (MODIFY THIS) — 当前只有 .gitkeep
 │   ├── admin/                 # 桌面页（1440×900）；根级页用 ../../，pages/admin/<module>/ 用 ../../../
 │   │   └── home.html          # 约定：后台首页放根级，TabBar 会按页面深度算到它
-│   └── app/                   # 移动端页（375×812），不加载菜单与 page-fields-config
+│   └── app/                   # 移动端页（375×812），不加载菜单与表单配置
 ├── menu/                      # Menu DATA source (MODIFY THIS)
 │   └── menu.js                # window.SIDEBAR_MENU，菜单数据源（手工维护，无生成脚本）
 ├── tools/                     # Node maintenance scripts (no npm scripts; run manually)
@@ -84,7 +80,6 @@ project-root/
 │   ├── modal-manager.js       # Modal dialogs
 │   ├── alignment-manager.js   # Element alignment guides
 │   ├── virtual-scrollbar.js   # Custom scrollbar
-│   ├── page-fields-config.js  # Form/header config（框架自带 215 个通用实体；产品专属 key 需手工补写在文件末尾）
 │   ├── prototype-components.js # Shared page interaction components (forms, deletes, tabs)
 │   └── topbar.js              # Shared topbar logic (fullscreen state, Ctrl+S intercept)
 ├── css/
@@ -183,8 +178,17 @@ Mobile pages (`pages/app/`) do **not** use the menu system.
 ### Shared Page Scripts
 
 - **`js/debug.js`** — debug gate; desktop pages must load it before the scripts below
-- **`js/page-fields-config.js`** — `window.PAGE_FIELDS_CONFIG`: 215 个通用实体，key 是页面中文标题，value 为 `{ entityName, fields[], headers[] }`。Consumed by `prototype-components.js` to **auto-generate** add/edit forms and table headers. Keys are Chinese page titles, so renaming a page title silently breaks its form (the code falls back to `<th>`-header inference). 本文件是**框架自带的通用实体库、手工维护，不依赖任何外部工程**；产品专属 key 必须追加在文件**末尾**的「产品专属区块」中 —— JS 对象字面量里后写的同名 key 会覆盖先写的，所以末尾追加才能覆盖上面的通用版本（如 `用户管理` / `角色管理` / `菜单管理`）。
-- **`js/prototype-components.js`** — injected into all prototype pages, handles button clicks (add/edit forms, delete confirmations, export toasts, status toggles, search/reset), and auto-generates tab bar at top of `.main-content`
+- **`window.PROTO_FORM`（页面内联）** — 每一页的新增/编辑表单定义，由 AI 在生成该页时写进页面，必须在 `prototype-components.js` **之前**：
+  ```js
+  window.PROTO_FORM = {
+    entityName: "订单",
+    fields: [ { label: "客户名称", type: "input", required: true }, ... ]
+  };
+  ```
+  也接受按标题索引的旧写法 `window.PROTO_FORM = { "订单管理": {...} }`。`type` 取值：`input / textarea / number / date / select / radio / checkbox`。
+  ⚠️ 每个 `field.label` 必须与本页 `<th>` 文字**一字不差**，否则「编辑」回填为空且不报错。
+  未定义时 `prototype-components.js` 依次退化为：`<th>` 关键字推断 → 通用 5 字段（名称/编码/排序/状态/备注），控件类型多半是错的。
+- **`js/prototype-components.js`** — injected into all prototype pages, handles button clicks (add/edit forms, delete confirmations, export toasts, status toggles, search/reset), and auto-generates tab bar at top of `.main-content`. 表单与详情按**列位置**对齐 DOM 的 `<th>`/`<td>`（`getAlignedHeaders()`），不要用配置里的表头——那是死字段。
 - **`js/topbar.js`** — injected into all pages, handles fullscreen toggle + localStorage persistence and Ctrl+S intercept in fullscreen mode
 
 ## Configuration System (config.js)
@@ -326,12 +330,12 @@ Page template references. Desktop pages live two levels below the project root (
 <link rel="stylesheet" href="../../../css/sidebar-menu.css">
 <script src="../../../menu/menu.js"></script>               <!-- menu DATA, must be first -->
 <script src="../../../js/debug.js"></script>
-<script src="../../../js/page-fields-config.js"></script>  <!-- form/header config -->
+<script>window.PROTO_FORM = { entityName: "订单", fields: [ /* ... */ ] };</script>  <!-- 本页表单，必须在下一行之前 -->
 <script src="../../../js/prototype-components.js"></script>
 ```
 
 Root-level desktop pages (`pages/admin/login.html`, `home.html`, …) sit one level shallower and therefore use `../../`.
-Mobile pages (`pages/app/<module>/`) use `../../../` for `lib/`, `css/`, `js/` but load **no** menu or page-config scripts.
+Mobile pages (`pages/app/<module>/`) use `../../../` for `lib/`, `css/`, `js/` but load **no** menu or form scripts.
 
 ⚠️ Run `node tools/check-references.js` after adding or moving pages — a wrong `../` count silently breaks the page with no visible error.
 

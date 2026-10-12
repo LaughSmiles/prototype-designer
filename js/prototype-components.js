@@ -6,11 +6,12 @@
 (function () {
     'use strict';
 
-    // 页面标题 → PAGE_FIELDS_CONFIG 查表键。
+    // 页面标题 → 本页标识。
+    // 仅用于按标题索引写法（PROTO_FORM 的形态②）与实体名兜底推断；
+    // 形态①的表单定义根本不需要它。
     // 后缀优先按 PROJECT_CONFIG.projectName 精确截断（config.js 通常不在独立页里加载，
     // 此时退化为「截掉结尾的 ' - 任意段'」）。不再写死项目名：
-    // 一旦改名，写死的截断就会失配，查表键退化成 "<页面名> - <项目名>" 整串，
-    // 表单和表头静默降级为猜测 <th>，且不报任何错。
+    // 一旦改名，写死的截断就会失配，表单静默降级为猜测 <th>，且不报任何错。
     function getPageTitleKey() {
         let title = document.title.trim();
         const name = (window.PROJECT_CONFIG || {}).projectName;
@@ -22,6 +23,25 @@
         // 无配置：截掉最后一个 ' - xxx' 段（页面名本身不含 ' - '）
         const idx = title.lastIndexOf(' - ');
         return (idx > 0) ? title.slice(0, idx).trim() : title;
+    }
+
+    /**
+     * 读取页面自带的表单定义。
+     *
+     * 页面在加载 prototype-components.js 之前写这两种形态之一都能生效：
+     *   ① 直接就是本页的表单（推荐，键可由 <title> 推导，不必重复写）
+     *      window.PROTO_FORM = { entityName: "用户", fields: [...] };
+     *   ② 按标题索引（一页一个表单时不必用；批量生成时更省事）
+     *      window.PROTO_FORM = { "用户管理": { entityName, fields } };
+     *
+     * 两种都接受，是为了少一类「键写错 → 静默降级成猜测字段」的情况。
+     */
+    function getProtoForm() {
+        const pf = window.PROTO_FORM;
+        if (!pf || typeof pf !== 'object') return null;
+        if (Array.isArray(pf.fields)) return pf;          // 形态 ①
+        const hit = pf[getPageTitleKey()];                // 形态 ②
+        return (hit && typeof hit === 'object') ? hit : null;
     }
 
     // ========== 标签栏 ==========
@@ -216,7 +236,7 @@
         form(options) {
             const { title = '新增', fields = [], data = null } = options;
             let formHtml = '<div class="proto-form">';
-            fields.forEach(field => {
+            fields.forEach((field, fi) => {
                 const required = field.required ? '<span style="color:#f56c6c;">*</span>' : '';
 
                 // 获取字段值（用于编辑回填）
@@ -249,7 +269,42 @@
                             <label>${required}${field.label}</label>
                             <input type="number" class="proto-form-input" value="${fieldValue}" placeholder="请输入${field.label}">
                         </div>`;
+                } else if (field.type === 'radio' || field.type === 'checkbox') {
+                    // radio / checkbox：此前一律落进最后的 else，被渲染成普通文本框
+                    // （旧词表里 81 个 radio 字段、涉及 59 个实体全部中招）。
+                    // 只有带 options 才画选项组；配置漏写 options 时给出可用的退化形态。
+                    const isRadio = field.type === 'radio';
+                    const opts = field.options || [];
+
+                    let controlHtml;
+                    if (opts.length) {
+                        // 用字段序号而不是 label 当分组名：label 是自由文本，可能含引号或空格
+                        const groupName = `proto-field-${fi}`;
+                        // 回填：radio 比单个字符串；checkbox 接受数组或单个字符串
+                        const picked = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+                        controlHtml = '<div class="proto-form-checks">' + opts.map(o =>
+                            `<label class="proto-form-check">` +
+                            `<input type="${isRadio ? 'radio' : 'checkbox'}" name="${groupName}" value="${o}"` +
+                            `${picked.includes(o) ? ' checked' : ''}> ${o}` +
+                            `</label>`
+                        ).join('') + '</div>';
+                    } else if (isRadio) {
+                        // 没有选项的 radio 无从选择，退化为文本框
+                        controlHtml = `<input type="text" class="proto-form-input" value="${fieldValue}" placeholder="请输入${field.label}">`;
+                    } else {
+                        // 只有一个勾选框时，字段名直接跟在后面
+                        controlHtml = `<label class="proto-form-check">` +
+                            `<input type="checkbox" ${fieldValue ? 'checked' : ''}> ${field.label}` +
+                            `</label>`;
+                    }
+
+                    formHtml += `
+                        <div class="proto-form-item">
+                            <label>${required}${field.label}</label>
+                            ${controlHtml}
+                        </div>`;
                 } else {
+                    // 其余（含未写 type 的字段）一律文本框
                     formHtml += `
                         <div class="proto-form-item">
                             <label>${required}${field.label}</label>
@@ -466,11 +521,12 @@
 
         // 根据页面标题生成表单字段
         getPageFields() {
-            const title = getPageTitleKey();
-
-            // 1. 优先从外部配置查找
-            if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
-                return window.PAGE_FIELDS_CONFIG[title].fields;
+            // 1. 页面自带的表单定义 —— 最高优先级
+            //    表格是这一页的、表单也是这一页的，同源写就才不会张冠李戴
+            //    （预置词表里的字段名经常和本页表头对不上，回填会静默变空）
+            const protoForm = getProtoForm();
+            if (protoForm && Array.isArray(protoForm.fields) && protoForm.fields.length) {
+                return protoForm.fields;
             }
 
             // 2. 从 HTML <th> 表头自动推断
@@ -538,16 +594,13 @@
             return fields;
         },
 
-        // 获取表头列表
+        /**
+         * 从 DOM 提取表头（仅用于「按 <th> 猜字段」这条兜底路径）。
+         *
+         * ⚠️ 这份列表【不能】用于把单元格对齐到字段：它会滤掉空表头（checkbox 列）
+         * 与「操作」列，与 td 的位置差着 1~2 列。凡是按位置对齐的场景请用 getAlignedHeaders()。
+         */
         getTableHeaders() {
-            const title = getPageTitleKey();
-
-            // 优先从外部配置获取
-            if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
-                return window.PAGE_FIELDS_CONFIG[title].headers;
-            }
-
-            // 从 DOM 提取
             const ths = document.querySelectorAll('table thead th');
             const headers = [];
             ths.forEach(th => {
@@ -562,15 +615,12 @@
 
         // 获取实体名称（用于提示文案）
         getEntityName() {
+            // 1. 页面自带
+            const protoForm = getProtoForm();
+            if (protoForm && protoForm.entityName) return protoForm.entityName;
+
+            // 2. 从标题推断（去掉"管理"后缀）
             const title = getPageTitleKey();
-
-            // 优先从外部配置获取
-            if (window.PAGE_FIELDS_CONFIG && window.PAGE_FIELDS_CONFIG[title]) {
-                const entityName = window.PAGE_FIELDS_CONFIG[title].entityName;
-                if (entityName) return entityName;
-            }
-
-            // 从标题推断（去掉"管理"后缀）
             return title.replace(/管理$/, '') || title || '该项';
         },
 
@@ -597,8 +647,7 @@
             }
 
             const fields = this.getPageFields();
-            const headers = this.getTableHeaders();
-            const rowData = this.extractRowData(row, headers);
+            const rowData = this.extractRowData(row);
 
             Dialog.form({
                 title: '编辑',
@@ -610,31 +659,40 @@
             });
         },
 
-        // 从表格行提取数据
-        extractRowData(row, headers) {
+        // 取与某个表格行的列位置严格对齐的表头数组。
+        //
+        // 不能用 getTableHeaders()：那份会滤掉空表头（checkbox 列）与「操作」列，
+        // 而 td / th 是按位置索引的。两份基准不同就会整体错开一列——
+        // 详情与编辑回填曾把「用户编号」显示成「用户名称」。
+        // 凡是需要「第 N 格 ↔ 第 N 个字段」的场景，都必须用这一份。
+        getAlignedHeaders(row) {
+            const table = row && row.closest ? row.closest('table') : null;
+            if (!table) return this.getTableHeaders();
+            return Array.from(table.querySelectorAll('thead th')).map(th => {
+                // 只有 checkbox、没有文字的表头
+                if (th.querySelector('input[type=checkbox]')) return '';
+                return th.textContent.trim();
+            });
+        },
+
+        // 从表格行提取数据（编辑回填的数据源）
+        extractRowData(row) {
             const cells = row.querySelectorAll('td');
+            const headers = this.getAlignedHeaders(row);
             const data = {};
-            const cellIndex = 0;
 
             cells.forEach((cell, index) => {
-                // 跳过 checkbox 列
-                if (cell.querySelector('input[type=checkbox]')) return;
+                if (index >= headers.length) return;
+                const header = headers[index];
+                // 空表头 = checkbox 列；操作列不属于任何字段
+                if (!header || header.includes('操作')) return;
 
-                // 跳过包含操作的列
                 const text = cell.textContent.trim();
+                if (!text) return;
                 if (text.includes('修改') || text.includes('删除') ||
                     text.includes('更多') || text.includes('详情')) return;
 
-                // 按表头映射字段
-                if (cellIndex < headers.length) {
-                    const header = headers[cellIndex];
-                    // 去除状态标签的文本（如 "开启"/span"）
-                    let value = text;
-                    if (cell.querySelector('.dict-tag') || cell.querySelector('span')) {
-                        value = cell.textContent.trim();
-                    }
-                    data[header] = value;
-                }
+                data[header] = text;
             });
 
             return data;
@@ -643,16 +701,16 @@
         handleDetail(btn) {
             const row = btn.closest('tr');
             if (!row) return;
-            const headers = this.getTableHeaders();
+            const headers = this.getAlignedHeaders(row);
             const cells = row.querySelectorAll('td');
 
             let detailHtml = '<div class="proto-detail-grid">';
             cells.forEach((cell, index) => {
                 if (index >= headers.length) return;
                 const headerText = headers[index];
+                // 空表头 = checkbox 列
                 if (!headerText) return;
-
-                // 跳过 checkbox、操作列等
+                // 跳过操作列与 checkbox 单元格
                 if (headerText.includes('操作') || cell.querySelector('input[type=checkbox]')) return;
 
                 const value = cell.textContent.trim();
@@ -786,7 +844,9 @@
             /* 表单 */
             .proto-form { display: flex; flex-direction: column; gap: 16px; }
             .proto-form-item { display: flex; align-items: flex-start; gap: 10px; }
-            .proto-form-item label {
+            /* 必须用 > 而非后代选择器：选项组里的 label 也要被 .proto-form-check 接管，
+               若用「.proto-form-item label」会连带命中它们，被强行拉成 80px 右对齐。 */
+            .proto-form-item > label {
                 width: 80px;
                 text-align: right;
                 font-size: 13px;
@@ -794,6 +854,19 @@
                 padding-top: 8px;
                 flex-shrink: 0;
             }
+            .proto-form-checks { flex: 1; display: flex; flex-wrap: wrap; gap: 8px 18px; padding-top: 7px; }
+            .proto-form-check {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 13px;
+                color: #606266;
+                cursor: pointer;
+                width: auto;
+                text-align: left;
+                padding-top: 0;
+            }
+            .proto-form-check input { margin: 0; cursor: pointer; accent-color: #409eff; }
             .proto-form-input, .proto-form-select, .proto-form-textarea {
                 flex: 1;
                 padding: 8px 12px;
