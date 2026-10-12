@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(cmd:*)",
-      "Skill(glm-plan-usage:usage-query-skill)",
-      "Skill(glm-plan-usage:usage-query-skill:*)"
-    ]
-  }
-}
