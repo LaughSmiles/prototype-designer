@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>消息中心 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============ 设计令牌（语义化，禁止逐屏硬编码 hex） ============ */
+  :root{
+    --by-bg:#0F0F23;          /* 页面底色 */
+    --by-surface:#1A1A2E;     /* 卡片 */
+    --by-surface-2:#232340;   /* 悬浮/次级卡片 */
+    --by-pink:#FB7299;        /* 品牌粉 */
+    --by-pink-strong:#E11D48; /* 强调 CTA */
+    --by-blue:#00AEEC;        /* 次强调 */
+    --by-text:#F1F2F8;        /* 主文字 */
+    --by-text-2:#9AA0B5;      /* 次文字 */
+    --by-border:rgba(255,255,255,.09);
+    --by-radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:375px;height:100%;overflow:hidden}
+  body{padding-bottom:52px;background:var(--by-bg);color:var(--by-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5;overscroll-behavior:contain;touch-action:manipulation}
+
+  /* ============ 骨架：顶栏固定 / 内容滚动 / 底栏固定 ============ */
+  .by-root{display:flex;flex-direction:column;height:100%}
+  .by-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .by-scroll::-webkit-scrollbar{width:0}
+
+  /* ============ iOS 状态栏 ============ */
+  .by-status{display:flex;align-items:center;justify-content:space-between;
+             height:44px;padding:0 20px 0 26px;background:var(--by-pink);color:#fff;flex:none}
+  .by-status .by-time{font-size:15px;font-weight:600;letter-spacing:.3px}
+  .by-status .by-ico{display:flex;gap:5px;align-items:center;font-size:12px}
+
+  /* ============ 顶部标题栏 ============ */
+  .by-nav{flex:none;height:48px;background:var(--by-pink);color:#fff;
+          display:flex;align-items:center;padding:0 6px}
+  .by-nav-btn{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;
+              font-size:17px;border-radius:50%;cursor:pointer}
+  .by-nav-btn:active{background:rgba(255,255,255,.18)}
+  .by-nav-title{flex:1;text-align:center;font-size:17px;font-weight:600;letter-spacing:.5px}
+
+  /* ============ 消息分类 Tab ============ */
+  .by-mtabs{flex:none;background:var(--by-pink);display:flex;padding:0 4px;
+            border-bottom:1px solid rgba(255,255,255,.14)}
+  .by-mtab{flex:1;position:relative;display:flex;align-items:center;justify-content:center;gap:4px;
+           min-height:44px;font-size:14px;color:rgba(255,255,255,.76);cursor:pointer}
+  .by-mtab.on{color:#fff;font-weight:600}
+  .by-mtab.on::after{content:"";position:absolute;left:50%;transform:translateX(-50%);
+                     bottom:5px;width:18px;height:3px;border-radius:2px;background:#fff}
+  .by-mnum{min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--by-pink-strong);
+           color:#fff;font-size:10px;font-weight:600;display:inline-flex;align-items:center;justify-content:center}
+  .by-mtab.on .by-mnum{background:#fff;color:var(--by-pink-strong)}
+  .by-mnum.gone{display:none}
+
+  /* ============ 卡片 ============ */
+  .by-mcard{background:var(--by-surface);border:1px solid var(--by-border);
+            border-radius:var(--by-radius);overflow:hidden;margin:12px}
+  .by-msec{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 8px}
+  .by-msec h3{margin:0;font-size:13px;font-weight:600}
+  .by-msec .by-mark{min-height:44px;display:inline-flex;align-items:center;gap:4px;
+                   font-size:12px;color:var(--by-text-2);cursor:pointer;padding:0 2px}
+  .by-msec .by-mark:active{color:var(--by-text)}
+
+  /* ---------- 互动聚合条 ---------- */
+  .by-agg{display:flex;padding:10px 0}
+  .by-agg-it{flex:1;min-height:48px;display:flex;flex-direction:column;align-items:center;
+             justify-content:center;position:relative;cursor:pointer}
+  .by-agg-it + .by-agg-it::before{content:"";position:absolute;left:0;top:10px;bottom:10px;
+                                  width:1px;background:var(--by-border)}
+  .by-agg-n{font-size:18px;font-weight:700;line-height:1.1}
+  .by-agg-l{font-size:11px;color:var(--by-text-2);margin-top:4px}
+
+  /* ---------- 消息行 ---------- */
+  .by-mi{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--by-border);
+         position:relative;cursor:pointer}
+  .by-mi:last-child{border-bottom:0}
+  .by-mi:active{background:var(--by-surface-2)}
+  .by-mi-avwrap{position:relative;flex:none}
+  .by-mi-av{width:44px;height:44px;border-radius:50%;object-fit:cover;display:block;background:var(--by-surface-2)}
+  .by-mi-avlogo{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+                font-size:19px;color:#fff;background:linear-gradient(135deg,var(--by-pink),var(--by-pink-strong))}
+  .by-mi-badge{position:absolute;top:-4px;right:-6px;min-width:18px;height:18px;padding:0 5px;
+               border-radius:9px;background:var(--by-pink-strong);color:#fff;font-size:10px;font-weight:700;
+               display:none;align-items:center;justify-content:center;border:2px solid var(--by-surface)}
+  .by-mi.unread .by-mi-badge{display:flex}
+  .by-mi-main{flex:1;min-width:0}
+  .by-mi-hd{display:flex;align-items:center;gap:6px}
+  .by-mi-nm{font-size:13px;font-weight:600;color:var(--by-pink);
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+  .by-mi-tag{flex:none;font-size:10px;padding:1px 5px;border-radius:4px;line-height:1.5;
+             background:rgba(0,174,236,.16);color:var(--by-blue)}
+  .by-mi-tag.tk-like{background:rgba(251,114,153,.16);color:var(--by-pink)}
+  .by-mi-tag.tk-fav{background:rgba(251,191,36,.16);color:#FBBF24}
+  .by-mi-tag.tk-follow{background:rgba(16,185,129,.16);color:#34D399}
+  .by-mi-tag.tk-sys{background:rgba(148,163,184,.18);color:#CBD5E1}
+  .by-mi-time{margin-left:auto;flex:none;font-size:11px;color:var(--by-text-2)}
+  .by-mi-txt{margin-top:5px;font-size:13px;color:var(--by-text);line-height:1.45;
+            display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .by-mi-txt.open{-webkit-line-clamp:unset;line-clamp:unset}
+  .by-mi-quote{margin-top:8px;padding:7px 9px;background:var(--by-surface-2);border-radius:8px;
+              font-size:12px;color:var(--by-text-2);line-height:1.45;max-height:36px;overflow:hidden}
+  .by-mi-more{margin-top:4px;display:inline-flex;align-items:center;gap:4px;min-height:44px;
+              font-size:12px;color:var(--by-text-2);cursor:pointer}
+  .by-mi-more:active{color:var(--by-pink)}
+  .by-mi-side{flex:none;width:24px;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .by-mi-side.has-thumb{width:96px}
+  .by-mi-ic{font-size:15px;color:var(--by-text-2)}
+  .by-mi-ic.c-like{color:var(--by-pink)}
+  .by-mi-ic.c-fav{color:#FBBF24}
+  .by-mi-ic.c-follow{color:#34D399}
+  .by-mi-thumb{width:96px;height:56px;border-radius:8px;overflow:hidden;position:relative;background:var(--by-surface-2)}
+  .by-mi-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .by-mi-dur{position:absolute;right:4px;bottom:4px;font-size:10px;color:#fff;
+             background:rgba(0,0,0,.72);padding:1px 5px;border-radius:4px}
+  .by-mi-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+              width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;
+              display:flex;align-items:center;justify-content:center;font-size:10px}
+
+  /* ---------- 空状态 ---------- */
+  .by-empty{text-align:center;padding:44px 24px;color:var(--by-text-2);font-size:12px}
+  .by-empty i{display:block;font-size:32px;margin-bottom:10px;opacity:.45}
+
+  /* ---------- 轻提示（替代 alert） ---------- */
+  .by-toast{position:fixed;left:50%;bottom:76px;transform:translate(-50%,10px);z-index:40;
+            background:rgba(15,15,35,.95);border:1px solid var(--by-border);color:var(--by-text);
+            font-size:12px;padding:9px 16px;border-radius:18px;white-space:nowrap;
+            opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+  .by-toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- 底部 TabBar（fixed，绝不能写死 812px） ---------- */
+  /* width:min(375px,100vw) —— 画布 iframe 里铺满 375，独立打开（视口更宽）时也不会被拉宽 */
+  .by-tabbar{position:fixed;left:0;width:min(375px,100vw);bottom:0;z-index:30;height:52px;
+             background:rgba(20,20,38,.96);border-top:1px solid var(--by-border);
+             display:flex;align-items:center;backdrop-filter:blur(12px)}
+  .by-tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+               gap:2px;color:var(--by-text-2);font-size:10px;text-decoration:none;min-height:48px}
+  .by-tabbar a.on{color:var(--by-pink)}
+  .by-tabbar a i{font-size:17px}
+  /* 中间发布按钮（凸起）—— box 用绝对定位，不参与文档流，避免压住下方文案 */
+  .by-tabbar .by-pub{position:relative}
+  .by-tabbar .by-pub .by-pub-box{position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+       width:38px;height:28px;background:var(--by-pink);border-radius:8px;color:#fff;
+       display:flex;align-items:center;justify-content:center;font-size:15px;
+       border:2px solid var(--by-bg)}
+</style>
+</head>
+<body>
+
+<!-- ============ 骨架 ============ -->
+<div class="by-root">
+
+  <!-- 状态栏 -->
+  <div class="by-status">
+    <span class="by-time">9:41</span>
+    <span class="by-ico">
+      <i class="fas fa-signal"></i><i class="fas fa-wifi"></i>
+      <i class="fas fa-battery-three-quarters"></i>
+    </span>
+  </div>
+
+  <!-- 顶部标题栏 -->
+  <div class="by-nav">
+    <div class="by-nav-btn" id="navBack"><i class="fas fa-angle-left"></i></div>
+    <div class="by-nav-title">消息</div>
+    <div class="by-nav-btn" id="navSet"><i class="fas fa-gear"></i></div>
+  </div>
+
+  <!-- 消息分类 -->
+  <div class="by-mtabs">
+    <span class="by-mtab on" data-cat="mine">我的消息<span class="by-mnum">2</span></span>
+    <span class="by-mtab" data-cat="inter">互动<span class="by-mnum">2</span></span>
+    <span class="by-mtab" data-cat="follow">关注<span class="by-mnum">1</span></span>
+    <span class="by-mtab" data-cat="sys">系统<span class="by-mnum">1</span></span>
+  </div>
+
+  <!-- 滚动内容 -->
+  <div class="by-scroll">
+
+    <!-- 互动聚合条（仅「互动」分类可见） -->
+    <div class="by-mcard" id="aggCard" style="display:none">
+      <div class="by-agg">
+        <div class="by-agg-it"><span class="by-agg-n" style="color:var(--by-pink)">126</span><span class="by-agg-l">获赞</span></div>
+        <div class="by-agg-it"><span class="by-agg-n" style="color:#FBBF24">32</span><span class="by-agg-l">投币</span></div>
+        <div class="by-agg-it"><span class="by-agg-n" style="color:var(--by-blue)">58</span><span class="by-agg-l">收藏</span></div>
+        <div class="by-agg-it"><span class="by-agg-n">9</span><span class="by-agg-l">评论</span></div>
+      </div>
+    </div>
+
+    <!-- ============ 我的消息 ============ -->
+    <div class="by-msec" id="secMine">
+      <h3>我的消息</h3>
+      <span class="by-mark" id="markAll"><i class="fas fa-check-double"></i> 全部已读</span>
+    </div>
+    <div class="by-mcard" id="listMine">
+
+      <!-- @我的（带视频缩略图预览） -->
+      <div class="by-mi unread" data-cat="mine">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-01.jpeg" alt="代码狂人阿伟">
+          <span class="by-mi-badge">2</span>
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">代码狂人阿伟</span>
+            <span class="by-mi-tag">@我的</span>
+            <span class="by-mi-time">12 分钟前</span>
+          </div>
+          <div class="by-mi-txt">在你的视频下提到了你：这里 clip-path 的写法可以直接抄，注意父级要加 overflow:hidden，不然边缘会露白。</div>
+        </div>
+        <div class="by-mi-side has-thumb">
+          <i class="fas fa-at by-mi-ic"></i>
+          <div class="by-mi-thumb">
+            <img src="../../../lib/images/cover-code-monitor.jpeg" alt="视频封面">
+            <span class="by-mi-play"><i class="fas fa-play"></i></span>
+            <span class="by-mi-dur">21:35</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 回复 -->
+      <div class="by-mi unread" data-cat="mine">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-05.jpeg" alt="城市观察局">
+          <span class="by-mi-badge">1</span>
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">城市观察局</span>
+            <span class="by-mi-tag">回复</span>
+            <span class="by-mi-time">2 小时前</span>
+          </div>
+          <div class="by-mi-txt">回复了你的评论：</div>
+          <div class="by-mi-quote">不是所有人都见过凌晨四点，但你拍出来了 —— 这条我置顶了。</div>
+        </div>
+        <div class="by-mi-side"><i class="fas fa-reply by-mi-ic"></i></div>
+      </div>
+
+      <!-- 回复 -->
+      <div class="by-mi" data-cat="mine">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-03.jpeg" alt="小厨房大厨">
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">小厨房大厨</span>
+            <span class="by-mi-tag">回复</span>
+            <span class="by-mi-time">昨天 21:06</span>
+          </div>
+          <div class="by-mi-txt">回复了你的评论：锅一定要先烧热再下油，不然食材会粘锅，这个我单独拍一期视频。</div>
+        </div>
+        <div class="by-mi-side"><i class="fas fa-reply by-mi-ic"></i></div>
+      </div>
+
+    </div>
+
+    <!-- ============ 互动 ============ -->
+    <div class="by-msec" id="secInter" style="display:none">
+      <h3>我的作品互动</h3>
+      <span class="by-mark"><i class="fas fa-angle-right"></i> 数据中心</span>
+    </div>
+    <div class="by-mcard" id="listInter" style="display:none">
+
+      <!-- 点赞 -->
+      <div class="by-mi unread" data-cat="inter">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-02.jpeg" alt="猫奴日常菌">
+          <span class="by-mi-badge">18</span>
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">猫奴日常菌</span>
+            <span class="by-mi-tag tk-like">点赞</span>
+            <span class="by-mi-time">3 小时前</span>
+          </div>
+          <div class="by-mi-txt">等 18 人赞了你的视频</div>
+          <div class="by-mi-quote">《当你以为在养猫，实际上是猫在养你》</div>
+        </div>
+        <div class="by-mi-side"><i class="fas fa-thumbs-up by-mi-ic c-like"></i></div>
+      </div>
+
+      <!-- 收藏（带视频缩略图） -->
+      <div class="by-mi unread" data-cat="inter">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-06.jpeg" alt="在路上">
+          <span class="by-mi-badge">7</span>
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">在路上</span>
+            <span class="by-mi-tag tk-fav">收藏</span>
+            <span class="by-mi-time">5 小时前</span>
+          </div>
+          <div class="by-mi-txt">收藏了你的视频《一个人的雪山徒步，治愈了我一整年》</div>
+        </div>
+        <div class="by-mi-side has-thumb">
+          <i class="fas fa-star by-mi-ic c-fav"></i>
+          <div class="by-mi-thumb">
+            <img src="../../../lib/images/cover-mountain.jpeg" alt="视频封面">
+            <span class="by-mi-play"><i class="fas fa-play"></i></span>
+            <span class="by-mi-dur">12:55</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 评论 -->
+      <div class="by-mi" data-cat="inter">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-04.jpeg" alt="民谣小王子">
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">民谣小王子</span>
+            <span class="by-mi-tag">评论</span>
+            <span class="by-mi-time">昨天 19:42</span>
+          </div>
+          <div class="by-mi-txt">评论了你的视频：前奏一响就是青春啊，什么时候更全长版？蹲一个。</div>
+        </div>
+        <div class="by-mi-side has-thumb">
+          <i class="fas fa-comment-dots by-mi-ic"></i>
+          <div class="by-mi-thumb">
+            <img src="../../../lib/images/cover-guitar-blue.jpeg" alt="视频封面">
+            <span class="by-mi-play"><i class="fas fa-play"></i></span>
+            <span class="by-mi-dur">04:18</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ 关注 ============ -->
+    <div class="by-msec" id="secFollow" style="display:none">
+      <h3>关注与动态</h3>
+      <span class="by-mark"><i class="fas fa-user-plus"></i> 管理关注</span>
+    </div>
+    <div class="by-mcard" id="listFollow" style="display:none">
+
+      <!-- 关注了我 -->
+      <div class="by-mi unread" data-cat="follow">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-01.jpeg" alt="代码狂人阿伟">
+          <span class="by-mi-badge">1</span>
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">代码狂人阿伟</span>
+            <span class="by-mi-tag tk-follow">关注</span>
+            <span class="by-mi-time">昨天 20:12</span>
+          </div>
+          <div class="by-mi-txt">关注了你，你们现在可以互相私信了</div>
+        </div>
+        <div class="by-mi-side">
+          <i class="fas fa-user-plus by-mi-ic c-follow"></i>
+          <span id="btnFollowBack" style="min-height:44px;display:flex;align-items:center;font-size:12px;
+                color:var(--by-pink);border:1px solid var(--by-pink);border-radius:14px;padding:0 12px;
+                margin-top:8px">回关</span>
+        </div>
+      </div>
+
+      <!-- 关注的人发新动态 -->
+      <div class="by-mi" data-cat="follow">
+        <div class="by-mi-avwrap">
+          <img class="by-mi-av" src="../../../lib/images/avatar-06.jpeg" alt="在路上">
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">在路上</span>
+            <span class="by-mi-tag">动态</span>
+            <span class="by-mi-time">昨天 08:30</span>
+          </div>
+          <div class="by-mi-txt">发布了新视频《穿越无人区：第七天的风雪》</div>
+        </div>
+        <div class="by-mi-side has-thumb">
+          <i class="fas fa-circle-play by-mi-ic"></i>
+          <div class="by-mi-thumb">
+            <img src="../../../lib/images/cover-tianshan.jpeg" alt="视频封面">
+            <span class="by-mi-play"><i class="fas fa-play"></i></span>
+            <span class="by-mi-dur">15:40</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============ 系统 ============ -->
+    <div class="by-msec" id="secSys" style="display:none">
+      <h3>系统通知</h3>
+      <span class="by-mark"><i class="fas fa-circle-info"></i> 全部公告</span>
+    </div>
+    <div class="by-mcard" id="listSys" style="display:none">
+
+      <!-- 系统公告（展开/收起） -->
+      <div class="by-mi unread" data-cat="sys">
+        <div class="by-mi-avwrap">
+          <span class="by-mi-avlogo"><i class="fas fa-bell"></i></span>
+          <span class="by-mi-badge">3</span>
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">哔哩云小助手</span>
+            <span class="by-mi-tag tk-sys">系统通知</span>
+            <span class="by-mi-time">昨天 10:00</span>
+          </div>
+          <div class="by-mi-txt" id="sysTxt">「2024 年度创作盛典」正式开启！10 月 20 日至 11 月 30 日期间，投稿视频参与话题即可获得双倍流量扶持与现金奖励，优质稿件更有机会登上首页推荐位。请在投稿时勾选对应活动话题，未勾选的稿件不计入活动范围。</div>
+          <span class="by-mi-more" id="sysMore"><span>展开全文</span><i class="fas fa-angle-down"></i></span>
+        </div>
+        <div class="by-mi-side"><i class="fas fa-bullhorn by-mi-ic"></i></div>
+      </div>
+
+      <!-- 系统通知 -->
+      <div class="by-mi" data-cat="sys">
+        <div class="by-mi-avwrap">
+          <span class="by-mi-avlogo" style="background:linear-gradient(135deg,#00AEEC,#2563EB)"><i class="fas fa-shield-halved"></i></span>
+        </div>
+        <div class="by-mi-main">
+          <div class="by-mi-hd">
+            <span class="by-mi-nm">哔哩云小助手</span>
+            <span class="by-mi-tag tk-sys">系统通知</span>
+            <span class="by-mi-time">3 天前</span>
+          </div>
+          <div class="by-mi-txt">你的《凌晨四点的城市，比白天更真实》已通过审核并进入热门榜，感谢你的优质创作。</div>
+        </div>
+        <div class="by-mi-side"><i class="fas fa-bullhorn by-mi-ic"></i></div>
+      </div>
+
+    </div>
+
+    <!-- 空状态 -->
+    <div class="by-empty" id="emptyBox" style="display:none">
+      <i class="fas fa-inbox"></i>
+      这个分类暂时没有新消息<br>有新动态时会第一时间通知你
+    </div>
+
+    <div class="by-end" style="text-align:center;color:var(--by-text-2);font-size:12px;padding:6px 0 16px">
+      <i class="fas fa-shield-halved" style="margin-right:4px"></i>哔哩云不会在消息里向你索要密码或验证码
+    </div>
+  </div>
+</div>
+
+<!-- ============ 轻提示 ============ -->
+<div class="by-toast" id="toast"></div>
+
+<!-- ============ 底部 TabBar ============ -->
+<nav class="by-tabbar">
+  <a href="../home/home.html"><i class="fas fa-house"></i><span>首页</span></a>
+  <a href="../search/search.html"><i class="fas fa-magnifying-glass"></i><span>搜索</span></a>
+  <a href="../upload/upload.html" class="by-pub">
+    <span class="by-pub-box"><i class="fas fa-plus"></i></span>
+    <span>投稿</span>
+  </a>
+  <a href="message.html" class="on"><i class="fas fa-comment-dots"></i><span>消息</span></a>
+  <a href="../profile/profile.html"><i class="fas fa-user"></i><span>我的</span></a>
+</nav>
+
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+/* ---------- 本页交互（原型演示级，无 alert） ---------- */
+(function () {
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1600);
+  }
+
+  /* ---------- 分类 Tab 切换 ---------- */
+  var tabs = document.querySelectorAll('.by-mtab');
+  var groups = {
+    mine:   ['secMine', 'listMine'],
+    inter:  ['secInter', 'listInter', 'aggCard'],
+    follow: ['secFollow', 'listFollow'],
+    sys:    ['secSys', 'listSys']
+  };
+  function render(cat, markRead) {
+    Object.keys(groups).forEach(function (k) {
+      var show = (k === cat);
+      groups[k].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = show ? '' : 'none';
+      });
+    });
+    // 该分类当前无内容时展示空状态
+    var visible = 0;
+    document.querySelectorAll('.by-mi').forEach(function (r) {
+      if (r.style.display !== 'none' && r.parentNode.style.display !== 'none') visible++;
+    });
+    document.getElementById('emptyBox').style.display = visible ? 'none' : '';
+    // 只有「用户主动切换进来」才视为已读；首屏渲染保留未读红点
+    if (markRead) clearUnread(cat);
+  }
+  function clearUnread(cat) {
+    document.querySelectorAll('.by-mtab[data-cat="' + cat + '"] .by-mnum').forEach(function (b) {
+      b.classList.add('gone');
+    });
+    document.querySelectorAll('.by-mi[data-cat="' + cat + '"]').forEach(function (r) {
+      r.classList.remove('unread');
+    });
+  }
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      tabs.forEach(function (x) { x.classList.remove('on'); });
+      t.classList.add('on');
+      render(t.getAttribute('data-cat'), true);
+    });
+  });
+
+  /* ---------- 点单条消息 = 已读 ---------- */
+  document.querySelectorAll('.by-mi').forEach(function (r) {
+    r.addEventListener('click', function () {
+      if (r.classList.contains('unread')) {
+        r.classList.remove('unread');
+        toast('已标记为已读');
+      } else {
+        var nm = r.querySelector('.by-mi-nm');
+        toast('打开：' + (nm ? nm.textContent : '消息详情'));
+      }
+    });
+  });
+
+  /* ---------- 全部已读 ---------- */
+  document.getElementById('markAll').addEventListener('click', function () {
+    document.querySelectorAll('.by-mi').forEach(function (r) { r.classList.remove('unread'); });
+    document.querySelectorAll('.by-mnum').forEach(function (b) { b.classList.add('gone'); });
+    toast('已将全部消息标记为已读');
+  });
+
+  /* ---------- 系统公告 展开 / 收起 ---------- */
+  var sysTxt = document.getElementById('sysTxt');
+  var sysMore = document.getElementById('sysMore');
+  sysMore.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = sysTxt.classList.toggle('open');
+    sysMore.querySelector('span').textContent = open ? '收起' : '展开全文';
+    sysMore.querySelector('i').className = open ? 'fas fa-angle-up' : 'fas fa-angle-down';
+  });
+
+  /* ---------- 回关 ---------- */
+  document.getElementById('btnFollowBack').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var on = this.classList.toggle('done');
+    this.textContent = on ? '已回关' : '回关';
+    this.style.color = on ? 'var(--by-text-2)' : 'var(--by-pink)';
+    this.style.borderColor = on ? 'var(--by-border)' : 'var(--by-pink)';
+    toast(on ? '已回关 代码狂人阿伟' : '已取消回关');
+  });
+
+  /* ---------- 顶栏 ---------- */
+  document.getElementById('navBack').addEventListener('click', function () {
+    if (history.length > 1) history.back(); else location.href = '../home/home.html';
+  });
+  document.getElementById('navSet').addEventListener('click', function () {
+    toast('消息设置（原型未展开）');
+  });
+
+  render('mine');
+})();
+</script>
+</body>
+</html>

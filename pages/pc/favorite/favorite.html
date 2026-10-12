@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的收藏 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============================================================
+     哔哩云 · 电脑端前台 设计令牌
+     与 pages/pc/home/home.html 完全一致，本页只在其后追加 .pc-fav-* 专有样式。
+     ============================================================ */
+  :root{
+    --pc-pink:#FB7299; --pc-pink-strong:#E11D48; --pc-pink-soft:#FFF1F5;
+    --pc-blue:#00AEEC; --pc-blue-soft:#E6F7FE;
+    --pc-text:#18191C; --pc-text-2:#61666D; --pc-text-3:#9499A0; --pc-text-inv:#FFFFFF;
+    --pc-bg:#F6F7F9; --pc-surface:#FFFFFF; --pc-surface-2:#F1F2F4;
+    --pc-line:#E3E5E8; --pc-line-2:#EDEFF2;
+    --pc-header-h:64px; --pc-side-w:180px; --pc-page-max:1600px;
+    --pc-r-sm:8px; --pc-r:12px; --pc-r-lg:18px;
+    --pc-shadow:0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --pc-shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pc-bg);color:var(--pc-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  ul{margin:0;padding:0;list-style:none}
+  img{display:block}
+
+  /* ============ 顶部导航（与母版一致） ============ */
+  .pc-head{position:sticky;top:0;z-index:50;height:var(--pc-header-h);background:var(--pc-surface);
+           border-bottom:1px solid var(--pc-line)}
+  .pc-head-in{max-width:var(--pc-page-max);margin:0 auto;height:100%;display:flex;align-items:center;gap:20px;padding:0 24px}
+  .pc-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--pc-pink-strong);flex:none}
+  .pc-logo i{font-size:22px}
+  .pc-nav{display:flex;gap:2px;flex:none}
+  .pc-nav a{padding:0 14px;height:var(--pc-header-h);display:flex;align-items:center;font-size:15px;
+           color:var(--pc-text-2);position:relative}
+  .pc-nav a:hover{color:var(--pc-text)}
+  .pc-nav a.on{color:var(--pc-pink-strong);font-weight:600}
+  .pc-nav a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;
+                      border-radius:2px 2px 0 0;background:var(--pc-pink)}
+  .pc-search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:38px;
+             padding:0 14px;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);
+             border:1px solid transparent;cursor:pointer;color:var(--pc-text-3)}
+  .pc-search:hover{border-color:var(--pc-line);background:var(--pc-surface)}
+  .pc-head-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  .pc-hbtn{width:36px;height:36px;border-radius:var(--pc-r-sm);display:flex;align-items:center;justify-content:center;
+           color:var(--pc-text-2);cursor:pointer;position:relative;font-size:16px}
+  .pc-hbtn:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-hbadge{position:absolute;top:4px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+             background:var(--pc-pink-strong);color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:500}
+  .pc-pubbtn{height:36px;padding:0 16px;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+             color:#fff;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .pc-pubbtn:hover{background:var(--pc-pink-strong)}
+  .pc-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer}
+
+  /* ============ 主体三栏（与母版一致） ============ */
+  .pc-body{max-width:var(--pc-page-max);margin:0 auto;display:flex;gap:24px;padding:24px;align-items:flex-start}
+  .pc-side{width:var(--pc-side-w);flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px);
+           max-height:calc(100vh - var(--pc-header-h) - 48px);overflow-y:auto}
+  .pc-side::-webkit-scrollbar{width:0}
+  .pc-side h4{font-size:12px;color:var(--pc-text-3);font-weight:500;margin:20px 0 8px;padding-left:10px;letter-spacing:.5px}
+  .pc-side h4:first-child{margin-top:0}
+  .pc-side a{display:flex;align-items:center;gap:9px;height:38px;padding:0 10px;border-radius:var(--pc-r-sm);
+             font-size:14px;color:var(--pc-text-2)}
+  .pc-side a i{width:18px;text-align:center;color:var(--pc-text-3);font-size:14px}
+  .pc-side a:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-side a.on{background:var(--pc-pink-soft);color:var(--pc-pink-strong);font-weight:600}
+  .pc-side a.on i{color:var(--pc-pink-strong)}
+
+  .pc-main{flex:1;min-width:0}
+
+  /* ============ 视频卡片网格：复用母版的 .pc-grid / .pc-card / .pc-cover ============ */
+  .pc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:20px 16px}
+  .pc-card{background:var(--pc-surface);border-radius:var(--pc-r);overflow:hidden;cursor:pointer;
+           transition:transform .2s,box-shadow .2s}
+  .pc-card:hover{transform:translateY(-4px);box-shadow:var(--pc-shadow-lg)}
+  .pc-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:var(--pc-surface-2)}
+  .pc-cover img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+  .pc-card:hover .pc-cover img{transform:scale(1.05)}
+  .pc-cover .dur{position:absolute;right:8px;bottom:8px;padding:1px 6px;border-radius:4px;
+                 background:rgba(0,0,0,.72);color:#fff;font-size:11px;font-variant-numeric:tabular-nums}
+  .pc-cover .tagline{position:absolute;left:8px;bottom:8px;display:flex;gap:5px}
+  .pc-cover .tagline span{padding:1px 6px;border-radius:4px;font-size:11px;color:#fff}
+  .pc-card-bd{padding:11px 12px 13px}
+  .pc-title{font-size:14px;line-height:1.45;color:var(--pc-text);display:-webkit-box;-webkit-line-clamp:2;
+            -webkit-box-orient:vertical;overflow:hidden;transition:color .2s;min-height:40px}
+  .pc-card:hover .pc-title{color:var(--pc-pink-strong)}
+  .pc-meta{margin-top:9px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--pc-text-3)}
+  .pc-meta span{display:flex;align-items:center;gap:4px}
+  .pc-up{margin-top:9px;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--pc-text-3)}
+  .pc-up img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+  .pc-up b{font-weight:400;color:var(--pc-text-2)}
+
+  /* 页签（母版类） */
+  .pc-tabs{display:flex;gap:24px;margin-bottom:18px;border-bottom:1px solid var(--pc-line)}
+  .pc-tabs button{padding:0 2px 12px;font-size:15px;color:var(--pc-text-2);background:none;border:none;
+                   cursor:pointer;font-family:inherit;position:relative}
+  .pc-tabs button:hover{color:var(--pc-text)}
+  .pc-tabs button.on{color:var(--pc-text);font-weight:600}
+  .pc-tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--pc-pink)}
+
+  /* 空状态（母版类） */
+  .pc-empty{padding:64px 20px;text-align:center;color:var(--pc-text-3)}
+  .pc-empty i{font-size:48px;color:var(--pc-line);margin-bottom:16px;display:block}
+  .pc-empty p{margin:0 0 20px;font-size:14px}
+
+  /* 加载更多（母版类） */
+  .pc-more{display:block;width:100%;height:46px;margin-top:24px;border:1px solid var(--pc-line);
+           border-radius:var(--pc-r);background:var(--pc-surface);color:var(--pc-text-2);
+           font-size:14px;cursor:pointer;font-family:inherit}
+  .pc-more:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+
+  .pc-foot{margin-top:48px;padding:28px 24px;text-align:center;font-size:12px;color:var(--pc-text-3);
+           border-top:1px solid var(--pc-line)}
+
+  /* ============================================================
+     以下为「我的收藏」页专有样式，全部使用 .pc-fav-* 前缀，
+     不改动母版任何已有类名的含义。
+     ============================================================ */
+
+  /* ---- 收藏夹树（左列） ---- */
+  .pc-fav-tree{width:250px;flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px);
+               background:var(--pc-surface);border-radius:var(--pc-r);box-shadow:var(--pc-shadow);padding:14px}
+  .pc-fav-tree-hd{display:flex;align-items:center;gap:8px;padding:6px 8px 14px;
+                  border-bottom:1px solid var(--pc-line-2);margin-bottom:10px}
+  .pc-fav-tree-hd b{font-size:14px;font-weight:600}
+  .pc-fav-tree-hd .n{font-size:12px;color:var(--pc-text-3);margin-left:auto;font-variant-numeric:tabular-nums}
+  .pc-fav-fitem{display:flex;align-items:center;gap:10px;width:100%;height:46px;padding:0 10px;
+                border-radius:var(--pc-r-sm);cursor:pointer;border:none;background:none;font-family:inherit;
+                text-align:left;transition:background .18s;margin-bottom:4px}
+  .pc-fav-fitem i{width:18px;text-align:center;font-size:14px;color:var(--pc-text-3);flex:none}
+  .pc-fav-fitem .nm{flex:1;min-width:0;font-size:14px;color:var(--pc-text-2);
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-fav-fitem .ct{font-size:12px;color:var(--pc-text-3);font-variant-numeric:tabular-nums}
+  .pc-fav-fitem:hover{background:var(--pc-surface-2)}
+  .pc-fav-fitem:hover .nm{color:var(--pc-text)}
+  .pc-fav-fitem.on{background:var(--pc-pink-soft)}
+  .pc-fav-fitem.on i{color:var(--pc-pink-strong)}
+  .pc-fav-fitem.on .nm{color:var(--pc-pink-strong);font-weight:600}
+  .pc-fav-fitem.on .ct{color:var(--pc-pink-strong)}
+  .pc-fav-fitem.sub{padding-left:34px}
+  .pc-fav-fitem.sub i{font-size:12px}
+  .pc-fav-new{margin-top:10px;padding-top:12px;border-top:1px solid var(--pc-line-2)}
+  .pc-fav-newbtn{width:100%;height:40px;border-radius:var(--pc-r-sm);border:1px dashed var(--pc-line);
+                 background:none;color:var(--pc-text-3);font-size:13px;font-family:inherit;cursor:pointer;
+                 display:flex;align-items:center;justify-content:center;gap:6px}
+  .pc-fav-newbtn:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+
+  /* ---- 右列主体 ---- */
+  .pc-fav-main{flex:1;min-width:0}
+  .pc-fav-hd{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .pc-fav-hd h2{margin:0;font-size:20px;font-weight:600;display:flex;align-items:center;gap:9px}
+  .pc-fav-hd h2 i{color:var(--pc-pink)}
+  .pc-fav-hd .cnt{font-size:13px;color:var(--pc-text-3);font-variant-numeric:tabular-nums}
+  .pc-fav-hd .ops{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .pc-fav-btn{height:40px;padding:0 18px;border-radius:var(--pc-r-sm);border:1px solid var(--pc-line);
+             background:var(--pc-surface);color:var(--pc-text-2);font-size:14px;font-family:inherit;
+             cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+             transition:all .18s}
+  .pc-fav-btn:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+  .pc-fav-btn.primary{background:var(--pc-pink);border-color:var(--pc-pink);color:#fff}
+  .pc-fav-btn.primary:hover{background:var(--pc-pink-strong);border-color:var(--pc-pink-strong);color:#fff}
+  .pc-fav-desc{font-size:13px;color:var(--pc-text-3);margin:0 0 18px}
+
+  /* ---- 页签 ---- */
+  .pc-fav-tabs{display:flex;gap:24px;margin-bottom:18px;border-bottom:1px solid var(--pc-line)}
+  .pc-fav-tabs button{padding:0 2px 12px;font-size:15px;color:var(--pc-text-2);background:none;border:none;
+                      cursor:pointer;font-family:inherit;position:relative}
+  .pc-fav-tabs button:hover{color:var(--pc-text)}
+  .pc-fav-tabs button.on{color:var(--pc-text);font-weight:600}
+  .pc-fav-tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;
+                                background:var(--pc-pink)}
+
+  /* ---- 卡片右上角移除按钮 ---- */
+  .pc-fav-rm{position:absolute;right:8px;top:8px;width:30px;height:30px;border-radius:50%;
+            background:rgba(0,0,0,.42);color:#fff;border:none;cursor:pointer;font-size:13px;
+            display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s,background .2s;
+            backdrop-filter:blur(3px)}
+  .pc-fav-rm:hover{background:var(--pc-pink-strong)}
+  .pc-card:hover .pc-fav-rm{opacity:1}
+  .pc-fav-rm:focus-visible{opacity:1;outline:2px solid #fff;outline-offset:2px}
+
+  /* ---- 合集卡片（页签 3） ---- */
+  .pc-fav-mix{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .pc-fav-mixcard{background:var(--pc-surface);border-radius:var(--pc-r);box-shadow:var(--pc-shadow);
+                 overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s}
+  .pc-fav-mixcard:hover{transform:translateY(-4px);box-shadow:var(--pc-shadow-lg)}
+  .pc-fav-mixcard .mv{position:relative;aspect-ratio:16/10;background:var(--pc-surface-2);overflow:hidden}
+  .pc-fav-mixcard .mv img{width:100%;height:100%;object-fit:cover}
+  .pc-fav-mixcard .mv .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                           color:#fff;font-size:30px;font-weight:700;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+  .pc-fav-mixcard .mv .num small{font-size:14px;font-weight:400;margin-left:3px}
+  .pc-fav-mixcard .mb{padding:12px}
+  .pc-fav-mixcard .mb .t{font-size:14px;color:var(--pc-text);font-weight:500;white-space:nowrap;
+                         overflow:hidden;text-overflow:ellipsis}
+  .pc-fav-mixcard .mb .m{font-size:12px;color:var(--pc-text-3);margin-top:6px;display:flex;
+                         align-items:center;gap:6px}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航 ==================== -->
+<header class="pc-head">
+  <div class="pc-head-in">
+    <a class="pc-logo" href="../home/home.html"><i class="fas fa-bolt"></i>哔哩云</a>
+    <nav class="pc-nav">
+      <a href="../home/home.html">首页</a>
+      <a href="../channel/channel.html">番剧</a>
+      <a href="../search/search.html">排行榜</a>
+      <a href="../channel/channel.html">直播</a>
+      <a href="../space/space.html">游戏中心</a>
+    </nav>
+    <div class="pc-search" onclick="location.href='../search/search.html'">
+      <i class="fas fa-magnifying-glass"></i><span>搜索你感兴趣的视频、UP主</span>
+    </div>
+    <div class="pc-head-right">
+      <span class="pc-hbtn" title="消息"><i class="fas fa-bell"></i><em class="pc-hbadge">9</em></span>
+      <span class="pc-hbtn" title="收藏"><i class="fas fa-bookmark"></i></span>
+      <span class="pc-hbtn" title="历史"><i class="fas fa-clock-rotate-left"></i></span>
+      <a class="pc-pubbtn" href="../upload/upload.html"><i class="fas fa-upload"></i>投稿</a>
+      <img class="pc-avatar" src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 主体 ==================== -->
+<div class="pc-body">
+
+  <!-- ---------- 左侧分区导航 ---------- -->
+  <aside class="pc-side">
+    <h4>热门分区</h4>
+    <a href="../channel/channel.html"><i class="fas fa-film"></i>动画</a>
+    <a href="../channel/channel.html"><i class="fas fa-gamepad"></i>游戏</a>
+    <a href="../channel/channel.html"><i class="fas fa-music"></i>音乐</a>
+    <a href="../channel/channel.html"><i class="fas fa-code"></i>科技</a>
+    <a href="../channel/channel.html"><i class="fas fa-utensils"></i>美食</a>
+    <a href="../channel/channel.html"><i class="fas fa-heart"></i>生活</a>
+    <a href="../channel/channel.html"><i class="fas fa-book"></i>知识</a>
+    <a href="../channel/channel.html"><i class="fas fa-futbol"></i>运动</a>
+
+    <h4>我的</h4>
+    <a href="../history/history.html"><i class="fas fa-clock-rotate-left"></i>观看历史</a>
+    <a class="on" href="../favorite/favorite.html"><i class="fas fa-bookmark"></i>我的收藏</a>
+    <a href="../upload/upload.html"><i class="fas fa-cloud-arrow-up"></i>投稿管理</a>
+    <a href="../message/message.html"><i class="fas fa-envelope"></i>我的消息</a>
+
+    <h4>推荐关注</h4>
+    <a href="../space/space.html"><i class="fas fa-code"></i>代码狂人阿伟</a>
+    <a href="../space/space.html"><i class="fas fa-cat"></i>猫奴日常菌</a>
+    <a href="../space/space.html"><i class="fas fa-music"></i>民谣小王子</a>
+    <a href="../space/space.html"><i class="fas fa-utensils"></i>小厨房大厨</a>
+
+    <h4>更多</h4>
+    <a href="../channel/channel.html"><i class="fas fa-circle-info"></i>帮助中心</a>
+    <a href="../channel/channel.html"><i class="fas fa-gear"></i>意见反馈</a>
+  </aside>
+
+  <!-- ---------- 收藏夹树 ---------- -->
+  <aside class="pc-fav-tree">
+    <div class="pc-fav-tree-hd">
+      <i class="fas fa-folder-open" style="color:var(--pc-pink-strong)"></i>
+      <b>我的收藏夹</b>
+      <span class="n" id="treeTotal">0</span>
+    </div>
+    <div id="treeBox"><!-- 由脚本渲染 --></div>
+    <div class="pc-fav-new">
+      <button class="pc-fav-newbtn" id="btnNewFolder"><i class="fas fa-folder-plus"></i>创建收藏夹</button>
+    </div>
+  </aside>
+
+  <!-- ---------- 右侧主体 ---------- -->
+  <main class="pc-fav-main">
+
+    <div class="pc-fav-hd">
+      <h2><i class="fas fa-bookmark"></i><span id="favName">默认收藏夹</span></h2>
+      <span class="cnt">共 <b id="favCount">0</b> 个条目</span>
+      <div class="ops">
+        <button class="pc-fav-btn" id="btnSort"><i class="fas fa-arrow-down-wide-short"></i>按收藏时间</button>
+        <button class="pc-fav-btn" id="btnPick"><i class="fas fa-check-double"></i>批量管理</button>
+        <button class="pc-fav-btn primary" id="btnPlayAll"><i class="fas fa-play"></i>依次播放</button>
+      </div>
+    </div>
+    <p class="pc-fav-desc" id="favDesc">默认收藏夹中的内容会显示在个人主页，且仅自己可见。</p>
+
+    <div class="pc-fav-tabs" id="favTabs">
+      <button class="on" data-t="all">全部</button>
+      <button data-t="video">视频</button>
+      <button data-t="mix">合集</button>
+    </div>
+
+    <div class="pc-grid" id="favGrid"><!-- 由脚本渲染 --></div>
+    <div class="pc-fav-mix" id="mixBox" style="display:none"><!-- 合集页签 --></div>
+
+    <div id="emptyBox" style="display:none">
+      <div class="pc-empty">
+        <i class="fas fa-folder-open"></i>
+        <p>这个收藏夹还是空的，看到喜欢的视频点个收藏吧</p>
+        <button class="pc-fav-btn primary" onclick="location.href='../home/home.html'"><i class="fas fa-house"></i>去首页看看</button>
+      </div>
+    </div>
+
+    <button class="pc-more" id="moreBtn">展开更多条目</button>
+
+    <footer class="pc-foot">
+      哔哩云 · 视频社区高保真原型 ｜ 收藏夹最多可创建 20 个，单个收藏夹最多容纳 2000 个条目
+    </footer>
+  </main>
+</div>
+
+<!-- ==================== 脚本 ==================== -->
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var IMG = '../../../lib/images/';
+
+  /* ---------- 收藏内容（12 条视频 + 4 个合集） ---------- */
+  var VIDEOS = [
+    { t:'【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置', c:'cover-gaming-neon.jpeg', up:'代码狂人阿伟', av:'avatar-01.jpeg', p:'328.4万', n:'12.6万', d:'14:22', tag:'科技', tagc:'#00B1B1' },
+    { t:'当你以为在养猫，实际上是猫在养你', c:'cover-cat-grumpy.jpeg', up:'猫奴日常菌', av:'avatar-02.jpeg', p:'892.1万', n:'30.2万', d:'08:45', tag:'生活', tagc:'#FB7299' },
+    { t:'三分钟搞定的深夜食堂，新手也能学会', c:'cover-cook-chop.jpeg', up:'小厨房大厨', av:'avatar-03.jpeg', p:'156.7万', n:'8.4万', d:'03:18', tag:'美食', tagc:'#FF9F43' },
+    { t:'用一把吉他弹响青春的声音', c:'cover-guitar-blue.jpeg', up:'民谣小王子', av:'avatar-04.jpeg', p:'98.2万', n:'4.1万', d:'05:07', tag:'原创', tagc:'#9C27B0' },
+    { t:'凌晨四点的城市，比白天更真实', c:'cover-city-night.jpeg', up:'城市观察局', av:'avatar-05.jpeg', p:'233.5万', n:'9.7万', d:'12:40', tag:'生活', tagc:'#00AEEC' },
+    { t:'一个人的雪山徒步，治愈了我一整年', c:'cover-mountain.jpeg', up:'山野拾光', av:'avatar-06.jpeg', p:'512.8万', n:'21.3万', d:'16:22', tag:'旅行', tagc:'#00C2A8' },
+    { t:'前端工程师的一天：从零到上线', c:'cover-code-monitor.jpeg', up:'代码狂人阿伟', av:'avatar-01.jpeg', p:'421.3万', n:'15.6万', d:'24:08', tag:'科技', tagc:'#00B1B1' },
+    { t:'雨夜的城市天桥，随手一拍都是壁纸', c:'cover-city-traffic.jpeg', up:'城市观察局', av:'avatar-05.jpeg', p:'88.4万', n:'3.2万', d:'04:33', tag:'摄影', tagc:'#FF6F00' },
+    { t:'街头涂鸦艺术家的一周', c:'cover-graffiti.jpeg', up:'颜料不听话', av:'avatar-03.jpeg', p:'67.9万', n:'2.8万', d:'11:15', tag:'艺术', tagc:'#7C4DFF' },
+    { t:'高原上的星空，肉眼可见的银河', c:'cover-tianshan.jpeg', up:'山野拾光', av:'avatar-06.jpeg', p:'302.6万', n:'12.1万', d:'09:51', tag:'旅行', tagc:'#00C2A8' },
+    { t:'桌面美学：RGB 灯效搭配实录', c:'cover-desk-rgb.jpeg', up:'硬件研究所', av:'avatar-05.jpeg', p:'198.7万', n:'8.8万', d:'10:44', tag:'科技', tagc:'#00B1B1' },
+    { t:'猫咪的九种睡姿大赏', c:'cover-cat-chair.jpeg', up:'猫奴日常菌', av:'avatar-02.jpeg', p:'376.5万', n:'18.2万', d:'06:19', tag:'日常', tagc:'#FB7299' },
+    { t:'雪山攀登：海拔 4500 米的日出', c:'cover-alps.jpeg', up:'山野拾光', av:'avatar-06.jpeg', p:'178.9万', n:'7.2万', d:'14:36', tag:'旅行', tagc:'#00C2A8' },
+    { t:'音乐现场：民谣在 Livehouse 的样子', c:'cover-music-stage.jpeg', up:'民谣小王子', av:'avatar-04.jpeg', p:'92.7万', n:'4.4万', d:'21:30', tag:'现场', tagc:'#9C27B0' }
+  ];
+
+  var MIXES = [
+    { t:'前端从入门到精通', c:'cover-code-js.jpeg', n:12, up:'代码狂人阿伟', d:'合集 · 12 集' },
+    { t:'深夜食堂 · 家常菜谱', c:'cover-cook-chef.jpeg', n:24, up:'小厨房大厨', d:'合集 · 24 集' },
+    { t:'吉他指弹进阶之路', c:'cover-guitar-yellow.jpeg', n:41, up:'民谣小王子', d:'合集 · 41 集' },
+    { t:'山野拾光 · 户外纪录', c:'cover-tianshan.jpeg', n:8, up:'山野拾光', d:'合集 · 8 集' }
+  ];
+
+  /* ---------- 收藏夹（树） ---------- */
+  var FOLDERS = [
+    { id: 'f1', name: '默认收藏夹', icon: 'fa-bookmark',   kind: 'all',
+      desc: '默认收藏夹中的内容会显示在个人主页，且仅自己可见。',           count: 14 },
+    { id: 'f2', name: '视频收藏夹', icon: 'fa-play',       kind: 'video', sub: true,
+      desc: '手动收藏的视频，支持按分区与收藏时间筛选。',               count: 9  },
+    { id: 'f3', name: '稍后再看',   icon: 'fa-clock',      kind: 'video', sub: true,
+      desc: '排队等待观看的视频，超过 30 天未观看会自动移出。',         count: 6  },
+    { id: 'f4', name: '已失效内容', icon: 'fa-triangle-exclamation', kind: 'invalid', sub: true,
+      desc: '因作者删除、版权到期或分区调整而无法观看的条目。',         count: 3  }
+  ];
+
+  var treeBox   = document.getElementById('treeBox');
+  var favName   = document.getElementById('favName');
+  var favCount  = document.getElementById('favCount');
+  var favDesc   = document.getElementById('favDesc');
+  var grid      = document.getElementById('favGrid');
+  var mixBox    = document.getElementById('mixBox');
+  var emptyBox  = document.getElementById('emptyBox');
+  var moreBtn   = document.getElementById('moreBtn');
+  var treeTotal = document.getElementById('treeTotal');
+
+  var curFolder = FOLDERS[0];
+  var curTab    = 'all';
+  var limit     = 10;
+  var sortNew   = false;      // false：收藏时间倒序；true：最多播放
+  var batchMode = false;
+
+  /* 每个收藏夹持有自己的条目（用标题作为条目标识） */
+  FOLDERS.forEach(function (f, i) {
+    var src = i === 1 ? VIDEOS.slice(1, 10)
+            : i === 2 ? VIDEOS.slice(4, 10)
+            : i === 3 ? VIDEOS.slice(11, 14)
+            : VIDEOS.slice(0, 14);
+    f.items = src.slice();
+  });
+
+  /* ---------- 头部计数（标题处 + 收藏夹树） ---------- */
+  function syncCounts() {
+    var total = 0;
+    FOLDERS.forEach(function (f) { total += f.items.length; });
+    favCount.textContent = curTab === 'mix' ? MIXES.length : curFolder.items.length;
+    treeTotal.textContent = total + ' 条';
+  }
+
+  /* ---------- 渲染收藏夹树 ---------- */
+  function renderTree() {
+    treeBox.innerHTML = FOLDERS.map(function (f) {
+      return '<button class="pc-fav-fitem' + (f.sub ? ' sub' : '') + (f === curFolder ? ' on' : '') + '"' +
+             ' data-f="' + f.id + '">' +
+               '<i class="fas ' + f.icon + '"></i>' +
+               '<span class="nm">' + f.name + '</span>' +
+               '<span class="ct">' + f.items.length + '</span>' +
+             '</button>';
+    }).join('');
+    syncCounts();
+  }
+
+  /* ---------- 渲染卡片 ---------- */
+  function card(v) {
+    return '' +
+      '<article class="pc-card" data-title="' + v.t + '">' +
+        '<div class="pc-cover">' +
+          '<img src="' + IMG + v.c + '" alt="">' +
+          '<span class="tagline"><span style="background:' + v.tagc + '">' + v.tag + '</span></span>' +
+          '<span class="dur">' + v.d + '</span>' +
+          '<button class="pc-fav-rm" title="移除收藏"><i class="fas fa-circle-xmark"></i></button>' +
+        '</div>' +
+        '<div class="pc-card-bd">' +
+          '<h3 class="pc-title">' + v.t + '</h3>' +
+          '<div class="pc-meta"><span><i class="fas fa-play"></i>' + v.p + '</span>' +
+            '<span><i class="fas fa-comment-dots"></i>' + v.n + '</span>' +
+            (batchMode ? '<span style="margin-left:auto"><i class="fas fa-check-square"></i>选择</span>' : '') +
+          '</div>' +
+          '<div class="pc-up"><img src="' + IMG + v.av + '" alt=""><b>' + v.up + '</b></div>' +
+        '</div>' +
+      '</article>';
+  }
+
+  function renderMix() {
+    mixBox.innerHTML = MIXES.map(function (m) {
+      return '<article class="pc-fav-mixcard" data-title="' + m.t + '">' +
+               '<div class="mv"><img src="' + IMG + m.c + '" alt="">' +
+                 '<span class="num">' + m.n + '<small>集</small></span>' +
+                 '<button class="pc-fav-rm" title="移除收藏"><i class="fas fa-circle-xmark"></i></button>' +
+               '</div>' +
+               '<div class="mb"><div class="t">' + m.t + '</div>' +
+                 '<div class="m"><span>' + m.d + '</span><i class="fas fa-circle" style="font-size:4px"></i><span>' + m.up + '</span></div>' +
+               '</div>' +
+             '</article>';
+    }).join('');
+  }
+
+  /* ---------- 渲染主体 ---------- */
+  function render() {
+    favName.textContent = curFolder.name;
+    favDesc.textContent = curFolder.desc;
+
+    var items = curFolder.items.slice();
+    if (sortNew) {
+      items.sort(function (a, b) {
+        return parseFloat(b.p) - parseFloat(a.p);
+      });
+    }
+
+    var isMixTab = curTab === 'mix';
+    grid.style.display = isMixTab ? 'none' : '';
+    mixBox.style.display = isMixTab ? '' : 'none';
+    favDesc.textContent = isMixTab
+      ? '已收藏的合集会以封面 + 集数的形式展示，点击进入合集详情页。'
+      : curFolder.desc;
+
+    if (isMixTab) {
+      renderMix();
+      emptyBox.style.display = MIXES.length ? 'none' : '';
+      moreBtn.style.display = 'none';
+      renderTree();
+      return;
+    }
+
+    if (!items.length) {
+      grid.innerHTML = '';
+      emptyBox.style.display = '';
+      moreBtn.style.display = 'none';
+      renderTree();
+      return;
+    }
+    emptyBox.style.display = 'none';
+
+    var shown = items.slice(0, limit);
+    grid.innerHTML = shown.map(card).join('');
+    moreBtn.style.display = shown.length < items.length ? '' : 'none';
+    renderTree();
+    Debug.log('收藏夹渲染：', curFolder.name, items.length, '条，本次展示', shown.length);
+  }
+
+  /* ---------- 切换收藏夹 ---------- */
+  treeBox.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-f]');
+    if (!b) return;
+    curFolder = FOLDERS.filter(function (f) { return f.id === b.dataset.f; })[0];
+    curTab = 'all';
+    limit = 10;
+    syncTabs();
+    render();
+  });
+
+  /* ---------- 新建收藏夹 ---------- */
+  document.getElementById('btnNewFolder').addEventListener('click', function () {
+    var pool = ['前端学习资料', '深夜放空清单', '旅行心愿单'];
+    var name = pool[Math.floor(Math.random() * pool.length)];
+    FOLDERS.push({ id: 'f' + (FOLDERS.length + 1), name: name, icon: 'fa-folder', kind: 'video', sub: true,
+                   desc: '新建的收藏夹默认可见，可在设置中调整为仅自己可见。', items: [] });
+    render();
+    window.PrototypeDialog.success('收藏夹《' + name + '》已创建');
+  });
+
+  /* ---------- 页签 ---------- */
+  var tabBox = document.getElementById('favTabs');
+  function syncTabs() {
+    Array.prototype.forEach.call(tabBox.querySelectorAll('button'), function (b) {
+      b.classList.toggle('on', b.dataset.t === curTab);
+    });
+  }
+  tabBox.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-t]');
+    if (!b) return;
+    curTab = b.dataset.t;
+    limit = 10;
+    syncTabs();
+    render();
+  });
+
+  /* ---------- 加载更多 ---------- */
+  moreBtn.addEventListener('click', function () {
+    limit += 6;
+    render();
+  });
+
+  /* ---------- 卡片点击：进入播放 / 移除收藏 ---------- */
+  grid.addEventListener('click', function (e) {
+    var card = e.target.closest('.pc-card');
+    if (!card) return;
+    var title = card.dataset.title;
+
+    if (e.target.closest('.pc-fav-rm')) {
+      window.PrototypeDialog.confirm('将《' + title + '》从「' + curFolder.name + '」中移除？', function () {
+        curFolder.items = curFolder.items.filter(function (v) { return v.t !== title; });
+        render();
+        window.PrototypeDialog.success('已移除收藏');
+      });
+      return;
+    }
+    if (batchMode) {
+      window.PrototypeDialog.confirm('将《' + title + '》加入批量管理列表？（示例操作）');
+      return;
+    }
+    location.href = '../player/player.html';
+  });
+
+  mixBox.addEventListener('click', function (e) {
+    var card = e.target.closest('.pc-fav-mixcard');
+    if (!card) return;
+    var title = card.dataset.title;
+    if (e.target.closest('.pc-fav-rm')) {
+      window.PrototypeDialog.confirm('取消收藏合集《' + title + '》？合集内的视频不受影响。', function () {
+        MIXES = MIXES.filter(function (m) { return m.t !== title; });
+        render();
+        window.PrototypeDialog.success('已移除合集收藏');
+      });
+      return;
+    }
+    location.href = '../channel/channel.html';
+  });
+
+  /* ---------- 头部按钮 ---------- */
+  document.getElementById('btnSort').addEventListener('click', function () {
+    sortNew = !sortNew;
+    this.innerHTML = sortNew
+      ? '<i class="fas fa-fire"></i>按最多播放'
+      : '<i class="fas fa-arrow-down-wide-short"></i>按收藏时间';
+    render();
+  });
+
+  document.getElementById('btnPick').addEventListener('click', function () {
+    batchMode = !batchMode;
+    this.classList.toggle('primary', batchMode);
+    this.innerHTML = batchMode
+      ? '<i class="fas fa-xmark"></i>退出批量管理'
+      : '<i class="fas fa-check-double"></i>批量管理';
+    render();
+  });
+
+  document.getElementById('btnPlayAll').addEventListener('click', function () {
+    var n = curFolder.items.length;
+    if (!n) {
+      window.PrototypeDialog.confirm('当前收藏夹是空的，先去收藏几个视频吧');
+      return;
+    }
+    window.PrototypeDialog.success('已开始依次播放「' + curFolder.name + '」中的 ' + n + ' 个视频');
+  });
+
+  render();
+  renderMix();
+})();
+</script>
+</body>
+</html>

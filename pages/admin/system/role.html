@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>角色权限 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<link rel="stylesheet" href="../../../css/sidebar-menu.css">
+<style>
+  :root{
+    --by-side:#001529; --by-head:#0A1A2F; --by-bg:#0B1524;
+    --by-card:#142136; --by-card-2:#1B2B44; --by-line:rgba(255,255,255,.09);
+    --by-primary:#409EFF; --by-green:#13CE66; --by-orange:#FF9F43;
+    --by-red:#F6465D; --by-purple:#9457D5;
+    --by-text:#E8ECF5; --by-text-2:#8FA0BC; --by-text-3:#5C6E8C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--by-bg);color:var(--by-text);
+       font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5}
+  .ad-wrap{display:flex;height:100vh;overflow:hidden}
+
+  .ad-head{height:56px;flex:none;background:var(--by-head);border-bottom:1px solid var(--by-line);
+           display:flex;align-items:center;padding:0 20px;gap:16px}
+  .ad-logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;width:200px}
+  .ad-logo .dot{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+                justify-content:center;background:linear-gradient(135deg,#FB7299,#E11D48);
+                font-size:13px;color:#fff}
+  .ad-crumb{font-size:13px;color:var(--by-text-2)}
+  .ad-crumb b{color:var(--by-text);font-weight:500}
+  .ad-head-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .ad-search{width:220px;height:32px;border-radius:6px;background:rgba(255,255,255,.07);
+             border:1px solid var(--by-line);display:flex;align-items:center;gap:7px;
+             padding:0 11px;font-size:12px;color:var(--by-text-3)}
+  .ad-hicon{color:var(--by-text-2);font-size:15px;cursor:pointer;position:relative;min-width:24px;text-align:center}
+  .ad-badge{position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;border-radius:8px;
+            background:var(--by-red);color:#fff;font-size:9px;line-height:15px;padding:0 4px}
+  .ad-me{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+  .ad-me img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+
+  .ad-side{width:200px;flex:none;background:var(--by-side);border-right:1px solid var(--by-line);
+           overflow-y:auto;padding:10px 0}
+  .ad-side::-webkit-scrollbar{width:0}
+  #sidebar-menu{background:var(--by-side)}
+
+  .ad-main{flex:1;min-width:0;overflow-y:auto;padding:18px 22px 28px}
+  .ad-main::-webkit-scrollbar{width:6px}
+  .ad-main::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:3px}
+
+  /* ============ 通用按钮 ============ */
+  .btn{height:32px;padding:0 15px;border-radius:6px;border:1px solid var(--by-line);
+       background:rgba(255,255,255,.06);color:var(--by-text);font-size:13px;cursor:pointer;
+       display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.11)}
+  .btn-primary{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;border-color:#66b1ff}
+  .btn-danger{background:var(--by-red);border-color:var(--by-red);color:#fff}
+
+  /* ============ 主区左表右树 ============ */
+  .ad-rbac{display:grid;grid-template-columns:286px 1fr;gap:14px;align-items:start}
+
+  /* --- 左：角色列表 --- */
+  .ad-pnl{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px}
+  .ad-pnl-hd{display:flex;align-items:center;justify-content:space-between;
+             padding:13px 15px;border-bottom:1px solid var(--by-line)}
+  .ad-pnl-hd h3{margin:0;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .ad-pnl-hd h3 i{color:var(--by-primary);font-size:13px}
+  .ad-pnl-hd .x{font-size:12px;color:var(--by-text-3);cursor:pointer}
+
+  /* 页签 */
+  .ad-tabs{display:flex;gap:4px;padding:10px 12px 0}
+  .ad-tab{flex:1;text-align:center;height:32px;line-height:32px;border-radius:6px;cursor:pointer;
+         font-size:12px;color:var(--by-text-2);background:rgba(255,255,255,.04);
+         border:1px solid transparent;transition:.15s;white-space:nowrap;overflow:hidden;
+         text-overflow:ellipsis}
+  .ad-tab:hover{color:var(--by-text);background:rgba(255,255,255,.08)}
+  .ad-tab.on{background:rgba(64,158,255,.16);color:#409EFF;border-color:rgba(64,158,255,.45);font-weight:500}
+
+  .ad-rlist{padding:10px 10px 12px;display:flex;flex-direction:column;gap:7px;max-height:560px;
+            overflow-y:auto}
+  .ad-rlist::-webkit-scrollbar{width:6px}
+  .ad-rlist::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:3px}
+
+  .ad-ritem{display:flex;align-items:center;gap:10px;padding:11px 11px;border-radius:8px;
+           border:1px solid var(--by-line);background:rgba(255,255,255,.03);cursor:pointer;
+           transition:.15s;min-height:56px}
+  .ad-ritem:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+  .ad-ritem.on{background:rgba(64,158,255,.14);border-color:var(--by-primary)}
+  .ad-ritem.hide{display:none}
+
+  .ad-ricon{width:32px;height:32px;border-radius:9px;flex:none;display:flex;align-items:center;
+           justify-content:center;font-size:13px}
+  .ad-ritx{flex:1;min-width:0}
+  .ad-ritx .nm{font-size:13px;color:var(--by-text);line-height:1.3;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ad-ritx .cd{font-size:11px;color:var(--by-text-3);margin-top:3px;
+              font-family:"SFMono-Regular",Consolas,Menlo,monospace;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ad-rnum{flex:none;font-size:11px;color:var(--by-text-2);background:rgba(255,255,255,.07);
+          border-radius:10px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px}
+  .ad-ritem.on .ad-rnum{background:rgba(64,158,255,.2);color:#8ec5ff}
+
+  /* 搜索框 */
+  .ad-rsearch{margin:10px 12px 0;height:32px;border-radius:6px;background:rgba(255,255,255,.06);
+              border:1px solid var(--by-line);display:flex;align-items:center;gap:7px;
+              padding:0 10px;font-size:12px;color:var(--by-text-3)}
+  .ad-rsearch input{flex:1;background:none;border:none;outline:none;color:var(--by-text);
+                    font-size:12px;font-family:inherit}
+  .ad-rsearch input::placeholder{color:var(--by-text-3)}
+
+  /* --- 右：角色信息表单 --- */
+  .ad-form{padding:15px 16px 16px}
+  .ad-form-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 18px}
+  .ad-fi{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .ad-fi.wide{grid-column:1 / -1}
+  .ad-fi label{font-size:12px;color:var(--by-text-2)}
+  .ad-fi label .req{color:var(--by-red);margin-right:3px}
+  .ad-fi input,.ad-fi select,.ad-fi textarea{height:32px;padding:0 10px;border-radius:6px;
+    font-size:13px;background:rgba(255,255,255,.06);border:1px solid var(--by-line);
+    color:var(--by-text);outline:none;font-family:inherit}
+  .ad-fi textarea{height:62px;padding:8px 10px;resize:none;line-height:1.55}
+  .ad-fi input:focus,.ad-fi select:focus,.ad-fi textarea:focus{border-color:var(--by-primary)}
+  .ad-fi select option{background:var(--by-card-2);color:var(--by-text)}
+  .ad-fi input[readonly]{color:var(--by-text-2);background:rgba(255,255,255,.03);cursor:default}
+  .ad-form-bar{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .ad-form-bar .sp{flex:1}
+  .ad-form-tip{font-size:12px;color:var(--by-text-3);display:flex;align-items:center;gap:6px}
+
+  /* --- 权限树 --- */
+  .ad-tree{padding:8px 16px 16px}
+  .ad-tmod{border:1px solid var(--by-line);border-radius:9px;margin-top:10px;
+          background:rgba(255,255,255,.025);overflow:hidden}
+  .ad-tmod:first-child{margin-top:0}
+  .ad-tmod-hd{display:flex;align-items:center;gap:9px;padding:11px 13px;min-height:44px;
+              cursor:pointer;user-select:none}
+  .ad-tmod-hd:hover{background:rgba(255,255,255,.04)}
+  .ad-tmod-hd .ar{font-size:11px;color:var(--by-text-3);transition:transform .18s;width:12px}
+  .ad-tmod.fold .ad-tmod-hd .ar{transform:rotate(-90deg)}
+  .ad-tmod-hd .ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;
+                 justify-content:center;font-size:12px;flex:none}
+  .ad-tmod-hd .nm{font-size:13px;color:var(--by-text);font-weight:500}
+  .ad-tmod-hd .ct{font-size:11px;color:var(--by-text-3)}
+  .ad-tmod-hd .sp{flex:1}
+  .ad-tmod-hd .half{font-size:11px;color:var(--by-orange);background:rgba(255,159,67,.14);
+                   border-radius:10px;padding:2px 9px}
+  .ad-tmod-bd{display:grid;grid-template-columns:repeat(3,1fr);gap:4px 18px;
+              padding:4px 13px 14px 40px}
+  .ad-tmod.fold .ad-tmod-bd{display:none}
+  .ad-tleaf{display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font-size:12px;
+            color:var(--by-text-2);min-height:32px}
+  .ad-tleaf:hover{color:var(--by-text)}
+  .ad-tleaf i{font-size:10px;color:var(--by-text-3);width:11px}
+  .ad-tleaf.on{color:var(--by-text)}
+
+  input[type=checkbox]{width:14px;height:14px;accent-color:var(--by-primary);cursor:pointer}
+  .ad-tchk{appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:none;
+    border:1px solid var(--by-text-3);border-radius:4px;background:rgba(255,255,255,.05);
+    cursor:pointer;position:relative;transition:.15s}
+  .ad-tchk:checked{background:var(--by-primary);border-color:var(--by-primary)}
+  .ad-tchk:checked::after{content:"";position:absolute;left:4.5px;top:1px;width:4px;height:8px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  /* 半选：父节点选中但子节点未全选 —— indeterminate 无法用 CSS 表达，用 JS 写这个属性 */
+  .ad-tchk:indeterminate{background:var(--by-primary);border-color:var(--by-primary)}
+  .ad-tchk:indeterminate::after{content:"";position:absolute;left:2.5px;top:5.5px;width:8px;
+    height:2px;background:#fff;border-radius:1px;transform:none;border:0}
+
+  .ad-tree-bar{display:flex;align-items:center;gap:10px;padding:11px 16px;
+               border-bottom:1px solid var(--by-line)}
+  .ad-tree-bar .sp{flex:1}
+  .ad-tree-stat{font-size:12px;color:var(--by-text-3)}
+  .ad-tree-stat b{color:var(--by-primary);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="ad-wrap">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="ad-head" style="position:absolute;top:0;left:0;right:0;z-index:20">
+    <div class="ad-logo"><span class="dot"><i class="fas fa-bolt"></i></span><span>哔哩云</span></div>
+    <div class="ad-crumb">系统管理 / <b>角色权限</b></div>
+    <div class="ad-head-right">
+      <div class="ad-search"><i class="fas fa-search"></i><span>搜索菜单、用户、视频…</span></div>
+      <span class="ad-hicon"><i class="fas fa-question-circle"></i></span>
+      <span class="ad-hicon"><i class="fas fa-bell"></i><span class="ad-badge">9</span></span>
+      <div class="ad-me"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>超级管理员</span><i class="fas fa-angle-down" style="font-size:11px;color:var(--by-text-3)"></i></div>
+    </div>
+  </header>
+
+  <!-- ================= 侧边栏 ================= -->
+  <aside class="ad-side" style="position:absolute;top:56px;bottom:0;left:0;width:200px">
+    <div id="sidebar-menu"></div>
+  </aside>
+
+  <!-- ================= 内容区 ================= -->
+  <main class="ad-main main-content" style="margin-left:200px;margin-top:56px">
+
+    <div class="ad-rbac">
+
+      <!-- ---------- 左：角色列表 ---------- -->
+      <div class="ad-pnl">
+        <div class="ad-pnl-hd">
+          <h3><i class="fas fa-user-shield"></i>角色列表</h3>
+          <span class="x"><i class="fas fa-plus" style="margin-right:3px"></i>新增角色</span>
+        </div>
+
+        <!-- 页签 -->
+        <div class="ad-tabs" id="roleTabs">
+          <div class="ad-tab on" data-tab="all">全部角色</div>
+          <div class="ad-tab" data-tab="sys">系统角色</div>
+          <div class="ad-tab" data-tab="cus">自定义角色</div>
+        </div>
+
+        <div class="ad-rsearch">
+          <i class="fas fa-search"></i>
+          <input type="text" id="roleSearch" placeholder="搜索角色名称 / 编码">
+        </div>
+
+        <div class="ad-rlist" id="roleList">
+          <!-- 角色项由脚本渲染；data-* 用于页签过滤与角色切换 -->
+          <div class="ad-ritem on" data-id="super" data-type="sys" data-name="超级管理员" data-code="SUPER_ADMIN">
+            <span class="ad-ricon" style="background:rgba(148,87,213,.18);color:#B07CE6"><i class="fas fa-crown"></i></span>
+            <div class="ad-ritx"><div class="nm">超级管理员</div><div class="cd">SUPER_ADMIN</div></div>
+            <span class="ad-rnum"><i class="fas fa-user"></i>3</span>
+          </div>
+          <div class="ad-ritem" data-id="ops" data-type="sys" data-name="运营管理员" data-code="OPERATION_ADMIN">
+            <span class="ad-ricon" style="background:rgba(64,158,255,.16);color:#409EFF"><i class="fas fa-chart-line"></i></span>
+            <div class="ad-ritx"><div class="nm">运营管理员</div><div class="cd">OPERATION_ADMIN</div></div>
+            <span class="ad-rnum"><i class="fas fa-user"></i>12</span>
+          </div>
+          <div class="ad-ritem" data-id="audit" data-type="sys" data-name="内容审核员" data-code="CONTENT_AUDITOR">
+            <span class="ad-ricon" style="background:rgba(255,159,67,.16);color:#FF9F43"><i class="fas fa-clipboard-check"></i></span>
+            <div class="ad-ritx"><div class="nm">内容审核员</div><div class="cd">CONTENT_AUDITOR</div></div>
+            <span class="ad-rnum"><i class="fas fa-user"></i>18</span>
+          </div>
+          <div class="ad-ritem" data-id="cs" data-type="sys" data-name="客服专员" data-code="CUSTOMER_SERVICE">
+            <span class="ad-ricon" style="background:rgba(19,206,102,.16);color:#13CE66"><i class="fas fa-headset"></i></span>
+            <div class="ad-ritx"><div class="nm">客服专员</div><div class="cd">CUSTOMER_SERVICE</div></div>
+            <span class="ad-rnum"><i class="fas fa-user"></i>9</span>
+          </div>
+          <div class="ad-ritem" data-id="data" data-type="cus" data-name="数据分析专员" data-code="DATA_ANALYST">
+            <span class="ad-ricon" style="background:rgba(64,158,255,.16);color:#409EFF"><i class="fas fa-chart-pie"></i></span>
+            <div class="ad-ritx"><div class="nm">数据分析专员</div><div class="cd">DATA_ANALYST</div></div>
+            <span class="ad-rnum"><i class="fas fa-user"></i>4</span>
+          </div>
+          <div class="ad-ritem" data-id="banner" data-type="cus" data-name="运营活动策划" data-code="CAMPAIGN_PLANNER">
+            <span class="ad-ricon" style="background:rgba(19,206,102,.16);color:#13CE66"><i class="fas fa-bullhorn"></i></span>
+            <div class="ad-ritx"><div class="nm">运营活动策划</div><div class="cd">CAMPAIGN_PLANNER</div></div>
+            <span class="ad-rnum"><i class="fas fa-user"></i>2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---------- 右：角色信息 + 权限分配 ---------- -->
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+
+        <!-- 角色信息表单 -->
+        <div class="ad-pnl">
+          <div class="ad-pnl-hd">
+            <h3><i class="fas fa-id-card"></i>编辑角色信息</h3>
+            <span class="x" id="roleTypeTag">系统内置角色</span>
+          </div>
+          <div class="ad-form">
+            <div class="ad-form-row">
+              <div class="ad-fi">
+                <label><span class="req">*</span>角色名称</label>
+                <input type="text" id="fName" value="超级管理员">
+              </div>
+              <div class="ad-fi">
+                <label><span class="req">*</span>角色编码</label>
+                <input type="text" id="fCode" value="SUPER_ADMIN">
+              </div>
+              <div class="ad-fi">
+                <label>状态</label>
+                <select id="fStatus">
+                  <option>启用</option><option>禁用</option>
+                </select>
+              </div>
+              <div class="ad-fi">
+                <label>数据权限</label>
+                <select id="fScope">
+                  <option>全部数据</option><option>本部门及下属</option><option>仅本部门</option><option>仅本人</option>
+                </select>
+              </div>
+              <div class="ad-fi wide">
+                <label>备注</label>
+                <textarea id="fRemark">拥有平台全部管理权限，负责系统配置、角色授权与管理员维护，日常请谨慎授予。</textarea>
+              </div>
+            </div>
+            <div class="ad-form-bar">
+              <button class="btn btn-primary"><i class="fas fa-save"></i>保存角色</button>
+              <button class="btn"><i class="fas fa-rotate-left"></i>重置</button>
+              <span class="sp"></span>
+              <span class="ad-form-tip"><i class="fas fa-circle-info"></i>角色编码创建后不可修改</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 权限分配 -->
+        <div class="ad-pnl">
+          <div class="ad-pnl-hd">
+            <h3><i class="fas fa-key"></i>权限分配</h3>
+            <span class="x">当前角色：<b id="permRoleName" style="color:var(--by-text);font-weight:500">超级管理员</b></span>
+          </div>
+
+          <div class="ad-tree-bar">
+            <button class="btn" id="btnExpandAll"><i class="fas fa-angle-double-down"></i>展开全部</button>
+            <button class="btn" id="btnFoldAll"><i class="fas fa-angle-double-up"></i>收起全部</button>
+            <button class="btn" id="btnCheckAll"><i class="fas fa-check-double"></i>全选权限</button>
+            <button class="btn" id="btnClearAll"><i class="fas fa-eraser"></i>清空权限</button>
+            <span class="sp"></span>
+            <span class="ad-tree-stat">已授权 <b id="permCount">0</b> / <span id="permTotal">20</span> 项</span>
+            <button class="btn btn-primary" id="btnSavePerm"><i class="fas fa-floppy-disk"></i>保存权限</button>
+          </div>
+
+          <div class="ad-tree" id="permTree">
+            <!-- 模块分组 → 权限项 -->
+            <div class="ad-tmod" data-mod="content">
+              <div class="ad-tmod-hd">
+                <i class="fas fa-chevron-down ar"></i>
+                <span class="ic" style="background:rgba(64,158,255,.16);color:#409EFF"><i class="fas fa-folder"></i></span>
+                <span class="nm">内容管理</span><span class="ct">5 项权限</span>
+                <span class="sp"></span>
+                <span class="half">半选</span>
+                <input type="checkbox" class="ad-tchk" data-group="content">
+              </div>
+              <div class="ad-tmod-bd">
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="content-view" data-grp="content" checked><i class="fas fa-file-lines"></i>视频查看</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="content-edit" data-grp="content" checked><i class="fas fa-file-lines"></i>视频编辑</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="content-del" data-grp="content"><i class="fas fa-file-lines"></i>视频删除</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="content-part" data-grp="content" checked><i class="fas fa-file-lines"></i>分区管理</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="content-export" data-grp="content"><i class="fas fa-file-lines"></i>数据导出</label>
+              </div>
+            </div>
+
+            <div class="ad-tmod" data-mod="user">
+              <div class="ad-tmod-hd">
+                <i class="fas fa-chevron-down ar"></i>
+                <span class="ic" style="background:rgba(19,206,102,.16);color:#13CE66"><i class="fas fa-folder"></i></span>
+                <span class="nm">用户管理</span><span class="ct">4 项权限</span>
+                <span class="sp"></span>
+                <span class="half">半选</span>
+                <input type="checkbox" class="ad-tchk" data-group="user">
+              </div>
+              <div class="ad-tmod-bd">
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="user-view" data-grp="user" checked><i class="fas fa-file-lines"></i>用户查看</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="user-edit" data-grp="user"><i class="fas fa-file-lines"></i>用户编辑</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="user-ban" data-grp="user"><i class="fas fa-file-lines"></i>封禁用户</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="user-upper" data-grp="user" checked><i class="fas fa-file-lines"></i>UP主认证</label>
+              </div>
+            </div>
+
+            <div class="ad-tmod" data-mod="community">
+              <div class="ad-tmod-hd">
+                <i class="fas fa-chevron-down ar"></i>
+                <span class="ic" style="background:rgba(255,159,67,.16);color:#FF9F43"><i class="fas fa-folder"></i></span>
+                <span class="nm">社区治理</span><span class="ct">4 项权限</span>
+                <span class="sp"></span>
+                <span class="half">半选</span>
+                <input type="checkbox" class="ad-tchk" data-group="community">
+              </div>
+              <div class="ad-tmod-bd">
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="cmt-manage" data-grp="community"><i class="fas fa-file-lines"></i>评论管理</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="danmu-manage" data-grp="community"><i class="fas fa-file-lines"></i>弹幕管理</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="content-check" data-grp="community"><i class="fas fa-file-lines"></i>内容审核</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="report-handle" data-grp="community"><i class="fas fa-file-lines"></i>举报处理</label>
+              </div>
+            </div>
+
+            <div class="ad-tmod" data-mod="system">
+              <div class="ad-tmod-hd">
+                <i class="fas fa-chevron-down ar"></i>
+                <span class="ic" style="background:rgba(148,87,213,.16);color:#B07CE6"><i class="fas fa-folder"></i></span>
+                <span class="nm">系统管理</span><span class="ct">3 项权限</span>
+                <span class="sp"></span>
+                <span class="half">半选</span>
+                <input type="checkbox" class="ad-tchk" data-group="system">
+              </div>
+              <div class="ad-tmod-bd">
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="role-manage" data-grp="system" checked><i class="fas fa-file-lines"></i>角色管理</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="admin-manage" data-grp="system" checked><i class="fas fa-file-lines"></i>管理员管理</label>
+                <label class="ad-tleaf"><input type="checkbox" class="ad-tchk" data-leaf="sys-config" data-grp="system"><i class="fas fa-file-lines"></i>系统配置</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ================= 脚本（顺序不可调整） ================= -->
+<script src="../../../menu/menu.js"></script>                  <!-- 菜单数据：必须最先 -->
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>                   <!-- 退出预览的桥，必须有 -->
+<script>
+/* 本页表单定义：角色信息表单的可见字段。
+   本页没有表格，表单就是右侧「编辑角色信息」区，label 与该区可见字段一一对应。
+   「数据权限」是页面表单里的扩展项（表格契约不适用），但仍保留在表单里便于演示。 */
+window.PROTO_FORM = {
+    entityName: "角色",
+    fields: [
+        { "label": "角色名称", "type": "input",   "required": true },
+        { "label": "角色编码", "type": "input",   "required": true },
+        { "label": "状态",     "type": "select",  "options": ["启用", "禁用"] },
+        { "label": "数据权限", "type": "select",  "options": ["全部数据", "本部门及下属", "仅本部门", "仅本人"] },
+        { "label": "备注",     "type": "textarea" }
+    ]
+};
+</script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  await SidebarMenu.init('sidebar-menu');
+
+  /* ============ 角色详情数据（切换角色时回填表单与权限树） ============ */
+  var ROLE_DATA = {
+    super: {
+      name: '超级管理员', code: 'SUPER_ADMIN', status: '启用', scope: '全部数据',
+      remark: '拥有平台全部管理权限，负责系统配置、角色授权与管理员维护，日常请谨慎授予。',
+      leaves: ['content-view','content-edit','content-part','user-view','user-upper',
+               'role-manage','admin-manage']
+    },
+    ops: {
+      name: '运营管理员', code: 'OPERATION_ADMIN', status: '启用', scope: '全部数据',
+      remark: '负责内容运营、活动策划与数据看板，可审核投稿但不可删除数据。',
+      leaves: ['content-view','content-edit','content-part','content-export',
+               'user-view','user-upper','content-check','report-handle']
+    },
+    audit: {
+      name: '内容审核员', code: 'CONTENT_AUDITOR', status: '启用', scope: '仅本部门',
+      remark: '负责视频、评论与弹幕的合规审核，仅可查看内容，不可编辑与删除。',
+      leaves: ['content-view','content-check','cmt-manage','danmu-manage','report-handle','user-view']
+    },
+    cs: {
+      name: '客服专员', code: 'CUSTOMER_SERVICE', status: '启用', scope: '全部数据',
+      remark: '处理用户申诉、举报跟进与账号问题，无任何内容处置权限。',
+      leaves: ['user-view','user-ban','cmt-manage','report-handle','danmu-manage']
+    },
+    data: {
+      name: '数据分析专员', code: 'DATA_ANALYST', status: '启用', scope: '仅本部门',
+      remark: '只读角色，可查看内容与用户数据并导出报表，不可做任何写操作。',
+      leaves: ['content-view','content-export','user-view']
+    },
+    banner: {
+      name: '运营活动策划', code: 'CAMPAIGN_PLANNER', status: '禁用', scope: '仅本部门',
+      remark: '负责站内活动与横幅位配置，当前已停用，待下个季度重新启用。',
+      leaves: ['content-view','content-edit','content-part','content-export','user-view']
+    }
+  };
+
+  /* ============ 元素引用 ============ */
+  var listEl  = document.getElementById('roleList');
+  var items   = Array.from(listEl.querySelectorAll('.ad-ritem'));
+  var modEls  = Array.from(document.querySelectorAll('.ad-tmod'));
+  var permCnt = document.getElementById('permCount');
+  var permTot = document.getElementById('permTotal');
+
+  /* ⚠️ 所属模块必须读 data-grp，不能靠 data-leaf 名字前缀猜。
+     「content-check」（内容审核）实际归社区治理，而 role-manage / admin-manage / sys-config
+     压根没有统一前缀 —— 按名字切前缀会让这些叶子归不到任何分组，
+     表现为「点父节点没反应」且该分组恒显示为全选。 */
+  function groupOf(leaf) { return leaf.dataset.grp; }
+  function allLeaves() { return Array.from(document.querySelectorAll('.ad-tchk[data-leaf]')); }
+  function leavesOfGroup(g) { return allLeaves().filter(function (c) { return c.dataset.grp === g; }); }
+
+  /* ============ 权限树：父子联动 + 半选(indeterminate) ============ */
+  function syncGroup(g) {
+    var box   = document.querySelector('.ad-tchk[data-group="' + g + '"]');
+    if (!box) return;
+    var kids  = leavesOfGroup(g);
+    /* 空分组不能判成「全选」：0===0 会把父节点永远钉成实心 */
+    var n     = kids.filter(function (c) { return c.checked; }).length;
+    box.checked = (kids.length > 0 && n === kids.length);
+    box.indeterminate = (n > 0 && n < kids.length);
+    var mod = box.closest('.ad-tmod');
+    var half = mod ? mod.querySelector('.half') : null;
+    if (half) half.style.display = box.indeterminate ? '' : 'none';
+  }
+
+  function syncCount() {
+    permTot.textContent = allLeaves().length;
+    permCnt.textContent = allLeaves().filter(function (c) { return c.checked; }).length;
+  }
+
+  document.querySelectorAll('.ad-tchk[data-group]').forEach(function (box) {
+    box.addEventListener('change', function () {
+      var g = box.dataset.group;
+      /* 用 indeterminate = false 打底，否则「半选」态下点击父节点时浏览器不会翻转 checked，
+         会读到上一次的半选值，表现为「点了没反应」。 */
+      box.indeterminate = false;
+      var target = box.checked;
+      leavesOfGroup(g).forEach(function (c) { c.checked = target; });
+      syncGroup(g);
+      syncCount();
+    });
+  });
+
+  allLeaves().forEach(function (c) {
+    c.addEventListener('change', function () {
+      syncGroup(groupOf(c.dataset.leaf));
+      syncCount();
+    });
+    /* 点击整行（图标 / 文案）也能勾选，交互区域不小于 32px。
+       ⚠️ 不能用 `if (e.target !== c) c.click()`：input 外面包着 <label>，
+          点击 label 内任意位置浏览器都会把 click 转发给 input，
+          再手动 c.click() 就成了两次翻转 —— 表现为「勾了又弹回来」。
+          这里改为：只处理「点在 input 之外」的情况，并 preventDefault 掉 label 的转发。 */
+    var row = c.closest('.ad-tleaf');
+    if (row) row.addEventListener('click', function (e) {
+      if (e.target === c || c.contains(e.target)) return;  // 点在复选框本身交给浏览器
+      e.preventDefault();
+      c.checked = !c.checked;
+      syncGroup(groupOf(c.dataset.leaf));
+      syncCount();
+    });
+  });
+
+  /* 模块分组展开 / 收起 */
+  modEls.forEach(function (mod) {
+    var hd = mod.querySelector('.ad-tmod-hd');
+    hd.addEventListener('click', function (e) {
+      if (e.target.classList.contains('ad-tchk')) return;   // 点复选框不触发折叠
+      mod.classList.toggle('fold');
+    });
+  });
+
+  document.getElementById('btnExpandAll').addEventListener('click', function () {
+    modEls.forEach(function (m) { m.classList.remove('fold'); });
+  });
+  document.getElementById('btnFoldAll').addEventListener('click', function () {
+    modEls.forEach(function (m) { m.classList.add('fold'); });
+  });
+  document.getElementById('btnCheckAll').addEventListener('click', function () {
+    allLeaves().forEach(function (c) { c.checked = true; });
+    modEls.forEach(function (m) { syncGroup(m.dataset.mod); });
+    syncCount();
+  });
+  document.getElementById('btnClearAll').addEventListener('click', function () {
+    allLeaves().forEach(function (c) { c.checked = false; });
+    modEls.forEach(function (m) { syncGroup(m.dataset.mod); });
+    syncCount();
+  });
+
+  /* ============ 角色切换：表单回填 + 权限树重绘 ============ */
+  function selectRole(id) {
+    var d = ROLE_DATA[id];
+    if (!d) return;
+
+    items.forEach(function (el) { el.classList.toggle('on', el.dataset.id === id); });
+
+    document.getElementById('fName').value   = d.name;
+    document.getElementById('fCode').value   = d.code;
+    document.getElementById('fStatus').value = d.status;
+    document.getElementById('fScope').value  = d.scope;
+    document.getElementById('fRemark').value = d.remark;
+    document.getElementById('permRoleName').textContent = d.name;
+    document.getElementById('roleTypeTag').textContent =
+      d.code === 'SUPER_ADMIN' ? '系统内置角色' : (d.status === '禁用' ? '已停用角色' : '系统内置角色');
+
+    allLeaves().forEach(function (c) { c.checked = d.leaves.indexOf(c.dataset.leaf) > -1; });
+    modEls.forEach(function (m) { syncGroup(m.dataset.mod); });
+    syncCount();
+  }
+
+  items.forEach(function (el) {
+    el.addEventListener('click', function () { selectRole(el.dataset.id); });
+  });
+
+  /* 列表搜索：按角色名称 / 编码过滤 */
+  document.getElementById('roleSearch').addEventListener('input', function () {
+    var kw = this.value.trim().toLowerCase();
+    var tab = document.querySelector('.ad-tab.on').dataset.tab;
+    items.forEach(function (el) {
+      var hitKw = !kw || el.dataset.name.toLowerCase().indexOf(kw) > -1 ||
+                       el.dataset.code.toLowerCase().indexOf(kw) > -1;
+      var hitTab = tab === 'all' || el.dataset.type === tab;
+      el.classList.toggle('hide', !(hitKw && hitTab));
+    });
+  });
+
+  /* 角色页签：全部角色 / 系统角色 / 自定义角色 */
+  document.getElementById('roleTabs').addEventListener('click', function (e) {
+    var tab = e.target.closest('.ad-tab');
+    if (!tab) return;
+    this.querySelectorAll('.ad-tab').forEach(function (t) { t.classList.toggle('on', t === tab); });
+    var kw = document.getElementById('roleSearch').value.trim().toLowerCase();
+    items.forEach(function (el) {
+      var hitKw = !kw || el.dataset.name.toLowerCase().indexOf(kw) > -1 ||
+                       el.dataset.code.toLowerCase().indexOf(kw) > -1;
+      var hitTab = tab.dataset.tab === 'all' || el.dataset.type === tab.dataset.tab;
+      el.classList.toggle('hide', !(hitKw && hitTab));
+    });
+  });
+
+  /* 保存按钮反馈 */
+  document.getElementById('btnSavePerm').addEventListener('click', function () {
+    var n = allLeaves().filter(function (c) { return c.checked; }).length;
+    window.PrototypeDialog.success('已保存「' + document.getElementById('permRoleName').textContent +
+      '」的 ' + n + ' 项权限');
+  });
+
+  /* ============ 初始渲染：先出半选态，再选第一个角色 ============ */
+  modEls.forEach(function (m) { syncGroup(m.dataset.mod); });
+  selectRole('super');
+  syncCount();
+});
+</script>
+</body>
+</html>

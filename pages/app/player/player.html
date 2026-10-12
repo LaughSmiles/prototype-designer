@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>视频播放 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  :root{
+    --by-bg:#0F0F23; --by-surface:#1A1A2E; --by-surface-2:#232340;
+    --by-pink:#FB7299; --by-pink-strong:#E11D48; --by-blue:#00AEEC;
+    --by-text:#F1F2F8; --by-text-2:#9AA0B5; --by-border:rgba(255,255,255,.09);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:375px;height:100%;overflow:hidden}
+  body{padding-bottom:52px;background:var(--by-bg);color:var(--by-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5;overscroll-behavior:contain;touch-action:manipulation}
+
+  .by-root{display:flex;flex-direction:column;height:100%}
+  .by-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .by-scroll::-webkit-scrollbar{width:0}
+
+  /* ---------- 播放器：16:9 自适应 ---------- */
+  .by-player{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;flex:none}
+  .by-player video{width:100%;height:100%;object-fit:cover;display:block}
+  .by-player::after{content:"";position:absolute;inset:0;pointer-events:none;
+                    background:linear-gradient(180deg,rgba(0,0,0,.45) 0%,transparent 22%,transparent 62%,rgba(0,0,0,.62) 100%)}
+
+  /* 返回 & 顶部操作（浮在播放器上） */
+  .by-p-top{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;
+            align-items:center;justify-content:space-between;padding:10px 12px}
+  .by-p-icon{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.42);
+             color:#fff;display:flex;align-items:center;justify-content:center;
+             font-size:14px;cursor:pointer;min-height:44px;min-width:44px}
+  .by-p-right{display:flex;gap:8px}
+
+  /* 点击播放（符合 UX：点击才播，不自动循环高清） */
+  .by-p-play{position:absolute;inset:0;z-index:4;display:flex;align-items:center;
+             justify-content:center;background:rgba(0,0,0,.18)}
+  .by-p-play-btn{width:58px;height:58px;border-radius:50%;background:rgba(0,0,0,.52);
+                 border:2px solid rgba(255,255,255,.85);color:#fff;display:flex;
+                 align-items:center;justify-content:center;font-size:20px;padding-left:3px;cursor:pointer}
+  .by-p-hint{position:absolute;left:0;right:0;bottom:20%;z-index:4;text-align:center;
+             color:rgba(255,255,255,.75);font-size:12px}
+
+  /* 弹幕层 */
+  .by-dm-layer{position:absolute;inset:0;z-index:5;overflow:hidden;pointer-events:none}
+  .by-dm-item{position:absolute;font-size:13px;font-weight:600;color:#fff;
+              text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 6px rgba(0,0,0,.5);white-space:nowrap}
+  .by-dm-item b{color:#FFD93D;font-weight:700}
+  .by-dm-item em{color:#7CFC00;font-style:normal;font-weight:700}
+  .by-dm-item u{color:#FF6B9D;text-decoration:none;font-weight:700}
+
+  /* 播放进度条 */
+  .by-p-bar{position:absolute;left:10px;right:10px;bottom:8px;z-index:6;display:flex;
+            align-items:center;gap:8px;color:#fff;font-size:10px}
+  .by-p-track{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.34);overflow:hidden}
+  .by-p-buf{height:100%;background:rgba(255,255,255,.5);width:72%}
+  .by-p-play2{height:100%;background:var(--by-pink);width:38%}
+
+  /* 弹幕开关（浮层按钮） */
+  .by-dm-toggle{position:absolute;right:10px;bottom:30px;z-index:6;background:rgba(0,0,0,.42);
+                color:#fff;font-size:10px;padding:3px 8px;border-radius:11px;cursor:pointer;min-height:24px}
+
+  /* ---------- 视频信息 ---------- */
+  .by-info{padding:12px 12px 0}
+  .by-title{font-size:16px;font-weight:600;line-height:1.4}
+  .by-meta{display:flex;gap:14px;margin-top:9px;font-size:12px;color:var(--by-text-2)}
+  .by-meta i{margin-right:4px}
+
+  /* 快捷操作栏 */
+  .by-acts{display:flex;align-items:center;justify-content:space-between;
+           margin-top:14px;padding-bottom:12px;border-bottom:1px solid var(--by-border)}
+  .by-act{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+          font-size:11px;color:var(--by-text-2);background:none;border:none;cursor:pointer;
+          min-height:44px;min-width:52px;padding:4px 6px}
+  .by-act i{font-size:19px}
+  .by-act.on{color:var(--by-pink)}
+
+  /* UP 主卡 */
+  .by-up{display:flex;align-items:center;gap:10px;padding:12px 12px 0}
+  .by-up img{width:38px;height:38px;border-radius:50%;object-fit:cover}
+  .by-up-nm{font-size:14px;font-weight:600}
+  .by-up-tags{display:flex;gap:5px;margin-top:3px}
+  .by-up-tag{font-size:10px;color:var(--by-pink);background:rgba(251,114,153,.14);
+             padding:1px 6px;border-radius:4px}
+  .by-up-btn{margin-left:auto;font-size:12px;padding:0 16px;border-radius:18px;
+             background:var(--by-pink);color:#fff;border:none;cursor:pointer;min-height:44px}
+  .by-up-btn.follow{background:var(--by-surface-2);color:var(--by-text)}
+
+  /* 标签行 */
+  .by-tags{display:flex;flex-wrap:wrap;gap:6px;padding:12px 12px 0}
+  .by-tag{font-size:11px;color:#00C7FF;background:rgba(0,174,236,.12);
+          padding:3px 10px;border-radius:5px;cursor:pointer;min-height:44px;
+          display:inline-flex;align-items:center}
+
+  /* 简介 */
+  .by-desc{padding:12px 12px 0;font-size:13px;color:var(--by-text-2);line-height:1.6}
+  .by-desc-fold{display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* 评论区 */
+  .by-cm-hd{display:flex;align-items:center;justify-content:space-between;padding:16px 12px 8px}
+  .by-cm-hd h3{margin:0;font-size:14px;font-weight:600}
+  .cm{display:flex;gap:9px;padding:10px 12px}
+  .cm img{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none}
+  .cm-main{flex:1;min-width:0}
+  .cm-name{font-size:12px;color:var(--by-text-2)}
+  .cm-name b{color:#00C7FF;font-weight:500}
+  .cm-lv{font-size:9px;color:#F0A020;background:rgba(240,160,32,.14);padding:0 5px;
+         border-radius:3px;margin-left:5px}
+  .cm-text{font-size:13px;margin-top:4px;word-break:break-word}
+  .cm-text .cm-re{color:#00C7FF}
+  .cm-foot{display:flex;gap:16px;margin-top:5px;font-size:11px;color:var(--by-text-2)}
+  .cm-foot b{font-weight:500}
+  .cm-foot i{margin-right:3px}
+
+  /* 底部评论输入（跟随滚动，不是 fixed） */
+  .by-cm-input{display:flex;align-items:center;gap:8px;padding:12px;margin-top:6px;
+               border-top:1px solid var(--by-border)}
+  .by-cm-input .box{flex:1;height:34px;border-radius:17px;background:var(--by-surface);
+                    display:flex;align-items:center;padding:0 14px;font-size:12px;color:var(--by-text-2)}
+
+  /* ---------- 底部 TabBar ---------- */
+  /* width:min(375px,100vw) —— 画布 iframe 里铺满 375，独立打开（视口更宽）时也不会被拉宽 */
+  .by-tabbar{position:fixed;left:0;width:min(375px,100vw);bottom:0;z-index:30;height:52px;
+             background:rgba(20,20,38,.96);border-top:1px solid var(--by-border);
+             display:flex;align-items:center;backdrop-filter:blur(12px)}
+  .by-tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+               gap:2px;color:var(--by-text-2);font-size:10px;text-decoration:none;min-height:48px}
+  .by-tabbar a.on{color:var(--by-pink)}
+  .by-tabbar a i{font-size:17px}
+  .by-tabbar .by-pub{position:relative}
+  .by-tabbar .by-pub .by-pub-box{position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+       width:38px;height:28px;background:var(--by-pink);border-radius:8px;color:#fff;
+       display:flex;align-items:center;justify-content:center;font-size:15px;
+       border:2px solid var(--by-bg)}
+</style>
+</head>
+<body>
+
+<div class="by-root">
+
+  <!-- ============ 播放器 ============ -->
+  <div class="by-player">
+    <video id="v" poster="../../../lib/images/cover-gaming-neon.jpeg"
+           preload="none" playsinline muted></video>
+
+    <!-- 顶部：返回 / 更多 -->
+    <div class="by-p-top">
+      <span class="by-p-icon" onclick="history.length>1?history.back():location.href='../home/home.html'">
+        <i class="fas fa-angle-left"></i>
+      </span>
+      <div class="by-p-right">
+        <span class="by-p-icon"><i class="fas fa-heart"></i></span>
+        <span class="by-p-icon"><i class="fas fa-ellipsis"></i></span>
+      </div>
+    </div>
+
+    <!-- 弹幕层（静态示意多条弹幕，播放时由播放器接管） -->
+    <div class="by-dm-layer">
+      <span class="by-dm-item" style="top:16%;left:4%"><b>前方高能</b></span>
+      <span class="by-dm-item" style="top:30%;left:44%">这画质也太顶了吧</span>
+      <span class="by-dm-item" style="top:16%;left:62%"><em>来了来了</em></span>
+      <span class="by-dm-item" style="top:44%;left:14%">UP 主讲解好清晰</span>
+      <span class="by-dm-item" style="top:30%;left:26%"><b>666666</b></span>
+      <span class="by-dm-item" style="top:58%;left:52%">第一次见这个设置面板</span>
+      <span class="by-dm-item" style="top:44%;left:70%"><u>前排！</u></span>
+    </div>
+
+    <!-- 点击才播放（不自动循环） -->
+    <div class="by-p-play" id="playMask">
+      <span class="by-p-play-btn" id="playBtn"><i class="fas fa-play"></i></span>
+      <div class="by-p-hint">点击播放 · 建议开启弹幕</div>
+    </div>
+
+    <!-- 弹幕开关 -->
+    <span class="by-dm-toggle" id="dmToggle">弹幕 开</span>
+
+    <!-- 进度条 -->
+    <div class="by-p-bar">
+      <span>05:22</span>
+      <span class="by-p-track"><span class="by-p-buf"></span><span class="by-p-play2"></span></span>
+      <span>14:22</span>
+      <i class="fas fa-expand" style="font-size:12px"></i>
+    </div>
+  </div>
+
+  <!-- ============ 滚动内容 ============ -->
+  <div class="by-scroll">
+
+    <!-- 标题 + 数据 -->
+    <div class="by-info">
+      <div class="by-title">【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置</div>
+      <div class="by-meta">
+        <span><i class="fas fa-eye"></i>328.4万</span>
+        <span><i class="fas fa-clock"></i>14:22</span>
+        <span><i class="fas fa-calendar"></i>2024-11-18</span>
+      </div>
+    </div>
+
+    <!-- 快捷操作 -->
+    <div class="by-acts" style="margin:0 12px;padding-top:12px">
+      <button class="by-act on"><i class="fas fa-thumbs-up"></i>12.6万</button>
+      <button class="by-act"><i class="fa-solid fa-coins"></i>3.8万</button>
+      <button class="by-act"><i class="fa-solid fa-star"></i>4.2万</button>
+      <button class="by-act"><i class="fas fa-share-nodes"></i>分享</button>
+      <button class="by-act"><i class="fas fa-eye-slash"></i>稍后再看</button>
+    </div>
+
+    <!-- UP 主 -->
+    <div class="by-up">
+      <img src="../../../lib/images/avatar-01.jpeg" alt="UP主头像">
+      <div>
+        <div class="by-up-nm">代码狂人阿伟</div>
+        <div class="by-up-tags">
+          <span class="by-up-tag">硬核科技</span>
+          <span class="by-up-tag">百大 UP 主</span>
+        </div>
+      </div>
+      <button class="by-up-btn follow" id="followBtn">已关注</button>
+    </div>
+
+    <!-- 标签 -->
+    <div class="by-tags">
+      <span class="by-tag">#游戏画质</span>
+      <span class="by-tag">#4K</span>
+      <span class="by-tag">#高帧率</span>
+      <span class="by-tag">#硬件评测</span>
+    </div>
+
+    <!-- 简介 -->
+    <div class="by-desc">
+      <div class="by-desc-fold" id="desc">
+        本期视频从零开始，系统讲解分辨率、帧率、纹理质量、阴影与抗锯齿五项核心设置的影响，
+        并给出三套针对不同显卡的配置方案。菜单时间轴 00:00 / 03:20 / 08:45。
+      </div>
+      <span style="color:#00C7FF;font-size:12px;cursor:pointer" onclick="
+        var d=document.getElementById('desc');
+        var c=d.style.webkitLineClip;
+        d.style.webkitLineClip = (c==='unset')?'2':'';
+        d.style.display = (d.style.display==='block')?'-webkit-box':'block';
+      " id="descBtn">展开</span>
+    </div>
+
+    <!-- 评论区 -->
+    <div class="by-cm-hd"><h3>全部评论</h3><span style="font-size:12px;color:var(--by-text-2)">按热度 <i class="fas fa-sort-down" style="margin-left:3px"></i></span></div>
+
+    <div class="cm">
+      <img src="../../../lib/images/avatar-04.jpeg" alt="">
+      <div class="cm-main">
+        <div class="cm-name"><b>代码狂人阿伟</b><span class="cm-lv">Lv.6</span></div>
+        <div class="cm-text">补充一下：2K 屏其实没必要开 4K，光追开一半就够用了，帧率会稳很多。</div>
+        <div class="cm-foot"><span><i class="fas fa-thumbs-up"></i><b>2.3万</b></span><span>2024-11-19</span><span>回复</span></div>
+      </div>
+    </div>
+
+    <div class="cm">
+      <img src="../../../lib/images/avatar-05.jpeg" alt="">
+      <div class="cm-main">
+        <div class="cm-name"><b>城市夜猫子</b><span class="cm-lv">Lv.4</span></div>
+        <div class="cm-text">03:20 那段讲纹理质量讲得最清楚，之前一直分不清这三档的区别。</div>
+        <div class="cm-foot"><span><i class="fas fa-thumbs-up"></i><b>1.1万</b></span><span>2024-11-19</span><span>回复</span></div>
+      </div>
+    </div>
+
+    <div class="cm">
+      <img src="../../../lib/images/avatar-03.jpeg" alt="">
+      <div class="cm-main">
+        <div class="cm-name"><b>小厨房大厨</b><span class="cm-lv">Lv.5</span></div>
+        <div class="cm-text">涨知识了，已按第二套方案调完，帧数直接从 40 拉到 75。</div>
+        <div class="cm-foot"><span><i class="fas fa-thumbs-up"></i><b>8763</b></span><span>2024-11-20</span><span>回复</span></div>
+      </div>
+    </div>
+
+    <div class="cm">
+      <img src="../../../lib/images/avatar-06.jpeg" alt="">
+      <div class="cm-main">
+        <div class="cm-name"><b>山野拾光</b><span class="cm-lv">Lv.3</span></div>
+        <div class="cm-text">什么时候出一期笔记本端的？预算五千以内的配置。</div>
+        <div class="cm-foot"><span><i class="fas fa-thumbs-up"></i><b>3421</b></span><span>2024-11-20</span><span>回复</span></div>
+      </div>
+    </div>
+
+    <div class="cm">
+      <img src="../../../lib/images/avatar-02.jpeg" alt="">
+      <div class="cm-main">
+        <div class="cm-name"><b>猫奴日常菌</b><span class="cm-lv">Lv.2</span></div>
+        <div class="cm-text">前排围观，第一次给up主发弹幕，居然显示不出来 😭</div>
+        <div class="cm-foot"><span><i class="fas fa-thumbs-up"></i><b>1085</b></span><span>2024-11-21</span><span>回复</span></div>
+      </div>
+    </div>
+
+    <!-- 空状态：暂无更多 -->
+    <div style="text-align:center;color:var(--by-text-2);font-size:12px;padding:14px 0 4px">
+      <i class="fas fa-comment-dots" style="display:block;font-size:20px;margin-bottom:6px;opacity:.5"></i>
+      没有更多评论了
+    </div>
+
+    <!-- 底部评论输入 -->
+    <div class="by-cm-input">
+      <span class="box">说点什么吧，友善是第一要务</span>
+      <i class="fas fa-image" style="color:var(--by-text-2);font-size:16px"></i>
+      <i class="fas fa-face-smile" style="color:var(--by-text-2);font-size:16px"></i>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 底部 TabBar ============ -->
+<nav class="by-tabbar">
+  <a href="../home/home.html"><i class="fas fa-house"></i><span>首页</span></a>
+  <a href="../search/search.html"><i class="fas fa-magnifying-glass"></i><span>搜索</span></a>
+  <a href="../upload/upload.html" class="by-pub">
+    <span class="by-pub-box"><i class="fas fa-plus"></i></span>
+    <span>投稿</span>
+  </a>
+  <a href="../message/message.html"><i class="fas fa-comment-dots"></i><span>消息</span></a>
+  <a href="../profile/profile.html"><i class="fas fa-user"></i><span>我的</span></a>
+</nav>
+
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+/* ---------- 本页交互（原型演示级） ---------- */
+(function () {
+  // 点击才播放：符合「不自动循环播放」的可持续性规范
+  var mask = document.getElementById('playMask');
+  var btn = document.getElementById('playBtn');
+  var v = document.getElementById('v');
+  var playing = false;
+  btn.addEventListener('click', function () {
+    if (!playing) { mask.style.display = 'none'; playing = true; }
+  });
+  // 弹幕开关
+  var dm = document.querySelector('.by-dm-layer');
+  var dmOn = true;
+  document.getElementById('dmToggle').addEventListener('click', function (e) {
+    dmOn = !dmOn;
+    dm.style.display = dmOn ? '' : 'none';
+    e.target.textContent = dmOn ? '弹幕 开' : '弹幕 关';
+  });
+  // 关注切换
+  var fb = document.getElementById('followBtn');
+  fb.addEventListener('click', function () {
+    var on = fb.classList.toggle('follow');
+    fb.textContent = on ? '已关注' : '+ 关注';
+  });
+})();
+</script>
+</body>
+</html>

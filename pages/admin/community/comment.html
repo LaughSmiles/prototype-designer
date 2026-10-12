@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>评论弹幕管理 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<link rel="stylesheet" href="../../../css/sidebar-menu.css">
+<style>
+  :root{
+    --by-side:#001529; --by-head:#0A1A2F; --by-bg:#0B1524;
+    --by-card:#142136; --by-card-2:#1B2B44; --by-line:rgba(255,255,255,.09);
+    --by-primary:#409EFF; --by-green:#13CE66; --by-orange:#FF9F43;
+    --by-red:#F6465D; --by-purple:#9457D5;
+    --by-text:#E8ECF5; --by-text-2:#8FA0BC; --by-text-3:#5C6E8C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--by-bg);color:var(--by-text);
+       font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5}
+  .ad-wrap{display:flex;height:100vh;overflow:hidden}
+
+  .ad-head{height:56px;flex:none;background:var(--by-head);border-bottom:1px solid var(--by-line);
+           display:flex;align-items:center;padding:0 20px;gap:16px}
+  .ad-logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;width:200px}
+  .ad-logo .dot{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+                justify-content:center;background:linear-gradient(135deg,#FB7299,#E11D48);
+                font-size:13px;color:#fff}
+  .ad-crumb{font-size:13px;color:var(--by-text-2)}
+  .ad-crumb b{color:var(--by-text);font-weight:500}
+  .ad-head-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .ad-search{width:220px;height:32px;border-radius:6px;background:rgba(255,255,255,.07);
+             border:1px solid var(--by-line);display:flex;align-items:center;gap:7px;
+             padding:0 11px;font-size:12px;color:var(--by-text-3)}
+  .ad-hicon{color:var(--by-text-2);font-size:15px;cursor:pointer;position:relative;min-width:24px;text-align:center}
+  .ad-badge{position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;border-radius:8px;
+            background:var(--by-red);color:#fff;font-size:9px;line-height:15px;padding:0 4px}
+  .ad-me{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+  .ad-me img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+
+  .ad-side{width:200px;flex:none;background:var(--by-side);border-right:1px solid var(--by-line);
+           overflow-y:auto;padding:10px 0}
+  .ad-side::-webkit-scrollbar{width:0}
+  #sidebar-menu{background:var(--by-side)}
+
+  .ad-main{flex:1;min-width:0;overflow-y:auto;padding:18px 22px 28px}
+  .ad-main::-webkit-scrollbar{width:6px}
+  .ad-main::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:3px}
+
+  /* ============ 搜索表单 ============ */
+  .search-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+               padding:15px 16px 4px}
+  .search-row{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+  .search-row .fi{display:flex;flex-direction:column;gap:6px}
+  .search-row label{font-size:12px;color:var(--by-text-2)}
+  .search-row input,.search-row select{height:32px;padding:0 10px;border-radius:6px;font-size:13px;
+    background:rgba(255,255,255,.06);border:1px solid var(--by-line);color:var(--by-text);
+    outline:none;font-family:inherit;min-width:150px}
+  .search-row input:focus,.search-row select:focus{border-color:var(--by-primary)}
+  .search-row select option{background:var(--by-card-2);color:var(--by-text)}
+  .search-row input::placeholder{color:var(--by-text-3)}
+
+  /* ============ 按钮 ============ */
+  .btn{height:32px;padding:0 15px;border-radius:6px;border:1px solid var(--by-line);
+       background:rgba(255,255,255,.06);color:var(--by-text);font-size:13px;cursor:pointer;
+       display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.11)}
+  .btn-primary{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;border-color:#66b1ff}
+  .btn-danger{background:var(--by-red);border-color:var(--by-red);color:#fff}
+  .btn-danger:hover{opacity:.88}
+  .btn-success{background:var(--by-green);border-color:var(--by-green);color:#fff}
+  .btn-warning{background:var(--by-orange);border-color:var(--by-orange);color:#fff}
+
+  /* ============ 工具栏 ============ */
+  .toolbar{display:flex;align-items:center;gap:10px;margin:14px 0 12px}
+  .toolbar .sp{flex:1}
+  .tb-tip{font-size:12px;color:var(--by-text-3);display:flex;align-items:center;gap:6px}
+
+  /* ============ 顶部小统计卡（一行 4 个） ============ */
+  .mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+  .mini-stat{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+             padding:13px 15px;display:flex;align-items:center;gap:12px}
+  .mini-stat .ic{width:34px;height:34px;border-radius:9px;flex:none;display:flex;
+                 align-items:center;justify-content:center;font-size:13px}
+  .mini-stat .tx{min-width:0}
+  .mini-stat .lb{font-size:12px;color:var(--by-text-2);white-space:nowrap}
+  .mini-stat .vl{font-size:20px;font-weight:700;margin-top:3px;letter-spacing:-.3px;
+                font-variant-numeric:tabular-nums}
+  .mini-stat .vl small{font-size:11px;font-weight:400;color:var(--by-text-3);margin-left:3px}
+
+  /* ============ 表格 ============ */
+  .tbl-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:var(--by-card-2);color:var(--by-text-2);font-weight:500;text-align:left;
+           padding:11px 12px;font-size:12px;white-space:nowrap}
+  tbody td{padding:11px 12px;border-top:1px solid var(--by-line);vertical-align:middle}
+  tbody tr:hover{background:rgba(255,255,255,.03)}
+  .tbl-card table{min-width:1240px}
+  .tbl-scroll{overflow-x:auto}
+  .tbl-scroll::-webkit-scrollbar{height:7px}
+  .tbl-scroll::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:4px}
+
+  /* 操作列吸附右侧：表格横向滚动时动作按钮始终可点，不会被推出视口 */
+  thead th:last-child,tbody td:last-child{position:sticky;right:0;z-index:2}
+  /* 操作列：3 个按钮排一行，不换行 */
+  tbody td:last-child{white-space:nowrap}
+  tbody td:last-child .btn-text{padding:0 5px}
+  thead th:last-child{background:var(--by-card-2)}
+  tbody td:last-child{background:var(--by-card)}
+  tbody tr:hover td:last-child{background:#182741}
+  thead th:last-child::before,tbody td:last-child::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--by-line)}
+
+  input[type=checkbox]{width:14px;height:14px;accent-color:var(--by-primary);cursor:pointer}
+
+  /* 评论ID */
+  .cid{font-size:12px;color:var(--by-text-2);font-variant-numeric:tabular-nums}
+
+  /* 视频标题单元格：缩略图 + 标题 */
+  .vt{display:flex;align-items:center;gap:10px;min-width:230px}
+  .vt img{width:68px;height:38px;border-radius:5px;object-fit:cover;flex:none}
+  .vt-t{font-size:12px;line-height:1.45;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* 评论用户单元格 */
+  .usr{display:flex;align-items:center;gap:8px;min-width:120px}
+  .usr img{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none}
+  .usr .nm{font-size:12px;color:var(--by-text);white-space:nowrap}
+
+  /* 评论内容单元格：单行截断 + 悬停全文 */
+  .cmt{max-width:300px;min-width:200px;font-size:12px;color:var(--by-text-2);line-height:1.5;
+       display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
+       cursor:default}
+  .cmt:hover{color:var(--by-text);text-decoration:underline dotted var(--by-text-3)}
+
+  /* 点赞数 */
+  .num{font-size:13px;font-variant-numeric:tabular-nums}
+  .num .u{font-size:10px;color:var(--by-primary);margin-left:2px}
+
+  /* 类型标签 */
+  .tg{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:11px}
+  .tg i{width:5px;height:5px;border-radius:50%}
+  .tg.ok{background:rgba(19,206,102,.14);color:#13CE66} .tg.ok i{background:#13CE66}
+  .tg.wait{background:rgba(255,159,67,.14);color:#FF9F43} .tg.wait i{background:#FF9F43}
+  .tg.no{background:rgba(246,70,93,.14);color:#F6465D} .tg.no i{background:#F6465D}
+  .tg.info{background:rgba(64,158,255,.14);color:#409EFF} .tg.info i{background:#409EFF}
+  .tg.pur{background:rgba(148,87,213,.16);color:#B98AF0} .tg.pur i{background:#9457D5}
+
+  /* 发布时间 */
+  .pub{font-size:12px;color:var(--by-text-2);font-variant-numeric:tabular-nums}
+  .pub .d{display:block;font-size:11px;color:var(--by-text-3);margin-top:2px}
+
+  /* 行内文字按钮（min-height 32px，满足点击目标尺寸要求） */
+  .btn-text{background:none;border:none;color:var(--by-primary);font-size:12px;cursor:pointer;
+            min-height:32px;padding:0 6px;font-family:inherit;display:inline-flex;align-items:center}
+  .btn-text:hover{text-decoration:underline}
+  .btn-text.warn{color:var(--by-orange)}
+  .btn-text.ok{color:var(--by-green)}
+  .btn-text.danger{color:var(--by-red)}
+
+  /* 分页 */
+  .pager{display:flex;align-items:center;gap:8px;padding:13px 16px;border-top:1px solid var(--by-line)}
+  .pager .info{font-size:12px;color:var(--by-text-3)}
+  .pager .sp{flex:1}
+  .pager button{min-width:30px;height:30px;border-radius:6px;border:1px solid var(--by-line);
+                background:rgba(255,255,255,.05);color:var(--by-text-2);font-size:12px;cursor:pointer;
+                font-family:inherit}
+  .pager button.on{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<div class="ad-wrap">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="ad-head" style="position:absolute;top:0;left:0;right:0;z-index:20">
+    <div class="ad-logo"><span class="dot"><i class="fas fa-bolt"></i></span><span>哔哩云</span></div>
+    <div class="ad-crumb">社区治理 / <b>评论弹幕管理</b></div>
+    <div class="ad-head-right">
+      <div class="ad-search"><i class="fas fa-search"></i><span>搜索菜单、用户、视频…</span></div>
+      <span class="ad-hicon"><i class="fas fa-question-circle"></i></span>
+      <span class="ad-hicon"><i class="fas fa-bell"></i><span class="ad-badge">9</span></span>
+      <div class="ad-me"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>超级管理员</span><i class="fas fa-angle-down" style="font-size:11px;color:var(--by-text-3)"></i></div>
+    </div>
+  </header>
+
+  <!-- ================= 侧边栏 ================= -->
+  <aside class="ad-side" style="position:absolute;top:56px;bottom:0;left:0;width:200px">
+    <div id="sidebar-menu"></div>
+  </aside>
+
+  <!-- ================= 内容区 ================= -->
+  <main class="ad-main main-content" style="margin-left:200px;margin-top:56px">
+
+    <!-- ---------- 搜索表单 ---------- -->
+    <div class="search-card">
+      <div class="search-row">
+        <div class="fi">
+          <label>评论内容</label>
+          <input type="text" placeholder="请输入评论关键词">
+        </div>
+        <div class="fi">
+          <label>评论用户</label>
+          <input type="text" placeholder="请输入用户昵称">
+        </div>
+        <div class="fi">
+          <label>视频标题</label>
+          <input type="text" placeholder="请输入视频标题">
+        </div>
+        <div class="fi">
+          <label>类型</label>
+          <select>
+            <option>全部类型</option>
+            <option>评论</option>
+            <option>弹幕</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>状态</label>
+          <select>
+            <option>全部状态</option>
+            <option>正常</option>
+            <option>待审核</option>
+            <option>已屏蔽</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>发布时间</label>
+          <input type="date" value="2024-11-22">
+        </div>
+        <div class="fi" style="flex-direction:row;gap:10px">
+          <button class="btn btn-primary"><i class="fas fa-search"></i>搜索</button>
+          <button class="btn"><i class="fas fa-redo"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 顶部统计 ---------- -->
+    <div class="mini-stats">
+      <div class="mini-stat">
+        <span class="ic" style="background:rgba(64,158,255,.16);color:#409EFF"><i class="fas fa-comments"></i></span>
+        <div class="tx">
+          <div class="lb">今日评论数</div>
+          <div class="vl">1,284,706<small>条</small></div>
+        </div>
+      </div>
+      <div class="mini-stat">
+        <span class="ic" style="background:rgba(255,159,67,.16);color:#FF9F43"><i class="fas fa-flag"></i></span>
+        <div class="tx">
+          <div class="lb">被举报数</div>
+          <div class="vl">312<small>条</small></div>
+        </div>
+      </div>
+      <div class="mini-stat">
+        <span class="ic" style="background:rgba(246,70,93,.16);color:#F6465D"><i class="fas fa-eye-slash"></i></span>
+        <div class="tx">
+          <div class="lb">已屏蔽数</div>
+          <div class="vl">1,067<small>条</small></div>
+        </div>
+      </div>
+      <div class="mini-stat">
+        <span class="ic" style="background:rgba(148,87,213,.16);color:#B98AF0"><i class="fas fa-hourglass-half"></i></span>
+        <div class="tx">
+          <div class="lb">待处理数</div>
+          <div class="vl">57<small>条</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 工具栏 ---------- -->
+    <div class="toolbar">
+      <button class="btn btn-primary"><i class="fas fa-plus"></i>新增评论</button>
+      <button class="btn btn-warning"><i class="fas fa-ban"></i>批量屏蔽</button>
+      <button class="btn btn-success"><i class="fas fa-download"></i>导出</button>
+      <button class="btn btn-danger"><i class="fas fa-trash"></i>删除</button>
+      <span class="sp"></span>
+      <span class="tb-tip"><i class="fas fa-circle-info"></i>已选 0 项</span>
+    </div>
+
+    <!-- ---------- 数据表格 ---------- -->
+    <div class="tbl-card">
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:38px"><input type="checkbox"></th>
+              <th style="width:105px">评论ID</th>
+              <th style="min-width:250px">视频标题</th>
+              <th style="min-width:130px">评论用户</th>
+              <th style="min-width:230px">评论内容</th>
+              <th style="width:90px">点赞数</th>
+              <th style="width:90px">类型</th>
+              <th style="width:100px">状态</th>
+              <th style="width:120px">发布时间</th>
+              <th style="width:160px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842196</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-code-monitor.jpeg" alt="">
+                  <div class="vt-t">前端工程师的一天：从零到上线</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-02.jpeg" alt="">
+                  <span class="nm">代码狂人阿伟</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="讲得太好了，昨天照着你的思路把公司那个老项目重构了一遍，编译时间直接从 40 秒降到 6 秒，效率真的上来了！">讲得太好了，昨天照着你的思路把公司那个老项目重构了一遍，编译时间直接从 40 秒降到 6 秒，效率真的上来了！</div></td>
+              <td class="num">2,847</td>
+              <td><span class="tg info"><i></i>评论</span></td>
+              <td><span class="tg ok"><i></i>正常</span></td>
+              <td class="pub">2024-11-22<span class="d">08:12</span></td>
+              <td>
+                <button class="btn-text warn">屏蔽</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842203</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-cat-grumpy.jpeg" alt="">
+                  <div class="vt-t">当你以为在养猫，实际上是猫在养你</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-03.jpeg" alt="">
+                  <span class="nm">猫奴日常菌</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="前排提醒，第十一分二十秒那段猫的表情建议逐帧看，笑死我了哈哈哈哈哈哈哈哈哈">前排提醒，第十一分二十秒那段猫的表情建议逐帧看，笑死我了哈哈哈哈哈哈哈哈哈</div></td>
+              <td class="num">1,203</td>
+              <td><span class="tg pur"><i></i>弹幕</span></td>
+              <td><span class="tg ok"><i></i>正常</span></td>
+              <td class="pub">2024-11-22<span class="d">08:07</span></td>
+              <td>
+                <button class="btn-text warn">屏蔽</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842211</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-cook-chop.jpeg" alt="">
+                  <div class="vt-t">三分钟搞定的深夜食堂，新手也能学会</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-05.jpeg" alt="">
+                  <span class="nm">小厨房大厨</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="已按视频步骤复刻，糖醋汁比例换成 1:2:1 更适合家常口味，配一碗白米饭绝了">已按视频步骤复刻，糖醋汁比例换成 1:2:1 更适合家常口味，配一碗白米饭绝了</div></td>
+              <td class="num">5,431</td>
+              <td><span class="tg info"><i></i>评论</span></td>
+              <td><span class="tg ok"><i></i>正常</span></td>
+              <td class="pub">2024-11-22<span class="d">07:56</span></td>
+              <td>
+                <button class="btn-text warn">屏蔽</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842228</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-gaming-neon.jpeg" alt="">
+                  <div class="vt-t">【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-04.jpeg" alt="">
+                  <span class="nm">像素猎人小周</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="这画质党是谁开的？建议出期阴影精度和抗锯齿的对比，单开这两个帧率直接翻倍">这画质党是谁开的？建议出期阴影精度和抗锯齿的对比，单开这两个帧率直接翻倍</div></td>
+              <td class="num">3,918</td>
+              <td><span class="tg info"><i></i>评论</span></td>
+              <td><span class="tg wait"><i></i>待审核</span></td>
+              <td class="pub">2024-11-22<span class="d">07:41</span></td>
+              <td>
+                <button class="btn-text warn">屏蔽</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842235</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-music-stage.jpeg" alt="">
+                  <div class="vt-t">用一把吉他弹响青春的声音（现场版）</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-06.jpeg" alt="">
+                  <span class="nm">深夜的风</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="副歌那里转音绝了，虽然听不太懂词但耳朵是真的怀孕，已循环三十遍">副歌那里转音绝了，虽然听不太懂词但耳朵是真的怀孕，已循环三十遍</div></td>
+              <td class="num">864</td>
+              <td><span class="tg pur"><i></i>弹幕</span></td>
+              <td><span class="tg no"><i></i>已屏蔽</span></td>
+              <td class="pub">2024-11-22<span class="d">07:20</span></td>
+              <td>
+                <button class="btn-text ok">恢复</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842242</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-city-night.jpeg" alt="">
+                  <div class="vt-t">凌晨四点的城市，比白天更真实</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-01.jpeg" alt="">
+                  <span class="nm">城市观察局</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="拍摄地坐标能给一下吗？我们这边也想去同样的地方拍同款夜景">拍摄地坐标能给一下吗？我们这边也想去同样的地方拍同款夜景</div></td>
+              <td class="num">2,076</td>
+              <td><span class="tg info"><i></i>评论</span></td>
+              <td><span class="tg ok"><i></i>正常</span></td>
+              <td class="pub">2024-11-22<span class="d">06:58</span></td>
+              <td>
+                <button class="btn-text warn">屏蔽</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842256</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-code-js.jpeg" alt="">
+                  <div class="vt-t">【编程】从 Hello World 到运行起来的第一个程序</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-03.jpeg" alt="">
+                  <span class="nm">在学编程的小白</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="运行出来了！！第一个程序成功的那一刻真的超级有成就感，感谢up主讲得这么细">运行出来了！！第一个程序成功的那一刻真的超级有成就感，感谢up主讲得这么细</div></td>
+              <td class="num">6,289</td>
+              <td><span class="tg pur"><i></i>弹幕</span></td>
+              <td><span class="tg wait"><i></i>待审核</span></td>
+              <td class="pub">2024-11-22<span class="d">06:31</span></td>
+              <td>
+                <button class="btn-text warn">屏蔽</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td class="cid">CM8842270</td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-mountain.jpeg" alt="">
+                  <div class="vt-t">一个人的雪山徒步，治愈了我一整年</div>
+                </div>
+              </td>
+              <td>
+                <div class="usr">
+                  <img src="../../../lib/images/avatar-04.jpeg" alt="">
+                  <span class="nm">山野拾光</span>
+                </div>
+              </td>
+              <td><div class="cmt" title="风景是真的美，但也想说一句：注意保暖和结伴同行，高海拔独自行动真的危险，别学我">风景是真的美，但也想说一句：注意保暖和结伴同行，高海拔独自行动真的危险，别学我</div></td>
+              <td class="num">9,142</td>
+              <td><span class="tg info"><i></i>评论</span></td>
+              <td><span class="tg ok"><i></i>正常</span></td>
+              <td class="pub">2024-11-22<span class="d">05:47</span></td>
+              <td>
+                <button class="btn-text warn">屏蔽</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pager">
+        <span class="info">共 86,472,905 条记录，第 1 / 10,809,114 页</span>
+        <span class="sp"></span>
+        <button disabled><i class="fas fa-angle-left"></i></button>
+        <button class="on">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>5</button>
+        <button><i class="fas fa-ellipsis-h"></i></button>
+        <button>10809114</button>
+        <button><i class="fas fa-angle-right"></i></button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ================= 脚本（顺序不可调整） ================= -->
+<script src="../../../menu/menu.js"></script>                  <!-- 菜单数据：必须最先 -->
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>                   <!-- 退出预览的桥，必须有 -->
+<script>
+/* 本页表单定义：label 必须与 <th> 一字不差。
+   「评论ID / 评论内容 / 点赞数 / 发布时间」是用户产出的数据，不进表单。 */
+window.PROTO_FORM = {
+    entityName: "评论弹幕",
+    fields: [
+        { "label": "视频标题", "type": "input",  "required": true },
+        { "label": "评论用户", "type": "input",  "required": true },
+        { "label": "类型",     "type": "select", "options": ["评论", "弹幕"] },
+        { "label": "状态",     "type": "select", "options": ["正常", "待审核", "已屏蔽"] }
+    ]
+};
+</script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  await SidebarMenu.init('sidebar-menu');
+  // 全选 / 已选计数
+  var all = document.querySelector('thead input[type=checkbox]');
+  var rows = Array.from(document.querySelectorAll('tbody input[type=checkbox]'));
+  var tip = document.querySelector('.tb-tip');
+  function sync() {
+    var n = rows.filter(function (c) { return c.checked; }).length;
+    tip.innerHTML = '<i class="fas fa-circle-info"></i>已选 ' + n + ' 项';
+  }
+  all.addEventListener('change', function () {
+    rows.forEach(function (c) { c.checked = all.checked; });
+    sync();
+  });
+  rows.forEach(function (c) { c.addEventListener('change', sync); });
+
+  // 屏蔽 / 恢复
+  document.querySelectorAll('tbody .btn-text').forEach(function (btn) {
+    var t = btn.textContent.trim();
+    if (t !== '屏蔽' && t !== '恢复') return;
+    btn.addEventListener('click', function () {
+      Dialog.success(t === '屏蔽' ? '已屏蔽该内容' : '已恢复该内容');
+    });
+  });
+});
+</script>
+</body>
+</html>

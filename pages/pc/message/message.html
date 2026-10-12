@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>消息中心 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============================================================
+     哔哩云 · 电脑端前台 设计令牌（与 pages/pc/home/home.html 母版一致）
+     本页只追加「消息中心」特有样式，不改动母版任何类名的含义。
+     ============================================================ */
+  :root{
+    --pc-pink:#FB7299; --pc-pink-strong:#E11D48; --pc-pink-soft:#FFF1F5;
+    --pc-blue:#00AEEC; --pc-blue-soft:#E6F7FE;
+    --pc-text:#18191C; --pc-text-2:#61666D; --pc-text-3:#9499A0; --pc-text-inv:#FFFFFF;
+    --pc-bg:#F6F7F9; --pc-surface:#FFFFFF; --pc-surface-2:#F1F2F4;
+    --pc-line:#E3E5E8; --pc-line-2:#EDEFF2;
+    --pc-header-h:64px; --pc-side-w:180px; --pc-page-max:1600px;
+    --pc-r-sm:8px; --pc-r:12px; --pc-r-lg:18px;
+    --pc-shadow:0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --pc-shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pc-bg);color:var(--pc-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  ul{margin:0;padding:0;list-style:none}
+  img{display:block}
+  button{font-family:inherit}
+
+  /* ============ 顶部导航（照抄母版） ============ */
+  .pc-head{position:sticky;top:0;z-index:50;height:var(--pc-header-h);background:var(--pc-surface);
+           border-bottom:1px solid var(--pc-line)}
+  .pc-head-in{max-width:var(--pc-page-max);margin:0 auto;height:100%;display:flex;align-items:center;gap:20px;padding:0 24px}
+  .pc-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--pc-pink-strong);flex:none}
+  .pc-logo i{font-size:22px}
+  .pc-nav{display:flex;gap:2px;flex:none}
+  .pc-nav a{padding:0 14px;height:var(--pc-header-h);display:flex;align-items:center;font-size:15px;
+           color:var(--pc-text-2);position:relative}
+  .pc-nav a:hover{color:var(--pc-text)}
+  .pc-nav a.on{color:var(--pc-pink-strong);font-weight:600}
+  .pc-nav a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;
+                      border-radius:2px 2px 0 0;background:var(--pc-pink)}
+  .pc-search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:38px;
+             padding:0 14px;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);
+             border:1px solid transparent;cursor:pointer;color:var(--pc-text-3)}
+  .pc-search:hover{border-color:var(--pc-line);background:var(--pc-surface)}
+  .pc-head-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  .pc-hbtn{width:36px;height:36px;border-radius:var(--pc-r-sm);display:flex;align-items:center;justify-content:center;
+           color:var(--pc-text-2);cursor:pointer;position:relative;font-size:16px}
+  .pc-hbtn:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-hbadge{position:absolute;top:4px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+             background:var(--pc-pink-strong);color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:500}
+  .pc-pubbtn{height:36px;padding:0 16px;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+             color:#fff;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .pc-pubbtn:hover{background:var(--pc-pink-strong)}
+  .pc-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer}
+
+  /* ============ 主体三栏（照抄母版） ============ */
+  .pc-body{max-width:var(--pc-page-max);margin:0 auto;display:flex;gap:24px;padding:24px;align-items:flex-start}
+  .pc-side{width:var(--pc-side-w);flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px);
+           max-height:calc(100vh - var(--pc-header-h) - 48px);overflow-y:auto}
+  .pc-side::-webkit-scrollbar{width:0}
+  .pc-side h4{font-size:12px;color:var(--pc-text-3);font-weight:500;margin:20px 0 8px;padding-left:10px;letter-spacing:.5px}
+  .pc-side h4:first-child{margin-top:0}
+  .pc-side a{display:flex;align-items:center;gap:9px;height:38px;padding:0 10px;border-radius:var(--pc-r-sm);
+             font-size:14px;color:var(--pc-text-2)}
+  .pc-side a i{width:18px;text-align:center;color:var(--pc-text-3);font-size:14px}
+  .pc-side a:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-side a.on{background:var(--pc-pink-soft);color:var(--pc-pink-strong);font-weight:600}
+  .pc-side a.on i{color:var(--pc-pink-strong)}
+  /* 左栏未读计数 */
+  .pc-side-n{margin-left:auto;font-size:11px;min-width:17px;height:17px;padding:0 5px;border-radius:9px;
+            background:var(--pc-pink-strong);color:#fff;line-height:17px;text-align:center;font-weight:400}
+  .pc-side a.on .pc-side-n{background:var(--pc-pink-strong)}
+  .pc-main{flex:1;min-width:0}
+
+  /* 空状态（照抄母版） */
+  .pc-empty{padding:64px 20px;text-align:center;color:var(--pc-text-3)}
+  .pc-empty i{font-size:48px;color:var(--pc-line);margin-bottom:16px;display:block}
+  .pc-empty p{margin:0 0 20px;font-size:14px}
+
+  /* 页签（照抄母版） */
+  .pc-tabs{display:flex;gap:24px;margin-bottom:18px;border-bottom:1px solid var(--pc-line)}
+  .pc-tabs button{padding:0 2px 12px;font-size:15px;color:var(--pc-text-2);background:none;border:none;
+                   cursor:pointer;font-family:inherit;position:relative}
+  .pc-tabs button:hover{color:var(--pc-text)}
+  .pc-tabs button.on{color:var(--pc-text);font-weight:600}
+  .pc-tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--pc-pink)}
+  .pc-tabs .cnt{margin-left:5px;font-size:11px;padding:0 5px;border-radius:8px;background:var(--pc-surface-2);
+                color:var(--pc-text-3);font-weight:400}
+  .pc-tabs button.on .cnt{background:var(--pc-pink-soft);color:var(--pc-pink-strong)}
+
+  /* ============ 面板外壳 ============ */
+  .pc-panel{background:var(--pc-surface);border-radius:var(--pc-r);box-shadow:var(--pc-shadow);overflow:hidden}
+  .pc-panel-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;
+               border-bottom:1px solid var(--pc-line-2)}
+  .pc-panel-hd h3{margin:0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .pc-panel-hd h3 i{color:var(--pc-pink)}
+  .pc-panel-hd .act{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--pc-text-3);cursor:pointer}
+  .pc-panel-hd .act:hover{color:var(--pc-pink-strong)}
+
+  /* ============ 私信：会话列表 + 聊天窗口 ============ */
+  .pc-msg-flex{display:flex;height:640px}
+  .pc-conv{width:300px;flex:none;border-right:1px solid var(--pc-line-2);display:flex;flex-direction:column}
+  .pc-conv-hd{padding:12px 14px;border-bottom:1px solid var(--pc-line-2);display:flex;gap:8px;align-items:center}
+  .pc-conv-search{flex:1;height:34px;padding:0 12px;font-size:13px;border-radius:17px;border:1px solid var(--pc-line);
+                  background:var(--pc-surface-2);outline:none;color:var(--pc-text)}
+  .pc-conv-search:focus{background:var(--pc-surface);border-color:var(--pc-pink)}
+  .pc-conv-list{flex:1;overflow-y:auto}
+  .pc-conv-list::-webkit-scrollbar,.pc-chat-body::-webkit-scrollbar{width:6px}
+  .pc-conv-list::-webkit-scrollbar-thumb,.pc-chat-body::-webkit-scrollbar-thumb{background:var(--pc-line);border-radius:3px}
+  .pc-conv{display:flex;gap:10px;padding:12px 14px;cursor:pointer;position:relative;border-left:3px solid transparent}
+  .pc-conv:hover{background:var(--pc-surface-2)}
+  .pc-conv.on{background:var(--pc-pink-soft);border-left-color:var(--pc-pink)}
+  .pc-conv-av{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:none;background:var(--pc-surface-2)}
+  .pc-conv-av-wrap{position:relative;flex:none}
+  .pc-conv-dot{position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;
+               background:#FF4D4F;border:2px solid var(--pc-surface);display:none}
+  .pc-conv.unread .pc-conv-dot{display:block}
+  .pc-conv.unread.on .pc-conv-dot{border-color:var(--pc-pink-soft)}
+  .pc-conv-tx{flex:1;min-width:0}
+  .pc-conv-r1{display:flex;align-items:baseline;gap:8px}
+  .pc-conv-nm{font-size:14px;color:var(--pc-text);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-conv.unread .pc-conv-nm{font-weight:700}
+  .pc-conv-tm{margin-left:auto;font-size:11px;color:var(--pc-text-3);flex:none}
+  .pc-conv-last{margin-top:3px;font-size:12px;color:var(--pc-text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-conv.unread .pc-conv-last{color:var(--pc-text-2)}
+  .pc-conv-n{position:absolute;right:14px;bottom:10px;min-width:17px;height:17px;padding:0 5px;border-radius:9px;
+            background:#FF4D4F;color:#fff;font-size:11px;line-height:17px;text-align:center;display:none}
+  .pc-conv.unread .pc-conv-n{display:block}
+
+  .pc-chat{flex:1;min-width:0;display:flex;flex-direction:column}
+  .pc-chat-hd{height:60px;flex:none;padding:0 18px;border-bottom:1px solid var(--pc-line-2);
+              display:flex;align-items:center;gap:11px}
+  .pc-chat-hd img{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none}
+  .pc-chat-hd .nm{font-size:15px;font-weight:600}
+  .pc-chat-hd .st{font-size:12px;color:var(--pc-text-3)}
+  .pc-chat-hd .rt{margin-left:auto;display:flex;gap:6px}
+  .pc-chat-hd .rt button{width:34px;height:34px;border-radius:var(--pc-r-sm);border:none;background:var(--pc-surface-2);
+                         color:var(--pc-text-2);cursor:pointer;font-size:14px}
+  .pc-chat-hd .rt button:hover{background:var(--pc-pink-soft);color:var(--pc-pink-strong)}
+  .pc-chat-body{flex:1;overflow-y:auto;padding:18px 20px;background:var(--pc-bg)}
+  .pc-msg-day{text-align:center;margin:6px 0 16px}
+  .pc-msg-day span{font-size:11px;color:var(--pc-text-3);background:var(--pc-surface-2);padding:3px 10px;border-radius:10px}
+  .pc-msg{display:flex;gap:10px;margin-bottom:16px}
+  .pc-msg img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none}
+  .pc-bubble{max-width:62%;padding:9px 13px;border-radius:12px;font-size:14px;line-height:1.65;
+             background:var(--pc-surface);color:var(--pc-text);box-shadow:var(--pc-shadow);word-break:break-word}
+  .pc-msg.me{flex-direction:row-reverse}
+  .pc-msg.me .pc-bubble{background:var(--pc-pink);color:#fff;box-shadow:0 1px 3px rgba(251,114,153,.3)}
+  .pc-msg-time{font-size:11px;color:var(--pc-text-3);margin:4px 2px 0}
+  .pc-msg.me .pc-msg-time{text-align:right}
+  .pc-img-bubble{padding:0;border-radius:12px;overflow:hidden;max-width:180px}
+  .pc-img-bubble img{width:100%;height:110px;object-fit:cover;display:block}
+
+  .pc-chat-in{flex:none;border-top:1px solid var(--pc-line-2);padding:10px 16px 14px;background:var(--pc-surface)}
+  .pc-chat-tools{display:flex;align-items:center;gap:4px;margin-bottom:8px}
+  .pc-chat-tools button{width:34px;height:34px;border-radius:var(--pc-r-sm);border:none;background:none;
+                        color:var(--pc-text-2);cursor:pointer;font-size:15px}
+  .pc-chat-tools button:hover{background:var(--pc-surface-2);color:var(--pc-pink-strong)}
+  .pc-chat-tools .cut{width:1px;height:16px;background:var(--pc-line);margin:0 4px}
+  .pc-chat-tools .right{margin-left:auto;font-size:12px;color:var(--pc-text-3);cursor:pointer}
+  .pc-chat-tools .right:hover{color:var(--pc-pink-strong)}
+  .pc-chat-ed{width:100%;height:88px;resize:none;border:1px solid var(--pc-line);border-radius:var(--pc-r-sm);
+              padding:10px 12px;font-size:14px;font-family:inherit;outline:none;background:var(--pc-surface);
+              color:var(--pc-text);line-height:1.6}
+  .pc-chat-ed:focus{border-color:var(--pc-pink)}
+  .pc-chat-send{display:flex;justify-content:flex-end;align-items:center;margin-top:10px;gap:12px}
+  .pc-chat-send .cnt{font-size:12px;color:var(--pc-text-3)}
+  .pc-chat-sendbtn{height:38px;padding:0 26px;border:none;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+                   color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .pc-chat-sendbtn:hover:not(:disabled){background:var(--pc-pink-strong)}
+  .pc-chat-sendbtn:disabled{background:var(--pc-line);color:var(--pc-text-3);cursor:not-allowed}
+
+  /* ============ 互动通知 / 系统通知 ============ */
+  .pc-daygrp{margin-bottom:8px}
+  .pc-daygrp-hd{font-size:13px;color:var(--pc-text-3);padding:14px 18px 8px}
+  .pc-note{display:flex;gap:12px;padding:14px 18px;cursor:pointer;border-left:3px solid transparent}
+  .pc-note:hover{background:var(--pc-surface-2)}
+  .pc-note.unread{background:#FFFBFC;border-left-color:var(--pc-pink)}
+  .pc-note-av{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;background:var(--pc-surface-2)}
+  .pc-note-tx{flex:1;min-width:0}
+  .pc-note-l1{font-size:14px;color:var(--pc-text);line-height:1.55}
+  .pc-note-l1 b{font-weight:600}
+  .pc-note-l1 .vt{color:var(--pc-pink-strong);font-weight:500}
+  .pc-note-l1 .vt:hover{text-decoration:underline}
+  .pc-note-l2{display:flex;align-items:center;gap:10px;margin-top:7px}
+  .pc-note-thumb{width:112px;height:63px;border-radius:var(--pc-r-sm);object-fit:cover;flex:none;background:var(--pc-surface-2)}
+  .pc-note-tm{font-size:12px;color:var(--pc-text-3);margin-top:7px;display:flex;align-items:center;gap:10px}
+  .pc-note-tm .tip{font-size:12px;color:var(--pc-text-3);cursor:pointer}
+  .pc-note-tm .tip:hover{color:var(--pc-pink-strong)}
+  .pc-note-ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+              color:#fff;font-size:15px;background:var(--pc-pink)}
+
+  /* ============ 我的投稿 ============ */
+  .pc-up-row{display:flex;gap:14px;padding:16px 18px;border-bottom:1px solid var(--pc-line-2)}
+  .pc-up-row:last-child{border-bottom:none}
+  .pc-up-row:hover{background:var(--pc-surface-2)}
+  .pc-up-thumb{width:132px;height:74px;border-radius:var(--pc-r-sm);object-fit:cover;flex:none;background:var(--pc-surface-2)}
+  .pc-up-tx{flex:1;min-width:0}
+  .pc-up-tx h4{margin:0 0 7px;font-size:14px;font-weight:500;line-height:1.5;color:var(--pc-text);
+               display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pc-up-tx h4:hover{color:var(--pc-pink-strong)}
+  .pc-up-mt{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--pc-text-3);margin-bottom:7px}
+  .pc-up-mt span{display:flex;align-items:center;gap:4px}
+  .pc-up-note{margin-top:8px;font-size:12px;padding:7px 10px;border-radius:var(--pc-r-sm);line-height:1.6}
+  .pc-up-note.warn{background:#FFFBEB;color:#B45309}
+  .pc-up-note.ok{background:#ECFDF5;color:#047857}
+  .pc-up-note.run{background:var(--pc-blue-soft);color:#0369A1}
+  .pc-up-act{flex:none;width:96px;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .pc-up-act button{height:30px;padding:0 12px;border-radius:15px;border:1px solid var(--pc-line);background:var(--pc-surface);
+                    color:var(--pc-text-2);font-size:12px;cursor:pointer}
+  .pc-up-act button:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+
+  /* 审核状态标签 */
+  .pc-tag{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:12px;
+          font-size:12px;font-weight:500;flex:none}
+  .pc-tag i{font-size:11px}
+  .pc-tag-run{background:var(--pc-blue-soft);color:#0369A1}
+  .pc-tag-ok{background:#ECFDF5;color:#047857}
+  .pc-tag-no{background:#FFF1F2;color:#E11D48}
+  .pc-tag-re{background:#FFF7ED;color:#C2410C}
+
+  /* ============ 右栏：通知设置开关 ============ */
+  .pc-rank{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px 18px 8px}
+  .pc-rank h3{margin:0 0 6px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .pc-rank h3 i{color:var(--pc-pink)}
+  .pc-set-it{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--pc-line-2)}
+  .pc-set-it:last-child{border-bottom:none}
+  .pc-set-ic{width:34px;height:34px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;
+             color:#fff;font-size:14px;background:var(--pc-pink)}
+  .pc-set-tx{flex:1;min-width:0}
+  .pc-set-tx b{display:block;font-weight:500;font-size:13px;color:var(--pc-text)}
+  .pc-set-tx span{font-size:11px;color:var(--pc-text-3)}
+  .pc-sw{position:relative;width:42px;height:24px;border-radius:12px;background:var(--pc-line);cursor:pointer;
+         flex:none;transition:background .22s;border:none;padding:0}
+  .pc-sw::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+                background:#fff;transition:transform .22s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .pc-sw.on{background:var(--pc-pink)}
+  .pc-sw.on::after{transform:translateX(18px)}
+  .pc-sw:focus-visible{outline:2px solid var(--pc-blue);outline-offset:2px}
+
+  .pc-side-card{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px;margin-top:16px}
+  .pc-side-card h4{margin:0 0 14px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .pc-side-card h4 i{color:var(--pc-pink)}
+  .pc-act{display:flex;gap:11px;align-items:center;padding:10px 0}
+  .pc-act .ic{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;
+              justify-content:center;font-size:15px;color:#fff}
+  .pc-act .tx{flex:1;min-width:0;font-size:13px}
+  .pc-act .tx b{display:block;font-weight:500;color:var(--pc-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-act .tx span{font-size:11px;color:var(--pc-text-3)}
+
+  .pc-foot{margin-top:48px;padding:28px 24px;text-align:center;font-size:12px;color:var(--pc-text-3);
+           border-top:1px solid var(--pc-line)}
+
+  /* 轻提示 */
+  .pc-toast{position:fixed;left:50%;bottom:40px;transform:translate(-50%,20px);z-index:999;
+            background:rgba(24,25,28,.92);color:#fff;font-size:13px;padding:10px 20px;border-radius:20px;
+            opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:70vw}
+  .pc-toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航 ==================== -->
+<header class="pc-head">
+  <div class="pc-head-in">
+    <a class="pc-logo" href="../home/home.html"><i class="fas fa-bolt"></i>哔哩云</a>
+    <nav class="pc-nav">
+      <a href="../home/home.html">首页</a>
+      <a href="../channel/channel.html">番剧</a>
+      <a href="../search/search.html">排行榜</a>
+      <a href="../channel/channel.html">直播</a>
+      <a href="../space/space.html">游戏中心</a>
+    </nav>
+    <div class="pc-search" onclick="location.href='../search/search.html'">
+      <i class="fas fa-magnifying-glass"></i><span>搜索你感兴趣的视频、UP主</span>
+    </div>
+    <div class="pc-head-right">
+      <span class="pc-hbtn" title="消息" onclick="location.href='message.html'"><i class="fas fa-bell"></i><em class="pc-hbadge">9</em></span>
+      <span class="pc-hbtn" title="收藏" onclick="location.href='../favorite/favorite.html'"><i class="fas fa-bookmark"></i></span>
+      <span class="pc-hbtn" title="历史" onclick="location.href='../history/history.html'"><i class="fas fa-clock-rotate-left"></i></span>
+      <a class="pc-pubbtn" href="../upload/upload.html"><i class="fas fa-upload"></i>投稿</a>
+      <img class="pc-avatar" src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 主体三栏 ==================== -->
+<div class="pc-body">
+
+  <!-- ---------- 左栏 ---------- -->
+  <aside class="pc-side">
+    <h4>我的消息</h4>
+    <a class="on" href="message.html"><i class="fas fa-comment-dots"></i>我的消息</a>
+    <a href="#msgPrivate" data-jump="private"><i class="fas fa-envelope"></i>我的私信<span class="pc-side-n" id="sideNPrivate">3</span></a>
+    <a href="#msgInteract" data-jump="interact"><i class="fas fa-heart"></i>互动通知<span class="pc-side-n" id="sideNInteract">5</span></a>
+    <a href="#msgSystem" data-jump="system"><i class="fas fa-bullhorn"></i>系统通知<span class="pc-side-n" id="sideNSystem">1</span></a>
+    <a href="#msgUpload" data-jump="upload"><i class="fas fa-file-video"></i>我的投稿</a>
+
+    <h4>我的</h4>
+    <a href="../space/space.html"><i class="fas fa-user"></i>个人空间</a>
+    <a href="../history/history.html"><i class="fas fa-clock-rotate-left"></i>观看历史</a>
+    <a href="../favorite/favorite.html"><i class="fas fa-bookmark"></i>我的收藏</a>
+    <a href="../upload/upload.html"><i class="fas fa-cloud-arrow-up"></i>投稿管理</a>
+
+    <h4>账户</h4>
+    <a href="../login/login.html"><i class="fas fa-right-to-bracket"></i>切换账号</a>
+    <a href="../channel/channel.html"><i class="fas fa-circle-info"></i>帮助中心</a>
+    <a href="../channel/channel.html"><i class="fas fa-gear"></i>意见反馈</a>
+  </aside>
+
+  <!-- ---------- 主区 ---------- -->
+  <main class="pc-main">
+
+    <div class="pc-tabs" id="msgTabs">
+      <button class="on" data-t="private">我的私信</button>
+      <button data-t="interact">互动通知<span class="cnt">5</span></button>
+      <button data-t="system">系统通知<span class="cnt">1</span></button>
+      <button data-t="upload">我的投稿</button>
+    </div>
+
+    <!-- ===== 我的私信 ===== -->
+    <section id="msgPrivate">
+      <div class="pc-panel">
+        <div class="pc-msg-flex">
+
+          <!-- 会话列表 -->
+          <div class="pc-conv">
+            <div class="pc-conv-hd">
+              <input class="pc-conv-search" id="convSearch" type="text" placeholder="搜索联系人 / 聊天记录">
+              <span class="pc-hbtn" title="发起私信" onclick="toast('在搜索框输入昵称即可发起新的私信会话')">
+                <i class="fas fa-pen-to-square"></i>
+              </span>
+            </div>
+            <div class="pc-conv-list" id="convList"></div>
+          </div>
+
+          <!-- 聊天窗口 -->
+          <div class="pc-chat">
+            <div class="pc-chat-hd">
+              <img id="chatAv" src="../../../lib/images/avatar-02.jpeg" alt="">
+              <div>
+                <div class="nm" id="chatNm">猫奴日常菌</div>
+                <div class="st" id="chatSt">在线 · 最近活跃于 3 分钟前</div>
+              </div>
+              <div class="rt">
+                <button title="语音通话" onclick="toast('正在呼叫语音通话…')"><i class="fas fa-phone"></i></button>
+                <button title="视频通话" onclick="toast('正在呼叫视频通话…')"><i class="fas fa-video"></i></button>
+                <button title="会话设置" onclick="toast('会话设置面板（原型占位）')"><i class="fas fa-gear"></i></button>
+              </div>
+            </div>
+
+            <div class="pc-chat-body" id="chatBody"></div>
+
+            <div class="pc-chat-in">
+              <div class="pc-chat-tools">
+                <button title="表情" onclick="emoji()"><i class="fas fa-face-laugh"></i></button>
+                <button title="发送图片" onclick="insertImage()"><i class="fas fa-image"></i></button>
+                <button title="发送视频" onclick="toast('视频消息：原型占位')"><i class="fas fa-film"></i></button>
+                <button title="发送文件" onclick="toast('文件消息：原型占位')"><i class="fas fa-paperclip"></i></button>
+                <span class="cut"></span>
+                <button title="撤回" onclick="toast('已撤回上一条消息')"><i class="fas fa-rotate-left"></i></button>
+                <button title="清空输入" onclick="clearInput()"><i class="fas fa-trash-can"></i></button>
+                <span class="right" onclick="toast('已开启免打扰，3 小时内不再提醒')">
+                  <i class="fas fa-bell-slash"></i> 免打扰
+                </span>
+              </div>
+              <textarea class="pc-chat-ed" id="chatEd" maxlength="300" placeholder="发条友善的私信聊聊吧，Enter 发送 / Shift+Enter 换行"></textarea>
+              <div class="pc-chat-send">
+                <span class="cnt" id="chatCnt">0 / 300</span>
+                <button class="pc-chat-sendbtn" id="btnSend" disabled>
+                  <i class="fas fa-paper-plane"></i>发 送
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 互动通知 ===== -->
+    <section id="msgInteract" style="display:none">
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <h3><i class="fas fa-heart"></i>谁在关注我</h3>
+          <span class="act" onclick="markAllRead('interact')"><i class="fas fa-check-double"></i> 全部标为已读</span>
+        </div>
+        <div id="interactList"></div>
+      </div>
+    </section>
+
+    <!-- ===== 系统通知 ===== -->
+    <section id="msgSystem" style="display:none">
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <h3><i class="fas fa-bullhorn"></i>平台与账号通知</h3>
+          <span class="act" onclick="markAllRead('system')"><i class="fas fa-check-double"></i> 全部标为已读</span>
+        </div>
+        <div id="systemList"></div>
+      </div>
+    </section>
+
+    <!-- ===== 我的投稿 ===== -->
+    <section id="msgUpload" style="display:none">
+      <div class="pc-panel">
+        <div class="pc-panel-hd">
+          <h3><i class="fas fa-file-video"></i>我的投稿审核状态</h3>
+          <span class="act" onclick="location.href='../upload/upload.html'"><i class="fas fa-cloud-arrow-up"></i> 去投稿</span>
+        </div>
+        <div id="uploadList"></div>
+      </div>
+    </section>
+
+    <footer class="pc-foot">
+      哔哩云 · 视频社区高保真原型 ｜ 本页所有图片均已本地化，完全离线可用
+    </footer>
+  </main>
+
+  <!-- ---------- 右栏：通知设置 ---------- -->
+  <aside style="width:300px;flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px)">
+
+    <div class="pc-rank">
+      <h3><i class="fas fa-gear"></i>我的通知设置</h3>
+      <div id="setList"></div>
+      <div style="padding:8px 0 16px;font-size:12px;color:var(--pc-text-3);line-height:1.7">
+        设置保存在本设备，切换浏览器后需重新开启
+      </div>
+    </div>
+
+    <div class="pc-side-card">
+      <h4><i class="fas fa-gift"></i>消息权益</h4>
+      <div class="pc-act">
+        <span class="ic" style="background:#E11D48"><i class="fas fa-fire"></i></span>
+        <div class="tx"><b>未读清理提醒</b><span>每日 9:00 推送未读汇总</span></div>
+      </div>
+      <div class="pc-act">
+        <span class="ic" style="background:#00AEEC"><i class="fas fa-shield"></i></span>
+        <div class="tx"><b>青少年模式</b><span>已开启 · 仅展示合规内容</span></div>
+      </div>
+      <div class="pc-act">
+        <span class="ic" style="background:#9C27B0"><i class="fas fa-crown"></i></span>
+        <div class="tx"><b>黑名单管理</b><span>已屏蔽 2 位用户</span></div>
+      </div>
+    </div>
+
+    <div class="pc-side-card">
+      <h4><i class="fas fa-circle-question"></i>遇到问题</h4>
+      <div class="pc-act">
+        <span class="ic" style="background:#FF9F43"><i class="fas fa-comment-dots"></i></span>
+        <div class="tx"><b>私信发不出去？</b><span>查看发送失败排查指引</span></div>
+      </div>
+      <div class="pc-act">
+        <span class="ic" style="background:#00C2A8"><i class="fas fa-headset"></i></span>
+        <div class="tx"><b>联系在线客服</b><span>9:00 - 22:00 全天在岗</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="pc-toast" id="msgToast"></div>
+
+<!-- ==================== 脚本 ==================== -->
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var IMG = '../../../lib/images/';
+  var ME = 'avatar-01.jpeg';
+
+  /* ============ 通用 ============ */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  var toastTimer = null;
+  window.toast = function (msg) {
+    var el = document.getElementById('msgToast');
+    el.textContent = msg;
+    el.classList.add('on');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('on'); }, 2200);
+  };
+
+  function clock(offsetMin) {
+    /* offsetMin 为相对「今天 20:40」的分钟偏移；负数表示更早 */
+    var d = new Date();
+    d.setMinutes(d.getMinutes() - offsetMin);
+    var today = new Date();
+    var sameDay = d.toDateString() === today.toDateString();
+    var hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    if (sameDay) return hm;
+    var yest = new Date(today.getTime() - 86400000);
+    if (d.toDateString() === yest.toDateString()) return '昨天 ' + hm;
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hm;
+  }
+
+  /* ============ 数据：会话 ============ */
+  var CONVS = [
+    {
+      id: 'c1', nm: '猫奴日常菌', av: 'avatar-02.jpeg', unread: 2, time: 3, online: '在线 · 最近活跃于 3 分钟前',
+      last: '[图片] 这是昨天那只橘猫的照片，太可爱了吧',
+      msgs: [
+        { me: false, t: '在吗？昨天刷到你拍的猫片了', time: 46 },
+        { me: true,  t: '在的在的，那只是我家楼下的小橘', time: 41 },
+        { me: false, t: '楼下？这猫也太亲人了吧', time: 12 },
+        { me: true,  t: '它每天固定时间来蹭电梯，蹭熟了就跟着走', time: 9 },
+        { me: false, img: 'cover-cat-grumpy.jpeg', t: '', time: 4 },
+        { me: false, t: '[图片] 这是昨天那只橘猫的照片，太可爱了吧', time: 3 }
+      ]
+    },
+    {
+      id: 'c2', nm: '代码狂人阿伟', av: 'avatar-02.jpeg', unread: 1, time: 26, online: '在线 · 正在直播',
+      last: '前端性能那期视频的脚本我发你了，记得看看',
+      msgs: [
+        { me: false, t: '在忙吗？想请教个组件渲染的问题', time: 62 },
+        { me: true,  t: '你说，我先把手头这块收尾', time: 55 },
+        { me: false, t: '前端性能那期视频的脚本我发你了，记得看看', time: 26 }
+      ]
+    },
+    {
+      id: 'c3', nm: '民谣小王子', av: 'avatar-04.jpeg', unread: 0, time: 95, online: '离线 · 2 小时前活跃',
+      last: '周五 Livehouse 有场演出，票给你留了一张',
+      msgs: [
+        { me: true,  t: '上次那首《夜航船》真好听', time: 220 },
+        { me: false, t: '周五 Livehouse 有场演出，票给你留了一张', time: 95 }
+      ]
+    },
+    {
+      id: 'c4', nm: '小厨房大厨', av: 'avatar-03.jpeg', unread: 0, time: 320, online: '离线 · 昨天活跃',
+      last: '深夜食堂那期，锅具清单放评论区了',
+      msgs: [
+        { me: false, t: '深夜食堂那期，锅具清单放评论区了', time: 320 },
+        { me: true,  t: '收到，我照着买一套，周末试做', time: 310 }
+      ]
+    },
+    {
+      id: 'c5', nm: '城市观察局', av: 'avatar-05.jpeg', unread: 0, time: 1500, online: '离线 · 3 天前活跃',
+      last: '凌晨四点的城市那期，热度已经破 200 万了',
+      msgs: [
+        { me: false, t: '凌晨四点的城市那期，热度已经破 200 万了', time: 1500 }
+      ]
+    }
+  ];
+
+  /* ============ 数据：互动通知（分组：今天 / 昨天 / 更早） ============ */
+  var INTERACT = [
+    {
+      grp: '今天', list: [
+        { who: '代码狂人阿伟', av: 'avatar-02.jpeg', act: '赞了你的视频', vt: '【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置', cov: 'cover-gaming-neon.jpeg', time: 2,  unread: true },
+        { who: '小厨房大厨',   av: 'avatar-03.jpeg', act: '收藏了你的视频', vt: '三分钟搞定的深夜食堂，新手也能学会', cov: 'cover-cook-chop.jpeg', time: 18, unread: true },
+        { who: '山野拾光',     av: 'avatar-06.jpeg', act: '关注了你',       vt: '', cov: '', time: 45, unread: true },
+        { who: '民谣小王子',   av: 'avatar-04.jpeg', act: '评论了你的视频', vt: '雨夜的城市天桥，随手一拍都是壁纸', cov: 'cover-city-traffic.jpeg', time: 88, unread: true, comment: '这个机位是怎么找的？求参数' }
+      ]
+    },
+    {
+      grp: '昨天', list: [
+        { who: '猫奴日常菌', av: 'avatar-02.jpeg', act: '投币了你的视频', vt: '当你以为在养猫，实际上是猫在养你', cov: 'cover-cat-grumpy.jpeg', time: 1400, unread: true },
+        { who: '颜料不听话', av: 'avatar-03.jpeg', act: '分享了你的视频', vt: '街头涂鸦艺术家的一周', cov: 'cover-graffiti.jpeg', time: 1620, unread: false }
+      ]
+    },
+    {
+      grp: '更早', list: [
+        { who: '城市观察局', av: 'avatar-05.jpeg', act: '关注了你', vt: '', cov: '', time: 5200, unread: false },
+        { who: '硬件研究所', av: 'avatar-05.jpeg', act: '赞了你的视频', vt: '桌面美学：RGB 灯效搭配实录', cov: 'cover-desk-rgb.jpeg', time: 7100, unread: false }
+      ]
+    }
+  ];
+
+  /* ============ 数据：系统通知 ============ */
+  var SYSTEM = [
+    { ic: 'fa-shield-halved',  c: '#00AEEC', t: '你的实名认证已通过审核', d: '认证信息：姓名「张**」，证件尾号 4821。现在可以报名新星计划第二期，享有流量扶持与创作激励。', time: 5,   unread: true,  link: '立即去报名' },
+    { ic: 'fa-triangle-exclamation', c: '#FF9F43', t: '视频《凌晨四点的城市，比白天更真实》收到版权申诉', d: '申诉方为「星野影像工作室」，称片中使用了一段未授权 BGM。请在 7 天内补充授权凭证，否则视频将被临时下架。', time: 130, unread: false, link: '去处理' },
+    { ic: 'fa-rocket',        c: '#E11D48', t: '你的周报出炉：本周涨粉 1246', d: '播放量较上周增长 38%，其中《深夜食堂》贡献了 61% 的新增观看。记得来创作中心看看完整数据。', time: 900, unread: false, link: '创作中心' },
+    { ic: 'fa-gift',          c: '#9C27B0', t: '连续签到 7 天，奖励已发放', d: '获得 500 硬币 + 限定头像框「追光者」，硬币可用于投币、充电与兑换大会员。', time: 2600, unread: false, link: '去兑换' },
+    { ic: 'fa-gear',          c: '#61666D', t: '《哔哩云用户协议》更新说明', d: '新增第 9 章「创作者内容授权范围」，明确了二创、剪辑与转载的边界。更新于 2026 年 3 月 1 日生效。', time: 8600, unread: false, link: '查看全文' }
+  ];
+
+  /* ============ 数据：我的投稿 ============ */
+  var UPLOADS = [
+    { t: '一个人的雪山徒步，治愈了我一整年', cov: 'cover-mountain.jpeg',  st: 'run', stTx: '审核中',  p: '12.4万', d: '16:22', n: '9860', tm: '3 小时前投稿', note: '已进入内容安全审核，通常 24 小时内出结果' },
+    { t: '前端工程师的一天：从零到上线',     cov: 'cover-code-monitor.jpeg', st: 'ok',  stTx: '已通过',  p: '421.3万', d: '24:08', n: '15.6万', tm: '2 天前过审', note: '推荐算法已纳入「科技」分区候选池' },
+    { t: '深夜食堂：一碗面的仪式感',         cov: 'cover-cook-pan.jpeg', st: 'no',  stTx: '未通过',  p: '—', d: '07:08', n: '—', tm: '2 天前收到结果', note: '未通过原因：前 15 秒存在与已注册作品的相似片段，建议重新剪辑' },
+    { t: '猫咪的九种睡姿大赏',               cov: 'cover-cat-chair.jpeg', st: 're',  stTx: '已驳回',  p: '—', d: '06:19', n: '—', tm: '4 天前收到结果', note: '标题涉嫌夸大表述，请调整为客观描述后重新提交' },
+    { t: '雨夜的城市天桥，随手一拍都是壁纸', cov: 'cover-city-traffic.jpeg', st: 'ok', stTx: '已通过', p: '88.4万', d: '04:33', n: '3.2万', tm: '6 天前过审', note: '已被 3 位 UP 主转载，平台会给原创作者自动加权' },
+    { t: '高原上的星空，肉眼可见的银河',     cov: 'cover-tianshan.jpeg',   st: 'run', stTx: '审核中',  p: '—', d: '09:51', n: '—', tm: '7 天前投稿', note: '审核队列较长，可先查看《投稿审核规范》自查一遍' }
+  ];
+
+  var TAG = {
+    run: { cls: 'pc-tag-run', ic: 'fa-spinner' },
+    ok:  { cls: 'pc-tag-ok',  ic: 'fa-circle-check' },
+    no:  { cls: 'pc-tag-no',  ic: 'fa-circle-xmark' },
+    re:  { cls: 'pc-tag-re',  ic: 'fa-circle-exclamation' }
+  };
+  var NOTE_CLS = { run: 'run', ok: 'ok', no: 'warn', re: 'warn' };
+
+  /* ============ 右栏：通知设置开关 ============ */
+  var SETTINGS = [
+    { ic: 'fa-heart',        c: '#FB7299', t: '互动通知',   d: '赞、投币、收藏、评论', on: true },
+    { ic: 'fa-user-plus',    c: '#00AEEC', t: '新增关注',   d: '有新的 UP 主关注你', on: true },
+    { ic: 'fa-comment-dots', c: '#9C27B0', t: '评论与回复', d: '有人回复你的评论', on: true },
+    { ic: 'fa-gift',         c: '#FF9F43', t: '活动提醒',   d: '大促、颁奖与抽奖', on: false },
+    { ic: 'fa-shield',       c: '#00C2A8', t: '账号安全',   d: '异地登录与密码变更', on: true },
+    { ic: 'fa-bell-slash',   c: '#61666D', t: '夜间免打扰', d: '23:00 - 08:00 静默', on: false }
+  ];
+
+  var setList = document.getElementById('setList');
+  setList.innerHTML = SETTINGS.map(function (s, i) {
+    return '<div class="pc-set-it">' +
+      '<span class="pc-set-ic" style="background:' + s.c + '"><i class="fas ' + s.ic + '"></i></span>' +
+      '<span class="pc-set-tx"><b>' + s.t + '</b><span>' + s.d + '</span></span>' +
+      '<button class="pc-sw' + (s.on ? ' on' : '') + '" data-i="' + i + '" role="switch" ' +
+      'aria-checked="' + (s.on ? 'true' : 'false') + '" aria-label="' + esc(s.t) + '" title="' + esc(s.t) + '"></button>' +
+    '</div>';
+  }).join('');
+
+  setList.addEventListener('click', function (e) {
+    var b = e.target.closest('.pc-sw');
+    if (!b) return;
+    var i = Number(b.dataset.i);
+    SETTINGS[i].on = !SETTINGS[i].on;
+    b.classList.toggle('on', SETTINGS[i].on);
+    b.setAttribute('aria-checked', SETTINGS[i].on ? 'true' : 'false');
+    toast(SETTINGS[i].t + (SETTINGS[i].on ? '已开启' : '已关闭'));
+  });
+
+  /* ============ 渲染：私信 ============ */
+  var convList = document.getElementById('convList');
+  var chatBody = document.getElementById('chatBody');
+  var chatEd   = document.getElementById('chatEd');
+  var btnSend  = document.getElementById('btnSend');
+  var chatCnt  = document.getElementById('chatCnt');
+  var curId = 'c1';
+
+  function convItem(c) {
+    return '<div class="pc-conv' + (c.unread ? ' unread' : '') + (c.id === curId ? ' on' : '') + '" data-id="' + c.id + '">' +
+      '<span class="pc-conv-av-wrap">' +
+        '<img class="pc-conv-av" src="' + IMG + c.av + '" alt="">' +
+        '<span class="pc-conv-dot"></span>' +
+      '</span>' +
+      '<span class="pc-conv-tx">' +
+        '<span class="pc-conv-r1">' +
+          '<span class="pc-conv-nm">' + esc(c.nm) + '</span>' +
+          '<span class="pc-conv-tm">' + clock(c.time) + '</span>' +
+        '</span>' +
+        '<span class="pc-conv-last">' + esc(c.last) + '</span>' +
+      '</span>' +
+      '<span class="pc-conv-n">' + (c.unread || '') + '</span>' +
+    '</div>';
+  }
+
+  function bubble(m, c) {
+    var inner = m.img
+      ? '<span class="pc-bubble pc-img-bubble"><img src="' + IMG + m.img + '" alt=""></span>'
+      : '<span class="pc-bubble">' + esc(m.t) + '</span>';
+    var time = '<div class="pc-msg-time">' + clock(m.time) + '</div>';
+    return '<div class="pc-msg' + (m.me ? ' me' : '') + '">' +
+      '<img src="' + IMG + (m.me ? ME : c.av) + '" alt="">' +
+      '<div>' + inner + time + '</div>' +
+    '</div>';
+  }
+
+  function renderChat(c) {
+    document.getElementById('chatAv').src = IMG + c.av;
+    document.getElementById('chatNm').textContent = c.nm;
+    document.getElementById('chatSt').textContent = c.online;
+    chatBody.innerHTML = '<div class="pc-msg-day"><span>今天</span></div>' +
+      c.msgs.map(function (m) { return bubble(m, c); }).join('');
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  function renderConvs() { convList.innerHTML = CONVS.map(convItem).join(''); }
+
+  function curConv() {
+    for (var i = 0; i < CONVS.length; i++) if (CONVS[i].id === curId) return CONVS[i];
+    return CONVS[0];
+  }
+
+  function openConv(id) {
+    var c = null, i;
+    for (i = 0; i < CONVS.length; i++) if (CONVS[i].id === id) c = CONVS[i];
+    if (!c) return;
+
+    curId = id;
+    if (c.unread) {                     /* 打开会话即清未读 */
+      c.unread = 0;
+      refreshCounts();
+    }
+    renderConvs();
+    renderChat(c);
+    toast('已与 ' + c.nm + ' 的会话建立连接');
+  }
+
+  convList.addEventListener('click', function (e) {
+    var it = e.target.closest('.pc-conv');
+    if (it) openConv(it.dataset.id);
+  });
+
+  /* 会话搜索：按昵称 / 摘要过滤 */
+  document.getElementById('convSearch').addEventListener('input', function () {
+    var kw = this.value.trim().toLowerCase();
+    var hit = CONVS.filter(function (c) {
+      return !kw || c.nm.toLowerCase().indexOf(kw) > -1 || c.last.toLowerCase().indexOf(kw) > -1;
+    });
+    convList.innerHTML = hit.length
+      ? hit.map(convItem).join('')
+      : '<div class="pc-empty" style="padding:40px 16px"><i class="fas fa-magnifying-glass"></i><p>没有找到匹配的会话</p></div>';
+  });
+
+  /* ============ 发送消息 ============ */
+  function syncSend() {
+    var n = chatEd.value.length;
+    chatCnt.textContent = n + ' / 300';
+    btnSend.disabled = !chatEd.value.trim();
+  }
+  chatEd.addEventListener('input', syncSend);
+
+  chatEd.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  });
+  btnSend.addEventListener('click', sendMsg);
+
+  function sendMsg() {
+    var text = chatEd.value.trim();
+    if (!text) return;
+    var c = curConv();
+    c.msgs.push({ me: true, t: text, time: 0 });
+    c.last = text;
+    c.time = 0;
+    chatEd.value = '';
+    syncSend();
+    renderChat(c);
+    renderConvs();
+
+    /* 对方回一句，让原型看起来是活的 */
+    setTimeout(function () {
+      var reply = pickReply(c.id);
+      c.msgs.push({ me: false, t: reply, time: 0 });
+      c.last = reply;
+      c.time = 0;
+      if (curId === c.id) renderChat(c);
+      renderConvs();
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }, 1300);
+  }
+
+  var REPLIES = {
+    c1: ['哈哈哈哈哈太可爱了', '我家那只也是这样，见人就蹭', '明天拍一段它打呼的给你看'],
+    c2: ['收到，我下午看', '这个思路可以，我试一下', '刚好我也在优化这块，交流下'],
+    c3: ['谢谢捧场，周五见', '票我放你名下了', '演出完我把现场版发你'],
+    c4: ['买齐了，周末开火', '锅一定要先烧热再下油', '成稿记得发我看'],
+    c5: ['恭喜，破百万了', '这条街我再去蹲一个机位', '考虑做个系列']
+  };
+  function pickReply(id) {
+    var arr = REPLIES[id] || ['收到，谢谢'];
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  /* 表情 / 图片占位 */
+  window.emoji = function () {
+    chatEd.value += (chatEd.value && !/\s$/.test(chatEd.value) ? ' ' : '') + '[笑哭]';
+    chatEd.focus();
+    syncSend();
+    chatBody.scrollTop = chatBody.scrollHeight;
+  };
+  window.insertImage = function () {
+    var c = curConv();
+    c.msgs.push({ me: true, img: 'cover-neon-street.jpeg', t: '', time: 0 });
+    c.last = '[图片] 随手拍的街景';
+    c.time = 0;
+    renderChat(c); renderConvs(); syncSend();
+    toast('图片消息已发送');
+  };
+  window.clearInput = function () { chatEd.value = ''; syncSend(); chatEd.focus(); };
+
+  /* ============ 渲染：互动通知 ============ */
+  function interactRow(n) {
+    var body = '';
+    if (n.vt) {
+      body += '<div class="pc-note-l1"><b>' + esc(n.who) + '</b> ' + esc(n.act) + ' <span class="vt">' + esc(n.vt) + '</span></div>' +
+              '<div class="pc-note-l2"><img class="pc-note-thumb" src="' + IMG + n.cov + '" alt=""></div>';
+    } else {
+      body += '<div class="pc-note-l1"><b>' + esc(n.who) + '</b> ' + esc(n.act) + '</div>';
+    }
+    if (n.comment) body += '<div class="pc-note-l1" style="color:var(--pc-text-2);margin-top:6px">「' + esc(n.comment) + '」</div>';
+    return '<div class="pc-note' + (n.unread ? ' unread' : '') + '" data-id="' + esc(n.who + '|' + n.time) + '">' +
+      '<img class="pc-note-av" src="' + IMG + n.av + '" alt="">' +
+      '<div class="pc-note-tx">' + body +
+        '<div class="pc-note-tm">' + clock(n.time) +
+          (n.unread ? '<span class="tip" data-act="read">标为已读</span>' : '') +
+          '<span class="tip" data-act="reply">回复</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderInteract() {
+    document.getElementById('interactList').innerHTML = INTERACT.map(function (g) {
+      return '<div class="pc-daygrp">' +
+        '<div class="pc-daygrp-hd">' + g.grp + '（' + g.list.length + ' 条）</div>' +
+        g.list.map(interactRow).join('') +
+      '</div>';
+    }).join('');
+  }
+
+  /* ============ 渲染：系统通知 ============ */
+  function systemRow(n) {
+    return '<div class="pc-note' + (n.unread ? ' unread' : '') + '" data-id="' + esc(n.t) + '">' +
+      '<span class="pc-note-ic" style="background:' + n.c + '"><i class="fas ' + n.ic + '"></i></span>' +
+      '<div class="pc-note-tx">' +
+        '<div class="pc-note-l1"><b>' + esc(n.t) + '</b></div>' +
+        '<div class="pc-note-l1" style="color:var(--pc-text-2);font-size:13px;margin-top:5px">' + esc(n.d) + '</div>' +
+        '<div class="pc-note-tm">' + clock(n.time) +
+          '<span class="tip" data-act="link">' + esc(n.link) + '</span>' +
+          (n.unread ? '<span class="tip" data-act="read">标为已读</span>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderSystem() {
+    document.getElementById('systemList').innerHTML = SYSTEM.map(systemRow).join('');
+  }
+
+  /* ============ 渲染：我的投稿 ============ */
+  function uploadRow(v) {
+    var tag = TAG[v.st];
+    return '<div class="pc-up-row">' +
+      '<img class="pc-up-thumb" src="' + IMG + v.cov + '" alt="">' +
+      '<div class="pc-up-tx">' +
+        '<h4>' + esc(v.t) + '</h4>' +
+        '<div class="pc-up-mt">' +
+          '<span><i class="fas fa-play"></i>' + esc(v.p) + '</span>' +
+          '<span><i class="fas fa-comment-dots"></i>' + esc(v.n) + '</span>' +
+          '<span><i class="fas fa-clock"></i>' + esc(v.d) + '</span>' +
+        '</div>' +
+        '<div class="pc-up-note ' + NOTE_CLS[v.st] + '">' + esc(v.note) + '</div>' +
+        '<div class="pc-up-mt" style="margin-top:7px;margin-bottom:0"><span>' + esc(v.tm) + '</span></div>' +
+      '</div>' +
+      '<div class="pc-up-act">' +
+        '<span class="pc-tag ' + tag.cls + '"><i class="fas ' + tag.ic + '"></i>' + esc(v.stTx) + '</span>' +
+        '<button type="button" data-act="edit">继续完善</button>' +
+        '<button type="button" data-act="copy">复制链接</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderUploads() {
+    document.getElementById('uploadList').innerHTML = UPLOADS.map(uploadRow).join('');
+  }
+
+  /* ============ 未读数同步 ============ */
+  function refreshCounts() {
+    var n = CONVS.reduce(function (s, c) { return s + (c.unread || 0); }, 0);
+    var el = document.getElementById('sideNPrivate');
+    el.textContent = n;
+    el.style.display = n ? '' : 'none';
+
+    var iu = INTERACT.reduce(function (s, g) {
+      return s + g.list.filter(function (x) { return x.unread; }).length;
+    }, 0);
+    var es = SYSTEM.filter(function (x) { return x.unread; }).length;
+
+    document.getElementById('sideNInteract').textContent = iu;
+    document.getElementById('sideNSystem').textContent = es;
+    document.getElementById('sideNInteract').style.display = iu ? '' : 'none';
+    document.getElementById('sideNSystem').style.display = es ? '' : 'none';
+
+    var tabs = document.querySelectorAll('#msgTabs button');
+    tabs[1].querySelector('.cnt').textContent = iu;
+    tabs[2].querySelector('.cnt').textContent = es;
+    tabs[1].querySelector('.cnt').style.display = iu ? '' : 'none';
+    tabs[2].querySelector('.cnt').style.display = es ? '' : 'none';
+
+    var total = n + iu + es;
+    document.querySelector('.pc-hbadge').textContent = total;
+    document.querySelector('.pc-hbadge').style.display = total ? '' : 'none';
+  }
+
+  /* ============ 全部标为已读 ============ */
+  window.markAllRead = function (kind) {
+    var n = 0;
+    if (kind === 'interact') {
+      INTERACT.forEach(function (g) {
+        g.list.forEach(function (x) { if (x.unread) { x.unread = false; n++; } });
+      });
+      renderInteract();
+    } else {
+      SYSTEM.forEach(function (x) { if (x.unread) { x.unread = false; n++; } });
+      renderSystem();
+    }
+    refreshCounts();
+    toast(n ? '已把 ' + n + ' 条通知标为已读' : '当前没有未读通知');
+  };
+
+  /* ============ 列表内点击 ============ */
+  document.addEventListener('click', function (e) {
+    var tip = e.target.closest('.pc-note-tm .tip');
+    if (tip) {
+      var note = tip.closest('.pc-note');
+      var act = tip.dataset.act;
+      if (act === 'read') {
+        note.classList.remove('unread');
+        var span = tip.closest('.pc-note-tm').querySelector('.tip[data-act="read"]');
+        if (span) span.remove();
+        /* 同步数据源 */
+        INTERACT.forEach(function (g) {
+          g.list.forEach(function (x) {
+            if (esc(x.who + '|' + x.time) === note.dataset.id) x.unread = false;
+          });
+        });
+        SYSTEM.forEach(function (x) { if (esc(x.t) === note.dataset.id) x.unread = false; });
+        refreshCounts();
+        toast('已标为已读');
+      } else if (act === 'reply') {
+        switchTab('private');
+        toast('已跳转到私信，回复「' + note.textContent.slice(0, 10) + '…」');
+      } else if (act === 'link') {
+        toast('打开：' + tip.textContent);
+      }
+      return;
+    }
+
+    /* 通知正文点击 → 进入对应详情（跳播放页 / 投稿页） */
+    var row = e.target.closest('.pc-note');
+    if (row && !e.target.closest('.pc-note-tm')) {
+      row.classList.remove('unread');
+      refreshCounts();
+      location.href = '../player/player.html';
+      return;
+    }
+
+    var ub = e.target.closest('.pc-up-act button');
+    if (ub) {
+      var act2 = ub.dataset.act;
+      toast(act2 === 'edit' ? '正在打开未完成的稿件…' : '链接已复制到剪贴板');
+    }
+  });
+
+  /* ============ 页签切换 ============ */
+  var SECTIONS = { private: 'msgPrivate', interact: 'msgInteract', system: 'msgSystem', upload: 'msgUpload' };
+
+  function switchTab(kind) {
+    document.querySelectorAll('#msgTabs button').forEach(function (b) {
+      b.classList.toggle('on', b.dataset.t === kind);
+    });
+    Object.keys(SECTIONS).forEach(function (k) {
+      document.getElementById(SECTIONS[k]).style.display = k === kind ? '' : 'none';
+    });
+  }
+  window.switchTab = switchTab;
+
+  document.getElementById('msgTabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-t]');
+    if (b) switchTab(b.dataset.t);
+  });
+
+  /* 左栏「我的消息」分组直达对应页签 */
+  document.querySelector('.pc-side').addEventListener('click', function (e) {
+    var a = e.target.closest('a[data-jump]');
+    if (!a) return;
+    e.preventDefault();
+    document.querySelectorAll('.pc-side a').forEach(function (x) { x.classList.toggle('on', x === a); });
+    switchTab(a.dataset.jump);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ============ 初始化 ============ */
+  renderConvs();
+  renderChat(curConv());
+  renderInteract();
+  renderSystem();
+  renderUploads();
+  refreshCounts();
+  syncSend();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>搜索发现 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============ 设计令牌（与 home / player 完全一致） ============ */
+  :root{
+    --by-bg:#0F0F23;          /* 页面底色 */
+    --by-surface:#1A1A2E;     /* 卡片 */
+    --by-surface-2:#232340;   /* 悬浮/次级卡片 */
+    --by-pink:#FB7299;        /* 品牌粉 */
+    --by-pink-strong:#E11D48; /* 强调 CTA */
+    --by-blue:#00AEEC;        /* 次强调 */
+    --by-text:#F1F2F8;        /* 主文字 */
+    --by-text-2:#9AA0B5;      /* 次文字 */
+    --by-border:rgba(255,255,255,.09);
+    --by-radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:375px;height:100%;overflow:hidden}
+  body{padding-bottom:52px;background:var(--by-bg);color:var(--by-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5;overscroll-behavior:contain;touch-action:manipulation}
+
+  /* ============ 骨架：顶栏固定 / 内容滚动 / 底栏固定 ============ */
+  .by-root{display:flex;flex-direction:column;height:100%}
+  .by-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .by-scroll::-webkit-scrollbar{width:0}
+
+  /* ============ iOS 状态栏 ============ */
+  .by-status{display:flex;align-items:center;justify-content:space-between;
+             height:44px;padding:0 20px 0 26px;background:var(--by-pink);color:#fff;flex:none}
+  .by-status .by-time{font-size:15px;font-weight:600;letter-spacing:.3px}
+  .by-status .by-ico{display:flex;gap:5px;align-items:center;font-size:12px}
+
+  /* ============ 搜索头：输入框 + 搜索按钮 ============ */
+  .by-head{flex:none;background:var(--by-pink);padding:0 12px 8px;color:#fff}
+  .by-head-row{display:flex;align-items:center;gap:8px}
+  .by-sbox{flex:1;display:flex;align-items:center;gap:7px;height:36px;padding:0 10px 0 13px;
+           background:rgba(255,255,255,.95);border-radius:18px;color:#8A8A9A}
+  .by-sbox i{font-size:14px;flex:none}
+  .by-sbox input{flex:1;min-width:0;height:100%;border:none;outline:none;background:transparent;
+                 font-size:13px;color:#1A1A2E;font-family:inherit}
+  .by-sbox input::placeholder{color:#9A9AA8}
+  .by-sclear{width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.28);color:#fff;
+             display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer;flex:none}
+  .by-sclear.hide{display:none}
+  .by-sbtn{font-size:14px;color:#fff;cursor:pointer;flex:none;min-height:44px;
+           display:flex;align-items:center;padding:0 2px}
+  .by-sbtn:active{opacity:.7}
+
+  /* ============ 二级分类 tab ============ */
+  .by-cats{display:flex;align-items:flex-end;gap:20px;overflow-x:auto;
+           -webkit-overflow-scrolling:touch;padding-top:12px}
+  .by-cats::-webkit-scrollbar{height:0}
+  .by-cat{font-size:14px;color:rgba(255,255,255,.78);position:relative;cursor:pointer;
+          padding-bottom:6px;min-height:32px;flex:none}
+  .by-cat.on{color:#fff;font-weight:600;font-size:16px}
+  .by-cat.on::after{content:"";position:absolute;left:50%;transform:translateX(-50%);
+                    bottom:-2px;width:16px;height:3px;border-radius:2px;background:#fff}
+
+  /* ============ 分区标题 ============ */
+  .by-sec{margin-top:16px;padding:0 12px}
+  .by-sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .by-sec-hd h3{margin:0;font-size:15px;font-weight:600}
+  .by-sec-hd span{font-size:12px;color:var(--by-text-2);cursor:pointer}
+  .by-sec-hd .by-hd-l{display:flex;align-items:center;gap:6px}
+  .by-hd-flame{width:18px;height:18px;border-radius:5px;background:linear-gradient(135deg,#FF6B35,#E11D48);
+               color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px}
+
+  /* ============ 热搜榜 ============ */
+  .by-hot{background:var(--by-surface);border-radius:var(--by-radius);
+          border:1px solid var(--by-border);overflow:hidden}
+  .by-hot-it{display:flex;align-items:center;gap:10px;padding:11px 12px;min-height:52px;cursor:pointer}
+  .by-hot-it:active{background:var(--by-surface-2)}
+  .by-hot-it + .by-hot-it{border-top:1px solid var(--by-border)}
+  /* 名次徽章：前 3 名彩色，其余灰 */
+  .by-rank{width:20px;height:20px;border-radius:5px;flex:none;display:flex;align-items:center;
+           justify-content:center;font-size:11px;font-weight:700;color:var(--by-text-2);
+           background:rgba(255,255,255,.07)}
+  .by-rank.top1{background:linear-gradient(135deg,#FF4D4F,#E11D48);color:#fff}
+  .by-rank.top2{background:linear-gradient(135deg,#FF8A3D,#F97316);color:#fff}
+  .by-rank.top3{background:linear-gradient(135deg,#FFC53D,#F59E0B);color:#4A2C00}
+  .by-hot-main{flex:1;min-width:0}
+  .by-hot-t{font-size:14px;color:var(--by-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .by-hot-t em{font-style:normal;color:var(--by-pink);margin-left:5px;font-size:11px}
+  .by-hot-tag{font-size:9px;padding:0 4px;border-radius:3px;margin-left:5px;line-height:15px;vertical-align:1px}
+  .by-hot-tag.new{color:#fff;background:var(--by-pink-strong)}
+  .by-hot-tag.hot{color:#FF6B35;background:rgba(255,107,53,.14)}
+  .by-hot-meta{font-size:11px;color:var(--by-text-2);flex:none;display:flex;align-items:center;gap:6px}
+  .by-hot-meta b{font-weight:400}
+  .by-hot-meta .up{color:var(--by-text-2);font-size:13px}
+
+  /* ============ 搜索历史（横向 chip） ============ */
+  .by-hist{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 12px 4px}
+  .by-hist::-webkit-scrollbar{height:0}
+  .by-chip{flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 8px 0 12px;
+           background:var(--by-surface);border:1px solid var(--by-border);border-radius:16px;
+           font-size:13px;color:var(--by-text);cursor:pointer;white-space:nowrap}
+  .by-chip:active{background:var(--by-surface-2)}
+  .by-chip .by-x{width:16px;height:16px;border-radius:50%;color:var(--by-text-2);font-size:11px;
+                  display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .by-chip .by-x:active{background:rgba(255,255,255,.12);color:var(--by-text)}
+  .by-chip-clear{flex:none;display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;
+                 border:1px dashed rgba(255,255,255,.22);border-radius:16px;font-size:12px;
+                 color:var(--by-text-2);cursor:pointer;background:none}
+  .by-chip-clear:active{color:var(--by-pink);border-color:var(--by-pink)}
+  /* 历史区空态 */
+  .by-hist-empty{display:none;padding:14px 12px;background:var(--by-surface);
+                 border:1px dashed var(--by-border);border-radius:var(--by-radius);
+                 align-items:center;gap:10px;color:var(--by-text-2);font-size:12px}
+  .by-hist-empty.on{display:flex}
+  .by-hist-empty i{font-size:18px;opacity:.6}
+
+  /* ============ 搜索发现（关键词网格） ============ */
+  .by-kw{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .by-kw-it{display:flex;align-items:center;gap:8px;height:46px;padding:0 10px;
+            background:var(--by-surface);border:1px solid var(--by-border);border-radius:10px;
+            font-size:13px;cursor:pointer;overflow:hidden}
+  .by-kw-it:active{background:var(--by-surface-2)}
+  .by-kw-it i{font-size:12px;flex:none;width:16px;text-align:center}
+  .by-kw-it span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .by-kw-trend{font-size:10px;color:#FF6B35;flex:none}
+
+  /* ============ 两列瀑布流（复用 home.html 结构） ============ */
+  .by-wall{column-count:2;column-gap:10px}
+  .by-vcard{break-inside:avoid;margin-bottom:10px;background:var(--by-surface);
+            border-radius:12px;overflow:hidden;cursor:pointer}
+  .by-vcard:active{background:var(--by-surface-2)}
+  .by-vthumb{position:relative;width:100%;height:96px}
+  .by-vthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .by-vdur{position:absolute;right:5px;bottom:5px;font-size:10px;color:#fff;
+           background:rgba(0,0,0,.72);padding:1px 5px;border-radius:4px}
+  .by-vbody{padding:8px}
+  .by-vtitle{font-size:13px;line-height:1.4;color:var(--by-text);
+             display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .by-vup{display:flex;align-items:center;gap:5px;margin-top:7px}
+  .by-vup img{width:16px;height:16px;border-radius:50%;object-fit:cover}
+  .by-vup span{font-size:11px;color:var(--by-text-2);
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .by-vmeta{display:flex;gap:10px;margin-top:5px;font-size:11px;color:var(--by-text-2)}
+  .by-vmeta i{margin-right:3px}
+
+  /* ---------- 空状态 / 收尾 ---------- */
+  .by-end{text-align:center;color:var(--by-text-2);font-size:12px;padding:18px 0 6px}
+  .by-end i{display:block;font-size:20px;margin-bottom:6px;opacity:.5}
+  /* 搜索历史清空后的空状态（图标 + 文案 + 行动按钮） */
+  .by-empty{display:none;flex-direction:column;align-items:center;justify-content:center;
+            padding:26px 20px;background:var(--by-surface);border:1px solid var(--by-border);
+            border-radius:var(--by-radius);text-align:center}
+  .by-empty.on{display:flex}
+  .by-empty .by-ic{width:52px;height:52px;border-radius:50%;background:var(--by-surface-2);
+                   color:var(--by-text-2);display:flex;align-items:center;justify-content:center;
+                   font-size:21px;margin-bottom:12px}
+  .by-empty .by-t{font-size:13px;color:var(--by-text-2);line-height:1.6}
+  .by-empty .by-btn{margin-top:14px;font-size:12px;padding:8px 20px;border-radius:17px;
+                    background:rgba(251,114,153,.14);color:var(--by-pink);border:none;
+                    cursor:pointer;min-height:36px}
+  .by-empty .by-btn:active{background:rgba(251,114,153,.26)}
+
+  /* ---------- 底部 TabBar（fixed，绝不能写死 812px） ---------- */
+  /* width:min(375px,100vw) —— 画布 iframe 里铺满 375，独立打开（视口更宽）时也不会被拉宽 */
+  .by-tabbar{position:fixed;left:0;width:min(375px,100vw);bottom:0;z-index:30;height:52px;
+             background:rgba(20,20,38,.96);border-top:1px solid var(--by-border);
+             display:flex;align-items:center;backdrop-filter:blur(12px)}
+  .by-tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+               gap:2px;color:var(--by-text-2);font-size:10px;text-decoration:none;min-height:48px}
+  .by-tabbar a.on{color:var(--by-pink)}
+  .by-tabbar a i{font-size:17px}
+  .by-tabbar .by-pub{position:relative}
+  .by-tabbar .by-pub .by-pub-box{position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+       width:38px;height:28px;background:var(--by-pink);border-radius:8px;color:#fff;
+       display:flex;align-items:center;justify-content:center;font-size:15px;
+       border:2px solid var(--by-bg)}
+</style>
+</head>
+<body>
+
+<!-- ============ 骨架 ============ -->
+<div class="by-root">
+
+  <!-- 状态栏 -->
+  <div class="by-status">
+    <span class="by-time">9:41</span>
+    <span class="by-ico">
+      <i class="fas fa-signal"></i><i class="fas fa-wifi"></i>
+      <i class="fas fa-battery-three-quarters"></i>
+    </span>
+  </div>
+
+  <!-- 顶部：输入框 + 搜索按钮 + 分类 tab -->
+  <div class="by-head">
+    <div class="by-head-row">
+      <div class="by-sbox">
+        <i class="fas fa-magnifying-glass"></i>
+        <input id="kw" type="text" placeholder="搜索你感兴趣的视频、UP 主" autocomplete="off">
+        <span class="by-sclear hide" id="kwClear"><i class="fas fa-xmark"></i></span>
+      </div>
+      <span class="by-sbtn" id="doSearch">搜索</span>
+    </div>
+    <div class="by-cats" id="cats">
+      <span class="by-cat on">综合</span>
+      <span class="by-cat">视频</span>
+      <span class="by-cat">番剧</span>
+      <span class="by-cat">UP主</span>
+      <span class="by-cat">直播</span>
+      <span class="by-cat">专栏</span>
+    </div>
+  </div>
+
+  <!-- 滚动内容 -->
+  <div class="by-scroll" id="scroll">
+
+    <!-- ---------- 热搜榜 ---------- -->
+    <div class="by-sec">
+      <div class="by-sec-hd">
+        <div class="by-hd-l">
+          <span class="by-hd-flame"><i class="fas fa-fire"></i></span>
+          <h3>热搜榜</h3>
+        </div>
+        <span id="hotSwap">换一换 <i class="fas fa-rotate" style="margin-left:3px"></i></span>
+      </div>
+
+      <div class="by-hot" id="hotList">
+        <div class="by-hot-it" data-kw="原神">
+          <span class="by-rank top1">1</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">夏日版本前瞻 PV 全解析<span class="by-hot-tag hot">热</span></div>
+          </div>
+          <div class="by-hot-meta"><b>482.6万</b><i class="fas fa-arrow-trend-up up"></i></div>
+        </div>
+        <div class="by-hot-it" data-kw="编程">
+          <span class="by-rank top2">2</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">零基础学前端，先学这 3 件事<span class="by-hot-tag new">新</span></div>
+          </div>
+          <div class="by-hot-meta"><b>356.1万</b><i class="fas fa-arrow-trend-up up"></i></div>
+        </div>
+        <div class="by-hot-it" data-kw="料理">
+          <span class="by-rank top3">3</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">十块钱能做出什么菜？挑战最小预算<span class="by-hot-tag hot">热</span></div>
+          </div>
+          <div class="by-hot-meta"><b>291.4万</b><i class="fas fa-arrow-trend-up up"></i></div>
+        </div>
+        <div class="by-hot-it" data-kw="显卡">
+          <span class="by-rank">4</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">4K 显卡选购避坑指南，这几款别买</div>
+          </div>
+          <div class="by-hot-meta"><b>238.7万</b></div>
+        </div>
+        <div class="by-hot-it" data-kw="雪山">
+          <span class="by-rank">5</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">一个人徒步天山的第 30 天</div>
+          </div>
+          <div class="by-hot-meta"><b>186.2万</b></div>
+        </div>
+        <div class="by-hot-it" data-kw="猫咪">
+          <span class="by-rank">6</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">猫主子今日战绩：又拆了一个纸箱</div>
+          </div>
+          <div class="by-hot-meta"><b>154.8万</b></div>
+        </div>
+        <div class="by-hot-it" data-kw="吉他">
+          <span class="by-rank">7</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">民谣指弹入门：三个和弦弹遍天下</div>
+          </div>
+          <div class="by-hot-meta"><b>132.5万</b></div>
+        </div>
+        <div class="by-hot-it" data-kw="夜景">
+          <span class="by-rank">8</span>
+          <div class="by-hot-main">
+            <div class="by-hot-t">凌晨四点的城市，比白天更真实</div>
+          </div>
+          <div class="by-hot-meta"><b>119.3万</b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 搜索历史 ---------- -->
+    <div class="by-sec" style="margin-top:18px">
+      <div class="by-sec-hd">
+        <h3>搜索历史</h3>
+        <span id="histClear">清空 <i class="fas fa-trash-can" style="margin-left:3px"></i></span>
+      </div>
+
+      <div class="by-hist" id="histBox">
+        <span class="by-chip">4K 显卡推荐<i class="fas fa-xmark by-x" data-del="1"></i></span>
+        <span class="by-chip">零基础学前端<i class="fas fa-xmark by-x" data-del="1"></i></span>
+        <span class="by-chip">家常菜谱大全<i class="fas fa-xmark by-x" data-del="1"></i></span>
+        <span class="by-chip">猫咪日常<i class="fas fa-xmark by-x" data-del="1"></i></span>
+        <span class="by-chip">徒步天山的第30天<i class="fas fa-xmark by-x" data-del="1"></i></span>
+        <button class="by-chip-clear" id="histClearAll">
+          <i class="fas fa-eraser"></i>清空
+        </button>
+      </div>
+
+      <!-- 空状态：无搜索历史 -->
+      <div class="by-hist-empty" id="histEmpty">
+        <i class="fas fa-clock-rotate-left"></i>
+        <span>暂无搜索历史，去下面挑一个感兴趣的方向吧</span>
+      </div>
+    </div>
+
+    <!-- ---------- 搜索发现 ---------- -->
+    <div class="by-sec" style="margin-top:18px">
+      <div class="by-sec-hd">
+        <h3>搜索发现</h3>
+        <span>大家都在搜 <i class="fas fa-angle-right" style="margin-left:3px"></i></span>
+      </div>
+      <div class="by-kw">
+        <div class="by-kw-it" data-kw="编程教程"><i class="fas fa-laptop-code" style="color:#00AEEC"></i><span>编程教程</span></div>
+        <div class="by-kw-it" data-kw="4K 壁纸"><i class="fas fa-image" style="color:#A78BFA"></i><span>4K 壁纸</span></div>
+        <div class="by-kw-it" data-kw="显卡评测"><i class="fas fa-microchip" style="color:#FB7299"></i><span>显卡评测</span></div>
+        <div class="by-kw-it" data-kw="家常菜谱"><i class="fas fa-utensils" style="color:#FBBF24"></i><span>家常菜谱</span><i class="fas fa-fire by-kw-trend"></i></div>
+        <div class="by-kw-it" data-kw="猫咪合集"><i class="fas fa-cat" style="color:#34D399"></i><span>猫咪合集</span></div>
+        <div class="by-kw-it" data-kw="民谣吉他"><i class="fas fa-music" style="color:#F59E0B"></i><span>民谣吉他</span></div>
+        <div class="by-kw-it" data-kw="徒步旅行"><i class="fas fa-mountain-sun" style="color:#10B981"></i><span>徒步旅行</span></div>
+        <div class="by-kw-it" data-kw="城市夜景"><i class="fas fa-city" style="color:#60A5FA"></i><span>城市夜景</span><i class="fas fa-arrow-trend-up by-kw-trend"></i></div>
+      </div>
+    </div>
+
+    <!-- ---------- 推荐视频（两列瀑布流） ---------- -->
+    <div class="by-sec" style="margin-top:18px">
+      <div class="by-sec-hd">
+        <h3>猜你想看</h3>
+        <span>查看更多 <i class="fas fa-angle-right" style="margin-left:3px"></i></span>
+      </div>
+
+      <div class="by-wall">
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-code-js.jpeg" alt="">
+            <span class="by-vdur">18:24</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">JS 闭包到底是个什么鬼？五分钟讲明白</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>代码狂人阿伟</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>236.4万</span><span><i class="fas fa-comment"></i>1.6万</span></div>
+          </div>
+        </div>
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-cook-chef.jpeg" alt="">
+            <span class="by-vdur">12:05</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">米其林主厨的十分钟快手早餐</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-03.jpeg" alt=""><span>小厨房大厨</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>178.9万</span><span><i class="fas fa-comment"></i>2.2万</span></div>
+          </div>
+        </div>
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-cat-chair.jpeg" alt="">
+            <span class="by-vdur">03:58</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">猫咪第一次见到行李箱的反应</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-02.jpeg" alt=""><span>猫奴日常菌</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>412.7万</span><span><i class="fas fa-comment"></i>5.8万</span></div>
+          </div>
+        </div>
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-guitar-live.jpeg" alt="">
+            <span class="by-vdur">26:41</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">民谣小酒馆现场版，全场一起唱</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-04.jpeg" alt=""><span>民谣小王子</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>95.3万</span><span><i class="fas fa-comment"></i>1.1万</span></div>
+          </div>
+        </div>
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-tianshan.jpeg" alt="">
+            <span class="by-vdur">31:12</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">天山的雪有多厚？零下 20 度的清晨</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-06.jpeg" alt=""><span>在路上</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>302.1万</span><span><i class="fas fa-comment"></i>3.4万</span></div>
+          </div>
+        </div>
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-neon-street.jpeg" alt="">
+            <span class="by-vdur">07:33</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">赛博朋克城市漫游：霓虹下的雨夜</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-05.jpeg" alt=""><span>城市观察局</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>64.8万</span><span><i class="fas fa-comment"></i>7.3万</span></div>
+          </div>
+        </div>
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-gaming-desk.jpeg" alt="">
+            <span class="by-vdur">15:20</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">桌面美学改造：一平米电竞角全记录</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>代码狂人阿伟</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>87.2万</span><span><i class="fas fa-comment"></i>9.5万</span></div>
+          </div>
+        </div>
+        <div class="by-vcard" onclick="location.href='../player/player.html'">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-cat-clothes.jpeg" alt="">
+            <span class="by-vdur">05:46</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">给猫买衣服的正确打开方式</div>
+            <div class="by-vup"><img src="../../../lib/images/avatar-02.jpeg" alt=""><span>猫奴日常菌</span></div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>521.6万</span><span><i class="fas fa-comment"></i>2.7万</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空状态：滚动到底 -->
+      <div class="by-end">
+        <i class="fas fa-inbox"></i>
+        已经到底啦，换个关键词试试吧
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 底部 TabBar ============ -->
+<nav class="by-tabbar">
+  <a href="../home/home.html"><i class="fas fa-house"></i><span>首页</span></a>
+  <a href="search.html" class="on"><i class="fas fa-magnifying-glass"></i><span>搜索</span></a>
+  <a href="../upload/upload.html" class="by-pub">
+    <span class="by-pub-box"><i class="fas fa-plus"></i></span>
+    <span>投稿</span>
+  </a>
+  <a href="../message/message.html"><i class="fas fa-comment-dots"></i><span>消息</span></a>
+  <a href="../profile/profile.html"><i class="fas fa-user"></i><span>我的</span></a>
+</nav>
+
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+/* ---------- 本页交互（原型演示级） ---------- */
+(function () {
+  /* 1. 二级分类 tab 切换 */
+  var cats = document.querySelectorAll('#cats .by-cat');
+  cats.forEach(function (c) {
+    c.addEventListener('click', function () {
+      cats.forEach(function (x) { x.classList.remove('on'); });
+      c.classList.add('on');
+    });
+  });
+
+  /* 2. 搜索框：显示/隐藏清空按钮 + 回车搜索 */
+  var kw = document.getElementById('kw');
+  var clear = document.getElementById('kwClear');
+  var histBox = document.getElementById('histBox');
+  var histEmpty = document.getElementById('histEmpty');
+
+  function syncClear() { clear.classList.toggle('hide', !kw.value); }
+  kw.addEventListener('input', syncClear);
+  clear.addEventListener('click', function () { kw.value = ''; syncClear(); kw.focus(); });
+
+  function doSearch() {
+    var v = kw.value.trim();
+    if (!v) return;
+    addHistory(v);
+    kw.value = ''; syncClear();
+  }
+  document.getElementById('doSearch').addEventListener('click', doSearch);
+  kw.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doSearch(); } });
+
+  /* 3. 搜索历史：新增 / 单条删除 / 清空（附空状态） */
+  function syncHist() {
+    var has = histBox.querySelectorAll('.by-chip').length > 0;
+    histBox.style.display = has ? '' : 'none';
+    histEmpty.classList.toggle('on', !has);
+  }
+
+  function fillKw(text) {
+    kw.value = text; syncClear();
+    document.getElementById('scroll').scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* 给一个历史 chip 绑定：删除 + 点击回填输入框 */
+  function bindChip(chip) {
+    chip.querySelector('.by-x').addEventListener('click', function (e) {
+      e.stopPropagation(); chip.remove(); syncHist();
+    });
+    chip.addEventListener('click', function () {
+      fillKw(chip.firstChild.textContent.trim());
+    });
+  }
+
+  function addHistory(text) {
+    var chip = document.createElement('span');
+    chip.className = 'by-chip';
+    chip.textContent = text;
+    var x = document.createElement('i');
+    x.className = 'fas fa-xmark by-x';
+    chip.appendChild(x);
+    bindChip(chip);
+    // 插到「清空」按钮之前
+    histBox.insertBefore(chip, document.getElementById('histClearAll'));
+    syncHist();
+  }
+
+  histBox.querySelectorAll('.by-chip').forEach(bindChip);
+
+  document.getElementById('histClearAll').addEventListener('click', function () {
+    histBox.querySelectorAll('.by-chip').forEach(function (c) { c.remove(); });
+    syncHist();
+  });
+  document.getElementById('histClear').addEventListener('click', function () {
+    histBox.querySelectorAll('.by-chip').forEach(function (c) { c.remove(); });
+    syncHist();
+  });
+
+  /* 4. 热搜榜 / 搜索发现：点击写入搜索框 */
+  function bindKw(el) {
+    el.addEventListener('click', function () {
+      fillKw(el.getAttribute('data-kw') || '');
+    });
+  }
+  document.querySelectorAll('.by-hot-it').forEach(bindKw);
+  document.querySelectorAll('.by-kw-it').forEach(bindKw);
+
+  /* 5. 热搜榜「换一换」：重排名次（前 3 名保持红/橙/黄徽章） */
+  var flip = false;
+  var hot = document.getElementById('hotList');
+  document.getElementById('hotSwap').addEventListener('click', function () {
+    flip = !flip;
+    var nodes = hot.querySelectorAll('.by-hot-it');
+    var order = flip ? Array.prototype.slice.call(nodes).reverse() : Array.prototype.slice.call(nodes);
+    order.forEach(function (it, i) {
+      var rank = it.querySelector('.by-rank');
+      rank.className = 'by-rank' + (i < 3 ? ' top' + (i + 1) : '');
+      rank.textContent = String(i + 1);
+    });
+  });
+
+  syncClear();
+  syncHist();
+})();
+</script>
+</body>
+</html>

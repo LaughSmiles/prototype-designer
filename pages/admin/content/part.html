@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>分区管理 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<link rel="stylesheet" href="../../../css/sidebar-menu.css">
+<style>
+  :root{
+    --by-side:#001529; --by-head:#0A1A2F; --by-bg:#0B1524;
+    --by-card:#142136; --by-card-2:#1B2B44; --by-line:rgba(255,255,255,.09);
+    --by-primary:#409EFF; --by-green:#13CE66; --by-orange:#FF9F43;
+    --by-red:#F6465D; --by-purple:#9457D5;
+    --by-text:#E8ECF5; --by-text-2:#8FA0BC; --by-text-3:#5C6E8C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--by-bg);color:var(--by-text);
+       font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5}
+  .ad-wrap{display:flex;height:100vh;overflow:hidden}
+
+  .ad-head{height:56px;flex:none;background:var(--by-head);border-bottom:1px solid var(--by-line);
+           display:flex;align-items:center;padding:0 20px;gap:16px}
+  .ad-logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;width:200px}
+  .ad-logo .dot{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+                justify-content:center;background:linear-gradient(135deg,#FB7299,#E11D48);
+                font-size:13px;color:#fff}
+  .ad-crumb{font-size:13px;color:var(--by-text-2)}
+  .ad-crumb b{color:var(--by-text);font-weight:500}
+  .ad-head-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .ad-search{width:220px;height:32px;border-radius:6px;background:rgba(255,255,255,.07);
+             border:1px solid var(--by-line);display:flex;align-items:center;gap:7px;
+             padding:0 11px;font-size:12px;color:var(--by-text-3)}
+  .ad-hicon{color:var(--by-text-2);font-size:15px;cursor:pointer;position:relative;min-width:24px;text-align:center}
+  .ad-badge{position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;border-radius:8px;
+            background:var(--by-red);color:#fff;font-size:9px;line-height:15px;padding:0 4px}
+  .ad-me{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+  .ad-me img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+
+  .ad-side{width:200px;flex:none;background:var(--by-side);border-right:1px solid var(--by-line);
+           overflow-y:auto;padding:10px 0}
+  .ad-side::-webkit-scrollbar{width:0}
+  #sidebar-menu{background:var(--by-side)}
+
+  .ad-main{flex:1;min-width:0;overflow-y:auto;padding:18px 22px 28px}
+  .ad-main::-webkit-scrollbar{width:6px}
+  .ad-main::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:3px}
+
+  /* ============ 搜索表单 ============ */
+  .search-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+               padding:15px 16px 4px}
+  .search-row{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+  .search-row .fi{display:flex;flex-direction:column;gap:6px}
+  .search-row label{font-size:12px;color:var(--by-text-2)}
+  .search-row input,.search-row select{height:32px;padding:0 10px;border-radius:6px;font-size:13px;
+    background:rgba(255,255,255,.06);border:1px solid var(--by-line);color:var(--by-text);
+    outline:none;font-family:inherit;min-width:150px}
+  .search-row input:focus,.search-row select:focus{border-color:var(--by-primary)}
+  .search-row select option{background:var(--by-card-2);color:var(--by-text)}
+  .search-row input::placeholder{color:var(--by-text-3)}
+
+  /* ============ 按钮 ============ */
+  .btn{height:32px;padding:0 15px;border-radius:6px;border:1px solid var(--by-line);
+       background:rgba(255,255,255,.06);color:var(--by-text);font-size:13px;cursor:pointer;
+       display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.11)}
+  .btn-primary{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;border-color:#66b1ff}
+  .btn-danger{background:var(--by-red);border-color:var(--by-red);color:#fff}
+  .btn-danger:hover{opacity:.88}
+  .btn-success{background:var(--by-green);border-color:var(--by-green);color:#fff}
+  .btn-warning{background:var(--by-orange);border-color:var(--by-orange);color:#fff}
+
+  /* ============ 工具栏 ============ */
+  .toolbar{display:flex;align-items:center;gap:10px;margin:14px 0 12px}
+  .toolbar .sp{flex:1}
+  .tb-tip{font-size:12px;color:var(--by-text-3);display:flex;align-items:center;gap:6px}
+
+  /* ============ 分区视频数对比条 ============ */
+  .stat-strip{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+              padding:15px 18px 17px;margin-bottom:0}
+  .stat-strip-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .stat-strip-hd h3{margin:0;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .stat-strip-hd h3 i{color:var(--by-primary);font-size:13px}
+  .stat-strip-hd .x{font-size:12px;color:var(--by-text-3)}
+  .part-bars{display:grid;grid-template-columns:repeat(4,1fr);gap:11px 22px}
+  .part-bar{display:flex;align-items:center;gap:9px;font-size:12px}
+  .part-bar .nm{width:34px;color:var(--by-text-2);flex:none}
+  .part-bar .tr{flex:1;height:16px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+  .part-bar .fl{height:100%;border-radius:3px;display:flex;align-items:center;
+               justify-content:flex-end;padding-right:6px;font-size:9px;color:#fff;min-width:34px}
+  .part-bar .vv{width:58px;text-align:right;color:var(--by-text-3);flex:none}
+
+  /* ============ 表格 ============ */
+  .tbl-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:var(--by-card-2);color:var(--by-text-2);font-weight:500;text-align:left;
+           padding:11px 12px;font-size:12px;white-space:nowrap}
+  tbody td{padding:11px 12px;border-top:1px solid var(--by-line);vertical-align:middle}
+  tbody tr:hover{background:rgba(255,255,255,.03)}
+  .tbl-card table{min-width:1000px}
+  .tbl-scroll{overflow-x:auto}
+  .tbl-scroll::-webkit-scrollbar{height:7px}
+  .tbl-scroll::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:4px}
+
+  /* 操作列吸附右侧：表格横向滚动时动作按钮始终可点，不会被推出视口 */
+  thead th:last-child,tbody td:last-child{position:sticky;right:0;z-index:2}
+  /* 操作列：3 个按钮排一行，不换行 */
+  tbody td:last-child{white-space:nowrap}
+  tbody td:last-child .btn-text{padding:0 5px}
+  thead th:last-child{background:var(--by-card-2)}
+  tbody td:last-child{background:var(--by-card)}
+  tbody tr:hover td:last-child{background:#182741}
+  thead th:last-child::before,tbody td:last-child::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--by-line)}
+
+  input[type=checkbox]{width:14px;height:14px;accent-color:var(--by-primary);cursor:pointer}
+
+  /* 分区名称单元格：彩色圆形图标底 + 名称 */
+  .pn{display:flex;align-items:center;gap:10px;min-width:150px}
+  .pn-ic{width:28px;height:28px;border-radius:50%;flex:none;display:flex;align-items:center;
+         justify-content:center;font-size:12px;color:#fff}
+  .pn-t{font-size:13px}
+  .pn-t .sid{display:block;font-size:11px;color:var(--by-text-3);margin-top:2px}
+
+  /* 排序值 */
+  .sort-no{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:22px;
+           padding:0 8px;border-radius:6px;background:rgba(255,255,255,.07);
+           color:var(--by-text-2);font-size:12px;font-variant-numeric:tabular-nums}
+
+  /* 播放占比单元格：细条 + 数值 */
+  .ratio{display:flex;align-items:center;gap:8px;min-width:120px}
+  .ratio .rt{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden}
+  /* ⚠️ 必须 display:block —— .rf 是 <span>，缺省会保持 inline 而忽略 width/height，条形直接不可见 */
+  .ratio .rf{display:block;height:100%;border-radius:3px;background:var(--by-primary)}
+  .ratio .rv{width:44px;text-align:right;color:var(--by-text-2);font-size:12px;
+             font-variant-numeric:tabular-nums}
+
+  /* 状态标签 */
+  .tg{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:11px}
+  .tg i{width:5px;height:5px;border-radius:50%}
+  .tg.ok{background:rgba(19,206,102,.14);color:#13CE66} .tg.ok i{background:#13CE66}
+  .tg.wait{background:rgba(255,159,67,.14);color:#FF9F43} .tg.wait i{background:#FF9F43}
+  .tg.no{background:rgba(246,70,93,.14);color:#F6465D} .tg.no i{background:#F6465D}
+  .tg.info{background:rgba(64,158,255,.14);color:#409EFF} .tg.info i{background:#409EFF}
+
+  /* 行内文字按钮（min-height 32px，满足点击目标尺寸要求） */
+  .btn-text{background:none;border:none;color:var(--by-primary);font-size:12px;cursor:pointer;
+            min-height:32px;padding:0 6px;font-family:inherit;display:inline-flex;align-items:center}
+  .btn-text:hover{text-decoration:underline}
+  .btn-text.danger{color:var(--by-red)}
+
+  /* 分页 */
+  .pager{display:flex;align-items:center;gap:8px;padding:13px 16px;border-top:1px solid var(--by-line)}
+  .pager .info{font-size:12px;color:var(--by-text-3)}
+  .pager .sp{flex:1}
+  .pager button{min-width:30px;height:30px;border-radius:6px;border:1px solid var(--by-line);
+                background:rgba(255,255,255,.05);color:var(--by-text-2);font-size:12px;cursor:pointer;
+                font-family:inherit}
+  .pager button.on{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<div class="ad-wrap">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="ad-head" style="position:absolute;top:0;left:0;right:0;z-index:20">
+    <div class="ad-logo"><span class="dot"><i class="fas fa-bolt"></i></span><span>哔哩云</span></div>
+    <div class="ad-crumb">内容管理 / <b>分区管理</b></div>
+    <div class="ad-head-right">
+      <div class="ad-search"><i class="fas fa-search"></i><span>搜索菜单、用户、视频…</span></div>
+      <span class="ad-hicon"><i class="fas fa-question-circle"></i></span>
+      <span class="ad-hicon"><i class="fas fa-bell"></i><span class="ad-badge">9</span></span>
+      <div class="ad-me"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>超级管理员</span><i class="fas fa-angle-down" style="font-size:11px;color:var(--by-text-3)"></i></div>
+    </div>
+  </header>
+
+  <!-- ================= 侧边栏 ================= -->
+  <aside class="ad-side" style="position:absolute;top:56px;bottom:0;left:0;width:200px">
+    <div id="sidebar-menu"></div>
+  </aside>
+
+  <!-- ================= 内容区 ================= -->
+  <main class="ad-main main-content" style="margin-left:200px;margin-top:56px">
+
+    <!-- ---------- 搜索表单 ---------- -->
+    <div class="search-card">
+      <div class="search-row">
+        <div class="fi">
+          <label>分区名称</label>
+          <input type="text" placeholder="请输入分区名称">
+        </div>
+        <div class="fi">
+          <label>状态</label>
+          <select>
+            <option>全部状态</option>
+            <option>启用</option>
+            <option>停用</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>创建时间</label>
+          <input type="date" value="2024-01-01">
+        </div>
+        <div class="fi" style="flex-direction:row;gap:10px">
+          <button class="btn btn-primary"><i class="fas fa-search"></i>搜索</button>
+          <button class="btn"><i class="fas fa-redo"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 工具栏 ---------- -->
+    <div class="toolbar">
+      <button class="btn btn-primary"><i class="fas fa-plus"></i>新增分区</button>
+      <button class="btn btn-warning"><i class="fas fa-upload"></i>导入</button>
+      <button class="btn btn-success"><i class="fas fa-download"></i>导出</button>
+      <button class="btn btn-danger"><i class="fas fa-trash"></i>删除</button>
+      <span class="sp"></span>
+      <span class="tb-tip"><i class="fas fa-circle-info"></i>已选 0 项</span>
+    </div>
+
+    <!-- ---------- 各分区视频数对比 ---------- -->
+    <div class="stat-strip">
+      <div class="stat-strip-hd">
+        <h3><i class="fas fa-chart-bar"></i>各分区视频数对比</h3>
+        <span class="x">统计口径：近 30 天 · 更新于 11-22 08:00</span>
+      </div>
+      <div class="part-bars">
+        <div class="part-bar">
+          <span class="nm">动画</span>
+          <span class="tr"><span class="fl" style="width:88%;background:#409EFF">4,378万</span></span>
+          <span class="vv">播放占比 34.2%</span>
+        </div>
+        <div class="part-bar">
+          <span class="nm">游戏</span>
+          <span class="tr"><span class="fl" style="width:71%;background:#13CE66">3,532万</span></span>
+          <span class="vv">播放占比 27.6%</span>
+        </div>
+        <div class="part-bar">
+          <span class="nm">科技</span>
+          <span class="tr"><span class="fl" style="width:46%;background:#9457D5">2,290万</span></span>
+          <span class="vv">播放占比 17.9%</span>
+        </div>
+        <div class="part-bar">
+          <span class="nm">生活</span>
+          <span class="tr"><span class="fl" style="width:34%;background:#FF9F43">1,690万</span></span>
+          <span class="vv">播放占比 13.2%</span>
+        </div>
+        <div class="part-bar">
+          <span class="nm">音乐</span>
+          <span class="tr"><span class="fl" style="width:19%;background:#F6465D">908万</span></span>
+          <span class="vv">播放占比 7.1%</span>
+        </div>
+        <div class="part-bar">
+          <span class="nm">美食</span>
+          <span class="tr"><span class="fl" style="width:14%;background:#FF6B9E">642万</span></span>
+          <span class="vv">播放占比 5.0%</span>
+        </div>
+        <div class="part-bar">
+          <span class="nm">知识</span>
+          <span class="tr"><span class="fl" style="width:9%;background:#36CFC9">431万</span></span>
+          <span class="vv">播放占比 3.4%</span>
+        </div>
+        <div class="part-bar">
+          <span class="nm">运动</span>
+          <span class="tr"><span class="fl" style="width:6%;background:#FFC53D">287万</span></span>
+          <span class="vv">播放占比 2.2%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 数据表格 ---------- -->
+    <div class="tbl-card" style="margin-top:14px">
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:38px"><input type="checkbox"></th>
+              <th style="min-width:170px">分区名称</th>
+              <th style="width:100px">分区图标</th>
+              <th style="width:100px">视频数量</th>
+              <th style="width:170px">播放占比</th>
+              <th style="width:80px">排序</th>
+              <th style="width:100px">状态</th>
+              <th style="width:150px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#409EFF"><i class="fas fa-film"></i></span>
+                  <div class="pn-t">动画<div class="sid">part-animation</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-film" style="color:#409EFF;font-size:15px"></i></td>
+              <td>12,846</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:88%"></span></span><span class="rv">34.2%</span></div></td>
+              <td><span class="sort-no">1</span></td>
+              <td><span class="tg ok"><i></i>启用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#13CE66"><i class="fas fa-gamepad"></i></span>
+                  <div class="pn-t">游戏<div class="sid">part-game</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-gamepad" style="color:#13CE66;font-size:15px"></i></td>
+              <td>10,392</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:71%;background:#13CE66"></span></span><span class="rv">27.6%</span></div></td>
+              <td><span class="sort-no">2</span></td>
+              <td><span class="tg ok"><i></i>启用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#9457D5"><i class="fas fa-music"></i></span>
+                  <div class="pn-t">音乐<div class="sid">part-music</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-music" style="color:#9457D5;font-size:15px"></i></td>
+              <td>7,205</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:19%;background:#F6465D"></span></span><span class="rv">7.1%</span></div></td>
+              <td><span class="sort-no">5</span></td>
+              <td><span class="tg ok"><i></i>启用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#FF9F43"><i class="fas fa-code"></i></span>
+                  <div class="pn-t">科技<div class="sid">part-tech</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-code" style="color:#FF9F43;font-size:15px"></i></td>
+              <td>6,873</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:46%;background:#9457D5"></span></span><span class="rv">17.9%</span></div></td>
+              <td><span class="sort-no">3</span></td>
+              <td><span class="tg ok"><i></i>启用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#FF6B9E"><i class="fas fa-heart"></i></span>
+                  <div class="pn-t">生活<div class="sid">part-life</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-heart" style="color:#FF6B9E;font-size:15px"></i></td>
+              <td>5,164</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:34%;background:#FF9F43"></span></span><span class="rv">13.2%</span></div></td>
+              <td><span class="sort-no">4</span></td>
+              <td><span class="tg ok"><i></i>启用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#36CFC9"><i class="fas fa-utensils"></i></span>
+                  <div class="pn-t">美食<div class="sid">part-food</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-utensils" style="color:#36CFC9;font-size:15px"></i></td>
+              <td>4,327</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:14%;background:#FF6B9E"></span></span><span class="rv">5.0%</span></div></td>
+              <td><span class="sort-no">6</span></td>
+              <td><span class="tg ok"><i></i>启用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#FFC53D"><i class="fas fa-book"></i></span>
+                  <div class="pn-t">知识<div class="sid">part-knowledge</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-book" style="color:#FFC53D;font-size:15px"></i></td>
+              <td>3,156</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:9%;background:#36CFC9"></span></span><span class="rv">3.4%</span></div></td>
+              <td><span class="sort-no">7</span></td>
+              <td><span class="tg wait"><i></i>停用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="pn">
+                  <span class="pn-ic" style="background:#8C9EFF"><i class="fas fa-futbol"></i></span>
+                  <div class="pn-t">运动<div class="sid">part-sports</div></div>
+                </div>
+              </td>
+              <td><i class="fas fa-futbol" style="color:#8C9EFF;font-size:15px"></i></td>
+              <td>2,048</td>
+              <td><div class="ratio"><span class="rt"><span class="rf" style="width:6%;background:#FFC53D"></span></span><span class="rv">2.2%</span></div></td>
+              <td><span class="sort-no">8</span></td>
+              <td><span class="tg ok"><i></i>启用</span></td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pager">
+        <span class="info">共 8 条记录，第 1 / 1 页</span>
+        <span class="sp"></span>
+        <button disabled><i class="fas fa-angle-left"></i></button>
+        <button class="on">1</button>
+        <button><i class="fas fa-angle-right"></i></button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ================= 脚本（顺序不可调整） ================= -->
+<script src="../../../menu/menu.js"></script>                  <!-- 菜单数据：必须最先 -->
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>                   <!-- 退出预览的桥，必须有 -->
+<script>
+/* 本页表单定义：label 必须与 <th> 一字不差。
+   「分区图标」是图标而非选项，不进表单；「视频数量 / 播放占比」是统计值，也不进表单。 */
+window.PROTO_FORM = {
+    entityName: "分区",
+    fields: [
+        { "label": "分区名称", "type": "input",  "required": true },
+        { "label": "排序",     "type": "number" },
+        { "label": "状态",     "type": "select", "options": ["启用", "停用"] }
+    ]
+};
+</script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  await SidebarMenu.init('sidebar-menu');
+  // 全选 / 已选计数
+  var all = document.querySelector('thead input[type=checkbox]');
+  var rows = Array.from(document.querySelectorAll('tbody input[type=checkbox]'));
+  var tip = document.querySelector('.tb-tip');
+  function sync() {
+    var n = rows.filter(function (c) { return c.checked; }).length;
+    tip.innerHTML = '<i class="fas fa-circle-info"></i>已选 ' + n + ' 项';
+  }
+  all.addEventListener('change', function () {
+    rows.forEach(function (c) { c.checked = all.checked; });
+    sync();
+  });
+  rows.forEach(function (c) { c.addEventListener('change', sync); });
+});
+</script>
+</body>
+</html>

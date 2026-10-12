@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>系统配置 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<link rel="stylesheet" href="../../../css/sidebar-menu.css">
+<style>
+  :root{
+    --by-side:#001529; --by-head:#0A1A2F; --by-bg:#0B1524;
+    --by-card:#142136; --by-card-2:#1B2B44; --by-line:rgba(255,255,255,.09);
+    --by-primary:#409EFF; --by-green:#13CE66; --by-orange:#FF9F43;
+    --by-red:#F6465D; --by-purple:#9457D5;
+    --by-text:#E8ECF5; --by-text-2:#8FA0BC; --by-text-3:#5C6E8C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--by-bg);color:var(--by-text);
+       font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5}
+  .ad-wrap{display:flex;height:100vh;overflow:hidden}
+
+  .ad-head{height:56px;flex:none;background:var(--by-head);border-bottom:1px solid var(--by-line);
+           display:flex;align-items:center;padding:0 20px;gap:16px}
+  .ad-logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;width:200px}
+  .ad-logo .dot{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+                justify-content:center;background:linear-gradient(135deg,#FB7299,#E11D48);
+                font-size:13px;color:#fff}
+  .ad-crumb{font-size:13px;color:var(--by-text-2)}
+  .ad-crumb b{color:var(--by-text);font-weight:500}
+  .ad-head-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .ad-search{width:220px;height:32px;border-radius:6px;background:rgba(255,255,255,.07);
+             border:1px solid var(--by-line);display:flex;align-items:center;gap:7px;
+             padding:0 11px;font-size:12px;color:var(--by-text-3)}
+  .ad-hicon{color:var(--by-text-2);font-size:15px;cursor:pointer;position:relative;min-width:24px;text-align:center}
+  .ad-badge{position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;border-radius:8px;
+            background:var(--by-red);color:#fff;font-size:9px;line-height:15px;padding:0 4px}
+  .ad-me{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+  .ad-me img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+
+  .ad-side{width:200px;flex:none;background:var(--by-side);border-right:1px solid var(--by-line);
+           overflow-y:auto;padding:10px 0}
+  .ad-side::-webkit-scrollbar{width:0}
+  #sidebar-menu{background:var(--by-side)}
+
+  .ad-main{flex:1;min-width:0;overflow-y:auto;padding:18px 22px 28px}
+  .ad-main::-webkit-scrollbar{width:6px}
+  .ad-main::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:3px}
+
+  /* ============ 按钮 ============ */
+  .btn{height:32px;padding:0 15px;border-radius:6px;border:1px solid var(--by-line);
+       background:rgba(255,255,255,.06);color:var(--by-text);font-size:13px;cursor:pointer;
+       display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.11)}
+  .btn-primary{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;border-color:#66b1ff}
+  .btn-danger{background:var(--by-red);border-color:var(--by-red);color:#fff}
+
+  /* ============ 页面头部说明条 ============ */
+  .ad-tipbar{display:flex;align-items:flex-start;gap:10px;background:rgba(64,158,255,.09);
+            border:1px solid rgba(64,158,255,.28);border-radius:10px;padding:13px 16px;
+            font-size:12px;color:var(--by-text-2);line-height:1.65;margin-bottom:14px}
+  .ad-tipbar i{color:var(--by-primary);margin-top:2px}
+  .ad-tipbar b{color:var(--by-text);font-weight:500}
+
+  /* ============ 左分类 + 右面板 ============ */
+  .ad-cfg{display:grid;grid-template-columns:212px 1fr;gap:14px;align-items:start}
+  .ad-cfg-nav{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+              padding:8px;position:sticky;top:0}
+  .ad-cfg-nav-hd{font-size:11px;color:var(--by-text-3);padding:8px 10px 6px;letter-spacing:.4px}
+  .ad-cfg-it{display:flex;align-items:center;gap:9px;width:100%;padding:10px 11px;border-radius:7px;
+            font-size:13px;color:var(--by-text-2);cursor:pointer;text-align:left;font-family:inherit;
+            background:none;border:none;transition:background .15s,color .15s}
+  .ad-cfg-it i{width:16px;text-align:center;font-size:12px;flex:none}
+  .ad-cfg-it:hover{background:rgba(255,255,255,.05);color:var(--by-text)}
+  .ad-cfg-it.on{background:rgba(64,158,255,.16);color:#409EFF;font-weight:500}
+  .ad-cfg-it .dot{margin-left:auto;width:6px;height:6px;border-radius:50%;background:var(--by-red);
+                 display:none;flex:none}
+  .ad-cfg-it .dot.show{display:block}
+
+  .ad-panes{min-width:0}
+
+  /* ============ 面板卡片 ============ */
+  .ad-pnl{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;margin-bottom:14px}
+  .ad-pnl-hd{display:flex;align-items:center;justify-content:space-between;
+             padding:13px 16px;border-bottom:1px solid var(--by-line)}
+  .ad-pnl-hd h3{margin:0;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .ad-pnl-hd h3 i{color:var(--by-primary);font-size:13px}
+  .ad-pnl-hd .x{font-size:12px;color:var(--by-text-3)}
+  .ad-pnl-bd{padding:18px 20px 20px}
+
+  /* ============ 表单栅格 ============ */
+  .ad-form{display:grid;grid-template-columns:1fr 1fr;gap:18px 26px}
+  .ad-form.one{grid-template-columns:1fr}
+  .ad-field{display:flex;flex-direction:column;gap:7px;min-width:0}
+  .ad-field.full{grid-column:1 / -1}
+  .ad-field > label{font-size:12px;color:var(--by-text-2);display:flex;align-items:center;gap:5px}
+  .ad-field > label .req{color:var(--by-red);font-weight:700}
+  .ad-field .tip{font-size:11px;color:var(--by-text-3)}
+  .ad-field .err{font-size:11px;color:var(--by-red);display:none;align-items:center;gap:4px}
+  .ad-field.bad .err{display:flex}
+  .ad-field.bad > label{color:var(--by-red)}
+
+  .ad-inp,.ad-sel,.ad-txt{height:34px;padding:0 11px;border-radius:6px;font-size:13px;width:100%;
+    background:rgba(255,255,255,.06);border:1px solid var(--by-line);color:var(--by-text);
+    outline:none;font-family:inherit;transition:border-color .15s}
+  .ad-txt{height:auto;padding:9px 11px;line-height:1.65;resize:vertical;min-height:74px}
+  .ad-inp:focus,.ad-sel:focus,.ad-txt:focus{border-color:var(--by-primary)}
+  .ad-inp::placeholder,.ad-txt::placeholder{color:var(--by-text-3)}
+  .ad-sel option{background:var(--by-card-2);color:var(--by-text)}
+  .ad-inp.bad,.ad-txt.bad{border-color:var(--by-red)}
+
+  /* ============ 单选组 ============ */
+  .ad-radios{display:flex;flex-wrap:wrap;gap:9px 20px;padding-top:2px}
+  .ad-radio{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--by-text);
+            cursor:pointer;user-select:none}
+  .ad-radio input{appearance:none;-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+    border:1px solid var(--by-text-3);background:rgba(255,255,255,.05);cursor:pointer;
+    position:relative;flex:none;transition:border-color .15s}
+  .ad-radio input:checked{border-color:var(--by-primary);border-width:5px}
+  .ad-radio input:checked::after{content:"";position:absolute;inset:2px;border-radius:50%;
+    background:var(--by-primary);transform:scale(0)}
+  .ad-radio:hover input{border-color:var(--by-primary)}
+
+  /* ============ 多选组 ============ */
+  .ad-checks{display:flex;flex-wrap:wrap;gap:9px 16px}
+  .ad-check{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--by-text);
+            cursor:pointer;user-select:none}
+  .ad-check input{appearance:none;-webkit-appearance:none;width:15px;height:15px;border-radius:4px;
+    border:1px solid var(--by-text-3);background:rgba(255,255,255,.05);cursor:pointer;flex:none;
+    position:relative;transition:background .15s,border-color .15s}
+  .ad-check input:checked{background:var(--by-primary);border-color:var(--by-primary)}
+  .ad-check input:checked::after{content:"";position:absolute;left:4.5px;top:1.5px;width:4px;height:8px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(42deg)}
+  .ad-check:hover input{border-color:var(--by-primary)}
+
+  /* ============ 自定义开关 ============ */
+  .ad-sw-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+            padding:13px 0;border-bottom:1px dashed var(--by-line)}
+  .ad-sw-row:last-child{border-bottom:none;padding-bottom:0}
+  .ad-sw-row:first-child{padding-top:0}
+  .ad-sw-tx{min-width:0}
+  .ad-sw-tx .tt{font-size:13px;color:var(--by-text)}
+  .ad-sw-tx .ds{font-size:11px;color:var(--by-text-3);margin-top:3px;line-height:1.55}
+  .ad-switch{position:relative;width:42px;height:22px;flex:none;cursor:pointer;margin-top:1px}
+  .ad-switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+  .ad-switch .track{position:absolute;inset:0;border-radius:11px;background:rgba(255,255,255,.13);
+                    transition:background .2s;border:1px solid var(--by-line)}
+  .ad-switch .knob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;
+                   background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .ad-switch input:checked ~ .track{background:var(--by-primary);border-color:var(--by-primary)}
+  .ad-switch input:checked ~ .knob{transform:translateX(20px)}
+  .ad-switch input:focus-visible ~ .track{box-shadow:0 0 0 2px rgba(64,158,255,.35)}
+
+  /* ============ 滑块 ============ */
+  .ad-range-wrap{display:flex;align-items:center;gap:13px}
+  .ad-range{-webkit-appearance:none;appearance:none;flex:1;height:4px;border-radius:2px;outline:none;
+    background:linear-gradient(90deg,var(--by-primary) 0%,var(--by-primary) var(--fill,50%),
+               rgba(255,255,255,.1) var(--fill,50%),rgba(255,255,255,.1) 100%)}
+  .ad-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;
+    border-radius:50%;background:#fff;border:2px solid var(--by-primary);cursor:pointer;
+    box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .ad-range::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#fff;
+    border:2px solid var(--by-primary);cursor:pointer}
+  .ad-range-val{min-width:62px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;
+    background:rgba(255,255,255,.07);border:1px solid var(--by-line);border-radius:6px;
+    padding:4px 8px;color:var(--by-text)}
+
+  /* ============ 禁用态：父级 off 时整块置灰 ============ */
+  .ad-dep{transition:opacity .2s}
+  .ad-dep.off{opacity:.42;pointer-events:none;filter:saturate(.35)}
+  .ad-dep-note{display:none;align-items:center;gap:7px;font-size:11px;color:var(--by-orange);
+    background:rgba(255,159,67,.1);border:1px dashed rgba(255,159,67,.4);border-radius:7px;
+    padding:9px 12px;margin-bottom:14px}
+  .ad-dep-note.on{display:flex}
+
+  /* ============ 面板底部操作条 ============ */
+  .ad-pnl-ft{display:flex;align-items:center;gap:11px;padding:13px 20px;
+             border-top:1px solid var(--by-line);background:rgba(255,255,255,.02);
+             border-radius:0 0 10px 10px}
+  .ad-pnl-ft .sp{flex:1}
+  .ad-pnl-ft .hint{font-size:11px;color:var(--by-text-3);display:flex;align-items:center;gap:6px}
+
+  /* ============ 空状态 ============ */
+  .ad-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+            padding:56px 20px;text-align:center;gap:5px}
+  .ad-empty .ic{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;
+                justify-content:center;font-size:24px;margin-bottom:11px;
+                background:rgba(255,255,255,.05);color:var(--by-text-3)}
+  .ad-empty .tt{font-size:14px;color:var(--by-text-2)}
+  .ad-empty .ds{font-size:12px;color:var(--by-text-3);max-width:400px;line-height:1.7}
+  .ad-empty .btn{margin-top:14px}
+
+  /* ============ 轻提示 ============ */
+  .ad-toast{position:fixed;left:50%;top:76px;z-index:9998;display:flex;align-items:center;gap:9px;
+            padding:11px 18px;border-radius:8px;font-size:13px;background:var(--by-card-2);
+            border:1px solid var(--by-line);color:var(--by-text);
+            box-shadow:0 8px 26px rgba(0,0,0,.42);opacity:0;pointer-events:none;
+            transform:translate(-50%,-14px);transition:opacity .22s,transform .22s}
+  .ad-toast.on{opacity:1;transform:translate(-50%,0)}
+  .ad-toast.ok i{color:var(--by-green)}
+  .ad-toast.err i{color:var(--by-red)}
+</style>
+</head>
+<body>
+
+<div class="ad-wrap">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="ad-head" style="position:absolute;top:0;left:0;right:0;z-index:20">
+    <div class="ad-logo"><span class="dot"><i class="fas fa-bolt"></i></span><span>哔哩云</span></div>
+    <div class="ad-crumb">系统管理 / <b>系统配置</b></div>
+    <div class="ad-head-right">
+      <div class="ad-search"><i class="fas fa-search"></i><span>搜索菜单、用户、视频…</span></div>
+      <span class="ad-hicon"><i class="fas fa-question-circle"></i></span>
+      <span class="ad-hicon"><i class="fas fa-bell"></i><span class="ad-badge">9</span></span>
+      <div class="ad-me"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>超级管理员</span><i class="fas fa-angle-down" style="font-size:11px;color:var(--by-text-3)"></i></div>
+    </div>
+  </header>
+
+  <!-- ================= 侧边栏 ================= -->
+  <aside class="ad-side" style="position:absolute;top:56px;bottom:0;left:0;width:200px">
+    <div id="sidebar-menu"></div>
+  </aside>
+
+  <!-- ================= 内容区 ================= -->
+  <main class="ad-main main-content" style="margin-left:200px;margin-top:56px">
+
+    <div class="ad-tipbar">
+      <i class="fas fa-circle-info"></i>
+      <div><b>配置生效说明：</b>网站与播放类配置保存后 <b>立即生效</b>；审核与消息类配置需在 <b>5 分钟内</b>全量下发到各节点，期间可能有短暂不一致。积分规则调整<b>不可回滚</b>，请在低峰期操作。</div>
+    </div>
+
+    <div class="ad-cfg">
+
+      <!-- ---------- 左侧分类导航 ---------- -->
+      <nav class="ad-cfg-nav" id="cfg-nav">
+        <div class="ad-cfg-nav-hd">配置分类</div>
+        <button class="ad-cfg-it on" data-pane="pane-site"><i class="fas fa-globe"></i>网站设置</button>
+        <button class="ad-cfg-it" data-pane="pane-play"><i class="fas fa-circle-play"></i>播放设置</button>
+        <button class="ad-cfg-it" data-pane="pane-audit"><i class="fas fa-shield-halved"></i>审核设置<span class="dot show"></span></button>
+        <button class="ad-cfg-it" data-pane="pane-msg"><i class="fas fa-bell"></i>消息设置</button>
+        <button class="ad-cfg-it" data-pane="pane-point"><i class="fas fa-coins"></i>积分规则</button>
+      </nav>
+
+      <!-- ---------- 右侧面板容器 ---------- -->
+      <div class="ad-panes" id="cfg-panes">
+
+        <!-- ============ 分类一：网站设置 ============ -->
+        <section class="ad-pane" id="pane-site">
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-globe"></i>基础信息</h3>
+              <span class="x">最后修改：2024-11-19 18:22 · 超级管理员</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-form">
+                <div class="ad-field full" data-req="site-name">
+                  <label>站点名称<span class="req">*</span></label>
+                  <input class="ad-inp" type="text" placeholder="请输入站点名称">
+                  <span class="err"><i class="fas fa-circle-exclamation"></i>站点名称不能为空，将展示在浏览器标题与分享卡片上</span>
+                </div>
+                <div class="ad-field">
+                  <label>站点 Logo 地址</label>
+                  <input class="ad-inp" type="url" placeholder="https://cdn.example.com/logo.png">
+                  <span class="tip">建议尺寸 128×128，支持 PNG / SVG</span>
+                </div>
+                <div class="ad-field">
+                  <label>备案 ICP 备案号</label>
+                  <input class="ad-inp" type="text" value="京ICP备2024001286号">
+                </div>
+                <div class="ad-field full">
+                  <label>站点简介</label>
+                  <textarea class="ad-txt" rows="3" placeholder="一句话介绍你的站点，将用于分享卡片描述">哔哩云 —— 一个面向年轻人群的视频社区，分享创作、发现热爱。</textarea>
+                  <span class="tip">最多 120 字，已输入 34 字</span>
+                </div>
+                <div class="ad-field">
+                  <label>默认语言</label>
+                  <select class="ad-sel">
+                    <option>简体中文</option>
+                    <option>繁體中文</option>
+                    <option>English</option>
+                  </select>
+                </div>
+                <div class="ad-field">
+                  <label>用户注册方式</label>
+                  <div class="ad-radios" role="radiogroup">
+                    <label class="ad-radio"><input type="radio" name="regmode" checked><span>手机号注册</span></label>
+                    <label class="ad-radio"><input type="radio" name="regmode"><span>邮箱注册</span></label>
+                    <label class="ad-radio"><input type="radio" name="regmode"><span>两者都开放</span></label>
+                    <label class="ad-radio"><input type="radio" name="regmode"><span>关闭注册</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ad-pnl-ft">
+              <span class="sp"></span>
+              <button class="btn"><i class="fas fa-rotate-left"></i>还原默认</button>
+              <button class="btn btn-primary" data-save="site"><i class="fas fa-floppy-disk"></i>保存修改</button>
+            </div>
+          </div>
+
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-toggle-on"></i>功能开关</h3>
+              <span class="x">关闭后对应入口立即从前端隐藏</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">开放用户投稿</div>
+                  <div class="ds">关闭后 App 内「投稿」入口置灰，仅认证 UP 主与受邀账号可投稿</div>
+                </div>
+                <label class="ad-switch"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+              </div>
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">开放弹幕功能</div>
+                  <div class="ds">关闭后播放页弹幕轨道与发送入口全部隐藏</div>
+                </div>
+                <label class="ad-switch"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+              </div>
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">允许游客匿名浏览</div>
+                  <div class="ds">关闭后未登录用户仅能看到登录引导页，无法浏览任何内容</div>
+                </div>
+                <label class="ad-switch"><input type="checkbox"><span class="track"></span><span class="knob"></span></label>
+              </div>
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">开放社区勋章体系</div>
+                  <div class="ds">关闭后不再发放新勋章，已有勋章保留展示</div>
+                </div>
+                <label class="ad-switch"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+              </div>
+            </div>
+            <div class="ad-pnl-ft">
+              <span class="sp"></span>
+              <button class="btn btn-primary" data-save="site-sw"><i class="fas fa-floppy-disk"></i>保存修改</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 分类二：播放设置 ============ -->
+        <section class="ad-pane" id="pane-play">
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-gauge-high"></i>清晰度与转码</h3>
+              <span class="x">修改后新投稿自动套用，历史视频需手动批量转码</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-form">
+                <div class="ad-field full">
+                  <label>默认清晰度档位</label>
+                  <div class="ad-checks">
+                    <label class="ad-check"><input type="checkbox" checked><span>360P 流畅</span></label>
+                    <label class="ad-check"><input type="checkbox" checked><span>480P 标清</span></label>
+                    <label class="ad-check"><input type="checkbox" checked><span>720P 高清</span></label>
+                    <label class="ad-check"><input type="checkbox"><span>1080P 高码率</span></label>
+                    <label class="ad-check"><input type="checkbox" checked><span>4K 超清</span></label>
+                    <label class="ad-check"><input type="checkbox"><span>杜比视界</span></label>
+                  </div>
+                  <span class="tip">未勾选的档位不会生成转码任务，且不会被用户选中</span>
+                </div>
+                <div class="ad-field">
+                  <label>默认码率上限</label>
+                  <input class="ad-inp" type="number" value="12000" min="1000" step="500">
+                  <span class="tip">单位 kbps，建议 8000 ~ 20000</span>
+                </div>
+                <div class="ad-field">
+                  <label>单视频最大时长</label>
+                  <input class="ad-inp" type="number" value="60" min="1" step="5">
+                  <span class="tip">单位分钟</span>
+                </div>
+                <div class="ad-field full">
+                  <label>自动播放策略</label>
+                  <div class="ad-radios" role="radiogroup">
+                    <label class="ad-radio"><input type="radio" name="autoplay" checked><span>仅 Wi-Fi 下自动播放</span></label>
+                    <label class="ad-radio"><input type="radio" name="autoplay"><span>任何网络均自动播放</span></label>
+                    <label class="ad-radio"><input type="radio" name="autoplay"><span>从不自动播放</span></label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ad-pnl-ft">
+              <span class="sp"></span>
+              <button class="btn"><i class="fas fa-rotate-left"></i>还原默认</button>
+              <button class="btn btn-primary" data-save="play"><i class="fas fa-floppy-disk"></i>保存修改</button>
+            </div>
+          </div>
+
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-sliders"></i>播放体验参数</h3>
+              <span class="x">调整滑块可实时查看数值</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-form">
+                <div class="ad-field full" data-range>
+                  <label>默认音量</label>
+                  <div class="ad-range-wrap">
+                    <input class="ad-range" type="range" min="0" max="100" step="5" value="70">
+                    <span class="ad-range-val">70 %</span>
+                  </div>
+                </div>
+                <div class="ad-field full" data-range>
+                  <label>记忆播放进度</label>
+                  <div class="ad-range-wrap">
+                    <input class="ad-range" type="range" min="0" max="30" step="1" value="90">
+                    <span class="ad-range-val">90 %</span>
+                  </div>
+                </div>
+                <div class="ad-field full" data-range>
+                  <label>低清晰度优先阈值（弱网环境）</label>
+                  <div class="ad-range-wrap">
+                    <input class="ad-range" type="range" min="0" max="100" step="10" value="40">
+                    <span class="ad-range-val">40 %</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ad-pnl-ft">
+              <span class="hint"><i class="fas fa-circle-info"></i>共 3 项参数待同步到 12 个边缘节点</span>
+              <span class="sp"></span>
+              <button class="btn btn-primary" data-save="play-rng"><i class="fas fa-floppy-disk"></i>保存修改</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 分类三：审核设置 ============ -->
+        <section class="ad-pane" id="pane-audit">
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-shield-halved"></i>审核总开关</h3>
+              <span class="x">关闭后下方全部审核策略将失效</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">启用内容审核</div>
+                  <div class="ds">关闭后新投稿直接进入待发布队列，不再经过机审与人工复核</div>
+                </div>
+                <label class="ad-switch" data-master="audit"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 依赖总开关：关闭时整块置灰不可编辑 -->
+          <div class="ad-dep-note" id="audit-dep-note">
+            <i class="fas fa-lock"></i><span>「内容审核」已关闭，下列审核策略当前不生效且不可编辑，请先在上方开启总开关。</span>
+          </div>
+
+          <div class="ad-dep" id="audit-dep">
+            <div class="ad-pnl">
+              <div class="ad-pnl-hd">
+                <h3><i class="fas fa-robot"></i>机审策略</h3>
+                <span class="x">阈值越低越严格</span>
+              </div>
+              <div class="ad-pnl-bd">
+                <div class="ad-form">
+                  <div class="ad-field full">
+                    <label>机审驳回阈值</label>
+                    <div class="ad-radios" role="radiogroup">
+                      <label class="ad-radio"><input type="radio" name="thres" value="loose"><span>宽松（&lt; 40 分驳回）</span></label>
+                      <label class="ad-radio"><input type="radio" name="thres" value="normal" checked><span>标准（&lt; 60 分驳回）</span></label>
+                      <label class="ad-radio"><input type="radio" name="thres" value="strict"><span>严格（&lt; 80 分驳回）</span></label>
+                    </div>
+                  </div>
+                  <div class="ad-field full" data-range>
+                    <label>进入人工复核的最低得分</label>
+                    <div class="ad-range-wrap">
+                      <input class="ad-range" type="range" min="40" max="95" step="1" value="75">
+                      <span class="ad-range-val">75 分</span>
+                    </div>
+                  </div>
+                  <div class="ad-field">
+                    <label>人审超时时长</label>
+                    <input class="ad-inp" type="number" value="120" min="10" step="10">
+                    <span class="tip">单位分钟，超时自动升级为高优先级</span>
+                  </div>
+                  <div class="ad-field">
+                    <label>每日审核上限</label>
+                    <input class="ad-inp" type="number" value="3000" min="100" step="100">
+                    <span class="tip">超出部分顺延至次日</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ad-pnl-ft">
+                <span class="sp"></span>
+                <button class="btn btn-primary" data-save="audit"><i class="fas fa-floppy-disk"></i>保存修改</button>
+              </div>
+            </div>
+
+            <div class="ad-pnl">
+              <div class="ad-pnl-hd">
+                <h3><i class="fas fa-list-check"></i>审核覆盖范围</h3>
+                <span class="x">至少保留一项</span>
+              </div>
+              <div class="ad-pnl-bd">
+                <div class="ad-form one">
+                  <div class="ad-field full">
+                    <label>需要审核的内容类型</label>
+                    <div class="ad-checks">
+                      <label class="ad-check"><input type="checkbox" checked><span>视频投稿</span></label>
+                      <label class="ad-check"><input type="checkbox" checked><span>视频封面与标题</span></label>
+                      <label class="ad-check"><input type="checkbox" checked><span>评论</span></label>
+                      <label class="ad-check"><input type="checkbox" checked><span>弹幕</span></label>
+                      <label class="ad-check"><input type="checkbox"><span>直播实时画面</span></label>
+                      <label class="ad-check"><input type="checkbox" checked><span>用户头像与昵称</span></label>
+                      <label class="ad-check"><input type="checkbox"><span>私信内容</span></label>
+                      <label class="ad-check"><input type="checkbox"><span>投作品牌合作内容</span></label>
+                    </div>
+                  </div>
+                  <div class="ad-field full">
+                    <label>敏感词库版本</label>
+                    <select class="ad-sel">
+                      <option>v2024.11.18（当前生效，8,642 条）</option>
+                      <option>v2024.11.01（8,371 条）</option>
+                      <option>v2024.10.15（7,905 条）</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="ad-pnl-ft">
+                <span class="sp"></span>
+                <button class="btn btn-primary" data-save="audit-scope"><i class="fas fa-floppy-disk"></i>保存修改</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 分类四：消息设置 ============ -->
+        <section class="ad-pane" id="pane-msg">
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-bullhorn"></i>推送通道</h3>
+              <span class="x">至少保留一个可用通道</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">站内信通知</div>
+                  <div class="ds">互动、关注、投稿审核结果均通过站内信下发，无需用户授权</div>
+                </div>
+                <label class="ad-switch"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+              </div>
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">App 推送（Push）</div>
+                  <div class="ds">需要用户授权通知权限，未授权用户将收不到</div>
+                </div>
+                <label class="ad-switch"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+              </div>
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">短信通知</div>
+                  <div class="ds">仅用于登录验证码与安全提醒，单价 ¥0.045 / 条</div>
+                </div>
+                <label class="ad-switch" data-master="sms"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+              </div>
+              <div class="ad-sw-row">
+                <div class="ad-sw-tx">
+                  <div class="tt">邮件通知</div>
+                  <div class="ds">用于月度账单与运营周报发送</div>
+                </div>
+                <label class="ad-switch"><input type="checkbox"><span class="track"></span><span class="knob"></span></label>
+              </div>
+            </div>
+          </div>
+
+          <div class="ad-dep-note" id="sms-dep-note">
+            <i class="fas fa-lock"></i><span>「短信通知」已关闭，下列签名与模板配置当前不生效且不可编辑。</span>
+          </div>
+
+          <div class="ad-dep" id="sms-dep">
+            <div class="ad-pnl">
+              <div class="ad-pnl-hd">
+                <h3><i class="fas fa-comment-sms"></i>短信签名与模板</h3>
+                <span class="x">需与运营商报备签名一致</span>
+              </div>
+              <div class="ad-pnl-bd">
+                <div class="ad-form">
+                  <div class="ad-field">
+                    <label>短信签名</label>
+                    <input class="ad-inp" type="text" value="哔哩云">
+                  </div>
+                  <div class="ad-field">
+                    <label>验证码有效期</label>
+                    <input class="ad-inp" type="number" value="5" min="1" step="1">
+                    <span class="tip">单位分钟</span>
+                  </div>
+                  <div class="ad-field full" data-req="sms-tpl">
+                    <label>验证码模板内容<span class="req">*</span></label>
+                    <textarea class="ad-txt" rows="2" placeholder="请输入模板内容">您的验证码是 ${code}，${minutes} 分钟内有效，请勿转发给他人。</textarea>
+                    <span class="err"><i class="fas fa-circle-exclamation"></i>模板内容不能为空，且必须包含 ${code} 占位符</span>
+                  </div>
+                </div>
+              </div>
+              <div class="ad-pnl-ft">
+                <span class="sp"></span>
+                <button class="btn"><i class="fas fa-paper-plane"></i>发送测试短信</button>
+                <button class="btn btn-primary" data-save="sms"><i class="fas fa-floppy-disk"></i>保存修改</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-inbox"></i>消息模板</h3>
+              <span class="x">点击「刷新预览」可查看用户端真实展示</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <!-- 空状态演示 -->
+              <div class="ad-empty">
+                <span class="ic"><i class="fas fa-inbox"></i></span>
+                <div class="tt">暂无自定义消息模板</div>
+                <div class="ds">系统当前使用默认模板（互动通知、审核结果、系统公告共 3 套）。新建模板后可在同一位置统一维护变量与文案。</div>
+                <button class="btn btn-primary"><i class="fas fa-plus"></i>新建消息模板</button>
+              </div>
+            </div>
+            <div class="ad-pnl-ft">
+              <span class="sp"></span>
+              <button class="btn"><i class="fas fa-arrows-rotate"></i>刷新预览</button>
+              <button class="btn btn-primary" data-save="msg"><i class="fas fa-floppy-disk"></i>保存修改</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ 分类五：积分规则 ============ -->
+        <section class="ad-pane" id="pane-point">
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-coins"></i>积分获取</h3>
+              <span class="x">数值改动不可回滚，请谨慎调整</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-form">
+                <div class="ad-field">
+                  <label>每日签到积分</label>
+                  <input class="ad-inp" type="number" value="5" min="0" step="1">
+                </div>
+                <div class="ad-field">
+                  <label>观看 1 分钟</label>
+                  <input class="ad-inp" type="number" value="1" min="0" step="1">
+                </div>
+                <div class="ad-field">
+                  <label>发布一条弹幕</label>
+                  <input class="ad-inp" type="number" value="2" min="0" step="1">
+                </div>
+                <div class="ad-field">
+                  <label>投稿通过审核</label>
+                  <input class="ad-inp" type="number" value="50" min="0" step="10">
+                </div>
+                <div class="ad-field full" data-range>
+                  <label>积分兑换 1 元现金所需积分</label>
+                  <div class="ad-range-wrap">
+                    <input class="ad-range" type="range" min="100" max="1000" step="50" value="500">
+                    <span class="ad-range-val">500 积分</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ad-pnl-ft">
+              <span class="hint"><i class="fas fa-triangle-exclamation" style="color:var(--by-orange)"></i>积分兑换比例调整将立即影响全部未提现用户</span>
+              <span class="sp"></span>
+              <button class="btn btn-primary" data-save="point"><i class="fas fa-floppy-disk"></i>保存修改</button>
+            </div>
+          </div>
+
+          <div class="ad-pnl">
+            <div class="ad-pnl-hd">
+              <h3><i class="fas fa-ban"></i>积分扣减与风控</h3>
+              <span class="x">用于抑制刷量行为</span>
+            </div>
+            <div class="ad-pnl-bd">
+              <div class="ad-form one">
+                <div class="ad-sw-row">
+                  <div class="ad-sw-tx">
+                    <div class="tt">开启防刷分机制</div>
+                    <div class="ds">同一账号每分钟积分获取上限，超出部分不再累加</div>
+                  </div>
+                  <label class="ad-switch"><input type="checkbox" checked><span class="track"></span><span class="knob"></span></label>
+                </div>
+              </div>
+              <div class="ad-form" style="margin-top:16px">
+                <div class="ad-field">
+                  <label>每分钟积分上限</label>
+                  <input class="ad-inp" type="number" value="20" min="1" step="5">
+                </div>
+                <div class="ad-field">
+                  <label>风控账号阈值</label>
+                  <input class="ad-inp" type="number" value="200" min="0" step="50">
+                  <span class="tip">单账号日获取超过该值将进入人工复核</span>
+                </div>
+              </div>
+            </div>
+            <div class="ad-pnl-ft">
+              <span class="sp"></span>
+              <button class="btn btn-danger"><i class="fas fa-floppy-disk"></i>保存并生效</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ================= 脚本（顺序不可调整） ================= -->
+<script src="../../../menu/menu.js"></script>                  <!-- 菜单数据：必须最先 -->
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>                   <!-- 退出预览的桥，必须有 -->
+<script>
+/* 本页是配置页，没有数据表格，PROTO_FORM 只用于页面框架识别本页实体（弹窗文案兜底用）。
+   ⚠️ 本页不依赖表格弹窗（配置项由各面板自带控件承载），因此不写 fields。 */
+window.PROTO_FORM = {
+    entityName: "系统配置",
+    fields: []
+};
+</script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  await SidebarMenu.init('sidebar-menu');
+
+  /* ---------------- 轻提示 ---------------- */
+  var toastEl = document.createElement('div');
+  toastEl.className = 'ad-toast';
+  document.body.appendChild(toastEl);
+  var toastTimer = null;
+  function toast(msg, kind) {
+    toastEl.className = 'ad-toast ' + (kind === 'err' ? 'err' : 'ok');
+    toastEl.innerHTML = '<i class="fas ' + (kind === 'err' ? 'fa-circle-exclamation' : 'fa-circle-check') +
+                        '"></i><span>' + msg + '</span>';
+    requestAnimationFrame(function () { toastEl.classList.add('on'); });
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 2400);
+  }
+
+  /* ---------------- 左侧分类切换 ---------------- */
+  var navs = Array.from(document.querySelectorAll('#cfg-nav .ad-cfg-it'));
+  var panes = Array.from(document.querySelectorAll('.ad-pane'));
+  navs.forEach(function (n) {
+    n.addEventListener('click', function () {
+      var key = n.getAttribute('data-pane');
+      navs.forEach(function (x) { x.classList.toggle('on', x === n); });
+      panes.forEach(function (p) { p.style.display = (p.id === key) ? '' : 'none'; });
+    });
+  });
+  panes.forEach(function (p, i) { p.style.display = (i === 0) ? '' : 'none'; });
+
+  /* ---------------- 滑块：数值实时联动 + 轨道填充色 ---------------- */
+  function paintRange(r) {
+    var min = Number(r.min || 0), max = Number(r.max || 100);
+    var pct = ((Number(r.value) - min) / (max - min)) * 100;
+    r.style.setProperty('--fill', pct.toFixed(2) + '%');
+  }
+  document.querySelectorAll('.ad-range').forEach(function (r) {
+    var box = r.closest('[data-range]') || r.parentElement;
+    var out = box ? box.querySelector('.ad-range-val') : null;
+    function sync() {
+      paintRange(r);
+      if (out) {
+        var raw = out.textContent;
+        var unit = (raw.match(/[^\d\s].*$/) || [''])[0];      /* "70 %" → "%"，"75 分" → "分" */
+        out.textContent = r.value + ' ' + unit;
+      }
+    }
+    r.addEventListener('input', sync);
+    sync();
+  });
+
+  /* ---------------- 依赖总开关 → 下级面板置灰不可编辑 ---------------- */
+  function bindMaster(masterSel, depSel, noteSel, onMsg, offMsg) {
+    var master = document.querySelector(masterSel + ' input');
+    var dep    = document.querySelector(depSel);
+    var note   = document.querySelector(noteSel);
+    if (!master || !dep || !note) return;
+    function apply() {
+      var off = !master.checked;
+      dep.classList.toggle('off', off);
+      note.classList.toggle('on', off);
+      note.querySelector('span').textContent = off ? offMsg : onMsg;
+    }
+    master.addEventListener('change', function () {
+      apply();
+      toast(master.checked ? '已开启，下方配置恢复可编辑' : '已关闭，下方配置已锁定', master.checked ? 'ok' : 'err');
+    });
+    apply();
+  }
+  bindMaster('[data-master="audit"]', '#audit-dep', '#audit-dep-note',
+             '内容审核已开启，下列策略正在生效。',
+             '「内容审核」已关闭，下列审核策略当前不生效且不可编辑，请先在上方开启总开关。');
+  bindMaster('[data-master="sms"]', '#sms-dep', '#sms-dep-note',
+             '短信通知已开启，模板配置正在生效。',
+             '「短信通知」已关闭，下列签名与模板配置当前不生效且不可编辑。');
+
+  /* ---------------- 必填校验 ---------------- */
+  function validateField(field) {
+    var input = field.querySelector('.ad-inp, .ad-txt');
+    if (!input) return true;
+    var bad = input.value.trim() === '';
+    field.classList.toggle('bad', bad);
+    input.classList.toggle('bad', bad);
+    return !bad;
+  }
+  document.querySelectorAll('[data-req]').forEach(function (field) {
+    var input = field.querySelector('.ad-inp, .ad-txt');
+    if (!input) return;
+    input.addEventListener('input', function () {
+      if (input.value.trim() !== '') {
+        field.classList.remove('bad');
+        input.classList.remove('bad');
+      }
+    });
+  });
+
+  /* ---------------- 保存（含必填校验） ---------------- */
+  document.querySelectorAll('[data-save]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var pane = btn.closest('.ad-pane');
+      var reqs = pane ? Array.from(pane.querySelectorAll('[data-req]')) : [];
+      var ok = true;
+      var firstBad = null;
+      reqs.forEach(function (f) {
+        if (!validateField(f)) { ok = false; if (!firstBad) firstBad = f; }
+      });
+      if (!ok) {
+        var inp = firstBad.querySelector('.ad-inp, .ad-txt');
+        inp.focus();
+        inp.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        toast('请先填写带 * 的必填项', 'err');
+        return;
+      }
+      toast('保存成功，配置将于 5 分钟内下发到全部节点', 'ok');
+    });
+  });
+});
+</script>
+</body>
+</html>

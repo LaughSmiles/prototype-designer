@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UP主空间 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============================================================
+     哔哩云 · 电脑端前台 设计令牌（照抄 pages/pc/home/home.html 母版）
+     ============================================================ */
+  :root{
+    --pc-pink:#FB7299; --pc-pink-strong:#E11D48; --pc-pink-soft:#FFF1F5;
+    --pc-blue:#00AEEC; --pc-blue-soft:#E6F7FE;
+    --pc-text:#18191C; --pc-text-2:#61666D; --pc-text-3:#9499A0; --pc-text-inv:#FFFFFF;
+    --pc-bg:#F6F7F9; --pc-surface:#FFFFFF; --pc-surface-2:#F1F2F4;
+    --pc-line:#E3E5E8; --pc-line-2:#EDEFF2;
+    --pc-header-h:64px; --pc-side-w:180px; --pc-page-max:1600px;
+    --pc-r-sm:8px; --pc-r:12px; --pc-r-lg:18px;
+    --pc-shadow:0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --pc-shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pc-bg);color:var(--pc-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  ul{margin:0;padding:0;list-style:none}
+  img{display:block}
+
+  /* ============ 顶部导航 ============ */
+  .pc-head{position:sticky;top:0;z-index:50;height:var(--pc-header-h);background:var(--pc-surface);
+           border-bottom:1px solid var(--pc-line)}
+  .pc-head-in{max-width:var(--pc-page-max);margin:0 auto;height:100%;display:flex;align-items:center;gap:20px;padding:0 24px}
+  .pc-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--pc-pink-strong);flex:none}
+  .pc-logo i{font-size:22px}
+  .pc-nav{display:flex;gap:2px;flex:none}
+  .pc-nav a{padding:0 14px;height:var(--pc-header-h);display:flex;align-items:center;font-size:15px;
+           color:var(--pc-text-2);position:relative}
+  .pc-nav a:hover{color:var(--pc-text)}
+  .pc-nav a.on{color:var(--pc-pink-strong);font-weight:600}
+  .pc-nav a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;
+                      border-radius:2px 2px 0 0;background:var(--pc-pink)}
+  .pc-search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:38px;
+             padding:0 14px;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);
+             border:1px solid transparent;cursor:pointer;color:var(--pc-text-3)}
+  .pc-search:hover{border-color:var(--pc-line);background:var(--pc-surface)}
+  .pc-head-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  .pc-hbtn{width:36px;height:36px;border-radius:var(--pc-r-sm);display:flex;align-items:center;justify-content:center;
+           color:var(--pc-text-2);cursor:pointer;position:relative;font-size:16px}
+  .pc-hbtn:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-hbadge{position:absolute;top:4px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+             background:var(--pc-pink-strong);color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:500}
+  .pc-pubbtn{height:36px;padding:0 16px;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+             color:#fff;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .pc-pubbtn:hover{background:var(--pc-pink-strong)}
+  .pc-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer}
+
+  /* ============ 主体三栏 ============ */
+  .pc-body{max-width:var(--pc-page-max);margin:0 auto;display:flex;gap:24px;padding:24px;align-items:flex-start}
+  .pc-side{width:var(--pc-side-w);flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px);
+           max-height:calc(100vh - var(--pc-header-h) - 48px);overflow-y:auto}
+  .pc-side::-webkit-scrollbar{width:0}
+  .pc-side h4{font-size:12px;color:var(--pc-text-3);font-weight:500;margin:20px 0 8px;padding-left:10px;letter-spacing:.5px}
+  .pc-side h4:first-child{margin-top:0}
+  .pc-side a{display:flex;align-items:center;gap:9px;height:38px;padding:0 10px;border-radius:var(--pc-r-sm);
+             font-size:14px;color:var(--pc-text-2)}
+  .pc-side a i{width:18px;text-align:center;color:var(--pc-text-3);font-size:14px}
+  .pc-side a:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-side a.on{background:var(--pc-pink-soft);color:var(--pc-pink-strong);font-weight:600}
+  .pc-side a.on i{color:var(--pc-pink-strong)}
+
+  .pc-main{flex:1;min-width:0}
+
+  /* ============ 内容区 ============ */
+  .pc-sec{margin-top:32px}
+  .pc-sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .pc-sec-hd h2{font-size:20px;font-weight:600;margin:0;display:flex;align-items:center;gap:9px}
+  .pc-sec-hd h2 i{color:var(--pc-pink)}
+  .pc-sec-hd .more{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--pc-text-3);cursor:pointer}
+  .pc-sec-hd .more:hover{color:var(--pc-pink-strong)}
+  .pc-tabs{display:flex;gap:24px;margin-bottom:18px;border-bottom:1px solid var(--pc-line)}
+  .pc-tabs button{padding:0 2px 12px;font-size:15px;color:var(--pc-text-2);background:none;border:none;
+                   cursor:pointer;font-family:inherit;position:relative}
+  .pc-tabs button:hover{color:var(--pc-text)}
+  .pc-tabs button.on{color:var(--pc-text);font-weight:600}
+  .pc-tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--pc-pink)}
+
+  /* 视频卡片网格：5 列 */
+  .pc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:20px 16px}
+  .pc-card{background:var(--pc-surface);border-radius:var(--pc-r);overflow:hidden;cursor:pointer;
+           transition:transform .2s,box-shadow .2s}
+  .pc-card:hover{transform:translateY(-4px);box-shadow:var(--pc-shadow-lg)}
+  .pc-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:var(--pc-surface-2)}
+  .pc-cover img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+  .pc-card:hover .pc-cover img{transform:scale(1.05)}
+  .pc-cover .dur{position:absolute;right:8px;bottom:8px;padding:1px 6px;border-radius:4px;
+                 background:rgba(0,0,0,.72);color:#fff;font-size:11px;font-variant-numeric:tabular-nums}
+  .pc-cover .tagline{position:absolute;left:8px;bottom:8px;display:flex;gap:5px}
+  .pc-cover .tagline span{padding:1px 6px;border-radius:4px;font-size:11px;color:#fff}
+  .pc-cover .dm{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .pc-cover .dm i{position:absolute;font-size:11px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);font-style:normal;white-space:nowrap}
+  .pc-card-bd{padding:11px 12px 13px}
+  .pc-title{font-size:14px;line-height:1.45;color:var(--pc-text);display:-webkit-box;-webkit-line-clamp:2;
+            -webkit-box-orient:vertical;overflow:hidden;transition:color .2s;min-height:40px}
+  .pc-card:hover .pc-title{color:var(--pc-pink-strong)}
+  .pc-meta{margin-top:9px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--pc-text-3)}
+  .pc-meta span{display:flex;align-items:center;gap:4px}
+  .pc-up{margin-top:9px;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--pc-text-3)}
+  .pc-up img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+  .pc-up b{font-weight:400;color:var(--pc-text-2)}
+
+  /* 排行榜（右侧栏） */
+  .pc-rank{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px 18px 8px}
+  .pc-rank h3{margin:0 0 6px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .pc-rank h3 i{color:var(--pc-pink)}
+  .pc-rank-it{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--pc-line-2);cursor:pointer}
+  .pc-rank-it:last-child{border-bottom:none}
+  .pc-rank-no{font-size:15px;font-weight:700;color:var(--pc-text-3);width:18px;flex:none;text-align:center;
+              font-variant-numeric:tabular-nums;padding-top:2px}
+  .pc-rank-it:nth-child(2) .pc-rank-no{color:#FF6B6B}
+  .pc-rank-it:nth-child(3) .pc-rank-no{color:#FF9F43}
+  .pc-rank-it:nth-child(4) .pc-rank-no{color:#F5B544}
+  .pc-rank-thumb{width:96px;height:54px;border-radius:var(--pc-r-sm);object-fit:cover;flex:none;background:var(--pc-surface-2)}
+  .pc-rank-tx{flex:1;min-width:0}
+  .pc-rank-tx .t{font-size:13px;line-height:1.45;color:var(--pc-text);display:-webkit-box;-webkit-line-clamp:2;
+                 -webkit-box-orient:vertical;overflow:hidden}
+  .pc-rank-it:hover .pc-rank-tx .t{color:var(--pc-pink-strong)}
+  .pc-rank-tx .m{font-size:11px;color:var(--pc-text-3);margin-top:5px}
+
+  /* 侧边小卡 */
+  .pc-side-card{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px;margin-top:16px}
+  .pc-side-card h4{margin:0 0 14px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .pc-side-card h4 i{color:var(--pc-pink)}
+
+  /* 空状态 */
+  .pc-empty{padding:64px 20px;text-align:center;color:var(--pc-text-3)}
+  .pc-empty i{font-size:48px;color:var(--pc-line);margin-bottom:16px;display:block}
+  .pc-empty p{margin:0 0 20px;font-size:14px}
+
+  /* 加载更多 */
+  .pc-more{display:block;width:100%;height:46px;margin-top:24px;border:1px solid var(--pc-line);
+           border-radius:var(--pc-r);background:var(--pc-surface);color:var(--pc-text-2);
+           font-size:14px;cursor:pointer;font-family:inherit}
+  .pc-more:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+
+  .pc-foot{margin-top:48px;padding:28px 24px;text-align:center;font-size:12px;color:var(--pc-text-3);
+           border-top:1px solid var(--pc-line)}
+
+  /* ============================================================
+     ↓ 以下为「UP主个人空间页」特有样式（母版未定义的 pc- 前缀新类）
+     ============================================================ */
+
+  /* 空间头：横幅封面 + 头像叠加 */
+  .pc-space-hd{background:var(--pc-surface);border-radius:var(--pc-r-lg);overflow:hidden;
+               box-shadow:var(--pc-shadow)}
+  .pc-space-cover{position:relative;height:180px;background:var(--pc-surface-2)}
+  .pc-space-cover img{width:100%;height:100%;object-fit:cover}
+  .pc-space-cover::after{content:"";position:absolute;inset:0;
+                         background:linear-gradient(180deg,rgba(0,0,0,.22) 0%,rgba(0,0,0,0) 42%,rgba(0,0,0,.10) 100%)}
+  .pc-space-cover .nm{position:absolute;right:20px;top:16px;z-index:2;color:#fff;font-size:12px;
+                      background:rgba(0,0,0,.42);border-radius:14px;padding:4px 12px;backdrop-filter:blur(4px)}
+  .pc-space-info{position:relative;padding:0 28px 22px;display:flex;gap:20px;align-items:flex-start}
+  .pc-space-avatar{width:96px;height:96px;flex:none;border-radius:50%;object-fit:cover;
+                   border:4px solid #fff;margin-top:-48px;background:var(--pc-surface-2);
+                   box-shadow:0 2px 10px rgba(0,0,0,.10)}
+  .pc-space-who{flex:1;min-width:0;padding-top:16px}
+  .pc-space-nm{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pc-space-nm h1{margin:0;font-size:22px;font-weight:700;color:var(--pc-text)}
+  .pc-lv{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 10px;border-radius:11px;
+        background:linear-gradient(90deg,#FB7299,#E11D48);color:#fff;font-size:11px;font-weight:500}
+  .pc-vip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 9px;border-radius:11px;
+          background:var(--pc-blue-soft);color:#0092c6;font-size:11px;font-weight:500}
+  .pc-space-sign{margin-top:8px;font-size:13px;color:var(--pc-text-2);line-height:1.7;
+                 display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pc-space-stat{margin-top:12px;display:flex;gap:24px;flex-wrap:wrap}
+  .pc-space-stat div{display:flex;align-items:baseline;gap:5px;font-size:12px;color:var(--pc-text-3);cursor:pointer}
+  .pc-space-stat div:hover{color:var(--pc-text)}
+  .pc-space-stat b{font-size:16px;font-weight:700;color:var(--pc-text);font-variant-numeric:tabular-nums}
+  .pc-space-acts{display:flex;flex-direction:column;gap:9px;padding-top:18px;flex:none}
+  .pc-followbtn{height:38px;min-width:104px;padding:0 20px;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+                color:#fff;font-size:14px;font-weight:500;border:none;font-family:inherit;cursor:pointer;
+                display:inline-flex;align-items:center;justify-content:center;gap:7px}
+  .pc-followbtn:hover{background:var(--pc-pink-strong)}
+  .pc-followbtn.on{background:var(--pc-surface-2);color:var(--pc-text-2);border:1px solid var(--pc-line)}
+  .pc-followbtn.on:hover{color:var(--pc-pink-strong);border-color:var(--pc-pink)}
+  .pc-space-acts .mini{display:flex;gap:9px}
+  .pc-space-acts .mini button{flex:1;height:32px;border-radius:var(--pc-r-sm);background:var(--pc-surface-2);
+                             color:var(--pc-text-2);border:none;font-family:inherit;font-size:12px;cursor:pointer;
+                             display:inline-flex;align-items:center;justify-content:center;gap:5px}
+  .pc-space-acts .mini button:hover{color:var(--pc-pink-strong)}
+
+  /* 页签上的数量 */
+  .pc-tabnum{font-size:12px;color:var(--pc-text-3);margin-left:5px;font-weight:400}
+  .pc-tabs button.on .pc-tabnum{color:var(--pc-text-3)}
+
+  /* 空间主体：左视频网格 + 右侧资料 */
+  .pc-space-cols{display:flex;gap:24px;align-items:flex-start}
+  .pc-space-left{flex:1;min-width:0}
+  .pc-space-right{width:300px;flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px)}
+  .pc-space-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 14px}
+
+  /* 动态条目 */
+  .pc-dy{display:flex;gap:14px;background:var(--pc-surface);border-radius:var(--pc-r);padding:16px;
+         box-shadow:var(--pc-shadow);margin-bottom:14px}
+  .pc-dy img.av{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none}
+  .pc-dy .tx{flex:1;min-width:0;font-size:13px;color:var(--pc-text-2);line-height:1.7}
+  .pc-dy .tx .hd{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .pc-dy .tx .hd b{font-size:13px;font-weight:600;color:var(--pc-text)}
+  .pc-dy .tx .hd span{font-size:11px;color:var(--pc-text-3)}
+  .pc-dy .tx .pic{margin-top:10px;display:flex;gap:10px}
+  .pc-dy .tx .pic img{width:168px;height:105px;object-fit:cover;border-radius:var(--pc-r-sm);cursor:pointer}
+  .pc-dy .tx .pic img:hover{opacity:.88}
+  .pc-dy .tx .foot{margin-top:10px;display:flex;gap:18px;font-size:12px;color:var(--pc-text-3)}
+  .pc-dy .tx .foot span{display:flex;align-items:center;gap:5px;cursor:pointer}
+  .pc-dy .tx .foot span:hover{color:var(--pc-pink-strong)}
+
+  /* 个人资料 */
+  .pc-info .r{display:flex;align-items:center;justify-content:space-between;padding:9px 0;font-size:13px}
+  .pc-info .r + .r{border-top:1px solid var(--pc-line-2)}
+  .pc-info .r span{color:var(--pc-text-3);display:flex;align-items:center;gap:6px}
+  .pc-info .r b{font-weight:400;color:var(--pc-text)}
+  .pc-info .r b em{font-style:normal;color:var(--pc-blue)}
+
+  /* 荣誉墙 */
+  .pc-honor{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .pc-honor-it{text-align:center;padding:12px 4px;border-radius:var(--pc-r-sm);background:var(--pc-surface-2);
+               cursor:pointer;transition:background .2s}
+  .pc-honor-it:hover{background:var(--pc-pink-soft)}
+  .pc-honor-it .ic{width:42px;height:42px;margin:0 auto;border-radius:50%;color:#fff;font-size:16px;
+                  display:flex;align-items:center;justify-content:center}
+  .pc-honor-it b{display:block;margin-top:9px;font-size:12px;font-weight:500;color:var(--pc-text)}
+  .pc-honor-it span{display:block;margin-top:3px;font-size:10px;color:var(--pc-text-3)}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航 ==================== -->
+<header class="pc-head">
+  <div class="pc-head-in">
+    <a class="pc-logo" href="../home/home.html"><i class="fas fa-bolt"></i>哔哩云</a>
+    <nav class="pc-nav">
+      <a href="../home/home.html">首页</a>
+      <a href="../channel/channel.html">番剧</a>
+      <a href="../search/search.html">排行榜</a>
+      <a href="../channel/channel.html">直播</a>
+      <a class="on" href="../space/space.html">游戏中心</a>
+    </nav>
+    <div class="pc-search" onclick="location.href='../search/search.html'">
+      <i class="fas fa-magnifying-glass"></i><span>搜索你感兴趣的视频、UP主</span>
+    </div>
+    <div class="pc-head-right">
+      <span class="pc-hbtn" title="消息"><i class="fas fa-bell"></i><em class="pc-hbadge">9</em></span>
+      <span class="pc-hbtn" title="收藏"><i class="fas fa-bookmark"></i></span>
+      <span class="pc-hbtn" title="历史"><i class="fas fa-clock-rotate-left"></i></span>
+      <a class="pc-pubbtn" href="../upload/upload.html"><i class="fas fa-upload"></i>投稿</a>
+      <img class="pc-avatar" src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 主体 ==================== -->
+<div class="pc-body">
+
+  <!-- ---------- 左侧分区导航 ---------- -->
+  <aside class="pc-side">
+    <h4>热门分区</h4>
+    <a href="../channel/channel.html"><i class="fas fa-film"></i>动画</a>
+    <a href="../channel/channel.html"><i class="fas fa-gamepad"></i>游戏</a>
+    <a href="../channel/channel.html"><i class="fas fa-music"></i>音乐</a>
+    <a href="../channel/channel.html"><i class="fas fa-code"></i>科技</a>
+    <a href="../channel/channel.html"><i class="fas fa-utensils"></i>美食</a>
+    <a href="../channel/channel.html"><i class="fas fa-heart"></i>生活</a>
+    <a href="../channel/channel.html"><i class="fas fa-book"></i>知识</a>
+    <a href="../channel/channel.html"><i class="fas fa-futbol"></i>运动</a>
+
+    <h4>TA 的频道</h4>
+    <a class="on" href="space.html"><i class="fas fa-code"></i>科技·前端</a>
+    <a href="../channel/channel.html"><i class="fas fa-graduation-cap"></i>知识·公开课</a>
+    <a href="../channel/channel.html"><i class="fas fa-music"></i>音乐·后期</a>
+
+    <h4>我的</h4>
+    <a href="../history/history.html"><i class="fas fa-clock-rotate-left"></i>观看历史</a>
+    <a href="../favorite/favorite.html"><i class="fas fa-bookmark"></i>我的收藏</a>
+    <a href="../upload/upload.html"><i class="fas fa-cloud-arrow-up"></i>投稿管理</a>
+    <a href="../message/message.html"><i class="fas fa-envelope"></i>我的消息</a>
+
+    <h4>更多</h4>
+    <a href="../channel/channel.html"><i class="fas fa-circle-info"></i>帮助中心</a>
+    <a href="../channel/channel.html"><i class="fas fa-gear"></i>意见反馈</a>
+  </aside>
+
+  <!-- ---------- 主内容 ---------- -->  <main class="pc-main">
+
+    <!-- 空间头 -->
+    <section class="pc-space-hd">
+      <div class="pc-space-cover">
+        <img src="../../../lib/images/cover-code-monitor.jpeg" alt="">
+        <span class="nm">2024-09-20 更新个人空间</span>
+      </div>
+      <div class="pc-space-info">
+        <img class="pc-space-avatar" id="spAvatar" src="../../../lib/images/avatar-01.jpeg" alt="UP主头像">
+        <div class="pc-space-who">
+          <div class="pc-space-nm">
+            <h1 id="spName">代码狂人阿伟</h1>
+            <span class="pc-lv"><i class="fas fa-fire"></i> Lv.6 百大UP主</span>
+            <span class="pc-vip"><i class="fas fa-circle-check"></i> 官方认证 · 优质创作者</span>
+          </div>
+          <p class="pc-space-sign" id="spSign">
+            前端工程师 / 八年老兵 / 每周三、周六更新。前端工程化、性能优化与面试题系列是我的主赛道，
+            所有视频的讲义与源码都会同步到专栏，不玩概念只讲能落地的做法。
+          </p>
+          <div class="pc-space-stat">
+            <div><b>86</b> 关注</div>
+            <div><b>286.4万</b> 粉丝</div>
+            <div><b>128</b> 投稿</div>
+            <div><b>1642.7万</b> 获赞</div>
+            <div><b>3.7亿</b> 播放</div>
+          </div>
+        </div>
+        <div class="pc-space-acts">
+          <button class="pc-followbtn" id="followBtn"><i class="fas fa-plus"></i>关注</button>
+          <div class="mini">
+            <button title="发私信"><i class="far fa-comment-dots"></i>私信</button>
+            <button title="更多操作"><i class="fas fa-ellipsis-h"></i>更多</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 内容两栏 -->
+    <div class="pc-space-cols" style="margin-top:24px">
+
+      <!-- 左：投稿 / 收藏 / 动态 -->
+      <div class="pc-space-left">
+        <div class="pc-tabs" id="spTabs" style="margin-bottom:20px">
+          <button class="on" data-k="post">投稿 <span class="pc-tabnum">128</span></button>
+          <button data-k="fav">收藏 <span class="pc-tabnum">46</span></button>
+          <button data-k="dy">动态 <span class="pc-tabnum">12</span></button>
+        </div>
+        <div id="spBody"></div>
+        <button class="pc-more" id="spMore">加载更多</button>
+      </div>
+
+      <!-- 右：个人资料 / 荣誉墙 -->
+      <aside class="pc-space-right">
+        <div class="pc-side-card" style="margin-top:0">
+          <h4><i class="fas fa-address-card"></i>个人资料</h4>
+          <div class="pc-info">
+            <div class="r"><span><i class="fas fa-venus-mars"></i>性别</span><b>男</b></div>
+            <div class="r"><span><i class="far fa-calendar"></i>生日</span><b>1996 年 4 月 18 日</b></div>
+            <div class="r"><span><i class="fas fa-location-dot"></i>所在地</span><b>浙江 杭州</b></div>
+            <div class="r"><span><i class="fas fa-heart"></i>情感状态</span><b>单身 <em>· 欢迎来聊</em></b></div>
+            <div class="r"><span><i class="fas fa-star"></i>星座</span><b>白羊座</b></div>
+            <div class="r"><span><i class="fas fa-cake-candles"></i>生日月</span><b>4 月投稿有彩蛋</b></div>
+            <div class="r"><span><i class="fas fa-link"></i>主页链接</span><b style="color:var(--pc-blue)">awesome.dev</b></div>
+          </div>
+        </div>
+
+        <div class="pc-side-card">
+          <h4><i class="fas fa-award"></i>荣誉墙</h4>
+          <div class="pc-honor" id="honorList"></div>
+        </div>
+
+        <div class="pc-side-card">
+          <h4><i class="fas fa-gift"></i>TA 的悬赏</h4>
+          <div class="pc-info">
+            <div class="r"><span><i class="fas fa-code"></i>前端周刊 52 期</span><b>更新中</b></div>
+            <div class="r"><span><i class="fas fa-book"></i>源码合集 v6</span><b>已更新</b></div>
+            <div class="r"><span><i class="fas fa-chalkboard-user"></i>连麦答疑</span><b>周六 20:00</b></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="pc-foot">
+      哔哩云 · 视频社区高保真原型 ｜ 本页所有图片与视频均已本地化，完全离线可用
+    </footer>
+  </main>
+</div>
+
+<!-- ==================== 脚本 ==================== -->
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var IMG = '../../../lib/images/';
+  var PLAYER = '../player/player.html';
+
+  /* ---------- 投稿（10 条） ---------- */
+  var POSTS = [
+    { t:'前端工程师的一天：从零到上线一个完整项目', c:'cover-code-monitor.jpeg', p:'421.3万', d:'24:08', n:'15.6万', tag:'教程', tagc:'#00B1B1', pub:'2024-09-18' },
+    { t:'前端性能优化实战：首屏从 4.2s 压到 1.1s 全过程', c:'cover-desk-rgb.jpeg', p:'517.9万', d:'22:47', n:'21.3万', tag:'性能', tagc:'#E11D48', pub:'2024-09-11' },
+    { t:'前端面试通关指南：30 道高频题逐题拆解', c:'cover-code-rainbow.png', p:'673.2万', d:'31:44', n:'27.9万', tag:'面试', tagc:'#7C4DFF', pub:'2024-09-04' },
+    { t:'Vue3 + Vite 从入门到实战，一套视频讲透响应式原理', c:'cover-code-js.jpeg', p:'286.5万', d:'18:35', n:'9.8万', tag:'Vue3', tagc:'#00AEEC', pub:'2024-08-28' },
+    { t:'用代码画动画：Canvas 与 WebGL 入门实践', c:'cover-gaming-rgb.jpeg', p:'134.7万', d:'20:05', n:'4.6万', tag:'图形', tagc:'#9C27B0', pub:'2024-08-21' },
+    { t:'桌面美学：RGB 灯效搭配实录', c:'cover-desk-rgb.jpeg', p:'198.7万', d:'10:44', n:'8.8万', tag:'硬件', tagc:'#00B1B1', pub:'2024-08-14' },
+    { t:'从零搭建前端监控体系：埋点、告警与错误聚合', c:'cover-code-monitor.jpeg', p:'96.8万', d:'26:18', n:'3.2万', tag:'工程化', tagc:'#00C2A8', pub:'2024-08-07' },
+    { t:'TypeScript 全面入门：类型体操与工程配置', c:'cover-code-js.jpeg', p:'198.4万', d:'16:12', n:'6.4万', tag:'TS', tagc:'#7C4DFF', pub:'2024-07-31' },
+    { t:'前端教程合集：从入门到进阶的 120 集学习路径', c:'cover-code-rainbow.png', p:'845.1万', d:'08:56', n:'31.5万', tag:'合集', tagc:'#FF9F43', pub:'2024-07-24' },
+    { t:'CSS 布局十讲：flex 与 grid 到底怎么选', c:'cover-code-monitor.jpeg', p:'142.6万', d:'14:03', n:'5.1万', tag:'CSS', tagc:'#00AEEC', pub:'2024-07-17' }
+  ];
+
+  /* ---------- 收藏（8 条；故意留空一条以触发空状态演示的同构样式） ---------- */
+  var FAVS = [
+    { t:'凌晨四点的城市，比白天更真实', c:'cover-city-night.jpeg',   up:'城市观察局',   av:'avatar-05.jpeg', p:'233.5万', d:'12:40', n:'9.7万' },
+    { t:'当你以为在养猫，实际上是猫在养你', c:'cover-cat-grumpy.jpeg', up:'猫奴日常菌',   av:'avatar-02.jpeg', p:'892.1万', d:'08:45', n:'30.2万' },
+    { t:'三分钟搞定的深夜食堂，新手也能学会', c:'cover-cook-chop.jpeg',  up:'小厨房大厨',   av:'avatar-03.jpeg', p:'156.7万', d:'03:18', n:'8.4万' },
+    { t:'用一把吉他弹响青春的声音', c:'cover-guitar-blue.jpeg',      up:'民谣小王子',   av:'avatar-04.jpeg', p:'98.2万',  d:'05:07', n:'4.1万' },
+    { t:'一个人的雪山徒步，治愈了我一整年', c:'cover-mountain.jpeg',    up:'山野拾光',     av:'avatar-06.jpeg', p:'512.8万', d:'16:22', n:'21.3万' },
+    { t:'高原上的星空，肉眼可见的银河', c:'cover-tianshan.jpeg',       up:'山野拾光',     av:'avatar-06.jpeg', p:'302.6万', d:'09:51', n:'12.1万' },
+    { t:'音乐现场：民谣在 Livehouse 的样子', c:'cover-music-stage.jpeg', up:'民谣小王子',   av:'avatar-04.jpeg', p:'92.7万',  d:'21:30', n:'4.4万' },
+    { t:'街机厅里那些年的回忆', c:'cover-gaming-shop.jpeg',         up:'游戏区主播',   av:'avatar-02.jpeg', p:'254.1万', d:'15:47', n:'10.9万' }
+  ];
+
+  /* ---------- 动态（4 条） ---------- */
+  var DYS = [
+    { tx:'新一期的性能优化专题终于做完了，一共 12 讲，比原计划多了 3 讲。每讲的火焰图对比都在专栏里，评论区有问题我周末统一回。',
+      pics:['cover-code-monitor.jpeg','cover-desk-rgb.jpeg'], time:'3 小时前', lp:'2,846', cm:'391' },
+    { tx:'感谢今天连麦答疑的三位同学，问题都很典型，我直接把对应的两期视频链接置顶在专栏了。下期周六晚 8 点，主题是构建提速。',
+      pics:[], time:'昨天 21:40', lp:'4,192', cm:'528' },
+    { tx:'《前端面试通关指南》第三版上线了，这次补了 8 道新题和全部答案的思维导图。买过前两版的同学在专栏可以直接下载最新版。',
+      pics:['cover-code-rainbow.png','cover-code-js.jpeg'], time:'3 天前', lp:'9,317', cm:'1,204' },
+    { tx:'换了个新的桌面，录视频的背景光重新布了一下。下一期桌面美学实测要重新拍，不知道这个灯光行不行。',
+      pics:['cover-neon-street.jpeg'], time:'6 天前', lp:'2,061', cm:'273' }
+  ];
+
+  /* ---------- 荣誉墙 ---------- */
+  var HONORS = [
+    { n:'百大UP主', s:'2024 年度', i:'fa-award', c:'#E11D48' },
+    { n:'播放十万', s:'累计 3.7 亿', i:'fa-play', c:'#FB7299' },
+    { n:'知识贡献', s:'年度前 10', i:'fa-lightbulb', c:'#FF9F43' },
+    { n:'最佳新人', s:'2021 年度', i:'fa-star', c:'#7C4DFF' },
+    { n:'专栏认证', s:'专栏 52 期', i:'fa-book', c:'#00AEEC' },
+    { n:'课堂讲师', s:'认证讲师', i:'fa-graduation-cap', c:'#00C2A8' }
+  ];
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+
+  /* ---------- 空状态 ---------- */
+  function empty(icon, msg, hint) {
+    return '<div class="pc-card pc-empty">' +
+             '<i class="fas ' + icon + '"></i>' +
+             '<p>' + msg + '</p>' +
+             (hint ? '<button class="pc-more" style="margin-top:0;width:auto;padding:0 28px">' + hint + '</button>' : '') +
+           '</div>';
+  }
+
+  /* ---------- 卡片渲染 ---------- */
+  function postCard(v) {
+    return '' +
+    '<article class="pc-card">' +
+      '<div class="pc-cover">' +
+        '<img src="' + IMG + v.c + '" alt="">' +
+        '<span class="tagline"><span style="background:' + v.tagc + '">' + v.tag + '</span></span>' +
+        '<span class="dur">' + v.d + '</span>' +
+      '</div>' +
+      '<div class="pc-card-bd">' +
+        '<h3 class="pc-title">' + esc(v.t) + '</h3>' +
+        '<div class="pc-meta"><span><i class="fas fa-play"></i>' + v.p + '</span>' +
+        '<span><i class="fas fa-comment-dots"></i>' + v.n + '</span></div>' +
+        '<div class="pc-up"><i class="far fa-clock"></i><b>' + v.pub + ' 发布</b></div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function favCard(v) {
+    return '' +
+    '<article class="pc-card">' +
+      '<div class="pc-cover">' +
+        '<img src="' + IMG + v.c + '" alt="">' +
+        '<span class="dur">' + v.d + '</span>' +
+      '</div>' +
+      '<div class="pc-card-bd">' +
+        '<h3 class="pc-title">' + esc(v.t) + '</h3>' +
+        '<div class="pc-meta"><span><i class="fas fa-play"></i>' + v.p + '</span>' +
+        '<span><i class="fas fa-comment-dots"></i>' + v.n + '</span></div>' +
+        '<div class="pc-up"><img src="' + IMG + v.av + '" alt=""><b>' + esc(v.up) + '</b></div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  function dyItem(d) {
+    return '' +
+    '<article class="pc-dy">' +
+      '<img class="av" src="' + IMG + 'avatar-01.jpeg" alt="">' +
+      '<div class="tx">' +
+        '<div class="hd"><b>代码狂人阿伟</b><span>' + d.time + '</span></div>' +
+        esc(d.tx) +
+        (d.pics.length
+          ? '<div class="pic">' + d.pics.map(function (p) {
+              return '<img src="' + IMG + p + '" alt="">';
+            }).join('') + '</div>'
+          : '') +
+        '<div class="foot">' +
+          '<span><i class="far fa-thumbs-up"></i> ' + d.lp + '</span>' +
+          '<span><i class="far fa-comment"></i> ' + d.cm + '</span>' +
+          '<span><i class="far fa-share-from-square"></i> 转发</span>' +
+        '</div>' +
+      '</div>' +
+    '</article>';
+  }
+
+  /* ---------- 页签渲染（含空状态） ---------- */
+  var bodyEl = document.getElementById('spBody');
+  var moreEl = document.getElementById('spMore');
+
+  function render(key) {
+    if (key === 'post') {
+      if (!POSTS.length) {
+        bodyEl.innerHTML = empty('fa-cloud-arrow-up', 'TA 还没投稿过', '关注 TA，第一时间收到更新提醒');
+      } else {
+        bodyEl.innerHTML = '<div class="pc-space-grid">' + POSTS.map(postCard).join('') + '</div>';
+      }
+    } else if (key === 'fav') {
+      if (!FAVS.length) {
+        bodyEl.innerHTML = empty('fa-bookmark', 'TA 的收藏夹还是空的', '收藏夹公开与否由 UP 主自己决定');
+      } else {
+        bodyEl.innerHTML = '<div class="pc-space-grid">' + FAVS.map(favCard).join('') + '</div>';
+      }
+    } else {
+      if (!DYS.length) {
+        bodyEl.innerHTML = empty('fa-comment-dots', 'TA 还没有发布过动态', '关注后即可看到最新动态');
+      } else {
+        bodyEl.innerHTML = DYS.map(dyItem).join('');
+      }
+    }
+    moreEl.hidden = false;
+  }
+
+  render('post');
+
+  bodyEl.addEventListener('click', function (e) {
+    if (e.target.closest('.pc-dy .pic')) { location.href = PLAYER; return; }
+    if (e.target.closest('.pc-empty')) { location.href = '../upload/upload.html'; return; }
+    if (e.target.closest('.pc-card')) { location.href = PLAYER; }
+  });
+
+  /* ---------- 页签切换 ---------- */
+  document.getElementById('spTabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-k]');
+    if (!b) return;
+    this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    render(b.dataset.k);
+    Debug.log('[pc/space] 切换页签：', b.dataset.k);
+  });
+
+  /* ---------- 加载更多 ---------- */
+  moreEl.addEventListener('click', function () {
+    this.textContent = '已经到底啦';
+    this.disabled = true;
+    this.style.cursor = 'default';
+    this.style.color = 'var(--pc-text-3)';
+    this.style.borderColor = 'var(--pc-line-2)';
+  });
+
+  /* ---------- 关注按钮 ---------- */
+  var followBtn = document.getElementById('followBtn');
+  var following = false;
+  followBtn.addEventListener('click', function () {
+    following = !following;
+    this.classList.toggle('on', following);
+    this.innerHTML = following
+      ? '<i class="fas fa-check"></i>已关注'
+      : '<i class="fas fa-plus"></i>关注';
+    Debug.log('[pc/space] 关注状态：', following);
+  });
+
+  /* ---------- 荣誉墙 ---------- */
+  document.getElementById('honorList').innerHTML = HONORS.map(function (h) {
+    return '' +
+    '<div class="pc-honor-it">' +
+      '<span class="ic" style="background:' + h.c + '"><i class="fas ' + h.i + '"></i></span>' +
+      '<b>' + esc(h.n) + '</b>' +
+      '<span>' + esc(h.s) + '</span>' +
+    '</div>';
+  }).join('');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>举报处理 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<link rel="stylesheet" href="../../../css/sidebar-menu.css">
+<style>
+  :root{
+    --by-side:#001529; --by-head:#0A1A2F; --by-bg:#0B1524;
+    --by-card:#142136; --by-card-2:#1B2B44; --by-line:rgba(255,255,255,.09);
+    --by-primary:#409EFF; --by-green:#13CE66; --by-orange:#FF9F43;
+    --by-red:#F6465D; --by-purple:#9457D5;
+    --by-text:#E8ECF5; --by-text-2:#8FA0BC; --by-text-3:#5C6E8C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--by-bg);color:var(--by-text);
+       font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5}
+  .ad-wrap{display:flex;height:100vh;overflow:hidden}
+
+  .ad-head{height:56px;flex:none;background:var(--by-head);border-bottom:1px solid var(--by-line);
+           display:flex;align-items:center;padding:0 20px;gap:16px}
+  .ad-logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;width:200px}
+  .ad-logo .dot{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+                justify-content:center;background:linear-gradient(135deg,#FB7299,#E11D48);
+                font-size:13px;color:#fff}
+  .ad-crumb{font-size:13px;color:var(--by-text-2)}
+  .ad-crumb b{color:var(--by-text);font-weight:500}
+  .ad-head-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .ad-search{width:220px;height:32px;border-radius:6px;background:rgba(255,255,255,.07);
+             border:1px solid var(--by-line);display:flex;align-items:center;gap:7px;
+             padding:0 11px;font-size:12px;color:var(--by-text-3)}
+  .ad-hicon{color:var(--by-text-2);font-size:15px;cursor:pointer;position:relative;min-width:24px;text-align:center}
+  .ad-badge{position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;border-radius:8px;
+            background:var(--by-red);color:#fff;font-size:9px;line-height:15px;padding:0 4px}
+  .ad-me{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+  .ad-me img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+
+  .ad-side{width:200px;flex:none;background:var(--by-side);border-right:1px solid var(--by-line);
+           overflow-y:auto;padding:10px 0}
+  .ad-side::-webkit-scrollbar{width:0}
+  #sidebar-menu{background:var(--by-side)}
+
+  .ad-main{flex:1;min-width:0;overflow-y:auto;padding:18px 22px 28px}
+  .ad-main::-webkit-scrollbar{width:6px}
+  .ad-main::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:3px}
+
+  /* ============ 统计卡片 ============ */
+  .ad-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .ad-kpi{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+          padding:16px 18px;position:relative;overflow:hidden}
+  .ad-kpi .lb{font-size:12px;color:var(--by-text-2);display:flex;align-items:center;gap:8px}
+  .ad-kpi .lb .ic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;
+                  justify-content:center;font-size:12px;flex:none}
+  .ad-kpi .vl{font-size:26px;font-weight:700;margin-top:10px;letter-spacing:-.5px}
+  .ad-kpi .vl small{font-size:12px;font-weight:400;color:var(--by-text-3);margin-left:4px}
+  .ad-kpi .dl{font-size:11px;margin-top:7px;color:var(--by-text-3)}
+  .ad-kpi .dl b{font-weight:600}
+  .ad-kpi .up{color:var(--by-green)} .ad-kpi .dn{color:var(--by-red)}
+
+  /* ============ 搜索表单 ============ */
+  .search-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+               padding:15px 16px 4px;margin-top:14px}
+  .search-row{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+  .search-row .fi{display:flex;flex-direction:column;gap:6px}
+  .search-row label{font-size:12px;color:var(--by-text-2)}
+  .search-row input,.search-row select{height:32px;padding:0 10px;border-radius:6px;font-size:13px;
+    background:rgba(255,255,255,.06);border:1px solid var(--by-line);color:var(--by-text);
+    outline:none;font-family:inherit;min-width:150px}
+  .search-row input:focus,.search-row select:focus{border-color:var(--by-primary)}
+  .search-row select option{background:var(--by-card-2);color:var(--by-text)}
+  .search-row input::placeholder{color:var(--by-text-3)}
+
+  /* ============ 按钮 ============ */
+  .btn{height:32px;padding:0 15px;border-radius:6px;border:1px solid var(--by-line);
+       background:rgba(255,255,255,.06);color:var(--by-text);font-size:13px;cursor:pointer;
+       display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.11)}
+  .btn-primary{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;border-color:#66b1ff}
+  .btn-danger{background:var(--by-red);border-color:var(--by-red);color:#fff}
+  .btn-danger:hover{opacity:.88}
+  .btn-success{background:var(--by-green);border-color:var(--by-green);color:#fff}
+  .btn-warning{background:var(--by-orange);border-color:var(--by-orange);color:#fff}
+
+  /* ============ 工具栏 ============ */
+  .toolbar{display:flex;align-items:center;gap:10px;margin:14px 0 12px}
+  .toolbar .sp{flex:1}
+  .tb-tip{font-size:12px;color:var(--by-text-3);display:flex;align-items:center;gap:6px}
+
+  /* ============ 表格 ============ */
+  .tbl-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:var(--by-card-2);color:var(--by-text-2);font-weight:500;text-align:left;
+           padding:11px 12px;font-size:12px;white-space:nowrap}
+  tbody td{padding:11px 12px;border-top:1px solid var(--by-line);vertical-align:middle}
+  tbody tr:hover{background:rgba(255,255,255,.03)}
+  .tbl-card table{min-width:1360px}
+  .tbl-scroll{overflow-x:auto}
+  .tbl-scroll::-webkit-scrollbar{height:7px}
+  .tbl-scroll::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:4px}
+
+  input[type=checkbox]{width:14px;height:14px;accent-color:var(--by-primary);cursor:pointer}
+
+  .ad-mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:12px;
+           color:var(--by-text-2)}
+
+  /* 被举报内容：缩略图 / 文字摘要 */
+  .rc{display:flex;align-items:center;gap:10px;min-width:250px}
+  .rc img{width:62px;height:35px;border-radius:4px;object-fit:cover;flex:none}
+  .rc-t{font-size:13px;line-height:1.45;max-width:230px;overflow:hidden;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .rc-t.plain{color:var(--by-text)}
+
+  /* 用户单元格：头像 + 昵称 */
+  .ad-user{display:flex;align-items:center;gap:8px;white-space:nowrap}
+  .ad-user img{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none}
+  .ad-user.victim img{outline:2px solid rgba(246,70,93,.55)}
+
+  /* 彩色小标签 */
+  .ad-tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:4px;
+          line-height:1.5;white-space:nowrap}
+  .ad-tag.red{background:rgba(246,70,93,.16);color:#F6465D}
+  .ad-tag.orange{background:rgba(255,159,67,.16);color:#FF9F43}
+  .ad-tag.blue{background:rgba(64,158,255,.16);color:#409EFF}
+  .ad-tag.purple{background:rgba(148,87,213,.16);color:#B98BE8}
+  .ad-tag.gray{background:rgba(255,255,255,.07);color:var(--by-text-3)}
+
+  /* 举报次数：≥10 高危红字 */
+  .rc-hit{font-variant-numeric:tabular-nums;font-weight:500}
+  .rc-hit.hot{color:var(--by-red);font-weight:700}
+  .rc-hit.hot::after{content:"高危";font-size:10px;margin-left:5px;padding:1px 5px;border-radius:4px;
+                     background:rgba(246,70,93,.18);color:#F6465D;font-weight:500}
+
+  /* 状态标签 */
+  .tg{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:11px}
+  .tg i{width:5px;height:5px;border-radius:50%}
+  .tg.ok{background:rgba(19,206,102,.14);color:#13CE66} .tg.ok i{background:#13CE66}
+  .tg.wait{background:rgba(255,159,67,.14);color:#FF9F43} .tg.wait i{background:#FF9F43}
+  .tg.no{background:rgba(246,70,93,.14);color:#F6465D} .tg.no i{background:#F6465D}
+  .tg.info{background:rgba(64,158,255,.14);color:#409EFF} .tg.info i{background:#409EFF}
+  .tg.mute{background:rgba(255,255,255,.07);color:var(--by-text-3)} .tg.mute i{background:var(--by-text-3)}
+
+  /* 行内文字按钮 */
+  .btn-text{background:none;border:none;color:var(--by-primary);font-size:12px;cursor:pointer;
+            padding:3px 5px;font-family:inherit}
+  .btn-text:hover{text-decoration:underline}
+  .btn-text.ok{color:var(--by-green)}
+  .btn-text.mute{color:var(--by-text-3)}
+  .btn-text.danger{color:var(--by-red)}
+
+  /* 分页 */
+  .pager{display:flex;align-items:center;gap:8px;padding:13px 16px;border-top:1px solid var(--by-line)}
+  .pager .info{font-size:12px;color:var(--by-text-3)}
+  .pager .sp{flex:1}
+  .pager button{min-width:30px;height:30px;border-radius:6px;border:1px solid var(--by-line);
+                background:rgba(255,255,255,.05);color:var(--by-text-2);font-size:12px;cursor:pointer;
+                font-family:inherit}
+  .pager button.on{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+
+  /* ============ 轻提示 ============ */
+  .ad-toast{position:fixed;left:50%;top:76px;z-index:9998;display:flex;align-items:center;gap:9px;
+            padding:11px 18px;border-radius:8px;font-size:13px;background:var(--by-card-2);
+            border:1px solid var(--by-line);color:var(--by-text);
+            box-shadow:0 8px 26px rgba(0,0,0,.42);opacity:0;pointer-events:none;
+            transform:translate(-50%,-14px);transition:opacity .22s,transform .22s}
+  .ad-toast.on{opacity:1;transform:translate(-50%,0)}
+  .ad-toast.ok i{color:var(--by-green)}
+  .ad-toast.err i{color:var(--by-red)}
+</style>
+</head>
+<body>
+
+<div class="ad-wrap">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="ad-head" style="position:absolute;top:0;left:0;right:0;z-index:20">
+    <div class="ad-logo"><span class="dot"><i class="fas fa-bolt"></i></span><span>哔哩云</span></div>
+    <div class="ad-crumb">社区治理 / <b>举报处理</b></div>
+    <div class="ad-head-right">
+      <div class="ad-search"><i class="fas fa-search"></i><span>搜索菜单、用户、视频…</span></div>
+      <span class="ad-hicon"><i class="fas fa-question-circle"></i></span>
+      <span class="ad-hicon"><i class="fas fa-bell"></i><span class="ad-badge">9</span></span>
+      <div class="ad-me"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>超级管理员</span><i class="fas fa-angle-down" style="font-size:11px;color:var(--by-text-3)"></i></div>
+    </div>
+  </header>
+
+  <!-- ================= 侧边栏 ================= -->
+  <aside class="ad-side" style="position:absolute;top:56px;bottom:0;left:0;width:200px">
+    <div id="sidebar-menu"></div>
+  </aside>
+
+  <!-- ================= 内容区 ================= -->
+  <main class="ad-main main-content" style="margin-left:200px;margin-top:56px">
+
+    <!-- ---------- KPI ---------- -->
+    <div class="ad-kpis">
+      <div class="ad-kpi">
+        <div class="lb"><span class="ic" style="background:rgba(255,159,67,.16);color:#FF9F43"><i class="fas fa-flag"></i></span>待处理举报</div>
+        <div class="vl">23</div>
+        <div class="dl">高危 <b style="color:#F6465D">6</b> · 超时 <b style="color:#F6465D">3</b></div>
+      </div>
+      <div class="ad-kpi">
+        <div class="lb"><span class="ic" style="background:rgba(19,206,102,.16);color:#13CE66"><i class="fas fa-circle-check"></i></span>已处理</div>
+        <div class="vl">3,742</div>
+        <div class="dl"><b class="up">↑ 9.4%</b> 较上周</div>
+      </div>
+      <div class="ad-kpi">
+        <div class="lb"><span class="ic" style="background:rgba(64,158,255,.16);color:#409EFF"><i class="fas fa-scale-balanced"></i></span>举报成立率</div>
+        <div class="vl">68.2<small>%</small></div>
+        <div class="dl"><b class="up">↑ 2.1%</b> 较上周</div>
+      </div>
+      <div class="ad-kpi">
+        <div class="lb"><span class="ic" style="background:rgba(148,87,213,.16);color:#9457D5"><i class="fas fa-bolt"></i></span>24h 新增</div>
+        <div class="vl">57</div>
+        <div class="dl"><b class="dn">↑ 12.5%</b> 较前一日</div>
+      </div>
+    </div>
+
+    <!-- ---------- 搜索表单 ---------- -->
+    <div class="search-card">
+      <div class="search-row">
+        <div class="fi">
+          <label>举报ID</label>
+          <input type="text" placeholder="请输入举报 ID">
+        </div>
+        <div class="fi">
+          <label>举报类型</label>
+          <select>
+            <option>全部类型</option>
+            <option>视频</option><option>评论</option><option>弹幕</option><option>用户</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>举报原因</label>
+          <select>
+            <option>全部原因</option>
+            <option>版权侵权</option><option>涉黄涉暴</option><option>广告营销</option>
+            <option>人身攻击</option><option>恶意引战</option><option>不实信息</option>
+            <option>搬运抄袭</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>举报人 / 被举报人</label>
+          <input type="text" placeholder="请输入用户昵称">
+        </div>
+        <div class="fi">
+          <label>处理状态</label>
+          <select>
+            <option>全部状态</option>
+            <option>待处理</option><option>已处理</option><option>已忽略</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>举报时间</label>
+          <input type="date" value="2024-11-21">
+        </div>
+        <div class="fi" style="flex-direction:row;gap:10px">
+          <button class="btn btn-primary"><i class="fas fa-search"></i>搜索</button>
+          <button class="btn"><i class="fas fa-redo"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 工具栏 ---------- -->
+    <div class="toolbar">
+      <button class="btn btn-primary" data-bulk="handle"><i class="fas fa-gavel"></i>批量处理</button>
+      <button class="btn btn-success" data-bulk="ignore"><i class="fas fa-eye-slash"></i>批量忽略</button>
+      <button class="btn btn-success"><i class="fas fa-download"></i>导出</button>
+      <button class="btn btn-danger"><i class="fas fa-trash"></i>删除</button>
+      <span class="sp"></span>
+      <span class="tb-tip"><i class="fas fa-circle-info"></i>已选 0 项</span>
+    </div>
+
+    <!-- ---------- 数据表格 ---------- -->
+    <div class="tbl-card">
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:38px"><input type="checkbox"></th>
+              <th style="width:118px">举报ID</th>
+              <th style="width:92px">举报类型</th>
+              <th style="min-width:260px">被举报内容</th>
+              <th style="width:130px">举报人</th>
+              <th style="width:130px">被举报人</th>
+              <th style="width:118px">举报原因</th>
+              <th style="width:112px">举报次数</th>
+              <th style="width:94px">处理状态</th>
+              <th style="width:124px">举报时间</th>
+              <th style="width:212px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092117</span></td>
+              <td><span class="ad-tag blue">视频</span></td>
+              <td>
+                <div class="rc">
+                  <img src="../../../lib/images/cover-music-stage.jpeg" alt="">
+                  <div class="rc-t">【完整版】某知名歌手新歌现场伴奏，全程 42 分钟无水印搬运</div>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-03.jpeg" alt="">
+                  <span>风一样的男子</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-05.jpeg" alt="">
+                  <span>摸鱼小能手</span>
+                </div>
+              </td>
+              <td><span class="ad-tag red">版权侵权</span></td>
+              <td><span class="rc-hit hot">23</span></td>
+              <td><span class="tg wait"><i></i>待处理</span></td>
+              <td>2024-11-21 15:48</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092116</span></td>
+              <td><span class="ad-tag purple">评论</span></td>
+              <td><div class="rc-t plain">你们这一家子是不是都欠收拾？今天必须给个说法，别装死。</div></td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-04.jpeg" alt="">
+                  <span>学习委员本委</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-06.jpeg" alt="">
+                  <span>键盘侠本侠</span>
+                </div>
+              </td>
+              <td><span class="ad-tag red">人身攻击</span></td>
+              <td><span class="rc-hit hot">15</span></td>
+              <td><span class="tg wait"><i></i>待处理</span></td>
+              <td>2024-11-21 14:22</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092115</span></td>
+              <td><span class="ad-tag orange">弹幕</span></td>
+              <td><div class="rc-t plain">代练接单，加V：xxx888，包上分不封号</div></td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-02.jpeg" alt="">
+                  <span>夜宵搭子</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-05.jpeg" alt="">
+                  <span>摸鱼小能手</span>
+                </div>
+              </td>
+              <td><span class="ad-tag orange">广告营销</span></td>
+              <td><span class="rc-hit hot">11</span></td>
+              <td><span class="tg wait"><i></i>待处理</span></td>
+              <td>2024-11-21 11:56</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092114</span></td>
+              <td><span class="ad-tag blue">视频</span></td>
+              <td>
+                <div class="rc">
+                  <img src="../../../lib/images/cover-neon-street.jpeg" alt="">
+                  <div class="rc-t">同城约架不敢来的都是怂货，地址已发，有种就来</div>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-03.jpeg" alt="">
+                  <span>风一样的男子</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-06.jpeg" alt="">
+                  <span>键盘侠本侠</span>
+                </div>
+              </td>
+              <td><span class="ad-tag orange">恶意引战</span></td>
+              <td><span class="rc-hit">6</span></td>
+              <td><span class="tg wait"><i></i>待处理</span></td>
+              <td>2024-11-21 10:33</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092113</span></td>
+              <td><span class="ad-tag purple">评论</span></td>
+              <td><div class="rc-t plain">官方通报：本市明日 12 时起全域实行燃气管制，请勿恐慌。</div></td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-01.jpeg" alt="">
+                  <span>数码控阿伟</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-04.jpeg" alt="">
+                  <span>学习委员本委</span>
+                </div>
+              </td>
+              <td><span class="ad-tag gray">不实信息</span></td>
+              <td><span class="rc-hit">4</span></td>
+              <td><span class="tg wait"><i></i>待处理</span></td>
+              <td>2024-11-21 09:47</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092112</span></td>
+              <td><span class="ad-tag gray">用户</span></td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-05.jpeg" alt="">
+                  <span>摸鱼小能手</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-03.jpeg" alt="">
+                  <span>风一样的男子</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-05.jpeg" alt="">
+                  <span>摸鱼小能手</span>
+                </div>
+              </td>
+              <td><span class="ad-tag orange">广告营销</span></td>
+              <td><span class="rc-hit">7</span></td>
+              <td><span class="tg ok"><i></i>已处理</span></td>
+              <td>2024-11-20 17:38</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092111</span></td>
+              <td><span class="ad-tag blue">视频</span></td>
+              <td>
+                <div class="rc">
+                  <img src="../../../lib/images/cover-cook-chef.jpeg" alt="">
+                  <div class="rc-t">整段搬运自海外美食频道，已加自己的水印，字幕未重做</div>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-02.jpeg" alt="">
+                  <span>夜宵搭子</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-02.jpeg" alt="">
+                  <span>夜宵搭子</span>
+                </div>
+              </td>
+              <td><span class="ad-tag purple">搬运抄袭</span></td>
+              <td><span class="rc-hit">9</span></td>
+              <td><span class="tg ok"><i></i>已处理</span></td>
+              <td>2024-11-20 15:12</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092110</span></td>
+              <td><span class="ad-tag orange">弹幕</span></td>
+              <td><div class="rc-t plain">点进去看了，也就那样吧，标题党罢了</div></td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-04.jpeg" alt="">
+                  <span>学习委员本委</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-03.jpeg" alt="">
+                  <span>风一样的男子</span>
+                </div>
+              </td>
+              <td><span class="ad-tag gray">不实信息</span></td>
+              <td><span class="rc-hit">2</span></td>
+              <td><span class="tg mute"><i></i>已忽略</span></td>
+              <td>2024-11-20 11:05</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td><span class="ad-mono">RP24092109</span></td>
+              <td><span class="ad-tag purple">评论</span></td>
+              <td><div class="rc-t plain">楼主主页挂的课程链接我已经买了，收不到货，退款也没人理</div></td>
+              <td>
+                <div class="ad-user">
+                  <img src="../../../lib/images/avatar-01.jpeg" alt="">
+                  <span>数码控阿伟</span>
+                </div>
+              </td>
+              <td>
+                <div class="ad-user victim">
+                  <img src="../../../lib/images/avatar-04.jpeg" alt="">
+                  <span>学习委员本委</span>
+                </div>
+              </td>
+              <td><span class="ad-tag orange">广告营销</span></td>
+              <td><span class="rc-hit">3</span></td>
+              <td><span class="tg mute"><i></i>已忽略</span></td>
+              <td>2024-11-19 20:41</td>
+              <td>
+                <button class="btn-text ok" data-act="handle">处理</button>
+                <button class="btn-text mute" data-act="ignore">忽略</button>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pager">
+        <span class="info">共 4,128 条记录，第 1 / 516 页</span>
+        <span class="sp"></span>
+        <button disabled><i class="fas fa-angle-left"></i></button>
+        <button class="on">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>5</button>
+        <button><i class="fas fa-ellipsis-h"></i></button>
+        <button>516</button>
+        <button><i class="fas fa-angle-right"></i></button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ================= 脚本（顺序不可调整） ================= -->
+<script src="../../../menu/menu.js"></script>                  <!-- 菜单数据：必须最先 -->
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>                   <!-- 退出预览的桥，必须有 -->
+<script>
+/* 本页表单定义
+   ⚠️ 铁律：每个 label 必须与表格 <th> 文字一字不差，否则「修改」弹窗回填为空且不报错。
+   ⚠️ 举报ID / 举报次数 / 举报时间 / 操作 是系统列，一律不进表单。
+   ⚠️ 「审核备注」只出现在表单里（表格本来没有），必须标 formOnly: true，
+      否则会被判成「与表头对不上」的字段。 */
+window.PROTO_FORM = {
+    entityName: "举报工单",
+    fields: [
+        { "label": "举报类型",     "type": "select",   "options": ["视频", "评论", "弹幕", "用户"] },
+        { "label": "被举报内容",   "type": "textarea", "required": true },
+        { "label": "举报人",       "type": "input",    "required": true },
+        { "label": "被举报人",     "type": "input",    "required": true },
+        { "label": "举报原因",     "type": "select",   "options": ["版权侵权", "涉黄涉暴", "广告营销", "人身攻击", "恶意引战", "不实信息", "搬运抄袭", "其他"] },
+        { "label": "处理状态",     "type": "select",   "options": ["待处理", "已处理", "已忽略"] },
+        { "label": "处理措施",     "type": "select",   "formOnly": true, "options": ["删除内容", "下架内容", "禁言 7 天", "禁言 30 天", "封禁账号", "仅警告"] },
+        { "label": "审核备注",     "type": "textarea", "formOnly": true }
+    ]
+};
+</script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  await SidebarMenu.init('sidebar-menu');
+
+  /* ---------------- 轻提示 ---------------- */
+  var toastEl = document.createElement('div');
+  toastEl.className = 'ad-toast';
+  document.body.appendChild(toastEl);
+  var toastTimer = null;
+  function toast(msg, kind) {
+    toastEl.className = 'ad-toast ' + (kind === 'err' ? 'err' : 'ok');
+    toastEl.innerHTML = '<i class="fas ' + (kind === 'err' ? 'fa-circle-exclamation' : 'fa-circle-check') +
+                        '"></i><span>' + msg + '</span>';
+    requestAnimationFrame(function () { toastEl.classList.add('on'); });
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('on'); }, 2200);
+  }
+
+  /* ---------------- 全选 / 已选计数 ---------------- */
+  var all  = document.querySelector('thead input[type=checkbox]');
+  var rows = Array.from(document.querySelectorAll('tbody input[type=checkbox]'));
+  var tip  = document.querySelector('.tb-tip');
+  function sync() {
+    var n = rows.filter(function (c) { return c.checked; }).length;
+    tip.innerHTML = '<i class="fas fa-circle-info"></i>已选 ' + n + ' 项';
+    all.checked = n > 0 && n === rows.length;
+    all.indeterminate = n > 0 && n < rows.length;
+  }
+  all.addEventListener('change', function () {
+    rows.forEach(function (c) { c.checked = all.checked; });
+    sync();
+  });
+  rows.forEach(function (c) { c.addEventListener('change', sync); });
+
+  function picked() {
+    return rows.filter(function (c) { return c.checked; })
+              .map(function (c) { return c.closest('tr'); });
+  }
+
+  /* ---------------- 批量处理 / 批量忽略 ---------------- */
+  document.querySelectorAll('[data-bulk]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var n = picked().length;
+      if (n === 0) { toast('请先勾选要处理的举报单', 'err'); return; }
+      var word = btn.getAttribute('data-bulk') === 'handle' ? '处理' : '忽略';
+      PrototypeDialog.confirm('确定要批量' + word + ' ' + n + ' 条举报记录吗？', function () {
+        toast('已批量' + word + ' ' + n + ' 条举报记录', 'ok');
+      });
+    });
+  });
+
+  /* ---------------- 行内 处理 / 忽略 ---------------- */
+  var TG = { '待处理': 'wait', '已处理': 'ok', '已忽略': 'mute' };
+  document.querySelectorAll('tbody tr').forEach(function (row) {
+    row.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
+      if (!b) return;
+      var act    = b.getAttribute('data-act');
+      var handle = act === 'handle';
+      var cell   = row.querySelector('td:nth-child(9)');   /* 「处理状态」列 */
+      var idEl   = row.querySelector('.ad-mono');
+      var rid    = idEl ? idEl.textContent : '';
+      var after  = handle ? '已处理' : '已忽略';
+      PrototypeDialog.confirm(
+        '确定要' + (handle ? '处理' : '忽略') + '举报单 ' + rid + ' 吗？' +
+        (handle ? '<br>处理后将从待办队列移除，并通知举报人与被举报人。'
+                : '<br>忽略后不计入举报成立率，被举报人不会被处罚。'),
+        function () {
+          if (cell) cell.innerHTML = '<span class="tg ' + TG[after] + '"><i></i>' + after + '</span>';
+          toast('举报单 ' + rid + ' 已' + after, 'ok');
+        }
+      );
+    });
+  });
+
+  sync();
+});
+</script>
+</body>
+</html>

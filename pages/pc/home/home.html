@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>首页推荐 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============================================================
+     哔哩云 · 电脑端前台 设计令牌
+     与移动端同品牌（粉 #FB7299 / 玫红 #E11D48），但前台是明亮通透的浅色调，
+     信息密度高、留白克制；圆角更大（10/14/18），阴影更轻，靠留白分层而非描边。
+     ============================================================ */
+  :root{
+    --pc-pink:#FB7299; --pc-pink-strong:#E11D48; --pc-pink-soft:#FFF1F5;
+    --pc-blue:#00AEEC; --pc-blue-soft:#E6F7FE;
+    --pc-text:#18191C; --pc-text-2:#61666D; --pc-text-3:#9499A0; --pc-text-inv:#FFFFFF;
+    --pc-bg:#F6F7F9; --pc-surface:#FFFFFF; --pc-surface-2:#F1F2F4;
+    --pc-line:#E3E5E8; --pc-line-2:#EDEFF2;
+    --pc-header-h:64px; --pc-side-w:180px; --pc-page-max:1600px;
+    --pc-r-sm:8px; --pc-r:12px; --pc-r-lg:18px;
+    --pc-shadow:0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --pc-shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pc-bg);color:var(--pc-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  ul{margin:0;padding:0;list-style:none}
+  img{display:block}
+
+  /* ============ 顶部导航 ============ */
+  .pc-head{position:sticky;top:0;z-index:50;height:var(--pc-header-h);background:var(--pc-surface);
+           border-bottom:1px solid var(--pc-line)}
+  .pc-head-in{max-width:var(--pc-page-max);margin:0 auto;height:100%;display:flex;align-items:center;gap:20px;padding:0 24px}
+  .pc-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--pc-pink-strong);flex:none}
+  .pc-logo i{font-size:22px}
+  .pc-nav{display:flex;gap:2px;flex:none}
+  .pc-nav a{padding:0 14px;height:var(--pc-header-h);display:flex;align-items:center;font-size:15px;
+           color:var(--pc-text-2);position:relative}
+  .pc-nav a:hover{color:var(--pc-text)}
+  .pc-nav a.on{color:var(--pc-pink-strong);font-weight:600}
+  .pc-nav a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;
+                      border-radius:2px 2px 0 0;background:var(--pc-pink)}
+  .pc-search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:38px;
+             padding:0 14px;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);
+             border:1px solid transparent;cursor:pointer;color:var(--pc-text-3)}
+  .pc-search:hover{border-color:var(--pc-line);background:var(--pc-surface)}
+  .pc-head-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  .pc-hbtn{width:36px;height:36px;border-radius:var(--pc-r-sm);display:flex;align-items:center;justify-content:center;
+           color:var(--pc-text-2);cursor:pointer;position:relative;font-size:16px}
+  .pc-hbtn:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-hbadge{position:absolute;top:4px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+             background:var(--pc-pink-strong);color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:500}
+  .pc-pubbtn{height:36px;padding:0 16px;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+             color:#fff;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .pc-pubbtn:hover{background:var(--pc-pink-strong)}
+  .pc-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer}
+
+  /* ============ 主体三栏 ============ */
+  .pc-body{max-width:var(--pc-page-max);margin:0 auto;display:flex;gap:24px;padding:24px;align-items:flex-start}
+  .pc-side{width:var(--pc-side-w);flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px);
+           max-height:calc(100vh - var(--pc-header-h) - 48px);overflow-y:auto}
+  .pc-side::-webkit-scrollbar{width:0}
+  .pc-side h4{font-size:12px;color:var(--pc-text-3);font-weight:500;margin:20px 0 8px;padding-left:10px;letter-spacing:.5px}
+  .pc-side h4:first-child{margin-top:0}
+  .pc-side a{display:flex;align-items:center;gap:9px;height:38px;padding:0 10px;border-radius:var(--pc-r-sm);
+             font-size:14px;color:var(--pc-text-2)}
+  .pc-side a i{width:18px;text-align:center;color:var(--pc-text-3);font-size:14px}
+  .pc-side a:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-side a.on{background:var(--pc-pink-soft);color:var(--pc-pink-strong);font-weight:600}
+  .pc-side a.on i{color:var(--pc-pink-strong)}
+
+  .pc-main{flex:1;min-width:0}
+
+  /* ============ 轮播 Banner ============ */
+  .pc-banner{position:relative;border-radius:var(--pc-r-lg);overflow:hidden;background:var(--pc-surface);
+            box-shadow:var(--pc-shadow)}
+  .pc-banner-track{display:flex;transition:transform .45s cubic-bezier(.4,0,.2,1)}
+  .pc-banner-item{flex:0 0 100%;position:relative;aspect-ratio:1600/420;overflow:hidden}
+  .pc-banner-item img{width:100%;height:100%;object-fit:cover}
+  .pc-banner-item::after{content:"";position:absolute;inset:0;
+                         background:linear-gradient(90deg,rgba(0,0,0,.72) 0%,rgba(0,0,0,.35) 45%,rgba(0,0,0,0) 75%)}
+  .pc-banner-txt{position:absolute;left:48px;bottom:44px;z-index:2;color:#fff;max-width:520px}
+  .pc-banner-txt .bt{font-size:32px;font-weight:700;line-height:1.25;margin-bottom:12px;
+                     text-shadow:0 2px 12px rgba(0,0,0,.4)}
+  .pc-banner-txt .bd{font-size:14px;color:rgba(255,255,255,.82);margin-bottom:20px;line-height:1.7}
+  .pc-banner-txt .bg{display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 26px;border-radius:21px;
+                     background:var(--pc-pink);color:#fff;font-size:15px;font-weight:500;cursor:pointer;
+                     transition:background .2s}
+  .pc-banner-txt .bg:hover{background:var(--pc-pink-strong)}
+  .pc-banner-dots{position:absolute;right:48px;bottom:52px;z-index:3;display:flex;gap:7px}
+  .pc-banner-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;transition:all .3s}
+  .pc-banner-dots i.on{width:22px;border-radius:4px;background:#fff}
+
+  /* ============ 分区快捷入口 ============ */
+  .pc-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+  .pc-quick a{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px 10px;display:flex;
+             flex-direction:column;align-items:center;gap:10px;transition:transform .2s,box-shadow .2s}
+  .pc-quick a:hover{transform:translateY(-3px);box-shadow:var(--pc-shadow)}
+  .pc-quick .ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:21px;color:#fff}
+  .pc-quick span{font-size:13px;color:var(--pc-text-2)}
+
+  /* ============ 内容区 ============ */
+  .pc-sec{margin-top:32px}
+  .pc-sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .pc-sec-hd h2{font-size:20px;font-weight:600;margin:0;display:flex;align-items:center;gap:9px}
+  .pc-sec-hd h2 i{color:var(--pc-pink)}
+  .pc-sec-hd .more{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--pc-text-3);cursor:pointer}
+  .pc-sec-hd .more:hover{color:var(--pc-pink-strong)}
+  .pc-tabs{display:flex;gap:24px;margin-bottom:18px;border-bottom:1px solid var(--pc-line)}
+  .pc-tabs button{padding:0 2px 12px;font-size:15px;color:var(--pc-text-2);background:none;border:none;
+                   cursor:pointer;font-family:inherit;position:relative}
+  .pc-tabs button:hover{color:var(--pc-text)}
+  .pc-tabs button.on{color:var(--pc-text);font-weight:600}
+  .pc-tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--pc-pink)}
+
+  /* 视频卡片网格：5 列 */
+  .pc-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:20px 16px}
+  .pc-card{background:var(--pc-surface);border-radius:var(--pc-r);overflow:hidden;cursor:pointer;
+           transition:transform .2s,box-shadow .2s}
+  .pc-card:hover{transform:translateY(-4px);box-shadow:var(--pc-shadow-lg)}
+  .pc-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:var(--pc-surface-2)}
+  .pc-cover img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+  .pc-card:hover .pc-cover img{transform:scale(1.05)}
+  .pc-cover .dur{position:absolute;right:8px;bottom:8px;padding:1px 6px;border-radius:4px;
+                 background:rgba(0,0,0,.72);color:#fff;font-size:11px;font-variant-numeric:tabular-nums}
+  .pc-cover .tagline{position:absolute;left:8px;bottom:8px;display:flex;gap:5px}
+  .pc-cover .tagline span{padding:1px 6px;border-radius:4px;font-size:11px;color:#fff}
+  .pc-cover .dm{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .pc-cover .dm i{position:absolute;font-size:11px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);font-style:normal;white-space:nowrap}
+  .pc-card-bd{padding:11px 12px 13px}
+  .pc-title{font-size:14px;line-height:1.45;color:var(--pc-text);display:-webkit-box;-webkit-line-clamp:2;
+            -webkit-box-orient:vertical;overflow:hidden;transition:color .2s;min-height:40px}
+  .pc-card:hover .pc-title{color:var(--pc-pink-strong)}
+  .pc-meta{margin-top:9px;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--pc-text-3)}
+  .pc-meta span{display:flex;align-items:center;gap:4px}
+  .pc-up{margin-top:9px;display:flex;align-items:center;gap:7px;font-size:12px;color:var(--pc-text-3)}
+  .pc-up img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+  .pc-up b{font-weight:400;color:var(--pc-text-2)}
+
+  /* 排行榜（右侧栏） */
+  .pc-rank{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px 18px 8px}
+  .pc-rank h3{margin:0 0 6px;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .pc-rank h3 i{color:var(--pc-pink)}
+  .pc-rank-it{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--pc-line-2);cursor:pointer}
+  .pc-rank-it:last-child{border-bottom:none}
+  .pc-rank-no{font-size:15px;font-weight:700;color:var(--pc-text-3);width:18px;flex:none;text-align:center;
+              font-variant-numeric:tabular-nums;padding-top:2px}
+  .pc-rank-it:nth-child(2) .pc-rank-no{color:#FF6B6B}
+  .pc-rank-it:nth-child(3) .pc-rank-no{color:#FF9F43}
+  .pc-rank-it:nth-child(4) .pc-rank-no{color:#F5B544}
+  .pc-rank-thumb{width:96px;height:54px;border-radius:var(--pc-r-sm);object-fit:cover;flex:none;background:var(--pc-surface-2)}
+  .pc-rank-tx{flex:1;min-width:0}
+  .pc-rank-tx .t{font-size:13px;line-height:1.45;color:var(--pc-text);display:-webkit-box;-webkit-line-clamp:2;
+                 -webkit-box-orient:vertical;overflow:hidden}
+  .pc-rank-it:hover .pc-rank-tx .t{color:var(--pc-pink-strong)}
+  .pc-rank-tx .m{font-size:11px;color:var(--pc-text-3);margin-top:5px}
+
+  /* 活动位 */
+  .pc-side-card{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px;margin-top:16px}
+  .pc-side-card h4{margin:0 0 14px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .pc-side-card h4 i{color:var(--pc-pink)}
+  .pc-act{display:flex;gap:11px;align-items:center;padding:10px 0}
+  .pc-act .ic{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;
+              justify-content:center;font-size:15px;color:#fff}
+  .pc-act .tx{flex:1;min-width:0;font-size:13px}
+  .pc-act .tx b{display:block;font-weight:500;color:var(--pc-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pc-act .tx span{font-size:11px;color:var(--pc-text-3)}
+
+  /* 空状态 */
+  .pc-empty{padding:64px 20px;text-align:center;color:var(--pc-text-3)}
+  .pc-empty i{font-size:48px;color:var(--pc-line);margin-bottom:16px;display:block}
+  .pc-empty p{margin:0 0 20px;font-size:14px}
+
+  /* 加载更多 */
+  .pc-more{display:block;width:100%;height:46px;margin-top:24px;border:1px solid var(--pc-line);
+           border-radius:var(--pc-r);background:var(--pc-surface);color:var(--pc-text-2);
+           font-size:14px;cursor:pointer;font-family:inherit}
+  .pc-more:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+
+  .pc-foot{margin-top:48px;padding:28px 24px;text-align:center;font-size:12px;color:var(--pc-text-3);
+           border-top:1px solid var(--pc-line)}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航 ==================== -->
+<header class="pc-head">
+  <div class="pc-head-in">
+    <a class="pc-logo" href="home/home.html"><i class="fas fa-bolt"></i>哔哩云</a>
+    <nav class="pc-nav">
+      <a class="on" href="home/home.html">首页</a>
+      <a href="../channel/channel.html">番剧</a>
+      <a href="../search/search.html">排行榜</a>
+      <a href="../channel/channel.html">直播</a>
+      <a href="../space/space.html">游戏中心</a>
+    </nav>
+    <div class="pc-search" onclick="location.href='../search/search.html'">
+      <i class="fas fa-magnifying-glass"></i><span>搜索你感兴趣的视频、UP主</span>
+    </div>
+    <div class="pc-head-right">
+      <span class="pc-hbtn" title="消息"><i class="fas fa-bell"></i><em class="pc-hbadge">9</em></span>
+      <span class="pc-hbtn" title="收藏"><i class="fas fa-bookmark"></i></span>
+      <span class="pc-hbtn" title="历史"><i class="fas fa-clock-rotate-left"></i></span>
+      <a class="pc-pubbtn" href="../upload/upload.html"><i class="fas fa-upload"></i>投稿</a>
+      <img class="pc-avatar" src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 主体 ==================== -->
+<div class="pc-body">
+
+  <!-- ---------- 左侧分区导航 ---------- -->
+  <aside class="pc-side">
+    <h4>热门分区</h4>
+    <a href="../channel/channel.html"><i class="fas fa-film"></i>动画</a>
+    <a href="../channel/channel.html"><i class="fas fa-gamepad"></i>游戏</a>
+    <a href="../channel/channel.html"><i class="fas fa-music"></i>音乐</a>
+    <a href="../channel/channel.html"><i class="fas fa-code"></i>科技</a>
+    <a href="../channel/channel.html"><i class="fas fa-utensils"></i>美食</a>
+    <a href="../channel/channel.html"><i class="fas fa-heart"></i>生活</a>
+    <a href="../channel/channel.html"><i class="fas fa-book"></i>知识</a>
+    <a href="../channel/channel.html"><i class="fas fa-futbol"></i>运动</a>
+
+    <h4>我的</h4>
+    <a href="../history/history.html"><i class="fas fa-clock-rotate-left"></i>观看历史</a>
+    <a href="../favorite/favorite.html"><i class="fas fa-bookmark"></i>我的收藏</a>
+    <a href="../upload/upload.html"><i class="fas fa-cloud-arrow-up"></i>投稿管理</a>
+    <a href="../message/message.html"><i class="fas fa-envelope"></i>我的消息</a>
+
+    <h4>推荐关注</h4>
+    <a href="../space/space.html"><i class="fas fa-code"></i>代码狂人阿伟</a>
+    <a href="../space/space.html"><i class="fas fa-cat"></i>猫奴日常菌</a>
+    <a href="../space/space.html"><i class="fas fa-music"></i>民谣小王子</a>
+    <a href="../space/space.html"><i class="fas fa-utensils"></i>小厨房大厨</a>
+
+    <h4>更多</h4>
+    <a class="on" href="../home/home.html"><i class="fas fa-house"></i>首页推荐</a>
+    <a href="../channel/channel.html"><i class="fas fa-circle-info"></i>帮助中心</a>
+    <a href="../channel/channel.html"><i class="fas fa-gear"></i>意见反馈</a>
+  </aside>
+
+  <!-- ---------- 主内容 ---------- -->
+  <main class="pc-main">
+
+    <!-- 轮播 Banner -->
+    <section class="pc-banner">
+      <div class="pc-banner-track" id="bnTrack">
+        <div class="pc-banner-item">
+          <img src="../../../lib/images/cover-neon-street.jpeg" alt="">
+          <div class="pc-banner-txt">
+            <div class="bt">2024 年度创作盛典</div>
+            <div class="bd">年度百大 UP 主、十大热门视频与新星计划同时开启<br>登录账号即可参与投票，为喜欢的创作者打call</div>
+            <span class="bg" onclick="location.href='../channel/channel.html'">立即参与 <i class="fas fa-angle-right"></i></span>
+          </div>
+        </div>
+        <div class="pc-banner-item">
+          <img src="../../../lib/images/cover-gaming-neon.jpeg" alt="">
+          <div class="pc-banner-txt">
+            <div class="bt">游戏嘉年华 · 夏季场</div>
+            <div class="bd">热门手游直播连麦，主播在线带你组队开黑<br>弹幕互动抽奖，观看即可领取限定头像框</div>
+            <span class="bg" onclick="location.href='../channel/channel.html'">进入直播间 <i class="fas fa-angle-right"></i></span>
+          </div>
+        </div>
+        <div class="pc-banner-item">
+          <img src="../../../lib/images/cover-code-rainbow.png" alt="">
+          <div class="pc-banner-txt">
+            <div class="bt">新星计划 · 第二期开启</div>
+            <div class="bd">面向粉丝 1 万以下的创作者，提供流量扶持与创作激励<br>通过实名认证即可报名</div>
+            <span class="bg" onclick="location.href='../channel/channel.html'">去报名 <i class="fas fa-angle-right"></i></span>
+          </div>
+        </div>
+      </div>
+      <div class="pc-banner-dots" id="bnDots"></div>
+    </section>
+
+    <!-- 分区快捷入口 -->
+    <section class="pc-quick">
+      <a href="../channel/channel.html"><span class="ic" style="background:#FB7299"><i class="fas fa-film"></i></span><span>动画</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#00AEEC"><i class="fas fa-gamepad"></i></span><span>游戏</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#9C27B0"><i class="fas fa-music"></i></span><span>音乐</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#00B1B1"><i class="fas fa-code"></i></span><span>科技</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#FB7299"><i class="fas fa-utensils"></i></span><span>美食</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#00AEEC"><i class="fas fa-heart"></i></span><span>生活</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#7C4DFF"><i class="fas fa-book"></i></span><span>知识</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#FF6F00"><i class="fas fa-futbol"></i></span><span>运动</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#E11D48"><i class="fas fa-fire"></i></span><span>热门</span></a>
+      <a href="../channel/channel.html"><span class="ic" style="background:#00C2A8"><i class="fas fa-clock-rotate-left"></i></span><span>最近</span></a>
+    </section>
+
+    <!-- 为你推荐 -->
+    <section class="pc-sec">
+      <div class="pc-sec-hd">
+        <h2><i class="fas fa-fire"></i>为你推荐</h2>
+        <span class="more" onclick="location.href='../channel/channel.html'">查看更多 <i class="fas fa-angle-right"></i></span>
+      </div>
+      <div class="pc-tabs" id="bnTabs">
+        <button class="on" data-t="0">为你推荐</button>
+        <button data-t="1">最新发布</button>
+        <button data-t="2">最多播放</button>
+        <button data-t="3">最热弹幕</button>
+      </div>
+      <div class="pc-grid" id="bnGrid">
+        <!-- 由脚本填充 -->
+      </div>
+      <button class="pc-more">加载更多</button>
+    </section>
+
+    <footer class="pc-foot">
+      哔哩云 · 视频社区高保真原型 ｜ 本页所有图片与视频均已本地化，完全离线可用
+    </footer>
+  </main>
+
+  <!-- ---------- 右侧栏 ---------- -->
+  <aside style="width:300px;flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px)">
+    <!-- 排行榜 -->
+    <div class="pc-rank">
+      <h3><i class="fas fa-trophy"></i>全站排行榜</h3>
+      <div id="rankList">
+        <div class="pc-rank-it">
+          <span class="pc-rank-no">1</span>
+          <img class="pc-rank-thumb" src="../../../lib/images/cover-gaming-neon.jpeg" alt="">
+          <div class="pc-rank-tx">
+            <div class="t">【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置</div>
+            <div class="m">328.4万播放 · 代码狂人阿伟</div>
+          </div>
+        </div>
+        <div class="pc-rank-it">
+          <span class="pc-rank-no">2</span>
+          <img class="pc-rank-thumb" src="../../../lib/images/cover-cat-grumpy.jpeg" alt="">
+          <div class="pc-rank-tx">
+            <div class="t">当你以为在养猫，实际上是猫在养你</div>
+            <div class="m">892.1万播放 · 猫奴日常菌</div>
+          </div>
+        </div>
+        <div class="pc-rank-it">
+          <span class="pc-rank-no">3</span>
+          <img class="pc-rank-thumb" src="../../../lib/images/cover-cook-chop.jpeg" alt="">
+          <div class="pc-rank-tx">
+            <div class="t">三分钟搞定的深夜食堂，新手也能学会</div>
+            <div class="m">156.7万播放 · 小厨房大厨</div>
+          </div>
+        </div>
+        <div class="pc-rank-it">
+          <span class="pc-rank-no">4</span>
+          <img class="pc-rank-thumb" src="../../../lib/images/cover-city-night.jpeg" alt="">
+          <div class="pc-rank-tx">
+            <div class="t">凌晨四点的城市，比白天更真实</div>
+            <div class="m">233.5万播放 · 城市观察局</div>
+          </div>
+        </div>
+        <div class="pc-rank-it">
+          <span class="pc-rank-no">5</span>
+          <img class="pc-rank-thumb" src="../../../lib/images/cover-guitar-blue.jpeg" alt="">
+          <div class="pc-rank-tx">
+            <div class="t">用一把吉他弹响青春的声音</div>
+            <div class="m">98.2万播放 · 民谣小王子</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 活动 -->
+    <div class="pc-side-card">
+      <h4><i class="fas fa-gift"></i>我的活动</h4>
+      <div class="pc-act">
+        <span class="ic" style="background:#E11D48"><i class="fas fa-ticket"></i></span>
+        <div class="tx"><b>新星计划 · 第二期</b><span>报名进行中 · 3 天后截止</span></div>
+      </div>
+      <div class="pc-act">
+        <span class="ic" style="background:#FB7299"><i class="fas fa-coins"></i></span>
+        <div class="tx"><b>每日签到领硬币</b><span>连续签到 7 天额外奖励</span></div>
+      </div>
+      <div class="pc-act">
+        <span class="ic" style="background:#00AEEC"><i class="fas fa-graduation-cap"></i></span>
+        <div class="tx"><b>创作学院 · 进阶课</b><span>12 门课程免费学习</span></div>
+      </div>
+    </div>
+
+    <!-- 热门话题 -->
+    <div class="pc-side-card">
+      <h4><i class="fas fa-fire"></i>热门话题</h4>
+      <div class="pc-act">
+        <span class="ic" style="background:#FB7299"><i class="fas fa-hashtag"></i></span>
+        <div class="tx"><b>#年度创作盛典</b><span>3.2 亿热度</span></div>
+      </div>
+      <div class="pc-act">
+        <span class="ic" style="background:#00AEEC"><i class="fas fa-hashtag"></i></span>
+        <div class="tx"><b>#游戏嘉年华</b><span>1.8 亿热度</span></div>
+      </div>
+      <div class="pc-act">
+        <span class="ic" style="background:#7C4DFF"><i class="fas fa-hashtag"></i></span>
+        <div class="tx"><b>#一分钟看完</b><span>8624 万热度</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ==================== 脚本 ==================== -->
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 视频数据（4 组，每组 5 条） ---------- */
+  var DATA = {
+    0: [
+      { t:'【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置', c:'cover-gaming-neon.jpeg', up:'代码狂人阿伟', av:'avatar-01.jpeg', p:'328.4万', d:'14:22', n:'12.6万', dm:['前方高能','666666','来了来了'], tag:'首页', tagc:'#E11D48' },
+      { t:'当你以为在养猫，实际上是猫在养你', c:'cover-cat-grumpy.jpeg', up:'猫奴日常菌', av:'avatar-02.jpeg', p:'892.1万', d:'08:45', n:'30.2万', dm:['太治愈了','吸猫现场'], tag:'日常', tagc:'#FB7299' },
+      { t:'三分钟搞定的深夜食堂，新手也能学会', c:'cover-cook-chop.jpeg', up:'小厨房大厨', av:'avatar-03.jpeg', p:'156.7万', d:'03:18', n:'8.4万', dm:['看饿了','求菜谱'], tag:'美食', tagc:'#FF9F43' },
+      { t:'用一把吉他弹响青春的声音', c:'cover-guitar-blue.jpeg', up:'民谣小王子', av:'avatar-04.jpeg', p:'98.2万', d:'05:07', n:'4.1万', dm:[], tag:'原创', tagc:'#9C27B0' },
+      { t:'凌晨四点的城市，比白天更真实', c:'cover-city-night.jpeg', up:'城市观察局', av:'avatar-05.jpeg', p:'233.5万', d:'12:40', n:'9.7万', dm:['真实','致敬生活'], tag:'生活', tagc:'#00AEEC' }
+    ],
+    1: [
+      { t:'一个人的雪山徒步，治愈了我一整年', c:'cover-mountain.jpeg', up:'山野拾光', av:'avatar-06.jpeg', p:'512.8万', d:'16:22', n:'21.3万', dm:['想去','一路平安'], tag:'生活', tagc:'#00AEEC' },
+      { t:'前端工程师的一天：从零到上线', c:'cover-code-monitor.jpeg', up:'代码狂人阿伟', av:'avatar-01.jpeg', p:'421.3万', d:'24:08', n:'15.6万', dm:['真实','加班日常'], tag:'科技', tagc:'#00B1B1' },
+      { t:'雨夜的城市天桥，随手一拍都是壁纸', c:'cover-city-traffic.jpeg', up:'城市观察局', av:'avatar-05.jpeg', p:'88.4万', d:'04:33', n:'3.2万', dm:[], tag:'摄影', tagc:'#FF6F00' },
+      { t:'街头涂鸦艺术家的一周', c:'cover-graffiti.jpeg', up:'颜料不听话', av:'avatar-03.jpeg', p:'67.9万', d:'11:15', n:'2.8万', dm:['好看'], tag:'艺术', tagc:'#7C4DFF' },
+      { t:'高原上的星空，肉眼可见的银河', c:'cover-tianshan.jpeg', up:'山野拾光', av:'avatar-06.jpeg', p:'302.6万', d:'09:51', n:'12.1万', dm:['太美了','想去'], tag:'旅行', tagc:'#00C2A8' }
+    ],
+    2: [
+      { t:'主播的直播间：一次沉浸式游戏体验', c:'cover-gaming-rgb.jpeg', up:'游戏区主播', av:'avatar-02.jpeg', p:'1024.5万', d:'32:15', n:'45.8万', dm:['666','主播牛逼'], tag:'直播回放', tagc:'#E11D48' },
+      { t:'把这首歌翻唱了 100 遍，终于满意了', c:'cover-guitar-live.jpeg', up:'民谣小王子', av:'avatar-04.jpeg', p:'287.3万', d:'06:22', n:'11.4万', dm:['好听'], tag:'音乐', tagc:'#9C27B0' },
+      { t:'桌面美学：RGB 灯效搭配实录', c:'cover-desk-rgb.jpeg', up:'硬件研究所', av:'avatar-05.jpeg', p:'198.7万', d:'10:44', n:'8.8万', dm:['酷'], tag:'科技', tagc:'#00B1B1' },
+      { t:'深夜食堂：一碗面的仪式感', c:'cover-cook-pan.jpeg', up:'小厨房大厨', av:'avatar-03.jpeg', p:'134.2万', d:'07:08', n:'6.5万', dm:[], tag:'美食', tagc:'#FF9F43' },
+      { t:'雪山攀登：海拔 4500 米的日出', c:'cover-alps.jpeg', up:'山野拾光', av:'avatar-06.jpeg', p:'178.9万', d:'14:36', n:'7.2万', dm:['震撼'], tag:'旅行', tagc:'#00C2A8' }
+    ],
+    3: [
+      { t:'从这里开始：写给新人的编程第一课', c:'cover-code-rainbow.png', up:'代码狂人阿伟', av:'avatar-01.jpeg', p:'145.9万', d:'18:52', n:'6.8万', dm:['收藏了'], tag:'编程', tagc:'#00B1B1' },
+      { t:'猫咪的九种睡姿大赏', c:'cover-cat-chair.jpeg', up:'猫奴日常菌', av:'avatar-02.jpeg', p:'376.5万', d:'06:19', n:'18.2万', dm:['哈哈哈哈哈'], tag:'日常', tagc:'#FB7299' },
+      { t:'音乐现场：民谣在 Livehouse 的样子', c:'cover-music-stage.jpeg', up:'民谣小王子', av:'avatar-04.jpeg', p:'92.7万', d:'21:30', n:'4.4万', dm:[], tag:'现场', tagc:'#9C27B0' },
+      { t:'街机厅里那些年的回忆', c:'cover-gaming-shop.jpeg', up:'游戏区主播', av:'avatar-02.jpeg', p:'254.1万', d:'15:47', n:'10.9万', dm:['爷青回'], tag:'游戏', tagc:'#00AEEC' },
+      { t:'雨天窗边的一小时', c:'cover-cat-clothes.jpeg', up:'猫奴日常菌', av:'avatar-02.jpeg', p:'64.3万', d:'03:55', n:'2.1万', dm:['安静'], tag:'生活', tagc:'#00AEEC' }
+    ]
+  };
+
+  /* ---------- 渲染卡片 ---------- */
+  function card(v) {
+    var dm = (v.dm || []).map(function (txt, i) {
+      return '<i style="top:' + (14 + i * 16) + '%;left:' + (10 + i * 18) + '%">' + txt + '</i>';
+    }).join('');
+    return '' +
+      '<article class="pc-card" onclick="location.href=\'../player/player.html\'">' +
+        '<div class="pc-cover">' +
+          '<img src="../../../lib/images/' + v.c + '" alt="">' +
+          (dm ? '<span class="dm">' + dm + '</span>' : '') +
+          '<span class="tagline"><span style="background:' + v.tagc + '">' + v.tag + '</span></span>' +
+          '<span class="dur">' + v.d + '</span>' +
+        '</div>' +
+        '<div class="pc-card-bd">' +
+          '<h3 class="pc-title">' + v.t + '</h3>' +
+          '<div class="pc-meta"><span><i class="fas fa-play"></i>' + v.p + '</span><span><i class="fas fa-comment-dots"></i>' + v.n + '</span></div>' +
+          '<div class="pc-up"><img src="../../../lib/images/' + v.av + '" alt=""><b>' + v.up + '</b></div>' +
+        '</div>' +
+      '</article>';
+  }
+
+  var grid = document.getElementById('bnGrid');
+  function render(i) { grid.innerHTML = DATA[i].map(card).join(''); }
+  render(0);
+
+  document.getElementById('bnTabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-t]');
+    if (!b) return;
+    this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    render(Number(b.dataset.t));
+  });
+
+  /* ---------- 轮播 ---------- */
+  var BANNERS = 3, cur = 0, timer = null;
+  var track = document.getElementById('bnTrack');
+  var dots  = document.getElementById('bnDots');
+
+  dots.innerHTML = Array.from({ length: BANNERS }, function (_, i) {
+    return '<i data-i="' + i + '" class="' + (i === 0 ? 'on' : '') + '"></i>';
+  }).join('');
+
+  function go(n) {
+    cur = (n + BANNERS) % BANNERS;
+    track.style.transform = 'translateX(-' + (cur * 100) + '%)';
+    dots.querySelectorAll('i').forEach(function (d, k) { d.classList.toggle('on', k === cur); });
+  }
+  function start() { stop(); timer = setInterval(function () { go(cur + 1); }, 5000); }
+  function stop()  { if (timer) clearInterval(timer); timer = null; }
+
+  dots.addEventListener('click', function (e) {
+    var d = e.target.closest('i[data-i]');
+    if (!d) return;
+    go(Number(d.dataset.i)); start();
+  });
+
+  var banner = document.querySelector('.pc-banner');
+  banner.addEventListener('mouseenter', stop);
+  banner.addEventListener('mouseleave', start);
+  start();
+
+  /* ---------- 排行榜可点 ---------- */
+  document.getElementById('rankList').addEventListener('click', function () {
+    location.href = '../player/player.html';
+  });
+})();
+</script>
+</body>
+</html>

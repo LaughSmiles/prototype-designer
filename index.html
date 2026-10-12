@@ -347,16 +347,7 @@
     <div class="header">
         <h1 id="showcaseTitle">📐 高保真原型</h1>
         <p id="showcaseDesc"></p>
-        <div class="stats">
-            <div class="stat-item">
-                <i class="fas fa-mobile-alt"></i>
-                <span>移动端 <span id="app-count">0</span> 个页面</span>
-            </div>
-            <div class="stat-item">
-                <i class="fas fa-desktop"></i>
-                <span>桌面端 <span id="admin-count">0</span> 个页面</span>
-            </div>
-        </div>
+        <div class="stats" id="deviceStats"></div>
         <div class="header-actions">
             <input class="search-input" type="search" placeholder="搜索页面名称 / 路径…"
                    oninput="filterPages(this.value)" aria-label="搜索页面">
@@ -366,14 +357,11 @@
         </div>
     </div>
 
-    <!-- 设备切换 Tab 与各分类区块均由 config.js 在运行时生成，此处不硬编码页面清单 -->
+    <!-- 设备切换 Tab、各设备统计位与分节容器均由 config.js 在运行时生成。
+         此前这里静态写死了 app-section / admin-section 与 app-count / admin-count，
+         新增第三个设备（如 pc）时容器不存在，render() 里的 `if (!el) return;`
+         会让该设备静默渲染出空白页 —— Tab 能点、内容全无，且无任何报错。 -->
     <div class="device-tabs" id="deviceTabs"></div>
-
-    <!-- 移动端展示 -->
-    <div id="app-section" class="device-section active"></div>
-
-    <!-- 桌面端展示 -->
-    <div id="admin-section" class="device-section"></div>
 
 <script>
         /**
@@ -518,6 +506,35 @@
                 }).join('');
             }
 
+            /**
+             * 按 devices[] 生成页头的统计位与各设备分节容器。
+             *
+             * 这两处此前是 HTML 里写死的 app-count / admin-count 与 app-section / admin-section，
+             * 新增第三个设备时容器不存在，render() 里的 `if (!el) return;` 会让该设备
+             * 静默渲染成一片空白 —— Tab 能点亮、内容一个都没有，控制台也无报错。
+             * 现在容器与统计位都从 config.js 推导，devices[] 加一项即可完整生效。
+             */
+            function scaffoldDeviceContainers() {
+                var stats = document.getElementById('deviceStats');
+                if (stats && !stats.children.length) {
+                    stats.innerHTML = devices.map(function (d) {
+                        return '<div class="stat-item">' +
+                            '<i class="fas ' + esc(d.icon || 'fa-desktop') + '"></i>' +
+                            '<span>' + esc(d.name) + ' <span id="' + esc(d.id) + '-count">0</span> 个页面</span>' +
+                        '</div>';
+                    }).join('');
+                }
+
+                var tabs = document.getElementById('deviceTabs');
+                devices.forEach(function (d) {
+                    if (document.getElementById(d.id + '-section')) return;
+                    var sec = document.createElement('div');
+                    sec.id = d.id + '-section';
+                    sec.className = 'device-section' + (d.id === currentDevice ? ' active' : '');
+                    tabs.parentNode.insertBefore(sec, tabs.nextSibling);
+                });
+            }
+
             function renderDeviceTabs() {
                 document.getElementById('deviceTabs').innerHTML = devices.map(function (d) {
                     return '<button class="device-tab' + (d.id === currentDevice ? ' active' : '') +
@@ -543,6 +560,7 @@
             }
 
             function render() {
+                scaffoldDeviceContainers();
                 renderDeviceTabs();
                 devices.forEach(function (d) {
                     var el = document.getElementById(d.id + '-section');

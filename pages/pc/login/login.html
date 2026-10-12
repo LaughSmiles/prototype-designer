@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录注册 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============================================================
+     哔哩云 · 电脑端前台 设计令牌（与 pages/pc/home/home.html 母版一致）
+     本页只做「居中卡片式登录」，不改动母版任何类名的含义。
+     ============================================================ */
+  :root{
+    --pc-pink:#FB7299; --pc-pink-strong:#E11D48; --pc-pink-soft:#FFF1F5;
+    --pc-blue:#00AEEC; --pc-blue-soft:#E6F7FE;
+    --pc-text:#18191C; --pc-text-2:#61666D; --pc-text-3:#9499A0; --pc-text-inv:#FFFFFF;
+    --pc-bg:#F6F7F9; --pc-surface:#FFFFFF; --pc-surface-2:#F1F2F4;
+    --pc-line:#E3E5E8; --pc-line-2:#EDEFF2;
+    --pc-header-h:64px; --pc-side-w:180px; --pc-page-max:1600px;
+    --pc-r-sm:8px; --pc-r:12px; --pc-r-lg:18px;
+    --pc-shadow:0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --pc-shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pc-bg);color:var(--pc-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  ul{margin:0;padding:0;list-style:none}
+  img{display:block}
+  button{font-family:inherit}
+
+  /* ============ 页头（返回首页） ============ */
+  .pc-top{position:fixed;left:0;right:0;top:0;height:var(--pc-header-h);z-index:40;
+          display:flex;align-items:center;justify-content:space-between;padding:0 28px;
+          background:rgba(255,255,255,.72);backdrop-filter:saturate(180%) blur(12px);
+          border-bottom:1px solid var(--pc-line)}
+  .pc-top-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--pc-pink-strong)}
+  .pc-top-logo i{font-size:22px}
+  .pc-top-back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--pc-text-2);cursor:pointer}
+  .pc-top-back:hover{color:var(--pc-pink-strong)}
+
+  /* ============ 登录页容器（页面特有） ============ */
+  .pc-auth{position:relative;min-height:100vh;display:flex;flex-direction:column;
+           align-items:center;justify-content:center;padding:96px 20px 56px;overflow:hidden}
+  .pc-auth-bg{position:absolute;inset:0;z-index:0;pointer-events:none}
+  .pc-auth-bg b{position:absolute;display:block;border-radius:50%;filter:blur(70px)}
+  .pc-auth-box{position:relative;z-index:1;width:400px;background:var(--pc-surface);
+               border-radius:var(--pc-r-lg);box-shadow:var(--pc-shadow);padding:36px 38px 30px}
+  .pc-auth-logo{display:flex;align-items:center;justify-content:center;gap:8px;
+                font-size:26px;font-weight:700;color:var(--pc-pink-strong)}
+  .pc-auth-logo i{font-size:28px}
+  .pc-auth-slogan{text-align:center;font-size:13px;color:var(--pc-text-3);margin:10px 0 24px}
+
+  /* 页签：照抄母版 .pc-tabs 的下划线样式 */
+  .pc-tabs{display:flex;gap:24px;margin-bottom:18px;border-bottom:1px solid var(--pc-line)}
+  .pc-tabs button{padding:0 2px 12px;font-size:15px;color:var(--pc-text-2);background:none;border:none;
+                   cursor:pointer;font-family:inherit;position:relative}
+  .pc-tabs button:hover{color:var(--pc-text)}
+  .pc-tabs button.on{color:var(--pc-text);font-weight:600}
+  .pc-tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--pc-pink)}
+
+  /* ============ 表单 ============ */
+  .pc-field{margin-bottom:16px}
+  .pc-field-lb{display:block;font-size:13px;color:var(--pc-text-2);margin-bottom:8px}
+  .pc-field-lb em{color:var(--pc-pink-strong);font-style:normal;margin-left:3px}
+  .pc-inp{width:100%;height:44px;padding:0 14px;font-size:14px;color:var(--pc-text);
+          background:var(--pc-surface);border:1px solid var(--pc-line);border-radius:var(--pc-r-sm);
+          outline:none;transition:border-color .2s,box-shadow .2s,background .2s}
+  .pc-inp::placeholder{color:var(--pc-text-3)}
+  .pc-inp:focus{border-color:var(--pc-pink);box-shadow:0 0 0 3px var(--pc-pink-soft)}
+  .pc-inp.pc-err{border-color:#E11D48;background:#FFF5F7;box-shadow:0 0 0 3px rgba(225,29,72,.08)}
+  .pc-inp-pw{padding-right:44px}
+  .pc-pw-see{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:40px;height:40px;
+            border:none;background:none;color:var(--pc-text-3);cursor:pointer;font-size:15px;border-radius:var(--pc-r-sm)}
+  .pc-pw-see:hover{color:var(--pc-pink-strong)}
+  .pc-field-wrap{position:relative}
+
+  /* 图形验证码：4 个数字方块 + 刷新 */
+  .pc-cap{display:flex;align-items:center;gap:10px;cursor:pointer}
+  .pc-cap-boxes{display:flex;gap:6px;flex:none}
+  .pc-cap-b{width:38px;height:42px;border-radius:var(--pc-r-sm);
+           background:linear-gradient(135deg,#FFF1F5 0%,#F6F7F9 100%);
+           border:1px solid var(--pc-line);display:flex;align-items:center;justify-content:center;
+           font-size:20px;font-weight:700;font-style:italic;color:var(--pc-pink-strong);
+           font-family:Georgia,"Times New Roman",serif;user-select:none}
+  .pc-cap-b:nth-child(1){transform:rotate(-4deg)}
+  .pc-cap-b:nth-child(2){transform:rotate(3deg)}
+  .pc-cap-b:nth-child(3){transform:rotate(-2deg)}
+  .pc-cap-tip{flex:1;min-width:0;font-size:12px;color:var(--pc-text-3);line-height:1.5}
+  .pc-cap-tip em{display:block;font-style:normal;color:var(--pc-blue)}
+
+  /* 短信验证码行 */
+  .pc-sms-row{display:flex;gap:10px}
+  .pc-sms-row .pc-inp{flex:1;min-width:0}
+  .pc-sms-btn{flex:none;width:124px;height:44px;border-radius:var(--pc-r-sm);border:1px solid var(--pc-pink);
+              background:var(--pc-pink-soft);color:var(--pc-pink-strong);font-size:13px;cursor:pointer;
+              transition:all .2s}
+  .pc-sms-btn:hover:not(:disabled){background:#FFE3EB}
+  .pc-sms-btn:disabled{opacity:.55;cursor:not-allowed;background:var(--pc-surface-2);
+                      border-color:var(--pc-line);color:var(--pc-text-3)}
+
+  .pc-between{display:flex;align-items:center;justify-content:space-between;margin:2px 0 18px}
+  .pc-check{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--pc-text-2);cursor:pointer}
+  .pc-check input{width:15px;height:15px;margin:0;accent-color:var(--pc-pink);cursor:pointer}
+  .pc-link{font-size:13px;color:var(--pc-text-2);cursor:pointer;background:none;border:none;padding:4px}
+  .pc-link:hover{color:var(--pc-pink-strong)}
+
+  /* 错误提示条 */
+  .pc-tip{display:none;align-items:center;gap:7px;height:38px;padding:0 12px;margin-bottom:14px;
+         border-radius:var(--pc-r-sm);background:#FFF1F2;color:#E11D48;font-size:13px}
+  .pc-tip.on{display:flex}
+  .pc-tip.good{background:#ECFDF5;color:#059669}
+
+  /* 主按钮 */
+  .pc-submit{width:100%;height:46px;border:none;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+             color:#fff;font-size:15px;font-weight:500;cursor:pointer;transition:background .2s}
+  .pc-submit:hover:not(:disabled){background:var(--pc-pink-strong)}
+  .pc-submit:disabled{background:var(--pc-line);color:var(--pc-text-3);cursor:not-allowed}
+  .pc-submit.pc-shake{animation:pc-shake .36s ease}
+  @keyframes pc-shake{
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-6px)} 40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+  }
+
+  /* ============ 其他方式登录 ============ */
+  .pc-divider{display:flex;align-items:center;gap:12px;margin:24px 0 18px;font-size:12px;color:var(--pc-text-3)}
+  .pc-divider::before,.pc-divider::after{content:"";flex:1;height:1px;background:var(--pc-line)}
+  .pc-oauth{display:flex;justify-content:center;gap:22px}
+  .pc-oauth button{width:44px;height:44px;border-radius:50%;border:1px solid var(--pc-line);
+                   background:var(--pc-surface);color:var(--pc-text-2);font-size:19px;cursor:pointer;
+                   transition:all .2s}
+  .pc-oauth button:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong);transform:translateY(-3px)}
+  .pc-oauth .wx:hover{border-color:#07C160;color:#07C160}
+  .pc-oauth .qq:hover{border-color:#12B7F5;color:#12B7F5}
+  .pc-oauth .wb:hover{border-color:#E6162D;color:#E6162D}
+
+  .pc-reg{margin-top:22px;text-align:center;font-size:13px;color:var(--pc-text-3)}
+  .pc-reg a{color:var(--pc-pink-strong);font-weight:500;cursor:pointer}
+  .pc-reg a:hover{text-decoration:underline}
+
+  /* ============ 卡片下方 ============ */
+  .pc-agree{margin-top:18px;font-size:12px;color:var(--pc-text-3);text-align:center;line-height:1.8}
+  .pc-agree a{color:var(--pc-blue);cursor:pointer}
+  .pc-agree a:hover{text-decoration:underline}
+  .pc-auth-foot{margin-top:26px;text-align:center;font-size:12px;color:var(--pc-text-3)}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部条 ==================== -->
+<div class="pc-top">
+  <span class="pc-top-logo" onclick="location.href='../home/home.html'" style="cursor:pointer">
+    <i class="fas fa-bolt"></i>哔哩云
+  </span>
+  <span class="pc-top-back" onclick="location.href='../home/home.html'">
+    <i class="fas fa-arrow-left"></i>先随便逛逛，返回首页
+  </span>
+</div>
+
+<!-- ==================== 登录卡片 ==================== -->
+<div class="pc-auth">
+
+  <!-- 背景装饰（纯色块，不引用任何外部资源） -->
+  <div class="pc-auth-bg">
+    <b style="width:420px;height:420px;background:#FFD6E2;top:-90px;left:-70px"></b>
+    <b style="width:360px;height:360px;background:#D6EEFF;bottom:-110px;right:-60px"></b>
+    <b style="width:260px;height:260px;background:#E6FBF3;top:44%;right:14%"></b>
+    <b style="width:220px;height:220px;background:#FFF0D6;bottom:12%;left:16%"></b>
+  </div>
+
+  <section class="pc-auth-box">
+
+    <div class="pc-auth-logo"><i class="fas fa-bolt"></i>哔哩云</div>
+    <p class="pc-auth-slogan">精彩内容都在这里，登录后同步你的观看与收藏</p>
+
+    <!-- 页签：密码登录 / 短信登录 -->
+    <div class="pc-tabs" id="authTabs" style="margin-bottom:22px">
+      <button class="on" data-m="pwd" style="flex:1">密码登录</button>
+      <button data-m="sms" style="flex:1">短信登录</button>
+    </div>
+
+    <div class="pc-tip" id="authTip"><i class="fas fa-circle-exclamation"></i><span id="authTipTx"></span></div>
+
+    <!-- ---------- 密码登录 ---------- -->
+    <form class="pc-pane" id="panePwd" autocomplete="off" onsubmit="return false;">
+      <div class="pc-field">
+        <label class="pc-field-lb" for="pwdAccount">手机号 / 邮箱<em>*</em></label>
+        <input class="pc-inp" id="pwdAccount" type="text" placeholder="请输入手机号或邮箱">
+      </div>
+
+      <div class="pc-field">
+        <label class="pc-field-lb" for="pwdPass">密码<em>*</em></label>
+        <div class="pc-field-wrap">
+          <input class="pc-inp pc-inp-pw" id="pwdPass" type="password" placeholder="请输入登录密码">
+          <button class="pc-pw-see" type="button" title="显示 / 隐藏密码"
+                  onclick="togglePw('pwdPass',this)"><i class="fas fa-eye"></i></button>
+        </div>
+      </div>
+
+      <div class="pc-field">
+        <span class="pc-field-lb">图形验证码<em>*</em></span>
+        <div class="pc-cap" id="capBox" title="点击刷新验证码">
+          <div class="pc-cap-boxes" id="capBoxes"></div>
+          <span class="pc-cap-tip">看不清？点击换一张<em id="capHint">已为你自动识别</em></span>
+        </div>
+      </div>
+
+      <div class="pc-between">
+        <label class="pc-check"><input type="checkbox" id="rememberMe" checked>记住我，14 天内免登录</label>
+        <button class="pc-link" type="button" onclick="toast('已发送验证码到你的手机，请按提示重置密码','good')">忘记密码</button>
+      </div>
+
+      <button class="pc-submit" id="btnPwd" type="button" disabled>登 录</button>
+    </form>
+
+    <!-- ---------- 短信登录 ---------- -->
+    <form class="pc-pane" id="paneSms" style="display:none" autocomplete="off" onsubmit="return false;">
+      <div class="pc-field">
+        <label class="pc-field-lb" for="smsPhone">手机号<em>*</em></label>
+        <input class="pc-inp" id="smsPhone" type="text" maxlength="11" placeholder="请输入 11 位手机号">
+      </div>
+
+      <div class="pc-field">
+        <label class="pc-field-lb" for="smsCode">短信验证码<em>*</em></label>
+        <div class="pc-sms-row">
+          <input class="pc-inp" id="smsCode" type="text" maxlength="6" placeholder="6 位数字验证码">
+          <button class="pc-sms-btn" id="btnSms" type="button">获取验证码</button>
+        </div>
+      </div>
+
+      <div class="pc-between">
+        <label class="pc-check"><input type="checkbox" checked>同意自动登录本设备</label>
+        <button class="pc-link" type="button" onclick="toast('语音验证码将在 5 秒后送达','good')">收不到？用语音验证</button>
+      </div>
+
+      <button class="pc-submit" id="btnSmsLogin" type="button" disabled>登 录</button>
+    </form>
+
+    <div class="pc-divider">其他方式登录</div>
+    <div class="pc-oauth">
+      <button class="wx" type="button" title="微信登录" onclick="toast('正在唤起微信授权…')"><i class="fab fa-weixin"></i></button>
+      <button class="qq" type="button" title="QQ 登录" onclick="toast('正在唤起 QQ 授权…')"><i class="fab fa-qq"></i></button>
+      <button class="wb" type="button" title="微博登录" onclick="toast('正在唤起微博授权…')"><i class="fab fa-weibo"></i></button>
+    </div>
+
+    <p class="pc-reg">还没有账号？<a onclick="location.href='../home/home.html'">注册账号</a></p>
+  </section>
+
+  <p class="pc-agree">
+    登录即代表同意<a onclick="toast('《哔哩云用户协议》v3.2 全文共 12 章')">《用户协议》</a>和<a onclick="toast('《哔哩云隐私政策》说明我们收集哪些数据')">《隐私政策》</a>，
+    我们将按最小必要原则收集信息
+  </p>
+
+  <p class="pc-auth-foot">哔哩云 · 视频社区高保真原型 ｜ 本页图片与素材均已本地化，完全离线可用</p>
+</div>
+
+<!-- ==================== 脚本 ==================== -->
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ============ 通用小工具 ============ */
+  var $ = function (id) { return document.getElementById(id); };
+
+  var tipTimer = null;
+  function toast(msg, kind) {
+    var tip = $('authTip');
+    $('authTipTx').textContent = msg;
+    tip.className = 'pc-tip on' + (kind === 'good' ? ' good' : '');
+    tip.querySelector('i').className = kind === 'good' ? 'fas fa-circle-check' : 'fas fa-circle-exclamation';
+    if (tipTimer) clearTimeout(tipTimer);
+    tipTimer = setTimeout(function () { tip.className = 'pc-tip'; }, 2600);
+  }
+
+  function shake(btn) {
+    btn.classList.remove('pc-shake');
+    void btn.offsetWidth;          /* 强制重排，保证连续点击也能重新播放动画 */
+    btn.classList.add('pc-shake');
+  }
+
+  function markErr(el, bad) {
+    el.classList.toggle('pc-err', !!bad);
+  }
+
+  /** 账号：纯数字按手机号规则校验，否则按邮箱规则校验 */
+  function checkAccount(v) {
+    if (!v) return '请输入手机号或邮箱';
+    if (/^\d+$/.test(v)) {
+      if (!/^1[3-9]\d{9}$/.test(v)) return '手机号格式不正确，应为 1 开头的 11 位数字';
+      return '';
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return '邮箱格式不正确，例如 name@example.com';
+    return '';
+  }
+
+  function checkPhone(v) {
+    if (!v) return '请输入手机号';
+    if (!/^1[3-9]\d{9}$/.test(v)) return '手机号格式不正确，应为 1 开头的 11 位数字';
+    return '';
+  }
+
+  /* ============ 页签切换 ============ */
+  var tabs = $('authTabs');
+  tabs.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-m]');
+    if (!b) return;
+    tabs.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    var isPwd = b.dataset.m === 'pwd';
+    $('panePwd').style.display = isPwd ? '' : 'none';
+    $('paneSms').style.display = isPwd ? 'none' : '';
+    $('authTip').className = 'pc-tip';
+    revalidate();
+  });
+
+  /* ============ 图形验证码：4 位数字，点击刷新 ============ */
+  var capCode = '';
+  function makeCap() {
+    var s = '';
+    for (var i = 0; i < 4; i++) s += Math.floor(Math.random() * 10);
+    return s;
+  }
+  function renderCap() {
+    capCode = makeCap();
+    var html = '';
+    for (var i = 0; i < capCode.length; i++) html += '<span class="pc-cap-b">' + capCode.charAt(i) + '</span>';
+    $('capBoxes').innerHTML = html;
+  }
+  renderCap();
+  $('capBox').addEventListener('click', function () {
+    renderCap();
+    toast('验证码已刷新','good');
+  });
+
+  /* ============ 密码显示 / 隐藏 ============ */
+  window.togglePw = function (inputId, btn) {
+    var el = $(inputId);
+    el.type = el.type === 'password' ? 'text' : 'password';
+    btn.querySelector('i').className = el.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+  };
+
+  /* ============ 短信验证码 60 秒倒计时 ============ */
+  var timer = null, left = 0;
+  var btnSms = $('btnSms');
+  btnSms.addEventListener('click', function () {
+    if (timer) return;
+    var phone = $('smsPhone');
+    var err = checkPhone(phone.value.trim());
+    markErr(phone, !!err);
+    if (err) { toast(err); shake($('btnSmsLogin')); return; }
+
+    left = 60;
+    btnSms.disabled = true;
+    btnSms.textContent = left + ' 秒后重发';
+    toast('验证码已发送至 ' + phone.value.trim() + '，5 分钟内有效','good');
+    timer = setInterval(function () {
+      left--;
+      if (left <= 0) {
+        clearInterval(timer); timer = null;
+        btnSms.disabled = false;
+        btnSms.textContent = '获取验证码';
+        toast('可以重新获取验证码了','good');
+      } else {
+        btnSms.textContent = left + ' 秒后重发';
+      }
+    }, 1000);
+  });
+
+  /* ============ 实时校验 → 控制按钮禁用态 ============ */
+  var elAccount = $('pwdAccount'), elPass = $('pwdPass');
+  var elPhone = $('smsPhone'), elCode = $('smsCode');
+  var btnPwd = $('btnPwd'), btnSmsLogin = $('btnSmsLogin');
+
+  function pwdReady() {
+    return !!(elAccount.value.trim() && elPass.value.length >= 6 && capCode.length === 4);
+  }
+  function smsReady() {
+    return !!(/^1[3-9]\d{9}$/.test(elPhone.value.trim()) && /^\d{6}$/.test(elCode.value.trim()));
+  }
+  function revalidate() {
+    btnPwd.disabled = !pwdReady();
+    btnSmsLogin.disabled = !smsReady();
+  }
+
+  /* 输入时清掉红框、边填边更新按钮 */
+  [elAccount, elPass, elPhone, elCode].forEach(function (el) {
+    el.addEventListener('input', function () {
+      if (el.classList.contains('pc-err')) markErr(el, false);
+      revalidate();
+    });
+  });
+
+  /* ============ 提交登录 ============ */
+  function doLogin(btn) {
+    btn.disabled = true;           /* 防重复点击 */
+    btn.textContent = '登录中…';
+    setTimeout(function () {
+      btn.textContent = '登 录';
+      btn.disabled = false;
+      toast('登录成功，正在返回首页…','good');
+      setTimeout(function () { location.href = '../home/home.html'; }, 900);
+    }, 1100);
+  }
+
+  btnPwd.addEventListener('click', function () {
+    var a = elAccount.value.trim(), p = elPass.value;
+    var eA = checkAccount(a);
+    markErr(elAccount, !!eA);
+    if (eA) { toast(eA); shake(this); revalidate(); return; }
+
+    if (!p)            { markErr(elPass, true); toast('请输入登录密码'); shake(this); return; }
+    if (p.length < 6)  { markErr(elPass, true); toast('密码至少 6 位'); shake(this); return; }
+    markErr(elPass, false);
+
+    if (!capCode)      { toast('请先点击图形验证码刷新'); shake(this); return; }
+    doLogin(this);
+  });
+
+  btnSmsLogin.addEventListener('click', function () {
+    var eP = checkPhone(elPhone.value.trim());
+    markErr(elPhone, !!eP);
+    if (eP) { toast(eP); shake(this); revalidate(); return; }
+
+    var c = elCode.value.trim();
+    if (!c)         { markErr(elCode, true); toast('请输入短信验证码'); shake(this); return; }
+    if (!/^\d{6}$/.test(c)) { markErr(elCode, true); toast('验证码为 6 位数字'); shake(this); return; }
+    if (!timer)     { toast('请先点「获取验证码」'); shake(this); return; }
+    markErr(elCode, false);
+    doLogin(this);
+  });
+
+  /* 回车即提交 */
+  [elAccount, elPass, elPhone, elCode].forEach(function (el) {
+    el.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      var pane = el.closest('.pc-pane');
+      var btn = pane && pane.querySelector('.pc-submit');
+      if (btn && !btn.disabled) btn.click();
+    });
+  });
+
+  window.toast = toast;
+  revalidate();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>投稿发布 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============================================================
+     哔哩云 · 电脑端前台 设计令牌
+     与 pages/pc/home/home.html 完全一致，本页只在其后追加 .pc-up-* 专有样式。
+     ============================================================ */
+  :root{
+    --pc-pink:#FB7299; --pc-pink-strong:#E11D48; --pc-pink-soft:#FFF1F5;
+    --pc-blue:#00AEEC; --pc-blue-soft:#E6F7FE;
+    --pc-text:#18191C; --pc-text-2:#61666D; --pc-text-3:#9499A0; --pc-text-inv:#FFFFFF;
+    --pc-bg:#F6F7F9; --pc-surface:#FFFFFF; --pc-surface-2:#F1F2F4;
+    --pc-line:#E3E5E8; --pc-line-2:#EDEFF2;
+    --pc-header-h:64px; --pc-side-w:180px; --pc-page-max:1600px;
+    --pc-r-sm:8px; --pc-r:12px; --pc-r-lg:18px;
+    --pc-shadow:0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --pc-shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pc-bg);color:var(--pc-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  ul{margin:0;padding:0;list-style:none}
+  img{display:block}
+
+  /* ============ 顶部导航（与母版一致） ============ */
+  .pc-head{position:sticky;top:0;z-index:50;height:var(--pc-header-h);background:var(--pc-surface);
+           border-bottom:1px solid var(--pc-line)}
+  .pc-head-in{max-width:var(--pc-page-max);margin:0 auto;height:100%;display:flex;align-items:center;gap:20px;padding:0 24px}
+  .pc-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--pc-pink-strong);flex:none}
+  .pc-logo i{font-size:22px}
+  .pc-nav{display:flex;gap:2px;flex:none}
+  .pc-nav a{padding:0 14px;height:var(--pc-header-h);display:flex;align-items:center;font-size:15px;
+           color:var(--pc-text-2);position:relative}
+  .pc-nav a:hover{color:var(--pc-text)}
+  .pc-nav a.on{color:var(--pc-pink-strong);font-weight:600}
+  .pc-nav a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;
+                      border-radius:2px 2px 0 0;background:var(--pc-pink)}
+  .pc-search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:38px;
+             padding:0 14px;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);
+             border:1px solid transparent;cursor:pointer;color:var(--pc-text-3)}
+  .pc-search:hover{border-color:var(--pc-line);background:var(--pc-surface)}
+  .pc-head-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  .pc-hbtn{width:36px;height:36px;border-radius:var(--pc-r-sm);display:flex;align-items:center;justify-content:center;
+           color:var(--pc-text-2);cursor:pointer;position:relative;font-size:16px}
+  .pc-hbtn:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-hbadge{position:absolute;top:4px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+             background:var(--pc-pink-strong);color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:500}
+  .pc-pubbtn{height:36px;padding:0 16px;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+             color:#fff;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .pc-pubbtn:hover{background:var(--pc-pink-strong)}
+  .pc-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer}
+
+  /* ============ 主体三栏（与母版一致） ============ */
+  .pc-body{max-width:var(--pc-page-max);margin:0 auto;display:flex;gap:24px;padding:24px;align-items:flex-start}
+  .pc-side{width:var(--pc-side-w);flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px);
+           max-height:calc(100vh - var(--pc-header-h) - 48px);overflow-y:auto}
+  .pc-side::-webkit-scrollbar{width:0}
+  .pc-side h4{font-size:12px;color:var(--pc-text-3);font-weight:500;margin:20px 0 8px;padding-left:10px;letter-spacing:.5px}
+  .pc-side h4:first-child{margin-top:0}
+  .pc-side a{display:flex;align-items:center;gap:9px;height:38px;padding:0 10px;border-radius:var(--pc-r-sm);
+             font-size:14px;color:var(--pc-text-2)}
+  .pc-side a i{width:18px;text-align:center;color:var(--pc-text-3);font-size:14px}
+  .pc-side a:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-side a.on{background:var(--pc-pink-soft);color:var(--pc-pink-strong);font-weight:600}
+  .pc-side a.on i{color:var(--pc-pink-strong)}
+
+  .pc-main{flex:1;min-width:0}
+
+  /* 空状态 / 加载更多 / 页脚（母版已有，此处复用不改动） */
+  .pc-empty{padding:64px 20px;text-align:center;color:var(--pc-text-3)}
+  .pc-empty i{font-size:48px;color:var(--pc-line);margin-bottom:16px;display:block}
+  .pc-empty p{margin:0 0 20px;font-size:14px}
+  .pc-more{display:block;width:100%;height:46px;margin-top:24px;border:1px solid var(--pc-line);
+           border-radius:var(--pc-r);background:var(--pc-surface);color:var(--pc-text-2);
+           font-size:14px;cursor:pointer;font-family:inherit}
+  .pc-more:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+  .pc-foot{margin-top:48px;padding:28px 24px;text-align:center;font-size:12px;color:var(--pc-text-3);
+           border-top:1px solid var(--pc-line)}
+
+  /* ============================================================
+     以下为「投稿发布」页专有样式，全部使用 .pc-up-* 前缀，
+     不改动母版任何已有类名的含义。
+     ============================================================ */
+
+  /* ---- 步骤条：把 .pc-tabs 的下划线语言延伸为圆形序号步骤条 ---- */
+  .pc-up-steps{display:flex;align-items:flex-start;background:var(--pc-surface);
+               border-radius:var(--pc-r);padding:26px 20px;box-shadow:var(--pc-shadow);margin-bottom:20px}
+  .pc-up-step{flex:1;display:flex;align-items:flex-start;gap:12px;position:relative;cursor:pointer;
+              background:none;border:none;font-family:inherit;padding:0;text-align:left}
+  .pc-up-step::after{content:"";position:absolute;left:46px;right:30px;top:19px;
+                     height:2px;background:var(--pc-line)}
+  .pc-up-step.done::after{background:var(--pc-pink)}
+  .pc-up-step:last-child::after{display:none}
+  .pc-up-step .no{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;
+                 justify-content:center;font-size:16px;font-weight:600;background:var(--pc-surface-2);
+                 color:var(--pc-text-3);border:2px solid var(--pc-line);transition:all .25s;position:relative;z-index:2}
+  .pc-up-step.on .no{background:var(--pc-pink);border-color:var(--pc-pink);color:#fff;
+                    box-shadow:0 0 0 4px rgba(251,114,153,.16)}
+  .pc-up-step.done .no{background:var(--pc-pink-soft);border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+  .pc-up-step .tx b{display:block;font-size:15px;font-weight:500;color:var(--pc-text-2);margin-bottom:3px;transition:color .2s}
+  .pc-up-step .tx span{font-size:12px;color:var(--pc-text-3);line-height:1.5;display:block}
+  .pc-up-step.on .tx b{color:var(--pc-pink-strong);font-weight:600}
+  .pc-up-step:hover .tx b{color:var(--pc-pink-strong)}
+  .pc-up-step[disabled]{cursor:not-allowed;opacity:.55}
+
+  /* ---- 卡片 ---- */
+  .pc-up-card{background:var(--pc-surface);border-radius:var(--pc-r);box-shadow:var(--pc-shadow);padding:24px}
+  .pc-up-card+.pc-up-card{margin-top:16px}
+  .pc-up-chd{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .pc-up-chd h2{margin:0;font-size:18px;font-weight:600;display:flex;align-items:center;gap:9px}
+  .pc-up-chd h2 i{color:var(--pc-pink)}
+  .pc-up-chd .hint{margin-left:auto;font-size:12px;color:var(--pc-text-3);display:flex;align-items:center;gap:6px}
+  .pc-up-sub{font-size:13px;color:var(--pc-text-3);margin:0 0 20px}
+
+  /* ---- 步骤面板 ---- */
+  .pc-up-panel{display:none}
+  .pc-up-panel.on{display:block;animation:pcUpFade .28s ease}
+  @keyframes pcUpFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  /* ---- 拖拽上传区 ---- */
+  .pc-up-drop{border:2px dashed var(--pc-line);border-radius:var(--pc-r);background:var(--pc-surface-2);
+              padding:46px 24px;text-align:center;cursor:pointer;transition:all .22s}
+  .pc-up-drop:hover{border-color:var(--pc-pink);background:var(--pc-pink-soft)}
+  .pc-up-drop.over{border-color:var(--pc-pink);background:var(--pc-pink-soft);transform:scale(1.005)}
+  .pc-up-drop .ic{width:76px;height:76px;border-radius:24px;margin:0 auto 18px;display:flex;align-items:center;
+                 justify-content:center;font-size:32px;color:#fff;
+                 background:linear-gradient(135deg,var(--pc-pink),var(--pc-pink-strong))}
+  .pc-up-drop .bt{font-size:16px;color:var(--pc-text);margin-bottom:8px}
+  .pc-up-drop .bt u{text-decoration:none;color:var(--pc-pink-strong);font-weight:600}
+  .pc-up-drop .bd{font-size:12px;color:var(--pc-text-3);line-height:1.9}
+
+  /* ---- 草稿条目 ---- */
+  .pc-up-draft{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--pc-line-2)}
+  .pc-up-draft:last-child{border-bottom:none}
+  .pc-up-draft .pc-up-thumb{width:112px;height:70px;border-radius:var(--pc-r-sm);object-fit:cover;
+                           flex:none;background:var(--pc-surface-2)}
+  .pc-up-draft .tx{flex:1;min-width:0}
+  .pc-up-draft .tx .t{font-size:14px;color:var(--pc-text);white-space:nowrap;overflow:hidden;
+                      text-overflow:ellipsis;margin-bottom:7px}
+  .pc-up-bar{height:6px;border-radius:3px;background:var(--pc-surface-2);overflow:hidden}
+  .pc-up-bar i{display:block;height:100%;border-radius:3px;background:var(--pc-pink)}
+  .pc-up-bar.ok i{background:var(--pc-blue)}
+  .pc-up-draft .tx .m{font-size:12px;color:var(--pc-text-3);margin-top:6px;display:flex;align-items:center;gap:10px}
+  .pc-up-draft .tx .m em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--pc-pink-strong);font-weight:500}
+  .pc-up-draft .act{display:flex;align-items:center;gap:8px;flex:none}
+
+  /* ---- 通用按钮（全部 pc-up- 前缀，避免命中 prototype-components 的 .btn* 增强） ---- */
+  .pc-up-btn{height:40px;padding:0 20px;border-radius:var(--pc-r-sm);font-size:14px;font-family:inherit;
+             border:1px solid var(--pc-line);background:var(--pc-surface);color:var(--pc-text-2);
+             cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:all .18s}
+  .pc-up-btn:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+  .pc-up-btn.main{background:var(--pc-pink);border-color:var(--pc-pink);color:#fff}
+  .pc-up-btn.main:hover{background:var(--pc-pink-strong);border-color:var(--pc-pink-strong);color:#fff}
+  .pc-up-btn.ghost{border-color:transparent;background:var(--pc-surface-2)}
+  .pc-up-btn[disabled]{background:var(--pc-surface-2);border-color:var(--pc-line);color:var(--pc-text-3);
+                       cursor:not-allowed;opacity:.7}
+  .pc-up-btn.sm{height:32px;padding:0 14px;font-size:13px}
+
+  /* ---- 表单行 ---- */
+  .pc-up-row{margin-bottom:22px}
+  .pc-up-row:last-child{margin-bottom:0}
+  .pc-up-label{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;
+               color:var(--pc-text);margin-bottom:9px}
+  .pc-up-label .req{color:var(--pc-pink-strong)}
+  .pc-up-label .opt{font-size:12px;color:var(--pc-text-3);font-weight:400}
+  .pc-up-input,.pc-up-area,.pc-up-select{width:100%;border:1px solid var(--pc-line);border-radius:var(--pc-r-sm);
+             background:var(--pc-surface);color:var(--pc-text);font-size:14px;font-family:inherit;
+             padding:0 14px;transition:border-color .18s,box-shadow .18s}
+  .pc-up-input,.pc-up-select{height:44px}
+  .pc-up-area{min-height:120px;padding:12px 14px;line-height:1.7;resize:vertical}
+  .pc-up-input:focus,.pc-up-area:focus,.pc-up-select:focus{outline:none;border-color:var(--pc-pink);
+             box-shadow:0 0 0 3px rgba(251,114,153,.14)}
+  .pc-up-wrap{position:relative}
+  .pc-up-count{position:absolute;right:12px;bottom:10px;font-size:12px;color:var(--pc-text-3);
+               font-variant-numeric:tabular-nums;background:rgba(255,255,255,.92);padding:0 5px;border-radius:4px}
+  .pc-up-help{font-size:12px;color:var(--pc-text-3);margin-top:8px;line-height:1.7;display:flex;gap:7px}
+  .pc-up-help i{margin-top:3px;color:var(--pc-blue)}
+  .pc-up-two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+  /* ---- 标签 chip ---- */
+  .pc-up-chips{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+  .pc-up-chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 8px 0 13px;
+             border-radius:16px;background:var(--pc-pink-soft);color:var(--pc-pink-strong);
+             font-size:13px;border:1px solid rgba(251,114,153,.3)}
+  .pc-up-chip button{width:18px;height:18px;border-radius:50%;border:none;background:rgba(225,29,72,.12);
+                     color:var(--pc-pink-strong);cursor:pointer;font-size:10px;display:flex;
+                     align-items:center;justify-content:center;padding:0}
+  .pc-up-chip button:hover{background:var(--pc-pink-strong);color:#fff}
+  .pc-up-chip-add{height:32px;padding:0 13px;border-radius:16px;border:1px dashed var(--pc-line);
+                  background:none;color:var(--pc-text-3);font-size:13px;font-family:inherit;cursor:pointer;
+                  display:inline-flex;align-items:center;gap:5px}
+  .pc-up-chip-add:hover{border-color:var(--pc-pink);color:var(--pc-pink-strong)}
+
+  /* ---- 单选 / 开关 ---- */
+  .pc-up-opt{position:relative;display:flex;align-items:center;gap:9px;min-width:180px;height:52px;padding:0 16px;
+             border:1px solid var(--pc-line);border-radius:var(--pc-r-sm);cursor:pointer;
+             transition:all .18s;background:var(--pc-surface)}
+  .pc-up-opt input{position:absolute;opacity:0;pointer-events:none}
+  .pc-up-opt .rd{width:18px;height:18px;border-radius:50%;border:2px solid var(--pc-line);flex:none;
+                position:relative;transition:all .18s}
+  .pc-up-opt .tx b{display:block;font-size:14px;font-weight:500;color:var(--pc-text)}
+  .pc-up-opt .tx span{font-size:12px;color:var(--pc-text-3)}
+  .pc-up-opt:hover{border-color:var(--pc-pink)}
+  .pc-up-opt.on{border-color:var(--pc-pink);background:var(--pc-pink-soft)}
+  .pc-up-opt.on .rd{border-color:var(--pc-pink);background:var(--pc-pink)}
+  .pc-up-opt.on .rd::after{content:"";position:absolute;left:5px;top:5px;width:6px;height:6px;
+                           border-radius:50%;background:#fff}
+  .pc-up-opt.on .tx b{color:var(--pc-pink-strong)}
+  .pc-up-opts{display:flex;gap:10px;flex-wrap:wrap}
+
+  .pc-up-sw{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--pc-line-2)}
+  .pc-up-sw:last-child{border-bottom:none}
+  .pc-up-sw .tx{flex:1;min-width:0}
+  .pc-up-sw .tx b{display:block;font-size:14px;font-weight:500;color:var(--pc-text)}
+  .pc-up-sw .tx span{font-size:12px;color:var(--pc-text-3)}
+  .pc-up-toggle{width:46px;height:26px;border-radius:13px;background:var(--pc-line);position:relative;
+                cursor:pointer;transition:background .22s;flex:none;border:none;padding:0}
+  .pc-up-toggle::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;
+                       background:#fff;transition:transform .22s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .pc-up-toggle.on{background:var(--pc-pink)}
+  .pc-up-toggle.on::after{transform:translateX(20px)}
+
+  .pc-up-check{position:relative;display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:var(--pc-r-sm);
+               background:var(--pc-surface-2);cursor:pointer;font-size:13px;color:var(--pc-text-2);line-height:1.7}
+  .pc-up-check input{position:absolute;opacity:0;pointer-events:none}
+  .pc-up-check .bx{width:18px;height:18px;border-radius:4px;border:2px solid var(--pc-line);flex:none;
+                  margin-top:2px;display:flex;align-items:center;justify-content:center;
+                  color:transparent;font-size:10px;transition:all .18s;background:var(--pc-surface)}
+  .pc-up-check.on .bx{background:var(--pc-pink);border-color:var(--pc-pink);color:#fff}
+  .pc-up-check a{color:var(--pc-blue)}
+
+  /* ---- 封面选择 ---- */
+  .pc-up-cover{width:100%;aspect-ratio:16/10;border-radius:var(--pc-r);overflow:hidden;
+               background:var(--pc-surface-2);position:relative}
+  .pc-up-cover img{width:100%;height:100%;object-fit:cover}
+  .pc-up-cover .bd{position:absolute;left:12px;bottom:12px;padding:3px 9px;border-radius:5px;
+                  background:rgba(0,0,0,.62);color:#fff;font-size:12px}
+  .pc-up-thumbs{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:14px}
+  .pc-up-thumb{border-radius:var(--pc-r-sm);overflow:hidden;position:relative;cursor:pointer;
+               border:2px solid transparent;background:var(--pc-surface-2);padding:0;display:block}
+  .pc-up-thumb img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block}
+  .pc-up-thumb .no{position:absolute;left:6px;top:6px;width:20px;height:20px;border-radius:50%;
+                   background:rgba(0,0,0,.6);color:#fff;font-size:11px;display:flex;
+                   align-items:center;justify-content:center}
+  .pc-up-thumb .ok{position:absolute;right:6px;top:6px;width:20px;height:20px;border-radius:50%;
+                   background:var(--pc-pink);color:#fff;font-size:10px;display:none;
+                   align-items:center;justify-content:center}
+  .pc-up-thumb.on{border-color:var(--pc-pink);box-shadow:0 0 0 3px rgba(251,114,153,.18)}
+  .pc-up-thumb.on .ok{display:flex}
+
+  /* ---- 底部固定操作条 ---- */
+  .pc-up-bar-fixed{position:sticky;bottom:0;z-index:40;margin-top:20px;background:rgba(255,255,255,.94);
+                   backdrop-filter:blur(10px);border:1px solid var(--pc-line);border-radius:var(--pc-r);
+                   box-shadow:var(--pc-shadow);padding:14px 20px;display:flex;align-items:center;gap:12px}
+  .pc-up-bar-fixed .st{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--pc-text-3)}
+  .pc-up-bar-fixed .st b{color:var(--pc-text);font-weight:500}
+  .pc-up-bar-fixed .rt{margin-left:auto;display:flex;align-items:center;gap:10px}
+
+  /* ---- 右栏 ---- */
+  .pc-up-aside{width:300px;flex:none;position:sticky;top:calc(var(--pc-header-h) + 24px)}
+  .pc-up-card-mini{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px;margin-bottom:16px;
+                   box-shadow:var(--pc-shadow)}
+  .pc-up-card-mini h4{margin:0 0 14px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .pc-up-card-mini h4 i{color:var(--pc-pink)}
+  .pc-up-tips{font-size:13px;color:var(--pc-text-2);line-height:1.9;padding-left:16px;margin:0}
+  .pc-up-tips li{margin-bottom:7px}
+  .pc-up-tips li::marker{color:var(--pc-pink)}
+  .pc-up-quick{display:flex;align-items:center;gap:11px;padding:10px 0;cursor:pointer}
+  .pc-up-quick .ic{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;
+                  justify-content:center;font-size:15px;color:#fff}
+  .pc-up-quick .tx{flex:1;min-width:0}
+  .pc-up-quick .tx b{display:block;font-weight:500;font-size:13px;color:var(--pc-text);white-space:nowrap;
+                     overflow:hidden;text-overflow:ellipsis}
+  .pc-up-quick .tx span{font-size:11px;color:var(--pc-text-3)}
+  .pc-up-quick:hover .tx b{color:var(--pc-pink-strong)}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航 ==================== -->
+<header class="pc-head">
+  <div class="pc-head-in">
+    <a class="pc-logo" href="../home/home.html"><i class="fas fa-bolt"></i>哔哩云</a>
+    <nav class="pc-nav">
+      <a href="../home/home.html">首页</a>
+      <a href="../channel/channel.html">番剧</a>
+      <a href="../search/search.html">排行榜</a>
+      <a href="../channel/channel.html">直播</a>
+      <a href="../space/space.html">游戏中心</a>
+    </nav>
+    <div class="pc-search" onclick="location.href='../search/search.html'">
+      <i class="fas fa-magnifying-glass"></i><span>搜索你感兴趣的视频、UP主</span>
+    </div>
+    <div class="pc-head-right">
+      <span class="pc-hbtn" title="消息"><i class="fas fa-bell"></i><em class="pc-hbadge">9</em></span>
+      <span class="pc-hbtn" title="收藏"><i class="fas fa-bookmark"></i></span>
+      <span class="pc-hbtn" title="历史"><i class="fas fa-clock-rotate-left"></i></span>
+      <a class="pc-pubbtn" href="../upload/upload.html"><i class="fas fa-upload"></i>投稿</a>
+      <img class="pc-avatar" src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+    </div>
+  </div>
+</header>
+
+<!-- ==================== 主体 ==================== -->
+<div class="pc-body">
+
+  <!-- ---------- 左侧分区导航 ---------- -->
+  <aside class="pc-side">
+    <h4>热门分区</h4>
+    <a href="../channel/channel.html"><i class="fas fa-film"></i>动画</a>
+    <a href="../channel/channel.html"><i class="fas fa-gamepad"></i>游戏</a>
+    <a href="../channel/channel.html"><i class="fas fa-music"></i>音乐</a>
+    <a href="../channel/channel.html"><i class="fas fa-code"></i>科技</a>
+    <a href="../channel/channel.html"><i class="fas fa-utensils"></i>美食</a>
+    <a href="../channel/channel.html"><i class="fas fa-heart"></i>生活</a>
+    <a href="../channel/channel.html"><i class="fas fa-book"></i>知识</a>
+    <a href="../channel/channel.html"><i class="fas fa-futbol"></i>运动</a>
+
+    <h4>我的</h4>
+    <a href="../history/history.html"><i class="fas fa-clock-rotate-left"></i>观看历史</a>
+    <a href="../favorite/favorite.html"><i class="fas fa-bookmark"></i>我的收藏</a>
+    <a class="on" href="../upload/upload.html"><i class="fas fa-cloud-arrow-up"></i>投稿管理</a>
+    <a href="../message/message.html"><i class="fas fa-envelope"></i>我的消息</a>
+
+    <h4>推荐关注</h4>
+    <a href="../space/space.html"><i class="fas fa-code"></i>代码狂人阿伟</a>
+    <a href="../space/space.html"><i class="fas fa-cat"></i>猫奴日常菌</a>
+    <a href="../space/space.html"><i class="fas fa-music"></i>民谣小王子</a>
+    <a href="../space/space.html"><i class="fas fa-utensils"></i>小厨房大厨</a>
+
+    <h4>更多</h4>
+    <a href="../channel/channel.html"><i class="fas fa-circle-info"></i>帮助中心</a>
+    <a href="../channel/channel.html"><i class="fas fa-gear"></i>意见反馈</a>
+  </aside>
+
+  <!-- ---------- 主内容：多步骤向导 ---------- -->  <main class="pc-main">
+
+    <!-- 步骤条 -->
+    <section class="pc-up-steps" id="stepBar">
+      <button class="pc-up-step on" data-step="0">
+        <span class="no">1</span>
+        <span class="tx"><b>上传视频</b><span>选择或拖拽本地视频文件</span></span>
+      </button>
+      <button class="pc-up-step" data-step="1">
+        <span class="no">2</span>
+        <span class="tx"><b>填写信息</b><span>标题、简介、标签与来源声明</span></span>
+      </button>
+      <button class="pc-up-step" data-step="2">
+        <span class="no">3</span>
+        <span class="tx"><b>封面与分区</b><span>挑选封面并选择投放分区</span></span>
+      </button>
+      <button class="pc-up-step" data-step="3">
+        <span class="no">4</span>
+        <span class="tx"><b>发布设置</b><span>可见范围、定时与合规确认</span></span>
+      </button>
+    </section>
+
+    <!-- ========== 第 1 步：上传视频 ========== -->
+    <section class="pc-up-panel on" data-panel="0">
+      <div class="pc-up-card">
+        <div class="pc-up-chd">
+          <h2><i class="fas fa-cloud-arrow-up"></i>上传视频</h2>
+          <span class="hint"><i class="fas fa-shield-halved"></i>文件将加密传输至哔哩云转码集群</span>
+        </div>
+        <p class="pc-up-sub">单个视频不超过 4GB，支持断点续传；上传中断后可从「草稿箱」继续。</p>
+
+        <div class="pc-up-drop" id="dropZone">
+          <div class="ic"><i class="fas fa-film"></i></div>
+          <div class="bt">点击或将视频拖拽到此处<u>上传</u></div>
+          <div class="bd">
+            支持 MP4 / MOV / FLV / AVI / MKV，单文件最大 4GB，建议分辨率 1920×1080 及以上<br>
+            视频时长 ≤ 60 分钟，帧率 25 / 30 / 60 fps，音频码率不低于 128 kbps
+          </div>
+        </div>
+      </div>
+
+      <div class="pc-up-card">
+        <div class="pc-up-chd">
+          <h2><i class="fas fa-box-archive"></i>草稿箱</h2>
+          <span class="hint">3 个未完成的草稿 · 自动保存于 12 分钟前</span>
+        </div>
+        <p class="pc-up-sub">草稿仅自己可见，可随时继续上传、修改信息或直接丢弃。</p>
+
+        <div class="pc-up-draft">
+          <img class="pc-up-thumb" src="../../../lib/images/cover-code-js.jpeg" alt="">
+          <div class="tx">
+            <div class="t">从零手写一个前端路由：原理、坑点与最小实现</div>
+            <div class="pc-up-bar"><i style="width:68%"></i></div>
+            <div class="m"><em>上传中 68%</em><span>128.4 MB / 189.0 MB</span><span>预计剩余 42 秒</span></div>
+          </div>
+          <div class="act">
+            <button class="pc-up-btn sm main" data-draft="pause">暂停</button>
+            <button class="pc-up-btn sm" data-draft="drop">丢弃</button>
+          </div>
+        </div>
+
+        <div class="pc-up-draft">
+          <img class="pc-up-thumb" src="../../../lib/images/cover-cook-chef.jpeg" alt="">
+          <div class="tx">
+            <div class="t">家常红烧肉：糖色怎么炒才不苦不焦，一次讲透</div>
+            <div class="pc-up-bar"><i style="width:23%"></i></div>
+            <div class="m"><em>上传中 23%</em><span>96.7 MB / 420.3 MB</span><span>预计剩余 3 分 12 秒</span></div>
+          </div>
+          <div class="act">
+            <button class="pc-up-btn sm main" data-draft="pause">暂停</button>
+            <button class="pc-up-btn sm" data-draft="drop">丢弃</button>
+          </div>
+        </div>
+
+        <div class="pc-up-draft">
+          <img class="pc-up-thumb" src="../../../lib/images/cover-guitar-yellow.jpeg" alt="">
+          <div class="tx">
+            <div class="t">第 47 练：卡农前奏曲 D 大调指弹谱逐句讲解</div>
+            <div class="pc-up-bar ok"><i style="width:100%"></i></div>
+            <div class="m"><em style="color:#00AEEC">转码完成</em><span>37.2 MB · 1080P60</span><span>2 小时前</span></div>
+          </div>
+          <div class="act">
+            <button class="pc-up-btn sm main" data-draft="keep">继续完善</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 第 2 步：填写信息 ========== -->
+    <section class="pc-up-panel" data-panel="1">
+      <div class="pc-up-card">
+        <div class="pc-up-chd">
+          <h2><i class="fas fa-pen-to-square"></i>填写信息</h2>
+          <span class="hint">草稿已自动保存</span>
+        </div>
+        <p class="pc-up-sub">标题与简介会直接影响推荐效率，建议把关键信息放在前 15 个字内。</p>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">视频标题<span class="req">*</span><span class="opt">最多 80 个字符</span></div>
+          <div class="pc-up-wrap">
+            <input class="pc-up-input" id="fTitle" maxlength="80" placeholder="给视频起一个让人想点开的标题">
+            <span class="pc-up-count" id="cTitle">0/80</span>
+          </div>
+          <div class="pc-up-help"><i class="fas fa-lightbulb"></i><span>标题中包含「教程 / 攻略 / 测评」等词，平均完播率会提升约 12%。</span></div>
+        </div>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">视频简介<span class="opt">最多 2000 个字符</span></div>
+          <div class="pc-up-wrap">
+            <textarea class="pc-up-area" id="fDesc" maxlength="2000"
+              placeholder="补充视频背景、使用的工具、参考资料，也可以写上你的频道联系方式"></textarea>
+            <span class="pc-up-count" id="cDesc">0/2000</span>
+          </div>
+          <div class="pc-up-help"><i class="fas fa-circle-info"></i><span>简介支持换行分段，粘贴外站链接不会自动转为超链接，请自行补充协议。</span></div>
+        </div>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">标签<span class="opt">最多 10 个，选填</span></div>
+          <div class="pc-up-chips" id="chipBox">
+            <span class="pc-up-chip">前端开发<button type="button" data-del="前端开发" aria-label="移除标签"><i class="fas fa-times"></i></button></span>
+            <span class="pc-up-chip">JavaScript<button type="button" data-del="JavaScript" aria-label="移除标签"><i class="fas fa-times"></i></button></span>
+            <span class="pc-up-chip">源码讲解<button type="button" data-del="源码讲解" aria-label="移除标签"><i class="fas fa-times"></i></button></span>
+            <button class="pc-up-chip-add" id="chipAdd"><i class="fas fa-plus"></i>新建标签</button>
+          </div>
+          <div class="pc-up-help"><i class="fas fa-tags"></i><span>推荐标签会被系统按内容自动匹配，你也可以手动补充，最多 10 个。</span></div>
+        </div>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">来源声明<span class="req">*</span></div>
+          <div class="pc-up-opts" id="srcOpts">
+            <label class="pc-up-opt on">
+              <input type="radio" name="src" value="自制" checked>
+              <span class="rd"></span>
+              <span class="tx"><b>自制</b><span>本人独立创作</span></span>
+            </label>
+            <label class="pc-up-opt">
+              <input type="radio" name="src" value="转载">
+              <span class="rd"></span>
+              <span class="tx"><b>转载</b><span>来自其他平台或作者</span></span>
+            </label>
+          </div>
+          <div class="pc-up-help"><i class="fas fa-circle-exclamation"></i><span>选择「转载」需在简介中注明原作者与来源，未注明将影响稿件审核。</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 第 3 步：封面与分区 ========== -->
+    <section class="pc-up-panel" data-panel="2">
+      <div class="pc-up-card">
+        <div class="pc-up-chd">
+          <h2><i class="fas fa-image"></i>封面选择</h2>
+          <span class="hint">推荐尺寸 1920×1200（16:10）· 已自动截取 6 帧</span>
+        </div>
+        <p class="pc-up-sub">点击下方缩略图即可替换封面，当前选中项带粉色描边高亮。</p>
+
+        <div class="pc-up-cover">
+          <img id="bigCover" src="../../../lib/images/cover-code-js.jpeg" alt="当前封面预览">
+          <span class="bd" id="bigCoverNo">候选封面 1 / 6</span>
+        </div>
+        <div class="pc-up-thumbs" id="coverThumbs">
+          <button class="pc-up-thumb on" data-c="cover-code-js.jpeg" data-no="1"><span class="no">1</span><img src="../../../lib/images/cover-code-js.jpeg" alt=""><span class="ok"><i class="fas fa-check"></i></span></button>
+          <button class="pc-up-thumb" data-c="cover-code-monitor.jpeg" data-no="2"><span class="no">2</span><img src="../../../lib/images/cover-code-monitor.jpeg" alt=""><span class="ok"><i class="fas fa-check"></i></span></button>
+          <button class="pc-up-thumb" data-c="cover-code-rainbow.png" data-no="3"><span class="no">3</span><img src="../../../lib/images/cover-code-rainbow.png" alt=""><span class="ok"><i class="fas fa-check"></i></span></button>
+          <button class="pc-up-thumb" data-c="cover-desk-rgb.jpeg" data-no="4"><span class="no">4</span><img src="../../../lib/images/cover-desk-rgb.jpeg" alt=""><span class="ok"><i class="fas fa-check"></i></span></button>
+          <button class="pc-up-thumb" data-c="cover-gaming-desk.jpeg" data-no="5"><span class="no">5</span><img src="../../../lib/images/cover-gaming-desk.jpeg" alt=""><span class="ok"><i class="fas fa-check"></i></span></button>
+          <button class="pc-up-thumb" data-c="cover-graffiti.jpeg" data-no="6"><span class="no">6</span><img src="../../../lib/images/cover-graffiti.jpeg" alt=""><span class="ok"><i class="fas fa-check"></i></span></button>
+        </div>
+      </div>
+
+      <div class="pc-up-card">
+        <div class="pc-up-chd">
+          <h2><i class="fas fa-layer-group"></i>分区与归属</h2>
+          <span class="hint">选错分区可在发布后 7 天内自助修改一次</span>
+        </div>
+        <p class="pc-up-sub">分区决定视频进入哪个内容池，直接影响曝光与同类型观众的匹配精度。</p>
+
+        <div class="pc-up-two">
+          <div class="pc-up-row">
+            <div class="pc-up-label">投稿分区<span class="req">*</span></div>
+            <select class="pc-up-select" id="fZone">
+              <option value="">请选择分区</option>
+              <option value="动画">动画</option>
+              <option value="游戏">游戏</option>
+              <option value="音乐">音乐</option>
+              <option value="科技">科技</option>
+              <option value="美食">美食</option>
+              <option value="生活">生活</option>
+              <option value="知识">知识</option>
+              <option value="运动">运动</option>
+              <option value="影视">影视</option>
+            </select>
+            <div class="pc-up-help"><i class="fas fa-compass"></i><span>按视频主要内容选择，跨分区内容建议拆分为系列投稿。</span></div>
+          </div>
+
+          <div class="pc-up-row">
+            <div class="pc-up-label">加入合集<span class="opt">选填</span></div>
+            <select class="pc-up-select" id="fCollection">
+              <option>不加入任何合集</option>
+              <option>前端从入门到精通（已有 12 集）</option>
+              <option>每周一个疑难杂症（已有 6 集）</option>
+              <option>深夜食堂 · 家常菜谱（已有 24 集）</option>
+              <option>吉他指弹进阶之路（已有 41 集）</option>
+            </select>
+            <div class="pc-up-help"><i class="fas fa-layer-group"></i><span>加入合集后，视频会以列表形式出现在合集页，便于连续观看。</span></div>
+          </div>
+        </div>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">参与活动<span class="opt">可多选</span></div>
+          <div class="pc-up-opts" id="actOpts">
+            <label class="pc-up-opt">
+              <input type="checkbox" value="2024 年度创作盛典">
+              <span class="rd"></span>
+              <span class="tx"><b>2024 年度创作盛典</b><span>评选 12 月 31 日截止</span></span>
+            </label>
+            <label class="pc-up-opt">
+              <input type="checkbox" value="新星计划 · 第二期" checked>
+              <span class="rd"></span>
+              <span class="tx"><b>新星计划 · 第二期</b><span>面向 1 万粉以下创作者</span></span>
+            </label>
+            <label class="pc-up-opt">
+              <input type="checkbox" value="科技区创作激励">
+              <span class="rd"></span>
+              <span class="tx"><b>科技区创作激励</b><span>优质稿件额外流量扶持</span></span>
+            </label>
+          </div>
+          <div class="pc-up-help"><i class="fas fa-gift"></i><span>参与活动不影响稿件能否发布，但有助于获得更多推荐资源。</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 第 4 步：发布设置 ========== -->
+    <section class="pc-up-panel" data-panel="3">
+      <div class="pc-up-card">
+        <div class="pc-up-chd">
+          <h2><i class="fas fa-sliders"></i>发布设置</h2>
+          <span class="hint">发布后 2 小时内可返回修改一次可见范围</span>
+        </div>
+        <p class="pc-up-sub">以下设置会写入稿件的可见性与互动策略，发布前请逐项确认。</p>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">可见范围与互动</div>
+          <div>
+            <div class="pc-up-sw">
+              <div class="tx"><b>允许他人转载</b><span>关闭后，仅可通过「分享链接」传播</span></div>
+              <button class="pc-up-toggle" data-sw="allowRepost" aria-label="允许他人转载"></button>
+            </div>
+            <div class="pc-up-sw">
+              <div class="tx"><b>仅粉丝可见</b><span>仅已关注你的用户可以观看</span></div>
+              <button class="pc-up-toggle" data-sw="fansOnly" aria-label="仅粉丝可见"></button>
+            </div>
+            <div class="pc-up-sw">
+              <div class="tx"><b>开启字幕</b><span>上传视频时已生成字幕，无需人工校对</span></div>
+              <button class="pc-up-toggle on" data-sw="subtitle" aria-label="开启字幕"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="pc-up-two">
+          <div class="pc-up-row">
+            <div class="pc-up-label">评论权限<span class="req">*</span></div>
+            <select class="pc-up-select" id="fComment">
+              <option value="all">所有人可评论</option>
+              <option value="fans">仅粉丝可评论</option>
+              <option value="me">仅自己可评论（关闭评论）</option>
+            </select>
+          </div>
+          <div class="pc-up-row">
+            <div class="pc-up-label">定时发布<span class="opt">不选则立即发布</span></div>
+            <input class="pc-up-input" type="datetime-local" id="fTimer" value="2024-12-20T20:00">
+            <div class="pc-up-help"><i class="fas fa-clock"></i><span>定时稿件在设定时间前仅自己可见，可随时取消定时。</span></div>
+          </div>
+        </div>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">原创声明</div>
+          <div class="pc-up-opts" id="claimOpts">
+            <label class="pc-up-opt on">
+              <input type="radio" name="claim" value="claim" checked>
+              <span class="rd"></span>
+              <span class="tx"><b>我要声明该视频为原创</b><span>系统会盖上原创标识</span></span>
+            </label>
+            <label class="pc-up-opt">
+              <input type="radio" name="claim" value="none">
+              <span class="rd"></span>
+              <span class="tx"><b>不声明原创</b><span>视频不具备原创标识</span></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="pc-up-row">
+          <div class="pc-up-label">发布须知<span class="req">*</span></div>
+          <div class="pc-up-check" id="agreeBox">
+            <input type="checkbox" id="fAgree">
+            <span class="bx"><i class="fas fa-check"></i></span>
+            <span>我已阅读并同意<a href="../channel/channel.html">《哔哩云社区公约》</a>与<a href="../channel/channel.html">《投稿规范》</a>，
+              承诺所上传内容不含侵权、赌博、色情等违规信息，并对该视频的合法性负责。</span>
+          </div>
+          <div class="pc-up-help" id="agreeTip"><i class="fas fa-circle-info"></i><span>勾选发布须知后，「立即发布」按钮才会启用。</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部固定操作条 -->
+    <div class="pc-up-bar-fixed">
+      <div class="st">
+        <i class="fas fa-circle-info"></i>
+        当前步骤：<b id="stepLabel">1 / 4 · 上传视频</b>
+      </div>
+      <div class="rt">
+        <button class="pc-up-btn ghost" id="btnSave">保存草稿</button>
+        <button class="pc-up-btn" id="btnPrev"><i class="fas fa-angle-left"></i>上一步</button>
+        <button class="pc-up-btn main" id="btnNext">下一步<i class="fas fa-angle-right"></i></button>
+        <button class="pc-up-btn main" id="btnPublish" disabled><i class="fas fa-paper-plane"></i>立即发布</button>
+      </div>
+    </div>
+
+    <footer class="pc-foot">
+      哔哩云 · 视频社区高保真原型 ｜ 本页所有图片与视频均已本地化，完全离线可用
+    </footer>
+  </main>
+
+  <!-- ---------- 右侧栏 ---------- -->
+  <aside class="pc-up-aside">
+    <div class="pc-up-card-mini">
+      <h4><i class="fas fa-lightbulb"></i>投稿小贴士</h4>
+      <ul class="pc-up-tips">
+        <li>标题在前 15 字内出现核心关键词，搜索命中率更高</li>
+        <li>封面选择有人物或高对比主体的帧，点击率平均高 30%</li>
+        <li>前 3 秒决定完播率，避免片头动画与自我介绍</li>
+        <li>发布时间建议选 19:00–22:00，此时站内活跃度最高</li>
+      </ul>
+    </div>
+
+    <div class="pc-up-card-mini">
+      <h4><i class="fas fa-chart-line"></i>本周稿件数据</h4>
+      <div class="pc-up-quick">
+        <span class="ic" style="background:#E11D48"><i class="fas fa-eye"></i></span>
+        <div class="tx"><b>已发布 3 个视频</b><span>累计播放 12.6 万</span></div>
+      </div>
+      <div class="pc-up-quick">
+        <span class="ic" style="background:#00AEEC"><i class="fas fa-coins"></i></span>
+        <div class="tx"><b>待结算收益 386.5 元</b><span>预计 12 月 31 日到账</span></div>
+      </div>
+      <div class="pc-up-quick">
+        <span class="ic" style="background:#9C27B0"><i class="fas fa-chart-simple"></i></span>
+        <div class="tx"><b>平均完播率 41.7%</b><span>高于 87% 的同区 UP 主</span></div>
+      </div>
+      <div class="pc-up-quick" onclick="location.href='../space/space.html'">
+        <span class="ic" style="background:#00B1B1"><i class="fas fa-angle-right"></i></span>
+        <div class="tx"><b>进入创作中心</b><span>查看完整数据看板</span></div>
+      </div>
+    </div>
+
+    <div class="pc-up-card-mini">
+      <h4><i class="fas fa-headset"></i>投稿遇到问题</h4>
+      <div class="pc-up-quick">
+        <span class="ic" style="background:#FF9F43"><i class="fas fa-book"></i></span>
+        <div class="tx"><b>稿件审核规范</b><span>了解常见驳回原因</span></div>
+      </div>
+      <div class="pc-up-quick">
+        <span class="ic" style="background:#E11D48"><i class="fas fa-comments"></i></span>
+        <div class="tx"><b>联系投稿客服</b><span>工作日 10:00–19:00</span></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ==================== 脚本 ==================== -->
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var IMG = '../../../lib/images/';
+
+  /* ================= 步骤状态 ================= */
+  var STEPS = [
+    { label: '上传视频',   desc: '选择或拖拽本地视频文件' },
+    { label: '填写信息',   desc: '标题、简介、标签与来源声明' },
+    { label: '封面与分区', desc: '挑选封面并选择投放分区' },
+    { label: '发布设置',   desc: '可见范围、定时与合规确认' }
+  ];
+
+  var stepBar   = document.getElementById('stepBar');
+  var stepNodes = Array.prototype.slice.call(stepBar.querySelectorAll('.pc-up-step'));
+  var panels    = Array.prototype.slice.call(document.querySelectorAll('.pc-up-panel'));
+  var stepLabel = document.getElementById('stepLabel');
+  var btnPrev   = document.getElementById('btnPrev');
+  var btnNext   = document.getElementById('btnNext');
+  var btnPub    = document.getElementById('btnPublish');
+  var btnSave   = document.getElementById('btnSave');
+  var agreeBox  = document.getElementById('agreeBox');
+  var fAgree    = document.getElementById('fAgree');
+
+  var cur = 0;
+
+  function renderSteps() {
+    stepNodes.forEach(function (n, i) {
+      n.classList.toggle('on', i === cur);
+      n.classList.toggle('done', i < cur);
+      var no = n.querySelector('.no');
+      no.innerHTML = i < cur ? '<i class="fas fa-check"></i>' : String(i + 1);
+    });
+    panels.forEach(function (p, i) { p.classList.toggle('on', i === cur); });
+    stepLabel.textContent = (cur + 1) + ' / 4 · ' + STEPS[cur].label;
+    btnPrev.disabled = (cur === 0);
+    btnNext.disabled = (cur === STEPS.length - 1);
+    btnNext.style.display = (cur === STEPS.length - 1) ? 'none' : '';
+    btnPub.style.display  = (cur === STEPS.length - 1) ? '' : 'none';
+    Debug.log('步骤切换：', cur + 1, STEPS[cur].label);
+  }
+
+  function go(n) {
+    var t = Math.max(0, Math.min(STEPS.length - 1, n));
+    if (t === cur) return;
+    cur = t;
+    renderSteps();
+  }
+
+  stepNodes.forEach(function (n, i) {
+    n.addEventListener('click', function () {
+      if (i === cur + 1 && cur === 0 && !window.__pcUploaded) {
+        window.PrototypeDialog.confirm(
+          '当前还没有已上传完成的视频，确定要跳到「填写信息」吗？完成后仍可返回上传。',
+          function () { go(i); }
+        );
+        return;
+      }
+      go(i);
+    });
+  });
+
+  btnNext.addEventListener('click', function () { go(cur + 1); });
+  btnPrev.addEventListener('click', function () { go(cur - 1); });
+
+  /* ================= 第 1 步：上传 ================= */
+  var drop = document.getElementById('dropZone');
+  var draftCard = document.querySelectorAll('.pc-up-panel[data-panel="0"] .pc-up-card')[1];
+
+  function addDraftRow(name) {
+    var row = document.createElement('div');
+    row.className = 'pc-up-draft';
+    row.innerHTML =
+      '<img class="pc-up-thumb" src="' + IMG + 'cover-code-rainbow.png" alt="">' +
+      '<div class="tx">' +
+        '<div class="t">' + name + '</div>' +
+        '<div class="pc-up-bar"><i style="width:0%"></i></div>' +
+        '<div class="m"><em>上传中 0%</em><span>0 MB / 168.0 MB</span><span>预计剩余 --</span></div>' +
+      '</div>' +
+      '<div class="act"><button class="pc-up-btn sm main" data-draft="pause">暂停</button>' +
+      '<button class="pc-up-btn sm" data-draft="drop">丢弃</button></div>';
+    var bar = row.querySelector('.pc-up-bar i');
+    var em  = row.querySelector('.m em');
+    var pct = 0, timer = null;
+    timer = setInterval(function () {
+      pct = Math.min(100, pct + Math.floor(Math.random() * 11) + 3);
+      bar.style.width = pct + '%';
+      em.textContent = pct >= 100 ? '转码完成' : '上传中 ' + pct + '%';
+      if (pct >= 100) {
+        clearInterval(timer);
+        row.querySelector('.pc-up-bar').classList.add('ok');
+        row.querySelector('.act').innerHTML =
+          '<button class="pc-up-btn sm main" data-draft="keep">继续完善</button>';
+        window.__pcUploaded = true;
+        window.PrototypeDialog.success('视频上传完成，可以继续填写信息了');
+      }
+    }, 600);
+    // 新行追加到草稿箱卡片末尾
+    draftCard.appendChild(row);
+    Debug.log('新增上传草稿：', name);
+  }
+
+  drop.addEventListener('click', function () {
+    addDraftRow('未命名视频_' + new Date().toTimeString().slice(0, 8) + '.mp4');
+  });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); });
+  });
+  drop.addEventListener('drop', function () {
+    addDraftRow('拖拽导入的视频.mp4');
+  });
+
+  // 草稿条目上的按钮
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-draft]');
+    if (!b) return;
+    var row = b.closest('.pc-up-draft');
+    var kind = b.dataset.draft;
+    if (kind === 'drop') {
+      window.PrototypeDialog.confirm('丢弃后草稿不可恢复，确定要丢弃「' +
+        row.querySelector('.t').textContent + '」吗？', function () {
+          row.remove();
+          Debug.log('已丢弃草稿');
+        });
+    } else if (kind === 'pause') {
+      b.textContent = '继续';
+      b.classList.remove('main');
+      window.PrototypeDialog.success('已暂停上传，可稍后继续');
+    } else {
+      window.__pcUploaded = true;
+      go(1);
+    }
+  });
+
+  /* ================= 第 2 步：标题 / 简介 / 标签 ================= */
+  function bindCount(input, out, max) {
+    function up() { out.textContent = input.value.length + '/' + max; }
+    input.addEventListener('input', up);
+    up();
+  }
+  bindCount(document.getElementById('fTitle'), document.getElementById('cTitle'), 80);
+  bindCount(document.getElementById('fDesc'), document.getElementById('cDesc'), 2000);
+
+  var chipBox = document.getElementById('chipBox');
+  chipBox.addEventListener('click', function (e) {
+    var del = e.target.closest('[data-del]');
+    if (del) {
+      del.parentNode.remove();
+      return;
+    }
+    if (!e.target.closest('#chipAdd')) return;
+    var pool = ['编程', '源码', '面试题', '前端框架', '性能优化', '学习笔记'];
+    var name = pool[Math.floor(Math.random() * pool.length)];
+    if (chipBox.querySelectorAll('.pc-up-chip').length >= 10) {
+      window.PrototypeDialog.confirm('标签最多添加 10 个，请先移除部分标签');
+      return;
+    }
+    var chip = document.createElement('span');
+    chip.className = 'pc-up-chip';
+    chip.innerHTML = name + '<button type="button" data-del="' + name + '" aria-label="移除标签"><i class="fas fa-times"></i></button>';
+    chipBox.insertBefore(chip, document.getElementById('chipAdd'));
+  });
+
+  /* 单选 / 多选组的统一样式联动 */
+  function bindOptGroup(id) {
+    var box = document.getElementById(id);
+    box.addEventListener('change', function () {
+      Array.prototype.forEach.call(box.querySelectorAll('.pc-up-opt'), function (lab) {
+        var input = lab.querySelector('input');
+        lab.classList.toggle('on', input.checked);
+      });
+    });
+    // checkbox 组在外观上共用 .rd 圆点，这里统一补齐初始态
+    Array.prototype.forEach.call(box.querySelectorAll('.pc-up-opt'), function (lab) {
+      lab.classList.toggle('on', lab.querySelector('input').checked);
+    });
+  }
+  bindOptGroup('srcOpts');
+  bindOptGroup('actOpts');
+  bindOptGroup('claimOpts');
+
+  /* ================= 第 3 步：封面 ================= */
+  var bigCover   = document.getElementById('bigCover');
+  var bigCoverNo = document.getElementById('bigCoverNo');
+  var thumbs     = Array.prototype.slice.call(document.querySelectorAll('#coverThumbs .pc-up-thumb'));
+
+  thumbs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      thumbs.forEach(function (x) { x.classList.remove('on'); });
+      t.classList.add('on');
+      bigCover.src = IMG + t.dataset.c;
+      bigCoverNo.textContent = '候选封面 ' + t.dataset.no + ' / 6';
+    });
+  });
+
+  /* ================= 第 4 步：开关 ================= */
+  Array.prototype.forEach.call(document.querySelectorAll('.pc-up-toggle'), function (t) {
+    t.addEventListener('click', function () { t.classList.toggle('on'); });
+  });
+
+  /* 发布须知：未勾选时禁用发布按钮 */
+  function syncAgree() {
+    agreeBox.classList.toggle('on', fAgree.checked);
+    btnPub.disabled = !fAgree.checked;
+  }
+  /* input 是 pointer-events:none，change 只可能来自这里；点协议链接不勾选 */
+  fAgree.addEventListener('change', syncAgree);
+  agreeBox.addEventListener('click', function (e) {
+    if (e.target.closest('a')) return;
+    fAgree.checked = !fAgree.checked;
+    syncAgree();
+  });
+  syncAgree();
+
+  /* ================= 底部操作条 ================= */
+  btnSave.addEventListener('click', function () {
+    var t = document.getElementById('fTitle').value.trim();
+    window.PrototypeDialog.success(t ? ('草稿《' + t + '》已保存到草稿箱') : '草稿已保存到草稿箱');
+  });
+
+  btnPub.addEventListener('click', function () {
+    var zone = document.getElementById('fZone');
+    var name = zone.options[zone.selectedIndex].text;
+    var timer = document.getElementById('fTimer').value;
+    window.PrototypeDialog.confirm(
+      '即将发布到「' + name + '」分区，' +
+      (timer ? '并于 ' + timer.replace('T', ' ') + ' 定时公开。' : '发布后立即公开。') +
+      '发布前仍可在「投稿管理」中修改。',
+      function () {
+        location.href = '../home/home.html';
+      }
+    );
+  });
+
+  renderSteps();
+})();
+</script>
+</body>
+</html>

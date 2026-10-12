@@ -1,4 +1,4 @@
-// 菜单配置文件 —— 侧边栏导航数据源（当前为空骨架，等待新产品定义）
+// 菜单配置文件 —— 侧边栏导航数据源（哔哩云视频社区 · 管理后台）
 //
 // ⚠️ 本文件就是菜单的唯一数据源，直接改这里（没有上游生成脚本）。
 //
@@ -20,16 +20,39 @@
 // ⚠️ 书写格式（只有第 1 条是硬要求，其余是约定，不要当成校验规则）：
 //   1) 键名**不加引号** —— dsh-prototype-guard 用 /\bpath:\s*"([^"]+)"/ 读本文件的
 //      path，键名一旦加引号就匹配不到，插件会误报「所有页面都没进菜单」。
-//   2) 顶层分组与子项都推荐单行成组（children: [ … ] 展开也可，插件按括号配平解析，
-//      不再依赖缩进）；子项保留 parentId。
-//      （旧版插件曾要求"顶层分组缩进固定 4 空格且紧跟上一行的 {"，现已改为括号配平，
-//        两种写法都能被正确识别，写法一变也不会再给出误导性的插入建议。）
+//   2) 顶层分组与子项都推荐单行成组；子项保留 parentId。
 //   3) 本注释里的示例刻意不写出可被正则匹配的字面量 —— 插件会先剥离注释再解析。
 //
 // ⚠️ 只有桌面页进菜单，App 端页面用底部 TabBar 导航，不在此列。
 // ⚠️ 每个在 config.js 注册的桌面页都必须在这里有条目，否则侧边栏点不到。
 
 window.SIDEBAR_MENU = [
-  // 当前为空骨架 —— 新产品定档后按下述格式在此补条目：
-  // { id: "system-user", name: "用户管理", icon: "fa-users", path: "admin/system/user.html", order: 1, parentId: "system" }
+  // 顶级单项（不带 children）：运营概览对应 pages/admin/home.html
+  { id: "dashboard-home", name: "运营概览", icon: "fa-gauge-high", path: "admin/home.html", order: 1 },
+
+  // 内容管理
+  { id: "content", name: "内容管理", icon: "fa-video", order: 2, children: [
+    { id: "content-video", name: "视频管理", icon: "fa-film", path: "admin/content/video.html", order: 1, parentId: "content" },
+    { id: "content-part", name: "分区管理", icon: "fa-layer-group", path: "admin/content/part.html", order: 2, parentId: "content" }
+  ] },
+
+  // 用户管理
+  { id: "user", name: "用户管理", icon: "fa-users", order: 3, children: [
+    { id: "user-account", name: "用户管理", icon: "fa-user", path: "admin/user/account.html", order: 1, parentId: "user" },
+    { id: "user-upper", name: "UP主认证", icon: "fa-certificate", path: "admin/user/upper.html", order: 2, parentId: "user" }
+  ] },
+
+  // 社区治理
+  { id: "community", name: "社区治理", icon: "fa-shield-halved", order: 4, children: [
+    { id: "community-comment", name: "评论弹幕管理", icon: "fa-comments", path: "admin/community/comment.html", order: 1, parentId: "community" },
+    { id: "community-audit", name: "内容审核", icon: "fa-clipboard-check", path: "admin/community/audit.html", order: 2, parentId: "community" },
+    { id: "community-report", name: "举报处理", icon: "fa-flag", path: "admin/community/report.html", order: 3, parentId: "community" }
+  ] },
+
+  // 系统管理
+  { id: "system", name: "系统管理", icon: "fa-cogs", order: 5, children: [
+    { id: "system-role", name: "角色权限", icon: "fa-user-shield", path: "admin/system/role.html", order: 1, parentId: "system" },
+    { id: "system-admin", name: "管理员", icon: "fa-user-gear", path: "admin/system/admin.html", order: 2, parentId: "system" },
+    { id: "system-config", name: "系统配置", icon: "fa-sliders", path: "admin/system/config.html", order: 3, parentId: "system" }
+  ] }
 ];

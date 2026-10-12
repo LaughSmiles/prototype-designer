@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频播放 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  :root{
+    --pc-pink:#FB7299; --pc-pink-strong:#E11D48; --pc-pink-soft:#FFF1F5;
+    --pc-blue:#00AEEC; --pc-blue-soft:#E6F7FE;
+    --pc-text:#18191C; --pc-text-2:#61666D; --pc-text-3:#9499A0;
+    --pc-bg:#F6F7F9; --pc-surface:#FFFFFF; --pc-surface-2:#F1F2F4;
+    --pc-line:#E3E5E8; --pc-line-2:#EDEFF2;
+    --pc-header-h:64px; --pc-page-max:1600px;
+    --pc-r-sm:8px; --pc-r:12px; --pc-r-lg:18px;
+    --pc-shadow:0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --pc-shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--pc-bg);color:var(--pc-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{text-decoration:none;color:inherit}
+  ul{margin:0;padding:0;list-style:none}
+  img,video{display:block}
+
+  /* ============ 顶栏 ============ */
+  .pc-head{position:sticky;top:0;z-index:50;height:var(--pc-header-h);background:var(--pc-surface);
+           border-bottom:1px solid var(--pc-line)}
+  .pc-head-in{max-width:var(--pc-page-max);margin:0 auto;height:100%;display:flex;align-items:center;gap:20px;padding:0 24px}
+  .pc-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:700;color:var(--pc-pink-strong);flex:none}
+  .pc-logo i{font-size:22px}
+  .pc-nav{display:flex;gap:2px;flex:none}
+  .pc-nav a{padding:0 14px;height:var(--pc-header-h);display:flex;align-items:center;font-size:15px;
+           color:var(--pc-text-2);position:relative}
+  .pc-nav a:hover{color:var(--pc-text)}
+  .pc-nav a.on{color:var(--pc-pink-strong);font-weight:600}
+  .pc-nav a.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;
+                      border-radius:2px 2px 0 0;background:var(--pc-pink)}
+  .pc-search{flex:1;max-width:520px;display:flex;align-items:center;gap:8px;height:38px;
+             padding:0 14px;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);
+             border:1px solid transparent;cursor:pointer;color:var(--pc-text-3)}
+  .pc-search:hover{border-color:var(--pc-line);background:var(--pc-surface)}
+  .pc-head-right{margin-left:auto;display:flex;align-items:center;gap:8px;flex:none}
+  .pc-hbtn{width:36px;height:36px;border-radius:var(--pc-r-sm);display:flex;align-items:center;justify-content:center;
+           color:var(--pc-text-2);cursor:pointer;position:relative;font-size:16px}
+  .pc-hbtn:hover{background:var(--pc-surface-2);color:var(--pc-text)}
+  .pc-hbadge{position:absolute;top:4px;right:3px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;
+             background:var(--pc-pink-strong);color:#fff;font-size:10px;line-height:16px;text-align:center;font-weight:500}
+  .pc-pubbtn{height:36px;padding:0 16px;border-radius:var(--pc-r-sm);background:var(--pc-pink);
+             color:#fff;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px;cursor:pointer}
+  .pc-pubbtn:hover{background:var(--pc-pink-strong)}
+  .pc-avatar{width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer}
+
+  /* ============ 三栏主体 ============ */
+  .pc-body{max-width:var(--pc-page-max);margin:0 auto;display:flex;gap:24px;padding:24px;align-items:flex-start}
+  .pc-main{flex:1;min-width:0}
+
+  /* ============ 播放器 ============ */
+  .pc-player{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:var(--pc-r-lg);
+             overflow:hidden;box-shadow:var(--pc-shadow)}
+  .pc-player video{width:100%;height:100%;object-fit:cover}
+  /* 播放遮罩（视频未自动播放时可见） */
+  .pc-play{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.28);
+          cursor:pointer;transition:background .2s}
+  .pc-play:hover{background:rgba(0,0,0,.42)}
+  .pc-play span{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.94);color:var(--pc-pink-strong);
+                display:flex;align-items:center;justify-content:center;font-size:28px;padding-left:6px;
+                box-shadow:0 6px 24px rgba(0,0,0,.3);transition:transform .2s}
+  .pc-play:hover span{transform:scale(1.07)}
+  /* 顶部标题条 */
+  .pc-vtitle{position:absolute;top:0;left:0;right:0;padding:16px 20px;z-index:3;color:#fff;font-size:15px;
+             background:linear-gradient(180deg,rgba(0,0,0,.7),transparent);pointer-events:none}
+  /* 底部控制条 */
+  .pc-ctrl{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:0 16px 12px;color:#fff;
+           background:linear-gradient(0deg,rgba(0,0,0,.8),transparent)}
+  .pc-prog{height:4px;border-radius:2px;background:rgba(255,255,255,.28);cursor:pointer;position:relative;margin-bottom:10px}
+  .pc-prog-fill{height:100%;border-radius:2px;background:var(--pc-pink);width:0;transition:width .25s linear}
+  .pc-prog-dot{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;
+               background:#fff;box-shadow:0 0 6px rgba(0,0,0,.4);opacity:0;transition:opacity .2s}
+  .pc-prog:hover .pc-prog-dot{opacity:1}
+  .pc-ctrl-row{display:flex;align-items:center;gap:16px;font-size:15px}
+  .pc-ctrl-row .ic{cursor:pointer;opacity:.92;transition:opacity .2s,transform .2s}
+  .pc-ctrl-row .ic:hover{opacity:1;transform:scale(1.12)}
+  .pc-ctrl-row .ic.on{color:var(--pc-pink)}
+  .pc-time{font-size:12.5px;color:rgba(255,255,255,.86);font-variant-numeric:tabular-nums;margin-left:-8px}
+  .pc-ctrl-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+  .pc-vol{display:flex;align-items:center;gap:8px}
+  .pc-vol-track{width:64px;height:3px;border-radius:2px;background:rgba(255,255,255,.3);position:relative;cursor:pointer}
+  .pc-vol-fill{height:100%;border-radius:2px;background:#fff;width:70%}
+  .pc-rate{display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:13px;
+          background:rgba(255,255,255,.18);font-size:12px;cursor:pointer}
+  .pc-rate:hover{background:rgba(255,255,255,.28)}
+  .pc-rate-menu{position:absolute;right:16px;bottom:52px;z-index:6;background:rgba(28,28,30,.94);border-radius:var(--pc-r-sm);
+                padding:6px;min-width:104px;box-shadow:0 8px 24px rgba(0,0,0,.3);display:none}
+  .pc-rate-menu.on{display:block}
+  .pc-rate-menu b{display:block;padding:7px 12px;border-radius:6px;font-size:13px;cursor:pointer;font-weight:400;color:rgba(255,255,255,.8)}
+  .pc-rate-menu b:hover{background:rgba(255,255,255,.14)}
+  .pc-rate-menu b.on{color:var(--pc-pink);font-weight:600}
+  .pc-setting{position:relative}
+  .pc-setting-menu{position:absolute;right:0;bottom:38px;z-index:6;background:rgba(28,28,30,.94);border-radius:var(--pc-r-sm);
+                   padding:12px 14px;min-width:190px;box-shadow:0 8px 24px rgba(0,0,0,.3);display:none}
+  .pc-setting-menu.on{display:block}
+  .pc-setting-menu p{margin:0 0 8px;font-size:12px;color:rgba(255,255,255,.6);display:flex;justify-content:space-between}
+  .pc-setting-menu p:last-child{margin-bottom:0}
+  .pc-setting-menu p b{font-weight:400;color:#fff}
+  /* 右侧竖排工具（点赞投币收藏分享） */
+  .pc-toolrail{display:flex;flex-direction:column;gap:10px;align-items:center}
+  .pc-tool{width:48px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;color:rgba(255,255,255,.85)}
+  .pc-tool span{width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;
+                align-items:center;justify-content:center;font-size:17px;transition:all .2s}
+  .pc-tool:hover span{background:rgba(255,255,255,.26)}
+  .pc-tool.on span{background:var(--pc-pink);color:#fff}
+  .pc-tool b{font-size:11px;font-weight:400;font-variant-numeric:tabular-nums}
+
+  /* ============ 视频信息 ============ */
+  .pc-vinfo{background:var(--pc-surface);border-radius:var(--pc-r);padding:20px 24px;margin-top:16px}
+  .pc-vtitle-h{font-size:19px;font-weight:600;line-height:1.45;margin:0 0 12px}
+  .pc-vmeta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--pc-text-3)}
+  .pc-vmeta span{display:flex;align-items:center;gap:5px}
+  .pc-up{display:flex;align-items:center;gap:11px;margin-top:16px;padding-top:16px;border-top:1px solid var(--pc-line-2)}
+  .pc-up img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+  .pc-up-tx{flex:1;min-width:0}
+  .pc-up-tx b{display:block;font-size:15px;font-weight:500;cursor:pointer}
+  .pc-up-tx b:hover{color:var(--pc-pink-strong)}
+  .pc-up-tx span{font-size:12px;color:var(--pc-text-3)}
+  .pc-follow{height:34px;padding:0 20px;border-radius:17px;background:var(--pc-pink);color:#fff;font-size:13.5px;
+             cursor:pointer;display:flex;align-items:center;border:none;font-family:inherit;flex:none}
+  .pc-follow:hover{background:var(--pc-pink-strong)}
+  .pc-follow.on{background:var(--pc-surface-2);color:var(--pc-text-3)}
+  .pc-vdesc{margin-top:16px;padding-top:16px;border-top:1px solid var(--pc-line-2);font-size:14px;
+            line-height:1.8;color:var(--pc-text-2);cursor:pointer}
+  .pc-vdesc.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pc-vtag{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+  .pc-vtag a{padding:4px 11px;border-radius:14px;background:var(--pc-surface-2);font-size:12.5px;color:var(--pc-text-2)}
+  .pc-vtag a:hover{background:var(--pc-pink-soft);color:var(--pc-pink-strong)}
+
+  /* ============ 评论 ============ */
+  .pc-cmt{background:var(--pc-surface);border-radius:var(--pc-r);padding:20px 24px;margin-top:16px}
+  .pc-cmt-hd{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+  .pc-cmt-hd h3{margin:0;font-size:16px;font-weight:600}
+  .pc-cmt-tabs{display:flex;gap:4px;margin-left:auto;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);padding:3px}
+  .pc-cmt-tabs button{height:28px;padding:0 14px;border-radius:6px;border:none;background:none;font-size:13px;
+                      color:var(--pc-text-2);cursor:pointer;font-family:inherit}
+  .pc-cmt-tabs button.on{background:var(--pc-surface);color:var(--pc-text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .pc-editor{display:flex;gap:12px;margin-bottom:24px}
+  .pc-editor img{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none}
+  .pc-editor-box{flex:1;min-width:0}
+  .pc-editor-tx{width:100%;min-height:76px;padding:10px 14px;background:var(--pc-surface-2);
+               border-radius:var(--pc-r-sm);border:1px solid transparent;resize:none;font-family:inherit;
+               font-size:14px;color:var(--pc-text);outline:none}
+  .pc-editor-tx:focus{background:var(--pc-surface);border-color:var(--pc-pink)}
+  .pc-editor-bar{display:flex;align-items:center;gap:14px;margin-top:8px;font-size:16px;color:var(--pc-text-3)}
+  .pc-editor-bar .ic{cursor:pointer}
+  .pc-editor-bar .ic:hover{color:var(--pc-pink)}
+  .pc-send{margin-left:auto;height:34px;padding:0 22px;border-radius:17px;background:var(--pc-pink);color:#fff;
+           border:none;font-size:13.5px;cursor:pointer;font-family:inherit}
+  .pc-send:disabled{background:var(--pc-surface-2);color:var(--pc-text-3);cursor:not-allowed}
+  .pc-cmt-it{display:flex;gap:12px;padding:16px 0;border-bottom:1px solid var(--pc-line-2)}
+  .pc-cmt-it:last-child{border-bottom:none}
+  .pc-cmt-it img{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none;cursor:pointer}
+  .pc-cmt-tx{flex:1;min-width:0}
+  .pc-cmt-name{font-size:13px;color:var(--pc-text-3)}
+  .pc-cmt-name b{color:var(--pc-text-2);font-weight:500}
+  .pc-cmt-text{margin-top:5px;font-size:14px;line-height:1.7;word-break:break-word}
+  .pc-cmt-acts{margin-top:8px;display:flex;align-items:center;gap:18px;font-size:12.5px;color:var(--pc-text-3)}
+  .pc-cmt-acts .ic{cursor:pointer;display:flex;align-items:center;gap:4px}
+  .pc-cmt-acts .ic:hover,.pc-cmt-acts .ic.on{color:var(--pc-pink)}
+  .pc-cmt-acts .reply{cursor:pointer;color:var(--pc-blue)}
+  .pc-cmt-reply{margin-left:56px;margin-top:12px;padding:12px 16px;background:var(--pc-surface-2);
+                border-radius:var(--pc-r-sm);font-size:13.5px;line-height:1.7}
+  .pc-cmt-reply .rb{color:var(--pc-blue);cursor:pointer}
+
+  /* ============ 右栏 ============ */
+  .pc-aside{width:360px;flex:none}
+  .pc-card{background:var(--pc-surface);border-radius:var(--pc-r);padding:18px}
+  .pc-card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .pc-card-hd h3{margin:0;font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .pc-card-hd h3 i{color:var(--pc-pink)}
+  .pc-card-hd .more{font-size:12.5px;color:var(--pc-text-3);cursor:pointer}
+  .pc-card-hd .more:hover{color:var(--pc-pink-strong)}
+  .pc-rel{display:flex;gap:10px;padding:10px 0;cursor:pointer}
+  .pc-rel-thumb{width:150px;height:84px;border-radius:var(--pc-r-sm);object-fit:cover;flex:none;background:var(--pc-surface-2)}
+  .pc-rel-tx{flex:1;min-width:0}
+  .pc-rel-tx .t{font-size:13.5px;line-height:1.45;color:var(--pc-text);display:-webkit-box;-webkit-line-clamp:2;
+               -webkit-box-orient:vertical;overflow:hidden}
+  .pc-rel:hover .pc-rel-tx .t{color:var(--pc-pink-strong)}
+  .pc-rel-tx .m{font-size:11.5px;color:var(--pc-text-3);margin-top:5px}
+  .pc-rel-tx .m i{margin-right:8px}
+  .pc-stats{display:flex;gap:10px;margin-bottom:14px}
+  .pc-stat{flex:1;background:var(--pc-surface-2);border-radius:var(--pc-r-sm);padding:10px;text-align:center}
+  .pc-stat b{display:block;font-size:16px;font-weight:600;color:var(--pc-text)}
+  .pc-stat span{font-size:11px;color:var(--pc-text-3)}
+
+  .pc-empty{padding:48px 20px;text-align:center;color:var(--pc-text-3);font-size:13px}
+  .pc-empty i{font-size:40px;color:var(--pc-line);margin-bottom:12px;display:block}
+
+  /* 章节列表 */
+  .pc-chap{display:flex;gap:10px;padding:9px 10px;border-radius:var(--pc-r-sm);cursor:pointer}
+  .pc-chap:hover{background:var(--pc-surface-2)}
+  .pc-chap.on{background:var(--pc-pink-soft)}
+  .pc-chap.on .pc-chap-t{color:var(--pc-pink-strong)}
+  .pc-chap-no{font-size:12px;color:var(--pc-text-3);flex:none;width:22px;font-variant-numeric:tabular-nums;padding-top:1px}
+  .pc-chap-t{flex:1;min-width:0;font-size:13.5px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;
+            -webkit-box-orient:vertical;overflow:hidden}
+  .pc-chap-d{font-size:11.5px;color:var(--pc-text-3);flex:none;font-variant-numeric:tabular-nums}
+
+  .pc-foot{margin-top:48px;padding:28px 24px;text-align:center;font-size:12px;color:var(--pc-text-3);
+           border-top:1px solid var(--pc-line)}
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶栏 ==================== -->
+<header class="pc-head">
+  <div class="pc-head-in">
+    <a class="pc-logo" href="../home/home.html"><i class="fas fa-bolt"></i>哔哩云</a>
+    <nav class="pc-nav">
+      <a class="on" href="../home/home.html">首页</a>
+      <a href="../channel/channel.html">番剧</a>
+      <a href="../search/search.html">排行榜</a>
+      <a href="../channel/channel.html">直播</a>
+      <a href="../space/space.html">游戏中心</a>
+    </nav>
+    <div class="pc-search" onclick="location.href='../search/search.html'">
+      <i class="fas fa-magnifying-glass"></i><span>搜索你感兴趣的视频、UP主</span>
+    </div>
+    <div class="pc-head-right">
+      <span class="pc-hbtn" title="消息" onclick="location.href='../message/message.html'"><i class="fas fa-bell"></i><em class="pc-hbadge">9</em></span>
+      <span class="pc-hbtn" title="收藏" onclick="location.href='../favorite/favorite.html'"><i class="fas fa-bookmark"></i></span>
+      <span class="pc-hbtn" title="历史" onclick="location.href='../history/history.html'"><i class="fas fa-clock-rotate-left"></i></span>
+      <a class="pc-pubbtn" href="../upload/upload.html"><i class="fas fa-upload"></i>投稿</a>
+      <img class="pc-avatar" src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+    </div>
+  </div>
+</header>
+
+<div class="pc-card-bd">
+  <!-- ==================== 主区 ==================== --><div class="pc-body">
+  
+  <main class="pc-main">
+
+    <!-- ---------- 播放器 ---------- -->
+    <section class="pc-player">
+      <video id="v" src="../../../lib/videos/neon-dice.mp4" poster="../../../lib/images/cover-gaming-rgb.jpeg"
+             playsinline preload="metadata"></video>
+
+      <div class="pc-vtitle">全程干货！零基础也能看懂的游戏画质设置</div>
+
+      <!-- 播放遮罩 -->
+      <div class="pc-play" id="playMask"><span><i class="fas fa-play"></i></span></div>
+
+      <!-- 右侧竖排工具 -->
+      <div class="pc-toolrail" style="position:absolute;right:16px;bottom:64px;z-index:4">
+        <div class="pc-tool on" id="tLike"><span><i class="fas fa-thumbs-up"></i></span><b id="likeN">12.6万</b></div>
+        <div class="pc-tool" id="tCoin"><span><i class="fas fa-coins"></i></span><b>3.2万</b></div>
+        <div class="pc-tool" id="tFav"><span><i class="fas fa-bookmark"></i></span><b>8.9万</b></div>
+        <div class="pc-tool" id="tShare"><span><i class="fas fa-share-nodes"></i></span><b>1.4万</b></div>
+      </div>
+
+      <!-- 控制条 -->
+      <div class="pc-ctrl">
+        <div class="pc-prog" id="prog">
+          <div class="pc-prog-fill" id="progFill"></div>
+          <div class="pc-prog-dot" id="progDot"></div>
+        </div>
+        <div class="pc-ctrl-row">
+          <span class="ic" id="cPlay" title="播放/暂停"><i class="fas fa-play"></i></span>
+          <span class="ic" id="cNext" title="下一集"><i class="fas fa-forward-step"></i></span>
+          <div class="pc-vol">
+            <span class="ic" id="cMute" title="静音"><i class="fas fa-volume-high"></i></span>
+            <div class="pc-vol-track" id="volTrack"><div class="pc-vol-fill" id="volFill"></div></div>
+          </div>
+          <span class="pc-time" id="timeTxt">00:00 / 00:30</span>
+          <div class="pc-ctrl-right">
+            <span class="ic" id="cLoop" title="循环播放"><i class="fas fa-redo"></i></span>
+            <div class="pc-rate" id="rateBtn"><i class="fas fa-gauge-high"></i><span id="rateTxt">倍速</span></div>
+            <div class="pc-rate-menu" id="rateMenu">
+              <b data-r="0.5">0.5x</b><b data-r="1" class="on">正常</b>
+              <b data-r="1.25">1.25x</b><b data-r="1.5">1.5x</b><b data-r="2">2.0x</b>
+            </div>
+            <div class="pc-setting">
+              <span class="ic" id="cSet" title="设置"><i class="fas fa-gear"></i></span>
+              <div class="pc-setting-menu" id="setMenu">
+                <p><span>清晰度</span><b>1080P 高清</b></p>
+                <p><span>字幕</span><b>中文（自动生成）</b></p>
+                <p><span>播放速度</span><b id="setRate">正常</b></p>
+              </div>
+            </div>
+            <span class="ic" id="cFull" title="全屏"><i class="fas fa-expand"></i></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 视频信息 ---------- -->
+    <section class="pc-vinfo">
+      <h1 class="pc-vtitle-h">全程干货！零基础也能看懂的游戏画质设置｜从抗锯齿到光追一次讲清</h1>
+      <div class="pc-vmeta">
+        <span><i class="fas fa-play"></i>3,284,127 播放</span>
+        <span><i class="fas fa-comment-dots"></i>126,438 弹幕</span>
+        <span><i class="fas fa-heart"></i>52,891 点赞</span>
+        <span><i class="fas fa-coins"></i>32,104 投币</span>
+        <span><i class="fas fa-bookmark"></i>89,203 收藏</span>
+        <span><i class="fas fa-share-nodes"></i>14,672 分享</span>
+        <span>2024-08-15 18:24 发布</span>
+      </div>
+
+      <div class="pc-up">
+        <img src="../../../lib/images/avatar-01.jpeg" alt="UP主头像">
+        <div class="pc-up-tx">
+          <b onclick="location.href='../space/space.html'">代码狂人阿伟</b>
+          <span>粉丝 328.6万 · 获赞 1,204万 · Lv.6 硬核技术宅</span>
+        </div>
+        <button class="pc-follow" id="followBtn">+ 关注</button>
+        <button class="pc-follow on" onclick="location.href='../message/message.html'"><i class="fas fa-envelope"></i> 发消息</button>
+      </div>
+
+      <div class="pc-vdesc clamp" id="vdesc">
+        本期视频完整讲解 PC 游戏画质的每一项设置：抗锯齿、光照质量、纹理各向异性过滤、环境光遮蔽、体积雾、以及大家纠结了很久的光线追踪。
+        我按照「新手直接抄就行」的思路，把每一项都标注了「低配该开多高、高配该开多高」，并说明每一项到底影响什么。
+        如果你看完还是拿不准，可以把你的显卡型号打在评论区，我按型号给出具体建议。
+        0:00 开场闲聊　2:15 什么是抗锯齿　8:30 纹理与显存　16:45 光追实战　28:10 各画质档位推荐
+      </div>
+
+      <div class="pc-vtag">
+        <a href="../channel/channel.html">#游戏</a>
+        <a href="../channel/channel.html">#画质设置</a>
+        <a href="../channel/channel.html">#硬件科普</a>
+        <a href="../channel/channel.html">#4K</a>
+        <a href="../channel/channel.html">#显卡</a>
+        <a href="../channel/channel.html">#新手教程</a>
+      </div>
+    </section>
+
+    <!-- ---------- 评论区 ---------- -->
+    <section class="pc-cmt">
+      <div class="pc-cmt-hd">
+        <h3><i class="fas fa-comment-dots" style="color:var(--pc-pink)"></i> 全部评论</h3>
+        <div class="pc-cmt-tabs" id="cmtTabs">
+          <button class="on" data-s="hot">最热</button>
+          <button data-s="new">最新</button>
+        </div>
+      </div>
+
+      <div class="pc-editor">
+        <img src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+        <div class="pc-editor-box">
+          <textarea class="pc-editor-tx" id="cmtInput" placeholder="发一条友善的弹幕见证当下"></textarea>
+          <div class="pc-editor-bar">
+            <span class="ic" title="表情"><i class="fas fa-face-smile"></i></span>
+            <span class="ic" title="图片"><i class="fas fa-image"></i></span>
+            <span class="ic" title="投票"><i class="fas fa-chart-simple"></i></span>
+            <button class="pc-send" id="cmtSend" disabled>发送</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="cmtList"></div>
+
+      <button class="pc-more" style="margin-top:18px" id="cmtMore">查看更多评论</button>
+    </section>
+
+    <footer class="pc-foot">哔哩云 · 视频社区高保真原型 ｜ 全部图片与视频均已本地化，完全离线可用</footer>
+  </main>
+
+  <!-- ==================== 右栏 ==================== -->
+  <aside class="pc-aside">
+    <!-- 章节 -->
+    <div class="pc-card">
+      <div class="pc-card-hd"><h3><i class="fas fa-list-ol"></i>视频章节</h3></div>
+      <div id="chapList"></div>
+    </div>
+
+    <!-- 相关推荐 -->
+    <div class="pc-card" style="margin-top:16px">
+      <div class="pc-card-hd">
+        <h3><i class="fas fa-layer-group"></i>相关推荐</h3>
+        <span class="more" onclick="location.href='../channel/channel.html'">换一换</span>
+      </div>
+      <div id="relList"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- ==================== 脚本 ==================== -->
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ================= 播放器控制 ================= */
+  var v = document.getElementById('v');
+  var prog = document.getElementById('prog');
+  var progFill = document.getElementById('progFill');
+  var progDot = document.getElementById('progDot');
+  var timeTxt = document.getElementById('timeTxt');
+  var cPlay = document.getElementById('cPlay');
+  var playMask = document.getElementById('playMask');
+
+  function fmt(s) {
+    if (!isFinite(s)) s = 0;
+    var m = Math.floor(s / 60), x = Math.floor(s % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x;
+  }
+  function sync() {
+    var d = v.duration || 0;
+    var pct = d ? (v.currentTime / d * 100) : 0;
+    progFill.style.width = pct + '%';
+    progDot.style.left = pct + '%';
+    timeTxt.textContent = fmt(v.currentTime) + ' / ' + fmt(d);
+    cPlay.innerHTML = v.paused ? '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
+    playMask.style.display = v.paused ? 'flex' : 'none';
+  }
+  ['timeupdate', 'loadedmetadata', 'play', 'pause', 'ended'].forEach(function (e) { v.addEventListener(e, sync); });
+
+  function toggle() { v.paused ? v.play() : v.pause(); }
+  cPlay.addEventListener('click', toggle);
+  playMask.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+
+  document.getElementById('cNext').addEventListener('click', function () { v.currentTime = 0; v.play(); });
+
+  /* 进度条拖拽 */
+  function seek(e) {
+    var r = prog.getBoundingClientRect();
+    var x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    var d = v.duration || 0;
+    if (d) { v.currentTime = Math.max(0, Math.min(d, x / r.width * d)); }
+  }
+  prog.addEventListener('click', seek);
+
+  /* 静音 + 音量 */
+  var cMute = document.getElementById('cMute');
+  cMute.addEventListener('click', function () {
+    v.muted = !v.muted;
+    cMute.innerHTML = v.muted ? '<i class="fas fa-volume-xmark"></i>' : '<i class="fas fa-volume-high"></i>';
+  });
+
+  /* 循环 */
+  var cLoop = document.getElementById('cLoop');
+  cLoop.addEventListener('click', function () {
+    v.loop = !v.loop;
+    cLoop.classList.toggle('on', v.loop);
+    cLoop.innerHTML = v.loop ? '<i class="fas fa-repeat"></i>' : '<i class="fas fa-redo"></i>';
+  });
+
+  /* 倍速菜单 */
+  var rateBtn = document.getElementById('rateBtn'), rateMenu = document.getElementById('rateMenu');
+  rateBtn.addEventListener('click', function (e) { e.stopPropagation(); rateMenu.classList.toggle('on'); });
+  rateMenu.addEventListener('click', function (e) {
+    var b = e.target.closest('b[data-r]');
+    if (!b) return;
+    v.playbackRate = Number(b.dataset.r);
+    rateMenu.querySelectorAll('b').forEach(function (x) { x.classList.toggle('on', x === b); });
+    var label = b.dataset.r === '1' ? '倍速' : b.textContent;
+    document.getElementById('rateTxt').textContent = label;
+    document.getElementById('setRate').textContent = b.textContent;
+    rateMenu.classList.remove('on');
+  });
+
+  /* 设置菜单 */
+  var cSet = document.getElementById('cSet'), setMenu = document.getElementById('setMenu');
+  cSet.addEventListener('click', function (e) { e.stopPropagation(); setMenu.classList.toggle('on'); });
+  document.addEventListener('click', function () {
+    rateMenu.classList.remove('on');
+    setMenu.classList.remove('on');
+  });
+
+  /* 全屏 */
+  document.getElementById('cFull').addEventListener('click', function () {
+    var box = document.querySelector('.pc-player');
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (box.requestFullscreen) box.requestFullscreen();
+  });
+
+  /* ================= 竖排工具 ================= */
+  document.querySelectorAll('.pc-tool').forEach(function (t) {
+    t.addEventListener('click', function () {
+      var on = t.classList.toggle('on');
+      var b = t.querySelector('b');
+      if (t.id === 'tLike') {
+        b.textContent = on ? '12.7万' : '12.6万';
+      }
+    });
+  });
+
+  /* 关注 */
+  document.getElementById('followBtn').addEventListener('click', function () {
+    var on = this.classList.toggle('on');
+    this.textContent = on ? '已关注' : '+ 关注';
+  });
+
+  /* 简介展开 */
+  var vdesc = document.getElementById('vdesc');
+  vdesc.addEventListener('click', function () { this.classList.toggle('clamp'); });
+
+  /* ================= 章节 ================= */
+  var CHAPS = [
+    { t: '开场闲聊：这次到底要解决什么问题', d: '00:00' },
+    { t: '什么是抗锯齿，别再被 4X 骗了', d: '02:15' },
+    { t: '纹理质量与显存占用的真实关系', d: '08:30' },
+    { t: '阴影质量：为什么关了会「悬浮」', d: '16:45' },
+    { t: '光线追踪实战：值不值得开', d: '24:10' },
+    { t: '各显卡档位的具体推荐数值', d: '28:10' }
+  ];
+  var chapList = document.getElementById('chapList');
+  chapList.innerHTML = CHAPS.map(function (c, i) {
+    return '<div class="pc-chap' + (i === 0 ? ' on' : '') + '" data-i="' + i + '">' +
+             '<span class="pc-chap-no">' + String(i + 1).padStart(2, '0') + '</span>' +
+             '<span class="pc-chap-t">' + c.t + '</span>' +
+             '<span class="pc-chap-d">' + c.d + '</span>' +
+           '</div>';
+  }).join('');
+  chapList.addEventListener('click', function (e) {
+    var it = e.target.closest('.pc-chap');
+    if (!it) return;
+    chapList.querySelectorAll('.pc-chap').forEach(function (x) { x.classList.toggle('on', x === it); });
+  });
+
+  /* ================= 相关推荐 ================= */
+  var REL = [
+    { t: '显存到底要多大？2024 年显卡选购避坑指南', c:'cover-desk-rgb.jpeg', up:'硬件研究所', p:'218.4万', n:'9.2万' },
+    { t: '实测 10 款游戏：光追到底值不值得开', c:'cover-gaming-neon.jpeg', up:'游戏区主播', p:'164.7万', n:'6.8万' },
+    { t: '手把手教你看 BIOS，把老机器榨干', c:'cover-code-monitor.jpeg', up:'代码狂人阿伟', p:'98.3万', n:'4.1万' },
+    { t: '为什么你的游戏一直掉帧？先看这几个设置', c:'cover-gaming-room.jpeg', up:'硬件研究所', p:'302.9万', n:'12.6万' },
+    { t: '4K 显示器到底值不值？算笔账', c:'cover-city-traffic.jpeg', up:'数码拆解台', p:'77.2万', n:'3.3万' }
+  ];
+  document.getElementById('relList').innerHTML = REL.map(function (r) {
+    return '<div class="pc-rel" onclick="location.href=\'player.html\'">' +
+             '<img class="pc-rel-thumb" src="../../../lib/images/' + r.c + '" alt="">' +
+             '<div class="pc-rel-tx">' +
+               '<div class="t">' + r.t + '</div>' +
+               '<div class="m"><i class="fas fa-play"></i>' + r.p + '<i class="fas fa-comment-dots"></i>' + r.n + '</div>' +
+               '<div class="m">' + r.up + '</div>' +
+             '</div>' +
+           '</div>';
+  }).join('');
+
+  /* ================= 评论 ================= */
+  var HOT = [
+    { n:'显卡Titan Slayer', av:'avatar-02.jpeg', t:'讲得比官方文档清楚，我那台 3060 按你说的关掉了光追，帧率直接翻倍，感谢UP主！', l:'2.4万', tp:'3天前', lk:1284, rp:'已按你的设置调好了，确实有效，感谢！' },
+    { n:'午夜storm', av:'avatar-03.jpeg', t:'建议出一期内存条频率对帧数影响的实测，我怀疑我这根就是频率太低了', l:'1.8万', tp:'4天前', lk:876 },
+    { n:'不吃香菜', av:'avatar-04.jpeg', t:'终于有个不说人话的教程了，前面搜了七八个视频全在念参数', l:'1.2万', tp:'4天前', lk:543 },
+    { n:'像素猎人', av:'avatar-05.jpeg', t:'我的显卡是 1660Ti，想问一下纹理质量拉到最高会卡吗？内存只有 6G', l:'8621', tp:'5天前', lk:402, rp:'6G 显存建议中档就够，全开会爆显存。' },
+    { n:'路过的风', av:'avatar-06.jpeg', t:'目录里第 5 个最实用，已经按这个调完了，感谢', l:'7342', tp:'6天前', lk:287 }
+  ];
+  var NEW = [
+    { n:'海盐苏打', av:'avatar-02.jpeg', t:'刚看完来报到，这个抗锯齿的解释我看了三遍终于懂了', l:'128', tp:'1分钟前', lk:12 },
+    { n:'不摸鱼了', av:'avatar-03.jpeg', t:'更新了最新驱动，按视频里的设置跑分提升了 18%', l:'96', tp:'8分钟前', lk:8 },
+    { n:'晚风信使', av:'avatar-06.jpeg', t:'第 24 分那段关于体积雾的说明能不能做个字幕链接', l:'77', tp:'22分钟前', lk:5 }
+  ];
+
+  function cmtHtml(c) {
+    return '<div class="pc-cmt-it">' +
+             '<img src="../../../lib/images/' + c.av + '" alt="">' +
+             '<div class="pc-cmt-tx">' +
+               '<div class="pc-cmt-name"><b>' + c.n + '</b></div>' +
+               '<div class="pc-cmt-text">' + c.t + '</div>' +
+               (c.rp ? '<div class="pc-cmt-reply"><b class="rb">UP主 置顶回复：</b>' + c.rp + '</div>' : '') +
+               '<div class="pc-cmt-acts">' +
+                 '<span class="ic"><i class="far fa-thumbs-up"></i>' + c.lk + '</span>' +
+                 '<span class="ic" data-like="' + c.lk + '"><i class="far fa-thumbs-up"></i>点赞</span>' +
+                 '<span class="reply">回复</span>' +
+                 '<span style="margin-left:auto">' + c.tp + '</span>' +
+               '</div>' +
+             '</div>' +
+           '</div>';
+  }
+
+  var cmtList = document.getElementById('cmtList');
+  function renderCmt(kind) { cmtList.innerHTML = (kind === 'new' ? NEW : HOT).map(cmtHtml).join(''); }
+  renderCmt('hot');
+
+  document.getElementById('cmtTabs').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-s]');
+    if (!b) return;
+    this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    renderCmt(b.dataset.s);
+  });
+
+  /* 评论点赞 */
+  cmtList.addEventListener('click', function (e) {
+    var b = e.target.closest('.ic[data-like]');
+    if (!b) return;
+    var n = Number(b.dataset.like);
+    if (b.classList.contains('on')) { b.classList.remove('on'); b.textContent = ''; }
+    else { b.classList.add('on'); b.textContent = '已赞'; }
+  });
+
+  /* 发表评论 */
+  var cmtInput = document.getElementById('cmtInput'), cmtSend = document.getElementById('cmtSend');
+  cmtInput.addEventListener('input', function () { cmtSend.disabled = !this.value.trim(); });
+  cmtSend.addEventListener('click', function () {
+    var txt = cmtInput.value.trim();
+    if (!txt) return;
+    var node = document.createElement('div');
+    node.innerHTML = '<div class="pc-cmt-it">' +
+      '<img src="../../../lib/images/avatar-01.jpeg" alt="">' +
+      '<div class="pc-cmt-tx"><div class="pc-cmt-name"><b>我</b></div>' +
+      '<div class="pc-cmt-text">' + txt.replace(/</g, '&lt;') + '</div>' +
+      '<div class="pc-cmt-acts"><span class="ic"><i class="far fa-thumbs-up"></i>0</span>' +
+      '<span class="ic"><i class="far fa-thumbs-up"></i>点赞</span>' +
+      '<span class="reply">回复</span>' +
+      '<span style="margin-left:auto">刚刚</span></div></div></div>';
+    cmtList.insertBefore(node.firstElementChild, cmtList.firstChild);
+    cmtInput.value = '';
+    cmtSend.disabled = true;
+  });
+
+  sync();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>首页推荐 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============ 设计令牌（语义化，禁止逐屏硬编码 hex） ============ */
+  :root{
+    --by-bg:#0F0F23;          /* 页面底色 */
+    --by-surface:#1A1A2E;     /* 卡片 */
+    --by-surface-2:#232340;   /* 悬浮/次级卡片 */
+    --by-pink:#FB7299;        /* 品牌粉 */
+    --by-pink-strong:#E11D48; /* 强调 CTA */
+    --by-blue:#00AEEC;        /* 次强调 */
+    --by-text:#F1F2F8;        /* 主文字 */
+    --by-text-2:#9AA0B5;      /* 次文字 */
+    --by-border:rgba(255,255,255,.09);
+    --by-radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:375px;height:100%;overflow:hidden}
+  body{padding-bottom:52px;background:var(--by-bg);color:var(--by-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5;overscroll-behavior:contain;touch-action:manipulation}
+
+  /* ============ 骨架：顶栏固定 / 内容滚动 / 底栏固定 ============ */
+  .by-root{display:flex;flex-direction:column;height:100%}
+  .by-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .by-scroll::-webkit-scrollbar{width:0}
+
+  /* ============ iOS 状态栏 ============ */
+  .by-status{display:flex;align-items:center;justify-content:space-between;
+             height:44px;padding:0 20px 0 26px;background:var(--by-pink);color:#fff;flex:none}
+  .by-status .by-time{font-size:15px;font-weight:600;letter-spacing:.3px}
+  .by-status .by-ico{display:flex;gap:5px;align-items:center;font-size:12px}
+
+  /* ============ 顶部搜索区 ============ */
+  .by-head{flex:none;background:var(--by-pink);padding:0 12px 6px;color:#fff}
+  .by-head-row{display:flex;align-items:center;gap:10px}
+  .by-search{flex:1;display:flex;align-items:center;gap:6px;height:44px;padding:0 14px;
+             background:rgba(255,255,255,.92);border-radius:22px;color:#9A9AA8;font-size:13px;cursor:pointer}
+  .by-tabs{display:flex;gap:4px;align-items:center;margin-top:6px}
+  /* min-height:44px 满足 iOS 触摸目标；视觉上用内边距收紧，不加高头部 */
+  .by-tab{font-size:15px;color:rgba(255,255,255,.78);position:relative;cursor:pointer;
+          padding:0 9px;display:flex;align-items:center;justify-content:center;
+          min-height:44px}
+  .by-tab.on{color:#fff;font-weight:600;font-size:16px}
+  .by-tab.on::after{content:"";position:absolute;left:50%;transform:translateX(-50%);
+                    bottom:4px;width:16px;height:3px;border-radius:2px;background:#fff}
+
+  /* ============ 通用卡片 ============ */
+  .by-card{background:var(--by-surface);border-radius:var(--by-radius);overflow:hidden}
+
+  /* ---------- 轮播 Banner ---------- */
+  .by-banner{position:relative;height:150px;border-radius:var(--by-radius);overflow:hidden}
+  .by-banner img{width:100%;height:100%;object-fit:cover;display:block}
+  .by-banner::after{content:"";position:absolute;inset:0;
+                     background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.78))}
+  .by-banner-txt{position:absolute;left:14px;bottom:12px;z-index:2}
+  .by-banner-tag{display:inline-block;font-size:10px;font-weight:600;color:#fff;
+                 background:var(--by-pink-strong);padding:2px 7px;border-radius:4px;margin-bottom:5px}
+  .by-banner-title{font-size:15px;font-weight:600;color:#fff;max-width:290px}
+  .by-dots{position:absolute;right:12px;bottom:14px;z-index:2;display:flex;gap:4px}
+  .by-dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.45)}
+  .by-dots i.on{width:14px;border-radius:3px;background:#fff}
+
+  /* ---------- 分区快捷 ---------- */
+  .by-quick{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:14px}
+  .by-quick-it{display:flex;flex-direction:column;align-items:center;gap:6px;
+               padding:10px 0;border-radius:12px;cursor:pointer}
+  .by-quick-it:active{background:var(--by-surface-2)}
+  .by-quick-ic{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;
+               justify-content:center;font-size:17px;color:#fff}
+  .by-quick-nm{font-size:11px;color:var(--by-text-2)}
+
+  /* ---------- 主推视频 ---------- */
+  .by-feat{position:relative;height:200px;border-radius:var(--by-radius);overflow:hidden;margin-top:16px;cursor:pointer}
+  .by-feat img{width:100%;height:100%;object-fit:cover;display:block}
+  .by-feat::after{content:"";position:absolute;inset:0;
+                  background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.8))}
+  /* 弹幕层（静态示意：真实播放时为动态飘过） */
+  .by-dm{position:absolute;left:0;right:0;top:12px;height:54px;z-index:2;overflow:hidden;pointer-events:none}
+  .by-dm span{position:absolute;font-size:12px;font-weight:600;color:#fff;
+              text-shadow:0 1px 3px rgba(0,0,0,.85);white-space:nowrap}
+  .by-dm b{color:#FFD93D;font-weight:700}
+  .by-feat-txt{position:absolute;left:12px;right:12px;bottom:10px;z-index:2}
+  .by-feat-tm{font-size:10px;color:#fff;background:var(--by-pink-strong);
+              padding:1px 6px;border-radius:4px;margin-bottom:6px;display:inline-block}
+  .by-feat-title{font-size:15px;font-weight:600;color:#fff;line-height:1.35}
+  .by-play{display:flex;align-items:center;gap:10px;margin-top:7px;font-size:11px;color:rgba(255,255,255,.86)}
+  .by-play i{font-size:11px}
+
+  /* ---------- 两列瀑布流 ---------- */
+  .by-sec{margin-top:18px;padding:0 12px}
+  .by-sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .by-sec-hd h3{margin:0;font-size:15px;font-weight:600}
+  /* 「换一换 / 查看更多」：扩大热区到 44px 高，文字仍保持 12px */
+  .by-sec-hd span{font-size:12px;color:var(--by-text-2);display:flex;align-items:center;
+                  min-height:44px;cursor:pointer}
+  .by-wall{column-count:2;column-gap:10px}
+  .by-vcard{break-inside:avoid;margin-bottom:10px;background:var(--by-surface);
+            border-radius:12px;overflow:hidden;cursor:pointer}
+  .by-vcard:active{background:var(--by-surface-2)}
+  .by-vthumb{position:relative;width:100%;height:96px}
+  .by-vthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .by-vdur{position:absolute;right:5px;bottom:5px;font-size:10px;color:#fff;
+           background:rgba(0,0,0,.72);padding:1px 5px;border-radius:4px}
+  .by-vbody{padding:8px}
+  .by-vtitle{font-size:13px;line-height:1.4;color:var(--by-text);
+             display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .by-vup{display:flex;align-items:center;gap:5px;margin-top:7px}
+  .by-vup img{width:16px;height:16px;border-radius:50%;object-fit:cover}
+  .by-vup span{font-size:11px;color:var(--by-text-2);
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .by-vmeta{display:flex;gap:10px;margin-top:5px;font-size:11px;color:var(--by-text-2)}
+  .by-vmeta i{margin-right:3px}
+
+  /* ---------- 底部 TabBar（fixed，绝不能写死 812px） ---------- */
+  /* width:min(375px,100vw) —— 画布 iframe 里铺满 375，独立打开（视口更宽）时也不会被拉宽 */
+  .by-tabbar{position:fixed;left:0;width:min(375px,100vw);bottom:0;z-index:30;height:52px;
+             background:rgba(20,20,38,.96);border-top:1px solid var(--by-border);
+             display:flex;align-items:center;backdrop-filter:blur(12px)}
+  .by-tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+               gap:2px;color:var(--by-text-2);font-size:10px;text-decoration:none;min-height:48px}
+  .by-tabbar a.on{color:var(--by-pink)}
+  .by-tabbar a i{font-size:17px}
+  /* 中间发布按钮（凸起）—— box 用绝对定位，不参与文档流，避免压住下方文案 */
+  .by-tabbar .by-pub{position:relative}
+  .by-tabbar .by-pub .by-pub-box{position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+       width:38px;height:28px;background:var(--by-pink);border-radius:8px;color:#fff;
+       display:flex;align-items:center;justify-content:center;font-size:15px;
+       border:2px solid var(--by-bg)}
+
+  /* ---------- 空状态（滚动到底） ---------- */
+  .by-end{text-align:center;color:var(--by-text-2);font-size:12px;padding:18px 0 6px}
+  .by-end i{display:block;font-size:20px;margin-bottom:6px;opacity:.5}
+</style>
+</head>
+<body>
+
+<!-- ============ 骨架 ============ -->
+<div class="by-root">
+
+  <!-- 状态栏 -->
+  <div class="by-status">
+    <span class="by-time">9:41</span>
+    <span class="by-ico">
+      <i class="fas fa-signal"></i><i class="fas fa-wifi"></i>
+      <i class="fas fa-battery-three-quarters"></i>
+    </span>
+  </div>
+
+  <!-- 顶部：搜索 + 频道 -->
+  <div class="by-head">
+    <div class="by-head-row">
+      <div class="by-search">
+        <i class="fas fa-magnifying-glass"></i><span>搜索你感兴趣的视频</span>
+      </div>
+      <i class="fas fa-qrcode" style="font-size:19px;cursor:pointer"></i>
+      <i class="fas fa-bell" style="font-size:18px;cursor:pointer;position:relative"></i>
+    </div>
+    <div class="by-tabs">
+      <span class="by-tab on">推荐</span>
+      <span class="by-tab">动态</span>
+      <span class="by-tab">热门</span>
+      <span class="by-tab">科技</span>
+      <span class="by-tab">动画</span>
+      <span class="by-tab">游戏</span>
+    </div>
+  </div>
+
+  <!-- 滚动内容 -->
+  <div class="by-scroll">
+
+    <!-- 轮播 Banner -->
+    <div style="padding:12px 12px 0">
+      <div class="by-banner">
+        <img src="../../../lib/images/cover-code-rainbow.png" alt="年度盛典">
+        <div class="by-banner-txt">
+          <span class="by-banner-tag">独家</span>
+          <div class="by-banner-title">2024 年度创作盛典 · 百万 UP 主同台</div>
+        </div>
+        <div class="by-dots"><i class="on"></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+
+    <!-- 分区快捷入口 -->
+    <div class="by-quick" style="padding:0 12px">
+      <div class="by-quick-it">
+        <span class="by-quick-ic" style="background:linear-gradient(135deg,#FB7299,#E11D48)"><i class="fas fa-gamepad"></i></span>
+        <span class="by-quick-nm">游戏</span>
+      </div>
+      <div class="by-quick-it">
+        <span class="by-quick-ic" style="background:linear-gradient(135deg,#00AEEC,#2563EB)"><i class="fas fa-utensils"></i></span>
+        <span class="by-quick-nm">美食</span>
+      </div>
+      <div class="by-quick-it">
+        <span class="by-quick-ic" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-code"></i></span>
+        <span class="by-quick-nm">科技</span>
+      </div>
+      <div class="by-quick-it">
+        <span class="by-quick-ic" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-music"></i></span>
+        <span class="by-quick-nm">音乐</span>
+      </div>
+      <div class="by-quick-it">
+        <span class="by-quick-ic" style="background:linear-gradient(135deg,#10B981,#34D399)"><i class="fas fa-cat"></i></span>
+        <span class="by-quick-nm">日常</span>
+      </div>
+    </div>
+
+    <!-- 主推视频（带弹幕示意） -->
+    <div style="padding:0 12px">
+      <div class="by-sec-hd" style="margin-top:16px">
+        <h3>为你推荐</h3><span>换一换 <i class="fas fa-rotate" style="margin-left:3px"></i></span>
+      </div>
+      <div class="by-feat" onclick="location.href='../player/player.html'">
+        <img src="../../../lib/images/cover-gaming-neon.jpeg" alt="游戏画质设置">
+        <!-- 弹幕示意层 -->
+        <div class="by-dm">
+          <span style="top:0;left:6px">前方高能</span>
+          <span style="top:10px;left:38%">这画质也太顶了</span>
+          <span style="top:22px;left:14%;color:#7CFC00">来了来了</span>
+          <span style="top:32px;left:56%"><b>666666</b></span>
+          <span style="top:4px;left:70%">UP 主讲解清晰</span>
+        </div>
+        <div class="by-feat-txt">
+          <span class="by-feat-tm">置顶</span>
+          <div class="by-feat-title">【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置</div>
+          <div class="by-play">
+            <span><i class="fas fa-play"></i>328.4万</span>
+            <span><i class="fas fa-comment"></i>12.6万</span>
+            <span><i class="fas fa-clock"></i>14:22</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 两列瀑布流 -->
+    <div class="by-sec">
+      <div class="by-sec-hd">
+        <h3>热门推荐</h3><span>查看更多 <i class="fas fa-angle-right" style="margin-left:3px"></i></span>
+      </div>
+
+      <div class="by-wall">
+        <!-- 1 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-cat-grumpy.jpeg" alt="">
+            <span class="by-vdur">06:12</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">当你以为在养猫，实际上是猫在养你</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-02.jpeg" alt=""><span>猫奴日常菌</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>892.1万</span><span><i class="fas fa-comment"></i>8.3万</span></div>
+          </div>
+        </div>
+        <!-- 2 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-code-monitor.jpeg" alt="">
+            <span class="by-vdur">21:35</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">前端工程师的一天：从零到上线</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-01.jpeg" alt=""><span>代码狂人阿伟</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>421.3万</span><span><i class="fas fa-comment"></i>3.1万</span></div>
+          </div>
+        </div>
+        <!-- 3 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-cook-chop.jpeg" alt="">
+            <span class="by-vdur">08:47</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">三分钟搞定的深夜食堂，新手也能学会</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-03.jpeg" alt=""><span>小厨房大厨</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>156.7万</span><span><i class="fas fa-comment"></i>1.9万</span></div>
+          </div>
+        </div>
+        <!-- 4 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-guitar-blue.jpeg" alt="">
+            <span class="by-vdur">04:18</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">用一把吉他弹响青春的声音</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-04.jpeg" alt=""><span>民谣小王子</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>98.2万</span><span><i class="fas fa-comment"></i>7.4万</span></div>
+          </div>
+        </div>
+        <!-- 5 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-city-night.jpeg" alt="">
+            <span class="by-vdur">32:08</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">凌晨四点的城市，比白天更真实</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-05.jpeg" alt=""><span>城市观察局</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>233.5万</span><span><i class="fas fa-comment"></i>2.8万</span></div>
+          </div>
+        </div>
+        <!-- 6 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-mountain.jpeg" alt="">
+            <span class="by-vdur">12:55</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">一个人的雪山徒步，治愈了我一整年</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-06.jpeg" alt=""><span>在路上</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>512.8万</span><span><i class="fas fa-comment"></i>4.6万</span></div>
+          </div>
+        </div>
+        <!-- 7 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-cook-pepper.jpeg" alt="">
+            <span class="by-vdur">09:33</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">十分钟复刻餐厅招牌菜，在家也能做</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-03.jpeg" alt=""><span>小厨房大厨</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>67.4万</span><span><i class="fas fa-comment"></i>1.2万</span></div>
+          </div>
+        </div>
+        <!-- 8 -->
+        <div class="by-vcard">
+          <div class="by-vthumb">
+            <img src="../../../lib/images/cover-alps.jpeg" alt="">
+            <span class="by-vdur">18:26</span>
+          </div>
+          <div class="by-vbody">
+            <div class="by-vtitle">阿尔卑斯的夏天，风和云都刚好</div>
+            <div class="by-vup">
+              <img src="../../../lib/images/avatar-06.jpeg" alt=""><span>在路上</span>
+            </div>
+            <div class="by-vmeta"><span><i class="fas fa-play"></i>145.9万</span><span><i class="fas fa-comment"></i>2.1万</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空状态：滚动到底 -->
+      <div class="by-end">
+        <i class="fas fa-inbox"></i>
+        已经到底啦，明天再来逛逛吧
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 底部 TabBar ============ -->
+<nav class="by-tabbar">
+  <a href="home.html" class="on"><i class="fas fa-house"></i><span>首页</span></a>
+  <a href="../search/search.html"><i class="fas fa-magnifying-glass"></i><span>搜索</span></a>
+  <a href="../upload/upload.html" class="by-pub">
+    <span class="by-pub-box"><i class="fas fa-plus"></i></span>
+    <span>投稿</span>
+  </a>
+  <a href="../message/message.html"><i class="fas fa-comment-dots"></i><span>消息</span></a>
+  <a href="../profile/profile.html"><i class="fas fa-user"></i><span>我的</span></a>
+</nav>
+
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+</body>
+</html>

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>个人中心 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<style>
+  /* ============ 设计令牌（与 home / player / search 完全一致） ============ */
+  :root{
+    --by-bg:#0F0F23;          /* 页面底色 */
+    --by-surface:#1A1A2E;     /* 卡片 */
+    --by-surface-2:#232340;   /* 悬浮/次级卡片 */
+    --by-pink:#FB7299;        /* 品牌粉 */
+    --by-pink-strong:#E11D48; /* 强调 CTA */
+    --by-blue:#00AEEC;        /* 次强调 */
+    --by-text:#F1F2F8;        /* 主文字 */
+    --by-text-2:#9AA0B5;      /* 次文字 */
+    --by-border:rgba(255,255,255,.09);
+    --by-radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:375px;height:100%;overflow:hidden}
+  body{padding-bottom:52px;background:var(--by-bg);color:var(--by-text);
+       font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5;overscroll-behavior:contain;touch-action:manipulation}
+
+  /* ============ 骨架：顶栏固定 / 内容滚动 / 底栏固定 ============ */
+  .by-root{display:flex;flex-direction:column;height:100%}
+  .by-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .by-scroll::-webkit-scrollbar{width:0}
+
+  /* ============ iOS 状态栏（深色版） ============ */
+  .by-status{display:flex;align-items:center;justify-content:space-between;
+             height:44px;padding:0 20px 0 26px;background:var(--by-bg);color:var(--by-text);flex:none}
+  .by-status .by-time{font-size:15px;font-weight:600;letter-spacing:.3px}
+  .by-status .by-ico{display:flex;gap:5px;align-items:center;font-size:12px}
+
+  /* ============ 用户信息卡 ============ */
+  .by-user{padding:0 12px 4px;background:linear-gradient(180deg,#1B1B38 0%,var(--by-bg) 100%)}
+  .by-user-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .by-user-top .by-set{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;
+                       justify-content:center;font-size:15px;color:var(--by-text-2);cursor:pointer}
+  .by-user-top .by-set:active{background:var(--by-surface-2);color:var(--by-text)}
+  .by-user-main{display:flex;gap:12px;align-items:flex-start}
+  .by-user-av{position:relative;flex:none}
+  .by-user-av img{width:64px;height:64px;border-radius:50%;object-fit:cover;display:block;
+                   border:2px solid var(--by-pink)}
+  /* 等级角标 */
+  .by-lv-badge{position:absolute;right:-4px;bottom:-2px;min-width:22px;height:14px;border-radius:7px;
+               background:linear-gradient(135deg,#FBBF24,#F59E0B);color:#4A2C00;font-size:9px;
+               font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;
+               border:1.5px solid var(--by-bg)}
+  .by-user-info{flex:1;min-width:0}
+  .by-user-nm{display:flex;align-items:center;gap:7px}
+  .by-user-nm b{font-size:17px;font-weight:700;letter-spacing:.2px}
+  .by-user-lv{font-size:10px;color:#F0A020;background:rgba(240,160,32,.14);padding:1px 6px;border-radius:3px;
+             font-weight:600}
+  .by-user-id{font-size:11px;color:var(--by-text-2);margin-top:3px}
+  /* 个性签名（2 行截断） */
+  .by-user-sign{margin-top:7px;font-size:12px;color:var(--by-text-2);line-height:1.5;
+                display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .by-user-edit{margin-top:9px;display:inline-flex;align-items:center;gap:5px;font-size:12px;
+                padding:6px 14px;border-radius:15px;background:rgba(251,114,153,.14);
+                color:var(--by-pink);border:none;cursor:pointer;min-height:32px}
+  .by-user-edit:active{background:rgba(251,114,153,.26)}
+
+  /* 关注 / 粉丝 / 获赞 */
+  .by-nums{display:flex;margin-top:14px;padding:12px 0;background:var(--by-surface);
+           border:1px solid var(--by-border);border-radius:var(--by-radius)}
+  .by-num{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+          min-height:44px;justify-content:center;cursor:pointer;position:relative}
+  .by-num + .by-num::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);
+                           width:1px;height:24px;background:var(--by-border)}
+  .by-num:active{background:var(--by-surface-2)}
+  .by-num b{font-size:17px;font-weight:700;color:var(--by-text)}
+  .by-num span{font-size:11px;color:var(--by-text-2)}
+
+  /* ============ 功能宫格 ============ */
+  .by-menu{margin-top:14px;padding:14px 0 4px;background:var(--by-surface);
+          border:1px solid var(--by-border);border-radius:var(--by-radius)}
+  .by-menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:0 4px}
+  .by-menu-it{display:flex;flex-direction:column;align-items:center;gap:7px;
+              padding:10px 0;border-radius:12px;cursor:pointer;min-height:76px}
+  .by-menu-it:active{background:var(--by-surface-2)}
+  .by-menu-ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;
+              justify-content:center;font-size:16px;color:#fff}
+  .by-menu-nm{font-size:11px;color:var(--by-text-2)}
+
+  /* ============ 分区标题 ============ */
+  .by-sec{margin-top:18px;padding:0 12px}
+  .by-sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .by-sec-hd h3{margin:0;font-size:15px;font-weight:600}
+  .by-sec-hd span{font-size:12px;color:var(--by-text-2);cursor:pointer}
+  /* 分区切换（投稿 / 收藏） */
+  .by-switch{display:flex;gap:8px;margin-bottom:12px}
+  .by-switch button{flex:1;height:36px;border-radius:18px;border:1px solid var(--by-border);
+                    background:var(--by-surface);color:var(--by-text-2);font-size:13px;
+                    cursor:pointer;font-family:inherit;min-height:44px}
+  .by-switch button.on{background:rgba(251,114,153,.14);color:var(--by-pink);
+                       border-color:rgba(251,114,153,.4);font-weight:600}
+
+  /* ---------- 我的投稿：横向滑动 ---------- */
+  .by-hscroll{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .by-hscroll::-webkit-scrollbar{height:0}
+  .by-hcard{flex:none;width:132px;cursor:pointer}
+  .by-hcard:active .by-hthumb img{opacity:.85}
+  .by-hthumb{position:relative;width:132px;height:74px;border-radius:10px;overflow:hidden}
+  .by-hthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .by-hdur{position:absolute;right:4px;bottom:4px;font-size:9px;color:#fff;
+           background:rgba(0,0,0,.72);padding:1px 4px;border-radius:3px}
+  .by-hplay{position:absolute;left:4px;bottom:4px;font-size:9px;color:#fff;
+            background:rgba(0,0,0,.62);padding:1px 4px;border-radius:3px}
+  .by-htitle{margin-top:6px;font-size:12px;line-height:1.4;color:var(--by-text);
+             display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .by-hstat{margin-top:4px;font-size:10px;color:var(--by-text-2);display:flex;gap:8px}
+  .by-hstat i{margin-right:3px}
+
+  /* ---------- 收藏：纵向卡片 ---------- */
+  .by-fav{background:var(--by-surface);border:1px solid var(--by-border);
+          border-radius:var(--by-radius);overflow:hidden}
+  .by-fav-it{display:flex;gap:10px;padding:10px 12px;min-height:76px;cursor:pointer}
+  .by-fav-it:active{background:var(--by-surface-2)}
+  .by-fav-it + .by-fav-it{border-top:1px solid var(--by-border)}
+  .by-fav-thumb{position:relative;width:112px;height:64px;border-radius:8px;overflow:hidden;flex:none}
+  .by-fav-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .by-fav-dur{position:absolute;right:4px;bottom:4px;font-size:9px;color:#fff;
+              background:rgba(0,0,0,.72);padding:1px 4px;border-radius:3px}
+  .by-fav-main{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
+  .by-fav-title{font-size:13px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;
+                line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .by-fav-foot{display:flex;align-items:center;justify-content:space-between;margin-top:5px}
+  .by-fav-up{display:flex;align-items:center;gap:5px;min-width:0}
+  .by-fav-up img{width:16px;height:16px;border-radius:50%;object-fit:cover;flex:none}
+  .by-fav-up span{font-size:11px;color:var(--by-text-2);white-space:nowrap;
+                 overflow:hidden;text-overflow:ellipsis}
+  .by-fav-stat{font-size:11px;color:var(--by-text-2);flex:none}
+  .by-fav-stat i{margin-right:3px}
+  /* 取消收藏（44×44 触摸目标，视觉上内缩） */
+  .by-fav-rm{flex:none;width:44px;height:44px;margin:-8px -8px -8px 0;display:flex;
+             align-items:center;justify-content:center;color:var(--by-text-2);font-size:13px;
+             cursor:pointer;opacity:.6;border-radius:50%}
+  .by-fav-rm:active{opacity:1;color:var(--by-pink);background:var(--by-surface-2)}
+
+  /* ---------- 空状态（硬性 UX 要求） ---------- */
+  .by-empty{display:none;flex-direction:column;align-items:center;justify-content:center;
+            padding:32px 24px;background:var(--by-surface);border:1px solid var(--by-border);
+            border-radius:var(--by-radius);text-align:center}
+  .by-empty.on{display:flex}
+  .by-empty .by-ic{width:56px;height:56px;border-radius:50%;background:var(--by-surface-2);
+                   color:var(--by-text-2);display:flex;align-items:center;justify-content:center;
+                   font-size:22px;margin-bottom:12px}
+  .by-empty .by-t{font-size:13px;color:var(--by-text);font-weight:600}
+  .by-empty .by-d{margin-top:5px;font-size:12px;color:var(--by-text-2);line-height:1.6}
+  .by-empty .by-btn{margin-top:14px;font-size:12px;padding:8px 20px;border-radius:17px;
+                    background:rgba(251,114,153,.14);color:var(--by-pink);border:none;
+                    cursor:pointer;min-height:36px;font-family:inherit}
+  .by-empty .by-btn:active{background:rgba(251,114,153,.26)}
+
+  /* ---------- 设置入口行 ---------- */
+  .by-row{display:flex;align-items:center;gap:10px;padding:0 12px;min-height:52px;
+          background:var(--by-surface);border-bottom:1px solid var(--by-border);cursor:pointer}
+  .by-row:active{background:var(--by-surface-2)}
+  .by-row i.lead{font-size:16px;width:22px;text-align:center;flex:none}
+  .by-row span{flex:1;font-size:14px}
+  .by-row i.trail{color:var(--by-text-2);font-size:13px;flex:none}
+  .by-row-list{background:var(--by-surface);border:1px solid var(--by-border);
+               border-radius:var(--by-radius);overflow:hidden;margin:0 12px}
+  .by-row-list .by-row:last-child{border-bottom:none}
+  /* 开关（行内） */
+  .by-sw{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,.16);
+         position:relative;flex:none;transition:background .18s;cursor:pointer}
+  .by-sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+                background:#fff;transition:transform .18s}
+  .by-sw.on{background:var(--by-pink)}
+  .by-sw.on::after{transform:translateX(18px)}
+
+  /* ---------- 收尾 ---------- */
+  .by-end{text-align:center;color:var(--by-text-2);font-size:12px;padding:18px 0 6px}
+  .by-end i{display:block;font-size:20px;margin-bottom:6px;opacity:.5}
+  .by-ver{text-align:center;color:rgba(154,160,181,.5);font-size:11px;padding:4px 0 10px}
+
+  /* ---------- 底部 TabBar（fixed，绝不能写死 812px） ---------- */
+  /* width:min(375px,100vw) —— 画布 iframe 里铺满 375，独立打开（视口更宽）时也不会被拉宽 */
+  .by-tabbar{position:fixed;left:0;width:min(375px,100vw);bottom:0;z-index:30;height:52px;
+             background:rgba(20,20,38,.96);border-top:1px solid var(--by-border);
+             display:flex;align-items:center;backdrop-filter:blur(12px)}
+  .by-tabbar a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+               gap:2px;color:var(--by-text-2);font-size:10px;text-decoration:none;min-height:48px}
+  .by-tabbar a.on{color:var(--by-pink)}
+  .by-tabbar a i{font-size:17px}
+  .by-tabbar .by-pub{position:relative}
+  .by-tabbar .by-pub .by-pub-box{position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+       width:38px;height:28px;background:var(--by-pink);border-radius:8px;color:#fff;
+       display:flex;align-items:center;justify-content:center;font-size:15px;
+       border:2px solid var(--by-bg)}
+</style>
+</head>
+<body>
+
+<!-- ============ 骨架 ============ -->
+<div class="by-root">
+
+  <!-- 状态栏 -->
+  <div class="by-status">
+    <span class="by-time">9:41</span>
+    <span class="by-ico">
+      <i class="fas fa-signal"></i><i class="fas fa-wifi"></i>
+      <i class="fas fa-battery-three-quarters"></i>
+    </span>
+  </div>
+
+  <!-- 滚动内容 -->
+  <div class="by-scroll" id="scroll">
+
+    <!-- ---------- 用户信息卡 ---------- -->
+    <div class="by-user">
+      <div class="by-user-top">
+        <span style="font-size:15px;color:var(--by-text-2)"><i class="fas fa-gear"></i></span>
+        <span style="display:flex;gap:8px">
+          <span class="by-set" id="themeBtn" title="夜间/日间模式"><i class="fas fa-moon"></i></span>
+          <span class="by-set"><i class="fas fa-share-nodes"></i></span>
+          <span class="by-set"><i class="fas fa-bell"></i></span>
+          <span class="by-set" id="setTop"><i class="fas fa-gear"></i></span>
+        </span>
+      </div>
+
+      <div class="by-user-main">
+        <div class="by-user-av">
+          <img src="../../../lib/images/avatar-01.jpeg" alt="我的头像">
+          <span class="by-lv-badge">Lv.6</span>
+        </div>
+        <div class="by-user-info">
+          <div class="by-user-nm">
+            <b>代码狂人阿伟</b>
+            <span class="by-user-lv">Lv.6</span>
+          </div>
+          <div class="by-user-id">UID: 20885371 · 性别 男</div>
+          <div class="by-user-sign">
+            前端工程师 / 硬件爱好者 / 深夜食堂常客。分享那些让我停不下来的技术与生活。
+          </div>
+          <button class="by-user-edit" id="editBtn"><i class="fas fa-pen"></i>编辑资料</button>
+        </div>
+      </div>
+
+      <!-- 关注 / 粉丝 / 获赞 -->
+      <div class="by-nums">
+        <div class="by-num" data-go="follow"><b id="nFollow">268</b><span>关注</span></div>
+        <div class="by-num" data-go="fans"><b id="nFans">12.6万</b><span>粉丝</span></div>
+        <div class="by-num" data-go="likes"><b id="nLikes">86.4万</b><span>获赞</span></div>
+      </div>
+    </div>
+
+    <!-- ---------- 功能宫格 ---------- -->
+    <div class="by-menu">
+      <div class="by-menu-grid">
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#FB7299,#E11D48)"><i class="fas fa-upload"></i></span>
+          <span class="by-menu-nm">我的投稿</span>
+        </div>
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#00AEEC,#2563EB)"><i class="fas fa-star"></i></span>
+          <span class="by-menu-nm">我的收藏</span>
+        </div>
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#7C3AED,#A78BFA)"><i class="fas fa-tv"></i></span>
+          <span class="by-menu-nm">我的追番</span>
+        </div>
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#F59E0B,#FBBF24)"><i class="fas fa-clock-rotate-left"></i></span>
+          <span class="by-menu-nm">观看历史</span>
+        </div>
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#10B981,#34D399)"><i class="fas fa-wallet"></i></span>
+          <span class="by-menu-nm">我的钱包</span>
+        </div>
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#EC4899,#F472B6)"><i class="fas fa-pen-ruler"></i></span>
+          <span class="by-menu-nm">创作中心</span>
+        </div>
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)"><i class="fas fa-award"></i></span>
+          <span class="by-menu-nm">我的勋章</span>
+        </div>
+        <div class="by-menu-it">
+          <span class="by-menu-ic" style="background:linear-gradient(135deg,#64748B,#94A3B8)"><i class="fas fa-sliders"></i></span>
+          <span class="by-menu-nm">更多设置</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 我的投稿 / 我的收藏 ---------- -->
+    <div class="by-sec">
+      <div class="by-switch" id="switchBox">
+        <button class="on" data-tab="post">我的投稿</button>
+        <button data-tab="fav">我的收藏</button>
+      </div>
+
+      <!-- 我的投稿：横向滑动 -->
+      <div id="tabPost">
+        <div class="by-sec-hd">
+          <h3>我的投稿</h3>
+          <span>投稿管理 <i class="fas fa-angle-right" style="margin-left:3px"></i></span>
+        </div>
+        <div class="by-hscroll">
+          <div class="by-hcard" onclick="location.href='../player/player.html'">
+            <div class="by-hthumb">
+              <img src="../../../lib/images/cover-code-monitor.jpeg" alt="">
+              <span class="by-hplay"><i class="fas fa-eye"></i>421.3万</span>
+              <span class="by-hdur">21:35</span>
+            </div>
+            <div class="by-htitle">前端工程师的一天：从零到上线</div>
+            <div class="by-hstat"><span><i class="fas fa-eye"></i>421.3万</span><span><i class="fas fa-comment"></i>3.1万</span></div>
+          </div>
+          <div class="by-hcard" onclick="location.href='../player/player.html'">
+            <div class="by-hthumb">
+              <img src="../../../lib/images/cover-code-js.jpeg" alt="">
+              <span class="by-hplay"><i class="fas fa-eye"></i>236.4万</span>
+              <span class="by-hdur">18:24</span>
+            </div>
+            <div class="by-htitle">JS 闭包到底是个什么鬼？五分钟讲明白</div>
+            <div class="by-hstat"><span><i class="fas fa-eye"></i>236.4万</span><span><i class="fas fa-comment"></i>1.6万</span></div>
+          </div>
+          <div class="by-hcard" onclick="location.href='../player/player.html'">
+            <div class="by-hthumb">
+              <img src="../../../lib/images/cover-desk-rgb.jpeg" alt="">
+              <span class="by-hplay"><i class="fas fa-eye"></i>158.7万</span>
+              <span class="by-hdur">14:08</span>
+            </div>
+            <div class="by-htitle">桌面改造：RGB 灯效与理线的极致</div>
+            <div class="by-hstat"><span><i class="fas fa-eye"></i>158.7万</span><span><i class="fas fa-comment"></i>6.4万</span></div>
+          </div>
+          <div class="by-hcard" onclick="location.href='../player/player.html'">
+            <div class="by-hthumb">
+              <img src="../../../lib/images/cover-gaming-shop.jpeg" alt="">
+              <span class="by-hplay"><i class="fas fa-eye"></i>73.2万</span>
+              <span class="by-hdur">09:41</span>
+            </div>
+            <div class="by-htitle">装机全过程：预算 8000 怎么配</div>
+            <div class="by-hstat"><span><i class="fas fa-eye"></i>73.2万</span><span><i class="fas fa-comment"></i>2.9万</span></div>
+          </div>
+          <div class="by-hcard" onclick="location.href='../player/player.html'">
+            <div class="by-hthumb">
+              <img src="../../../lib/images/cover-gaming-rgb.jpeg" alt="">
+              <span class="by-hplay"><i class="fas fa-eye"></i>45.9万</span>
+              <span class="by-hdur">11:16</span>
+            </div>
+            <div class="by-htitle">显卡体质测试：这波能不能稳 60 帧</div>
+            <div class="by-hstat"><span><i class="fas fa-eye"></i>45.9万</span><span><i class="fas fa-comment"></i>1.8万</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 我的收藏：纵向列表 -->
+      <div id="tabFav" style="display:none">
+        <div class="by-sec-hd">
+          <h3>我的收藏</h3>
+          <span>管理收藏 <i class="fas fa-angle-right" style="margin-left:3px"></i></span>
+        </div>
+        <div class="by-fav" id="favBox">
+          <div class="by-fav-it">
+            <div class="by-fav-thumb">
+              <img src="../../../lib/images/cover-city-night.jpeg" alt="">
+              <span class="by-fav-dur">32:08</span>
+            </div>
+            <div class="by-fav-main">
+              <div class="by-fav-title">凌晨四点的城市，比白天更真实</div>
+              <div class="by-fav-foot">
+                <div class="by-fav-up"><img src="../../../lib/images/avatar-05.jpeg" alt=""><span>城市观察局</span></div>
+                <span class="by-fav-stat"><i class="fas fa-eye"></i>233.5万</span>
+              </div>
+            </div>
+            <span class="by-fav-rm"><i class="fas fa-xmark"></i></span>
+          </div>
+          <div class="by-fav-it">
+            <div class="by-fav-thumb">
+              <img src="../../../lib/images/cover-cook-pepper.jpeg" alt="">
+              <span class="by-fav-dur">09:33</span>
+            </div>
+            <div class="by-fav-main">
+              <div class="by-fav-title">十分钟复刻餐厅招牌菜，在家也能做</div>
+              <div class="by-fav-foot">
+                <div class="by-fav-up"><img src="../../../lib/images/avatar-03.jpeg" alt=""><span>小厨房大厨</span></div>
+                <span class="by-fav-stat"><i class="fas fa-eye"></i>67.4万</span>
+              </div>
+            </div>
+            <span class="by-fav-rm"><i class="fas fa-xmark"></i></span>
+          </div>
+          <div class="by-fav-it">
+            <div class="by-fav-thumb">
+              <img src="../../../lib/images/cover-mountain.jpeg" alt="">
+              <span class="by-fav-dur">12:55</span>
+            </div>
+            <div class="by-fav-main">
+              <div class="by-fav-title">一个人的雪山徒步，治愈了我一整年</div>
+              <div class="by-fav-foot">
+                <div class="by-fav-up"><img src="../../../lib/images/avatar-06.jpeg" alt=""><span>在路上</span></div>
+                <span class="by-fav-stat"><i class="fas fa-eye"></i>512.8万</span>
+              </div>
+            </div>
+            <span class="by-fav-rm"><i class="fas fa-xmark"></i></span>
+          </div>
+        </div>
+
+        <!-- ✅ 空状态（硬性 UX 要求）：无收藏 -->
+        <div class="by-empty" id="favEmpty">
+          <span class="by-ic"><i class="fas fa-star"></i></span>
+          <span class="by-t">收藏夹还是空的</span>
+          <span class="by-d">看到喜欢的视频点一下「收藏」，<br>它们就会出现在这里，随时回看</span>
+          <button class="by-btn" id="goFind"><i class="fas fa-magnifying-glass" style="margin-right:4px"></i>去发现好内容</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 设置入口 ---------- -->
+    <div class="by-sec" style="margin-top:18px">
+      <div class="by-row-list">
+        <div class="by-row">
+          <i class="fas fa-user-gear lead"></i>
+          <span>账号与安全</span>
+          <i class="fas fa-angle-right trail"></i>
+        </div>
+        <div class="by-row">
+          <i class="fas fa-bell lead"></i>
+          <span>消息通知</span>
+          <span class="by-sw on" id="swNotify" role="switch" aria-checked="true"></span>
+        </div>
+        <div class="by-row">
+          <i class="fas fa-download lead"></i>
+          <span>仅 Wi-Fi 下载高清</span>
+          <span class="by-sw on" id="swWifi" role="switch" aria-checked="true"></span>
+        </div>
+        <div class="by-row">
+          <i class="fas fa-shield-halved lead"></i>
+          <span>青少年模式</span>
+          <span class="by-sw" id="swTeen" role="switch" aria-checked="false"></span>
+        </div>
+        <div class="by-row" id="rowDark">
+          <i class="fas fa-moon lead"></i>
+          <span>夜间模式</span>
+          <span class="by-sw on" id="swDark" role="switch" aria-checked="true"></span>
+        </div>
+        <div class="by-row">
+          <i class="fas fa-circle-question lead"></i>
+          <span>帮助与反馈</span>
+          <i class="fas fa-angle-right trail"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- 收尾 -->
+    <div class="by-end">
+      <i class="fas fa-inbox"></i>
+      已经到底啦
+    </div>
+    <div class="by-ver">哔哩云 v1.0.0 · 原型演示</div>
+  </div>
+</div>
+
+<!-- ============ 底部 TabBar ============ -->
+<nav class="by-tabbar">
+  <a href="../home/home.html"><i class="fas fa-house"></i><span>首页</span></a>
+  <a href="../search/search.html"><i class="fas fa-magnifying-glass"></i><span>搜索</span></a>
+  <a href="../upload/upload.html" class="by-pub">
+    <span class="by-pub-box"><i class="fas fa-plus"></i></span>
+    <span>投稿</span>
+  </a>
+  <a href="../message/message.html"><i class="fas fa-comment-dots"></i><span>消息</span></a>
+  <a href="profile.html" class="on"><i class="fas fa-user"></i><span>我的</span></a>
+</nav>
+
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+/* ---------- 本页交互（原型演示级） ---------- */
+(function () {
+  var scroll = document.getElementById('scroll');
+
+  /* 1. 「我的投稿 / 我的收藏」切换（收藏 tab 首次进入展示空状态） */
+  var btns = document.querySelectorAll('#switchBox button');
+  var tabPost = document.getElementById('tabPost');
+  var tabFav = document.getElementById('tabFav');
+  var favBox = document.getElementById('favBox');
+  var favEmpty = document.getElementById('favEmpty');
+
+  function syncFav() {
+    var has = favBox.querySelectorAll('.by-fav-it').length > 0;
+    favBox.style.display = has ? '' : 'none';
+    favEmpty.classList.toggle('on', !has);
+  }
+
+  /* 逐条取消收藏：删完最后一条即出现空状态 */
+  favBox.querySelectorAll('.by-fav-rm').forEach(function (rm) {
+    rm.addEventListener('click', function (e) {
+      e.stopPropagation();
+      rm.closest('.by-fav-it').remove();
+      syncFav();
+    });
+  });
+
+  btns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      btns.forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      var isFav = b.getAttribute('data-tab') === 'fav';
+      tabPost.style.display = isFav ? 'none' : '';
+      tabFav.style.display = isFav ? '' : 'none';
+      scroll.scrollTo({ top: scroll.scrollTop, behavior: 'smooth' });
+    });
+  });
+
+  /* 2. 空状态按钮：去发现好内容 → 跳搜索页 */
+  document.getElementById('goFind').addEventListener('click', function () {
+    location.href = '../search/search.html';
+  });
+
+  /* 3. 行内开关：消息通知 / 仅 Wi-Fi 下载 / 青少年 / 夜间模式 */
+  function bindSwitch(id) {
+    var sw = document.getElementById(id);
+    sw.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var on = sw.classList.toggle('on');
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  }
+  ['swNotify', 'swWifi', 'swTeen', 'swDark'].forEach(bindSwitch);
+
+  /* 4. 编辑资料：点击切换为「已编辑」反馈态 */
+  var edit = document.getElementById('editBtn');
+  edit.addEventListener('click', function () {
+    edit.innerHTML = '<i class="fas fa-check"></i>已保存';
+    edit.style.background = 'rgba(16,185,129,.16)';
+    edit.style.color = '#34D399';
+    setTimeout(function () {
+      edit.innerHTML = '<i class="fas fa-pen"></i>编辑资料';
+      edit.style.background = '';
+      edit.style.color = '';
+    }, 1600);
+  });
+
+  /* 5. 头像旁「设置」/ 顶部「夜间模式」入口：与夜间开关联动 */
+  var swDark = document.getElementById('swDark');
+  function flipDark() {
+    var on = swDark.classList.toggle('on');
+    swDark.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+  document.getElementById('setTop').addEventListener('click', flipDark);
+  document.getElementById('themeBtn').addEventListener('click', flipDark);
+  document.getElementById('rowDark').addEventListener('click', flipDark);
+
+  /* 6. 关注 / 粉丝 / 获赞：点赞式微交互（数字 +1 动画） */
+  document.querySelectorAll('.by-num').forEach(function (n) {
+    n.addEventListener('click', function () {
+      var b = n.querySelector('b');
+      b.style.color = 'var(--by-pink)';
+      b.style.transform = 'scale(1.18)';
+      setTimeout(function () { b.style.transform = ''; }, 180);
+      setTimeout(function () { b.style.color = ''; }, 700);
+    });
+  });
+
+  /* 7. 宫格入口：点击高亮反馈 */
+  document.querySelectorAll('.by-menu-it').forEach(function (it) {
+    it.addEventListener('click', function () {
+      var ic = it.querySelector('.by-menu-ic');
+      ic.style.transform = 'scale(.88)';
+      setTimeout(function () { ic.style.transform = ''; }, 160);
+    });
+  });
+
+  syncFav();
+})();
+</script>
+</body>
+</html>

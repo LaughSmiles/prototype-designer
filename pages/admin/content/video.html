@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>视频管理 - 哔哩云</title>
+<script src="../../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../../lib/css/all.min.css">
+<link rel="stylesheet" href="../../../css/sidebar-menu.css">
+<style>
+  :root{
+    --by-side:#001529; --by-head:#0A1A2F; --by-bg:#0B1524;
+    --by-card:#142136; --by-card-2:#1B2B44; --by-line:rgba(255,255,255,.09);
+    --by-primary:#409EFF; --by-green:#13CE66; --by-orange:#FF9F43;
+    --by-red:#F6465D; --by-purple:#9457D5;
+    --by-text:#E8ECF5; --by-text-2:#8FA0BC; --by-text-3:#5C6E8C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--by-bg);color:var(--by-text);
+       font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+       font-size:14px;line-height:1.5}
+  .ad-wrap{display:flex;height:100vh;overflow:hidden}
+
+  .ad-head{height:56px;flex:none;background:var(--by-head);border-bottom:1px solid var(--by-line);
+           display:flex;align-items:center;padding:0 20px;gap:16px}
+  .ad-logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;width:200px}
+  .ad-logo .dot{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+                justify-content:center;background:linear-gradient(135deg,#FB7299,#E11D48);
+                font-size:13px;color:#fff}
+  .ad-crumb{font-size:13px;color:var(--by-text-2)}
+  .ad-crumb b{color:var(--by-text);font-weight:500}
+  .ad-head-right{margin-left:auto;display:flex;align-items:center;gap:18px}
+  .ad-search{width:220px;height:32px;border-radius:6px;background:rgba(255,255,255,.07);
+             border:1px solid var(--by-line);display:flex;align-items:center;gap:7px;
+             padding:0 11px;font-size:12px;color:var(--by-text-3)}
+  .ad-hicon{color:var(--by-text-2);font-size:15px;cursor:pointer;position:relative;min-width:24px;text-align:center}
+  .ad-badge{position:absolute;top:-4px;right:-6px;min-width:15px;height:15px;border-radius:8px;
+            background:var(--by-red);color:#fff;font-size:9px;line-height:15px;padding:0 4px}
+  .ad-me{display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}
+  .ad-me img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+
+  .ad-side{width:200px;flex:none;background:var(--by-side);border-right:1px solid var(--by-line);
+           overflow-y:auto;padding:10px 0}
+  .ad-side::-webkit-scrollbar{width:0}
+  #sidebar-menu{background:var(--by-side)}
+
+  .ad-main{flex:1;min-width:0;overflow-y:auto;padding:18px 22px 28px}
+  .ad-main::-webkit-scrollbar{width:6px}
+  .ad-main::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:3px}
+
+  /* ============ 搜索表单 ============ */
+  .search-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;
+               padding:15px 16px 4px}
+  .search-row{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end}
+  .search-row .fi{display:flex;flex-direction:column;gap:6px}
+  .search-row label{font-size:12px;color:var(--by-text-2)}
+  .search-row input,.search-row select{height:32px;padding:0 10px;border-radius:6px;font-size:13px;
+    background:rgba(255,255,255,.06);border:1px solid var(--by-line);color:var(--by-text);
+    outline:none;font-family:inherit;min-width:150px}
+  .search-row input:focus,.search-row select:focus{border-color:var(--by-primary)}
+  .search-row select option{background:var(--by-card-2);color:var(--by-text)}
+  .search-row input::placeholder{color:var(--by-text-3)}
+
+  /* ============ 按钮 ============ */
+  .btn{height:32px;padding:0 15px;border-radius:6px;border:1px solid var(--by-line);
+       background:rgba(255,255,255,.06);color:var(--by-text);font-size:13px;cursor:pointer;
+       display:inline-flex;align-items:center;gap:6px;font-family:inherit;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.11)}
+  .btn-primary{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .btn-primary:hover{background:#66b1ff;border-color:#66b1ff}
+  .btn-danger{background:var(--by-red);border-color:var(--by-red);color:#fff}
+  .btn-danger:hover{opacity:.88}
+  .btn-success{background:var(--by-green);border-color:var(--by-green);color:#fff}
+  .btn-warning{background:var(--by-orange);border-color:var(--by-orange);color:#fff}
+
+  /* ============ 工具栏 ============ */
+  .toolbar{display:flex;align-items:center;gap:10px;margin:14px 0 12px}
+  .toolbar .sp{flex:1}
+  .tb-tip{font-size:12px;color:var(--by-text-3);display:flex;align-items:center;gap:6px}
+
+  /* ============ 表格 ============ */
+  .tbl-card{background:var(--by-card);border:1px solid var(--by-line);border-radius:10px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{background:var(--by-card-2);color:var(--by-text-2);font-weight:500;text-align:left;
+           padding:11px 12px;font-size:12px;white-space:nowrap}
+  tbody td{padding:11px 12px;border-top:1px solid var(--by-line);vertical-align:middle}
+  tbody tr:hover{background:rgba(255,255,255,.03)}
+  .tbl-card table{min-width:1080px}
+  .tbl-scroll{overflow-x:auto}
+  .tbl-scroll::-webkit-scrollbar{height:7px}
+  .tbl-scroll::-webkit-scrollbar-thumb{background:var(--by-card-2);border-radius:4px}
+
+  input[type=checkbox]{width:14px;height:14px;accent-color:var(--by-primary);cursor:pointer}
+
+  /* 视频标题单元格：缩略图 + 标题 */
+  .vt{display:flex;align-items:center;gap:10px;min-width:260px}
+  .vt img{width:76px;height:43px;border-radius:5px;object-fit:cover;flex:none}
+  .vt-t{font-size:13px;line-height:1.45}
+  .vt-t .vid{font-size:11px;color:var(--by-text-3);margin-top:3px}
+
+  /* 状态标签 */
+  .tg{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 9px;border-radius:11px}
+  .tg i{width:5px;height:5px;border-radius:50%}
+  .tg.ok{background:rgba(19,206,102,.14);color:#13CE66} .tg.ok i{background:#13CE66}
+  .tg.wait{background:rgba(255,159,67,.14);color:#FF9F43} .tg.wait i{background:#FF9F43}
+  .tg.no{background:rgba(246,70,93,.14);color:#F6465D} .tg.no i{background:#F6465D}
+  .tg.info{background:rgba(64,158,255,.14);color:#409EFF} .tg.info i{background:#409EFF}
+
+  /* 行内文字按钮 */
+  .btn-text{background:none;border:none;color:var(--by-primary);font-size:12px;cursor:pointer;
+            padding:3px 5px;font-family:inherit}
+  .btn-text:hover{text-decoration:underline}
+  .btn-text.danger{color:var(--by-red)}
+
+  /* 分页 */
+  .pager{display:flex;align-items:center;gap:8px;padding:13px 16px;border-top:1px solid var(--by-line)}
+  .pager .info{font-size:12px;color:var(--by-text-3)}
+  .pager .sp{flex:1}
+  .pager button{min-width:30px;height:30px;border-radius:6px;border:1px solid var(--by-line);
+                background:rgba(255,255,255,.05);color:var(--by-text-2);font-size:12px;cursor:pointer;
+                font-family:inherit}
+  .pager button.on{background:var(--by-primary);border-color:var(--by-primary);color:#fff}
+  .pager button:disabled{opacity:.4;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<div class="ad-wrap">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="ad-head" style="position:absolute;top:0;left:0;right:0;z-index:20">
+    <div class="ad-logo"><span class="dot"><i class="fas fa-bolt"></i></span><span>哔哩云</span></div>
+    <div class="ad-crumb">内容管理 / <b>视频管理</b></div>
+    <div class="ad-head-right">
+      <div class="ad-search"><i class="fas fa-search"></i><span>搜索菜单、用户、视频…</span></div>
+      <span class="ad-hicon"><i class="fas fa-question-circle"></i></span>
+      <span class="ad-hicon"><i class="fas fa-bell"></i><span class="ad-badge">9</span></span>
+      <div class="ad-me"><img src="../../../lib/images/avatar-01.jpeg" alt=""><span>超级管理员</span><i class="fas fa-angle-down" style="font-size:11px;color:var(--by-text-3)"></i></div>
+    </div>
+  </header>
+
+  <!-- ================= 侧边栏 ================= -->
+  <aside class="ad-side" style="position:absolute;top:56px;bottom:0;left:0;width:200px">
+    <div id="sidebar-menu"></div>
+  </aside>
+
+  <!-- ================= 内容区 ================= -->
+  <main class="ad-main main-content" style="margin-left:200px;margin-top:56px">
+
+    <!-- ---------- 搜索表单 ---------- -->
+    <div class="search-card">
+      <div class="search-row">
+        <div class="fi">
+          <label>视频标题</label>
+          <input type="text" placeholder="请输入视频标题">
+        </div>
+        <div class="fi">
+          <label>UP主</label>
+          <input type="text" placeholder="请输入 UP 主昵称">
+        </div>
+        <div class="fi">
+          <label>分区</label>
+          <select>
+            <option>全部分区</option>
+            <option>动画</option><option>游戏</option><option>科技</option>
+            <option>生活</option><option>音乐</option><option>美食</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>状态</label>
+          <select>
+            <option>全部状态</option>
+            <option>已发布</option><option>审核中</option>
+            <option>已下架</option><option>已驳回</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>投稿日期</label>
+          <input type="date" value="2024-11-01">
+        </div>
+        <div class="fi" style="flex-direction:row;gap:10px">
+          <button class="btn btn-primary"><i class="fas fa-search"></i>搜索</button>
+          <button class="btn"><i class="fas fa-redo"></i>重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 工具栏 ---------- -->
+    <div class="toolbar">
+      <button class="btn btn-primary"><i class="fas fa-plus"></i>新增视频</button>
+      <button class="btn btn-warning"><i class="fas fa-upload"></i>导入</button>
+      <button class="btn btn-success"><i class="fas fa-download"></i>导出</button>
+      <button class="btn btn-danger"><i class="fas fa-trash"></i>删除</button>
+      <span class="sp"></span>
+      <span class="tb-tip"><i class="fas fa-circle-info"></i>已选 0 项</span>
+    </div>
+
+    <!-- ---------- 数据表格 ---------- -->
+    <div class="tbl-card">
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:38px"><input type="checkbox"></th>
+              <th style="min-width:300px">视频标题</th>
+              <th style="width:120px">UP主</th>
+              <th style="width:90px">分区</th>
+              <th style="width:100px">播放量</th>
+              <th style="width:100px">状态</th>
+              <th style="width:120px">投稿时间</th>
+              <th style="width:150px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-gaming-neon.jpeg" alt="">
+                  <div class="vt-t">
+                    【4K 高帧率】全程干货！零基础也能看懂的游戏画质设置
+                    <div class="vid">BV1xx411c7mD</div>
+                  </div>
+                </div>
+              </td>
+              <td>代码狂人阿伟</td>
+              <td>科技</td>
+              <td>328.4万</td>
+              <td><span class="tg ok"><i></i>已发布</span></td>
+              <td>2024-11-18</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-cat-grumpy.jpeg" alt="">
+                  <div class="vt-t">
+                    当你以为在养猫，实际上是猫在养你
+                    <div class="vid">BV1kk411a9zQ</div>
+                  </div>
+                </div>
+              </td>
+              <td>猫奴日常菌</td>
+              <td>生活</td>
+              <td>892.1万</td>
+              <td><span class="tg ok"><i></i>已发布</span></td>
+              <td>2024-11-17</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-cook-chop.jpeg" alt="">
+                  <div class="vt-t">
+                    三分钟搞定的深夜食堂，新手也能学会
+                    <div class="vid">BV1nq411p7hF</div>
+                  </div>
+                </div>
+              </td>
+              <td>小厨房大厨</td>
+              <td>美食</td>
+              <td>156.7万</td>
+              <td><span class="tg wait"><i></i>审核中</span></td>
+              <td>2024-11-21</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-guitar-blue.jpeg" alt="">
+                  <div class="vt-t">
+                    用一把吉他弹响青春的声音
+                    <div class="vid">BV1Wt411e7dL</div>
+                  </div>
+                </div>
+              </td>
+              <td>民谣小王子</td>
+              <td>音乐</td>
+              <td>98.2万</td>
+              <td><span class="tg ok"><i></i>已发布</span></td>
+              <td>2024-11-12</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-city-night.jpeg" alt="">
+                  <div class="vt-t">
+                    凌晨四点的城市，比白天更真实
+                    <div class="vid">BV1gy411y7Kp</div>
+                  </div>
+                </div>
+              </td>
+              <td>城市观察局</td>
+              <td>生活</td>
+              <td>233.5万</td>
+              <td><span class="tg no"><i></i>已下架</span></td>
+              <td>2024-11-10</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-code-monitor.jpeg" alt="">
+                  <div class="vt-t">
+                    前端工程师的一天：从零到上线
+                    <div class="vid">BV1Ab411c6Xz</div>
+                  </div>
+                </div>
+              </td>
+              <td>代码狂人阿伟</td>
+              <td>科技</td>
+              <td>421.3万</td>
+              <td><span class="tg ok"><i></i>已发布</span></td>
+              <td>2024-11-08</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-mountain.jpeg" alt="">
+                  <div class="vt-t">
+                    一个人的雪山徒步，治愈了我一整年
+                    <div class="vid">BV1Cv411w8uT</div>
+                  </div>
+                </div>
+              </td>
+              <td>山野拾光</td>
+              <td>生活</td>
+              <td>512.8万</td>
+              <td><span class="tg info"><i></i>已驳回</span></td>
+              <td>2024-11-21</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td>
+                <div class="vt">
+                  <img src="../../../lib/images/cover-code-rainbow.png" alt="">
+                  <div class="vt-t">
+                    【编程】从 Hello World 到运行起来的第一个程序
+                    <div class="vid">BV1Zk411m2nR</div>
+                  </div>
+                </div>
+              </td>
+              <td>代码狂人阿伟</td>
+              <td>科技</td>
+              <td>145.9万</td>
+              <td><span class="tg ok"><i></i>已发布</span></td>
+              <td>2024-11-05</td>
+              <td>
+                <button class="btn-text">修改</button>
+                <button class="btn-text">详情</button>
+                <button class="btn-text danger">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="pager">
+        <span class="info">共 128,642 条记录，第 1 / 16,081 页</span>
+        <span class="sp"></span>
+        <button disabled><i class="fas fa-angle-left"></i></button>
+        <button class="on">1</button>
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>5</button>
+        <button><i class="fas fa-ellipsis-h"></i></button>
+        <button>16081</button>
+        <button><i class="fas fa-angle-right"></i></button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ================= 脚本（顺序不可调整） ================= -->
+<script src="../../../menu/menu.js"></script>                  <!-- 菜单数据：必须最先 -->
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+<script src="../../../js/debug.js"></script>
+<script src="../../../js/topbar.js"></script>                   <!-- 退出预览的桥，必须有 -->
+<script>
+/* 本页表单定义：label 必须与 <th> 一字不差；编号/播放量/投稿时间/操作列不进表单 */
+window.PROTO_FORM = {
+    entityName: "视频",
+    fields: [
+        { "label": "视频标题", "type": "input",   "required": true },
+        { "label": "UP主",     "type": "input",   "required": true },
+        { "label": "分区",     "type": "select",  "options": ["动画", "游戏", "科技", "生活", "音乐", "美食", "知识", "运动"] },
+        { "label": "状态",     "type": "select",  "options": ["已发布", "审核中", "已下架", "已驳回"] }
+    ]
+};
+</script>
+<script src="../../../js/prototype-components.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async function () {
+  await SidebarMenu.init('sidebar-menu');
+  // 全选 / 已选计数
+  var all = document.querySelector('thead input[type=checkbox]');
+  var rows = Array.from(document.querySelectorAll('tbody input[type=checkbox]'));
+  var tip = document.querySelector('.tb-tip');
+  function sync() {
+    var n = rows.filter(function (c) { return c.checked; }).length;
+    tip.innerHTML = '<i class="fas fa-circle-info"></i>已选 ' + n + ' 项';
+  }
+  all.addEventListener('change', function () {
+    rows.forEach(function (c) { c.checked = all.checked; });
+    sync();
+  });
+  rows.forEach(function (c) { c.addEventListener('change', sync); });
+});
+</script>
+</body>
+</html>
