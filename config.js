@@ -3,11 +3,12 @@
 //
 // ⚠️ projectName 派生出两处东西，定新产品时要一起想清楚：
 //   1. localStorage 键（{projectName}Canvas / {projectName}_uiState）
-//   2. 后台页 <title> 的后缀（"页面名 - <projectName>"），prototype-components.js 据此查表
+//   2. 后台页 <title> 的后缀（"页面名 - <projectName>"）。形态②的 PROTO_FORM 按它查表；
+//      形态①与标题无关，但保持一致更利于阅读
 //
 // ⚠️ 定下新产品后需要一并改：
 //    projectName / projectTitle / projectDescription / categories[] / pages[]，
-//    并同步重建 menu/menu.js。改完务必跑 node tools/check-config.js。
+//    并同步重建 menu/menu.js（仅桌面页需要）。改完务必跑 node tools/check-config.js。
 window.PROJECT_CONFIG = {
   "projectName": "待定",
   "projectTitle": "待定 - 新产品高保真原型（尚未定义）",

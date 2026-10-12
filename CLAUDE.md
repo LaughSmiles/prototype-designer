@@ -61,8 +61,8 @@ project-root/
 ├── index.html                 # Project showcase page (reads config.js, no hardcoded page list)
 ├── pages/                     # Page HTML files (MODIFY THIS) — 当前只有 .gitkeep
 │   ├── admin/                 # 桌面页（1440×900）；根级页用 ../../，pages/admin/<module>/ 用 ../../../
-│   │   └── home.html          # 约定：后台首页放根级，TabBar 会按页面深度算到它
-│   └── app/                   # 移动端页（375×812），不加载菜单与表单配置
+│   │   └── <module>/*.html    # 约定：后台首页放根级（pages/admin/home.html），TabBar 会按页面深度算到它
+│   └── app/                   # 移动端页（375×812），不加载菜单与表单配置，但必须加载 js/topbar.js
 ├── menu/                      # Menu DATA source (MODIFY THIS)
 │   └── menu.js                # window.SIDEBAR_MENU，菜单数据源（手工维护，无生成脚本）
 ├── tools/                     # Node maintenance scripts (no npm scripts; run manually)
@@ -91,7 +91,6 @@ project-root/
 │   ├── webfonts/ (3 woff2)
 │   ├── images/ · videos/      # 本地化素材（当前为空，获取渠道见 lib/AGENTS.md §5）
 │   └── AGENTS.md              # 素材获取规范（图片/视频渠道）+ 第三方署名（CC BY 4.0 / OFL / Pexels）
-├── tools/                     # Node check & maintenance scripts
 └── .cursor-history.md         # Session history log
 ```
 
@@ -214,7 +213,9 @@ Defines `window.PROJECT_CONFIG` with:
 1. `path` must point to a file that really exists (relative to project root). Validate with `node tools/check-config.js`.
 2. `category` must be one of `categories[].id`.
 3. `id` must be **unique**; by convention it is `<category>-<page-name>` (id `system-user` → path `pages/admin/system/user.html`). ⚠️ The id does **not** have to equal the filename — matching is by `path`, not `id`.
-   ⚠️ `pages/admin/system/{user,role,menu}.html` filenames are **load-bearing**: `prototype-components.js` hardcodes its fake tab paths as `system/user.html` / `system/role.html` / `system/menu.html`. Renaming them makes those tabs 404.
+   ⚠️ Two sets of filenames are **load-bearing**, because they are hardcoded in framework code:
+   - `pages/admin/system/{user,role,menu}.html` — `prototype-components.js` hardcodes its fake tab paths as `system/user.html` / `system/role.html` / `system/menu.html`. Renaming them makes those tabs 404.
+   - `js/menu/menu-data.js` → `getFallbackMenu()` also hardcodes a `system` group with `system/user.html` when `window.SIDEBAR_MENU` is missing.
 4. Every HTML file under `pages/` should be registered; `check-config.js` reports unregistered files as orphan errors.
 
 ## Theme System
@@ -324,20 +325,26 @@ Each prototype page follows a consistent layout:
 └───────────┴──────────────────────────────────────┘
 ```
 
-Page template references. Desktop pages live two levels below the project root (`pages/admin/<module>/`), so all paths use **three** `../` segments:
+Page template references. Desktop pages live two levels below the project root (`pages/admin/<module>/`), so all paths use **three** `../` segments. The list below is exactly the guard plugin's `DESKTOP_REQUIRED` plus the three resource tags — omitting any of them makes the plugin (or `check-references.js`) report an error:
 
 ```html
 <script src="../../../lib/js/tailwindcss.js"></script>      <!-- TailwindCSS 3.4.17 -->
 <link rel="stylesheet" href="../../../lib/css/all.min.css">  <!-- Font Awesome 6.4.0 -->
 <link rel="stylesheet" href="../../../css/sidebar-menu.css">
 <script src="../../../menu/menu.js"></script>               <!-- menu DATA, must be first -->
-<script src="../../../js/debug.js"></script>
+<script src="../../../js/menu/menu-data.js"></script>
+<script src="../../../js/menu/menu-render.js"></script>
+<script src="../../../js/menu/menu-interaction.js"></script>
+<script src="../../../js/menu/menu.js"></script>
+<script src="../../../js/debug.js"></script>                <!-- Debug.* gate, before callers -->
+<script src="../../../js/topbar.js"></script>                <!-- Esc → postMessage exit bridge -->
 <script>window.PROTO_FORM = { entityName: "订单", fields: [ /* ... */ ] };</script>  <!-- 本页表单，必须在下一行之前 -->
 <script src="../../../js/prototype-components.js"></script>
 ```
 
 Root-level desktop pages (`pages/admin/login.html`, `home.html`, …) sit one level shallower and therefore use `../../`.
-Mobile pages (`pages/app/<module>/`) use `../../../` for `lib/`, `css/`, `js/` but load **no** menu or form scripts.
+
+Mobile pages (`pages/app/<module>/`) use `../../../` for `lib/`, `css/`, `js/` and load **no** menu or form scripts — but they **must** load `js/topbar.js` (`MOBILE_REQUIRED`). Without it, pressing Esc cannot leave the canvas preview: under `file://` the canvas cannot inject listeners into the iframe, so the page's own `postMessage` bridge is the only path.
 
 ⚠️ Run `node tools/check-references.js` after adding or moving pages — a wrong `../` count silently breaks the page with no visible error.
 

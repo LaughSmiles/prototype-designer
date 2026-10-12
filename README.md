@@ -33,16 +33,27 @@
 4.  HTML原型实现：使用HTML+TailwindCSS生成所有原型界面，并使用FontAwesome让界面更加精美、接近真实的App设计。注意：TailwindCSS和FontAwesome通过本地路径引入，不要使用CDN链接。
 5.	原型图的图片、视频资源需要下载的本地的lib\images中，在本地引用，不要使用CDN链接。
 6.  拆分代码文件，保持结构清晰：
-    -   每个界面应作为独立的HTML文件存放，例如home.html、profile.html、settings.html等。按模块存放在pages目录下的子目录中(如pages/home/、pages/profile/)。
-    -   index.html作为主入口，不直接写入所有界面的HTML代码，而是使用iframe的方式嵌入这些HTML片段，并将所有页面直接平铺展示在index页面中，而不是跳转链接。
-    -   index.html在主目录下，没有存放在pages目录中
-    -   页面HTML文件中引入资源的路径必须使用相对路径：TailwindCSS使用 `../lib/js/tailwindcss.js`，FontAwesome使用 `../lib/css/all.min.css`
+    -   每个界面作为独立的HTML文件，按模块放进 `pages/app/<模块>/`（如 `pages/app/home/home.html`）。
+    -   **不要生成、不要修改 `index.html`**：它已改为运行时读取 `config.js` 自动渲染页面清单，
+        任何"平铺展示/iframe 拼 HTML"的旧写法都会把它覆盖成死页面。
+    -   页面HTML文件中引入资源的路径必须使用相对路径，且**层数 = 文件路径中 `/` 的个数**：
+        `pages/app/<模块>/xxx.html` 深度为 3，用 `../../../lib/js/tailwindcss.js`、
+        `../../../lib/css/all.min.css`。
 7.  真实感增强：
     -   界面尺寸应模拟iPhone 15 Pro，并让界面圆角化，使其更像真实的手机界面。
     -   使用真实的UI图片，而非占位符图片(可从Unsplash、Pexels中选择)。
     -   添加顶部状态栏(模拟iOS状态栏)，并包含App导航栏(类似iOS底部TabBar)。
+8.  页面脚本（重要，缺了不会报错、只是功能不工作）：
+    -   移动端页面**不要加载**侧边栏菜单的任何脚本（`menu/menu.js` 与 `js/menu/*`）。
+    -   移动端页面**必须加载** `<script src="../../../js/topbar.js"></script>`：
+        它是退出预览的唯一出路，缺了它，在画布里预览时按 Esc 退不出来。
+    -   完整清单：lib/js/tailwindcss.js → js/debug.js → js/topbar.js → js/prototype-components.js
+    -   高度必须跟随视口，不要写死 375×812：画布给 iframe 的可用高度比配置值矮 30px，
+        写死会让底部 TabBar 整条被推出可视区。
 请按照以上要求生成完整的HTML代码，并确保其可用于实际iOS App的开发。
 ```
+
+</details>
 
 
 
@@ -56,10 +67,13 @@
 3.  高保真UI设计：作为UI设计师，参考主流管理后台设计风格(如Element Plus、Ant Design)，使用现代化的UI元素，风格简洁专业。
 4.  HTML原型实现：使用HTML+TailwindCSS生成所有原型页面，并使用FontAwesome图标。注意：TailwindCSS和FontAwesome通过本地路径引入，不要使用CDN链接。
 5.  拆分代码文件，保持结构清晰：
-    -   每个页面应作为独立的HTML文件存放，按模块存放在pages目录下的子目录中(如pages/system/、pages/bpm/)。
+    -   每个页面作为独立的HTML文件，按模块放进 `pages/admin/<模块>/`（如 `pages/admin/system/user.html`）。
+    -   **不要生成、不要修改 `index.html`**：它已改为运行时读取 `config.js` 自动渲染页面清单。
     -   页面布局统一为：顶部导航栏 + 左侧菜单 + 右侧内容区。
     -   页面结构统一为：搜索表单 + 操作工具栏 + 数据表格 + 分页。
-    -   页面HTML文件中引入资源的路径必须使用相对路径：TailwindCSS使用 `../../lib/js/tailwindcss.js`，FontAwesome使用 `../../lib/css/all.min.css`
+    -   页面HTML文件中引入资源的路径必须使用相对路径，且**层数 = 文件路径中 `/` 的个数**：
+        `pages/admin/<模块>/xxx.html` 深度为 3，用 `../../../lib/js/tailwindcss.js`、
+        `../../../lib/css/all.min.css`。
 6.	原型图的图片、视频资源需要下载的本地的lib\images中，在本地引用，不要使用CDN链接。 
 7.  交互增强：
     -   每个表格行添加操作列(查看/编辑/删除)。
@@ -74,8 +88,8 @@
         *   <script src="../../../js/menu/menu-interaction.js">（菜单交互）
         *   <script src="../../../js/menu/menu.js">（菜单入口）
     -   引入页面交互组件（按此顺序）：
-        *   <script src="../../../js/topbar.js">（顶栏全屏功能）
-        *   <script src="../../../js/debug.js">（调试日志开关，必须先于下面两个）
+        *   <script src="../../../js/debug.js">（调试日志开关，须在调用它的模块之前）
+        *   <script src="../../../js/topbar.js">（顶栏全屏 + 退出预览的桥，必须有）
         *   <script src="../../../js/prototype-components.js">（按钮交互组件，必须最后加载）
     -   在页面中添加菜单容器：<div id="sidebar-menu"></div>
     -   在 DOMContentLoaded 后初始化：await SidebarMenu.init('sidebar-menu');
@@ -103,7 +117,7 @@
 请按照以上要求生成完整的HTML代码。
 ```
 
-
+</details>
 
 #### 步骤2: 将原型文件复制到项目中
 
@@ -111,8 +125,9 @@
 
 ```
 项目根目录/
-├── index.html        → 替换根目录的 index.html
-├── pages/            → 放入 pages/ 目录下（可创建子目录如 pages/app/、pages/admin/）
+├── pages/app/<模块>/    ← 移动端页面原样放这里
+├── pages/admin/<模块>/  ← 管理后台页面原样放这里
+└── index.html           ← 保持原样，不要覆盖
 ```
 
 #### 步骤3: 配置项目
@@ -231,9 +246,14 @@ window.SIDEBAR_MENU = [
 > 不写这段**不会报错**，但表单会退化为「按 `<th>` 猜字段」，控件类型多半是错的。
 > 守卫插件会在你写入页面时直接报出来。
 
-**加载顺序**（桌面页，完整清单）：
+**加载顺序**（桌面页完整清单，与守卫插件的 `DESKTOP_REQUIRED` 一一对应）：
 
 ```html
+<!-- 0. 资源 -->
+<script src="../../../lib/js/tailwindcss.js"></script>      <!-- TailwindCSS 3.4.17 -->
+<link rel="stylesheet" href="../../../lib/css/all.min.css">  <!-- Font Awesome 6.4.0 -->
+<link rel="stylesheet" href="../../../css/sidebar-menu.css">
+
 <!-- 1. 菜单配置（menu/menu.js 是数据层，必须先于引擎层） -->
 <script src="../../../menu/menu.js"></script>
 <script src="../../../js/menu/menu-data.js"></script>
@@ -241,11 +261,11 @@ window.SIDEBAR_MENU = [
 <script src="../../../js/menu/menu-interaction.js"></script>
 <script src="../../../js/menu/menu.js"></script>
 
-<!-- 2. 顶栏功能 -->
-<script src="../../../js/topbar.js"></script>
-
-<!-- 3. 调试开关（必须先于下面两个） -->
+<!-- 2. 调试开关（提供 Debug.*，须在调用它的模块之前） -->
 <script src="../../../js/debug.js"></script>
+
+<!-- 3. 顶栏功能（退出预览的唯一出路，必须有） -->
+<script src="../../../js/topbar.js"></script>
 
 <!-- 4. 本页表单定义（见上，必须在第 5 项之前） -->
 
@@ -253,9 +273,10 @@ window.SIDEBAR_MENU = [
 <script src="../../../js/prototype-components.js"></script>
 ```
 
-> 上面的路径是 `pages/admin/<模块>/` 下的写法（**三段** `../`）。
+> 上面的路径是 `pages/admin/<模块>/` 下的写法（**三段** `../`），层数 = 路径中 `/` 的个数。
 > 若页面直接放在 `pages/admin/` 下，改用 `../../`；移动端页面放在 `pages/app/<模块>/`，
-> 用 `../../../` 引用 `lib/`、`css/`、`js/`，但**不引入**菜单与表单相关脚本。
+> 用 `../../../` 引用 `lib/`、`css/`、`js/`，但**不引入**菜单与表单相关脚本，
+> 且**必须保留 `js/topbar.js`**。
 > 写错层级不会报错，只会静默失效——改完务必跑 `node tools/check-references.js`。
 
 ##### 3.5.3 验证配置
@@ -297,10 +318,15 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 │   └── app/                   #   移动端页面 (375x812)，<模块>/xxx.html 用 ../../../ 引用
 ├── menu/                      # 侧边栏菜单【数据层】(需修改)
 │   └── menu.js                #   window.SIDEBAR_MENU，菜单数据源（手工维护，无生成脚本）
-├── tools/                     # 校验与维护脚本(无 npm scripts，手动 node 运行)
+├── tools/                     # 校验与维护脚本(零 npm 依赖，直接 node 运行)
 │   ├── check-config.js        #   校验 config.js 与 pages/ 一致性
 │   ├── check-references.js    #   校验/修复页面内所有本地引用
-│   └── localize-images.js     #   外部图片本地化到 lib/images/
+│   ├── localize-images.js     #   外部图片本地化到 lib/images/
+│   ├── serve.js               #   本地静态服务器(测页面存在性探测用)
+│   ├── test-persistence.js    #   数据持久化回归测试(36 例)
+│   ├── verify-regression.js   #   确认上述测试确实能变红
+│   ├── reset-storage.html     #   一键清 localStorage
+│   └── README-persistence-tests.md  # 持久化测试的完整说明
 ├── js/                        # 框架核心代码(无需修改)
 │   ├── debug.js               # 调试日志开关(需最先加载)
 │   ├── canvas-editor.js       # 主控制器
@@ -315,13 +341,14 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 │   ├── modal-manager.js       # 弹窗管理
 │   ├── alignment-manager.js   # 对齐管理器
 │   ├── prototype-components.js # 共享页面交互组件(表单/弹框/标签栏；读页面内联的 PROTO_FORM)
-│   ├── topbar.js              # 共享顶栏逻辑(全屏/Ctrl+S拦截)
+│   ├── topbar.js              # 共享顶栏逻辑(全屏/退出预览/Ctrl+S拦截)
 │   └── virtual-scrollbar.js   # 虚拟滚动条
-├── lib/                       # 本地第三方库与图片(无需修改)
+├── lib/                       # 本地第三方库与素材(无需修改)
 │   ├── js/ (tailwindcss 3.4.17, marked 15.0.12, html2canvas 1.4.1)
 │   ├── css/ (fontawesome 6.4.0)
 │   ├── webfonts/ (3 个 woff2)
 │   ├── images/ (本地化的页面图片)
+│   ├── videos/ (本地化的页面视频)
 │   └── AGENTS.md              # 素材获取规范 + 第三方署名声明
 ├── css/                       # 样式文件(无需修改)
 │   ├── canvas-editor.css      # 画布编辑器样式(含主题变量)
@@ -384,17 +411,18 @@ window.PROJECT_CONFIG = {
   // ===== 页面列表 =====
   pages: [
     {
-      id: "home",                         // 页面ID(必须与文件名一致)
+      id: "home",                         // 页面ID：唯一即可，惯例 <category>-<page-name>
       name: "首页",                        // 页面显示名称
       icon: "fa-home",                    // FontAwesome图标类名
       category: "home",                   // 所属分类ID(对应categories中的id)
-      path: "pages/home/home.html"        // 页面文件路径
+      path: "pages/admin/home.html"       // 页面文件路径，相对项目根，必填
     },
     {
       id: "profile",
       name: "个人中心",
       icon: "fa-user",
-      category: "user"
+      category: "user",
+      path: "pages/admin/user/profile.html"
     }
     // ... 更多页面
   ]
@@ -417,7 +445,7 @@ window.PROJECT_CONFIG = {
 | `categories[].name`  | string | ✅    | 分类显示名称            |
 | `categories[].order` | number | ❌    | 显示顺序                |
 | `pages`              | array  | ✅    | 页面列表数组            |
-| `pages[].id`         | string | ✅    | 页面ID,必须与文件名一致 |
+| `pages[].id`         | string | ✅    | 页面ID,全局唯一即可     |
 | `pages[].name`       | string | ✅    | 页面显示名称            |
 | `pages[].icon`       | string | ✅    | FontAwesome图标类名     |
 | `pages[].category`   | string | ❌    | 所属分类ID              |
@@ -429,13 +457,10 @@ window.PROJECT_CONFIG = {
 
 ### 命名规范
 
-1. **文件名必须与配置中的 `id` 完全一致**
-   - 配置: `"id": "user-profile"`
-   - 文件: `user-profile.html` ✅
-   - 文件: `user_profile.html` ❌
-   - 文件: `User-Profile.html` ❌
+1. **`id` 无需等于文件名** —— 框架的匹配完全靠 `path`，不比对 `id`。
+   惯例是 `id` 用 `<category>-<page-name>`，但两者可以不同（如 `mall-kefu` → `mall/kefu.html`）。
 
-2. **必须使用小写字母、数字和连字符(-)**
+2. **文件名使用小写字母、数字和连字符(-)**
    - ✅ `home.html`
    - ✅ `user-profile.html`
    - ✅ `page-2.html`
@@ -444,9 +469,14 @@ window.PROJECT_CONFIG = {
 
 3. **扩展名必须是 `.html`**
 
+> ⚠️ 例外：`pages/admin/system/` 下的 `user.html` / `role.html` / `menu.html`
+> 三个文件名是**承重的** —— 页面上的假标签栏把它们写死了。改名会让那三个标签 404。
+
 ### 页面模板
 
-建议使用以下HTML模板:
+> 下面的 `../` 适用于**直接放在 `pages/` 下**的页面。
+> 按模块放在 `pages/app/<模块>/` 或 `pages/admin/<模块>/` 时深度为 3，
+> 请把模板里的 `../` 全部改成 `../../../`。
 
 ```html
 <!DOCTYPE html>
@@ -454,7 +484,7 @@ window.PROJECT_CONFIG = {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>页面标题</title>
+    <title>页面标题 - 项目名</title>
     <script src="../lib/js/tailwindcss.js"></script>
     <link rel="stylesheet" href="../lib/css/all.min.css">
     <style>
@@ -715,14 +745,15 @@ prototypeDebug                 // 调试日志开关('1' = 开启)
 
 **原因**:
 
-- 文件名与配置中的 `id` 不一致
-- 文件不在 `pages/` 目录
+- 页面文件没在 `config.js` 的 `pages[]` 里注册（**最常见**，检查脚本会报"孤儿页面"）
+- `pages[].path` 写的路径与磁盘上的实际位置不一致
+- 文件不在 `pages/` 目录下
 - HTML 文件格式错误
 
 **解决**:
 
-1. 检查文件名拼写(区分大小写)
-2. 确保文件在 `pages/` 目录
+1. 跑 `node tools/check-config.js`，它会逐条报出没注册的页面
+2. 检查 `path` 拼写（区分大小写）与实际文件是否一致
 3. 验证 HTML 语法
 
 ### Q3: 拖拽页面后显示为空白
