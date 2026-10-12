@@ -433,12 +433,22 @@
                 });
             }
 
-            /** 卡片渲染：移动端套手机边框，桌面端套 macOS 标题栏。
+            /** 页面所属设备：以 config.js 的 category → device 为准。
+             *  早先这里误用全局的 currentDevice，而 render() 会在初始化时
+             *  一次性渲染所有设备分节（此时 currentDevice 恒为第一个设备），
+             *  于是管理后台的卡片也被套上手机框；showDevice() 只切 class 不重渲染，
+             *  所以那个错误再也纠正不回来。 */
+            function deviceOf(page) {
+                var c = catById[page.category];
+                return (c && c.device) || DEFAULT_DEVICE;
+            }
+
+            /** 卡片渲染：按页面自身所属设备套手机边框或桌面标题栏。
              *  264 个页面若一次性创建 iframe 会让首屏极慢（浏览器渲染/截图均会超时），
              *  因此先渲染占位容器，滚动进入视口附近时再真正挂载 iframe。 */
             function renderCard(page) {
                 var title = '<div class="screen-title"><i class="fas ' + esc(page.icon || 'fa-file') + '"></i> ' + esc(page.name) + '</div>';
-                var frame = currentDevice === 'app'
+                var frame = deviceOf(page) === 'app'
                     ? '<div class="phone-frame"><div class="phone-screen" data-src="' + esc(page.path) + '"></div></div>'
                     : '<div class="desktop-frame">' +
                           '<div class="desktop-frame-header"><span></span><span></span><span></span>' +
