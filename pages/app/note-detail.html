@@ -7,18 +7,19 @@
 <link rel="stylesheet" href="../../lib/css/all.min.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 375px; height: 812px; overflow: hidden; }
+  html, body { width: 375px; height: 100%; overflow: hidden; }
+  body { padding-bottom: 52px; }
   body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #222; }
-  .scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .scroll::-webkit-scrollbar { width: 0; }
-  .tabbar { height: 52px; border-top: 1px solid #eee; display: flex; background: #fff; align-items: center; padding: 0 12px; gap: 14px; }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; height: 52px; border-top: 1px solid #eee; display: flex; background: #fff; align-items: center; padding: 0 12px; gap: 14px; }
 </style>
 <!-- 框架脚本：topbar.js 提供 Esc → postMessage 的退出预览桥，移动端必需 -->
 <script src="../../js/debug.js"></script>
 <script src="../../js/topbar.js"></script>
 </head>
 <body>
-<div style="display:flex; flex-direction:column; height:812px;">
+<div style="display:flex; flex-direction:column; height:100vh;">
 
   <!-- 顶栏：返回 + 作者 + 关注 -->
   <div style="flex:0 0 auto; display:flex; align-items:center; gap:10px; padding:30px 12px 10px; border-bottom:1px solid #f5f5f5;">

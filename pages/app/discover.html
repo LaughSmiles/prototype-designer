@@ -7,14 +7,15 @@
 <link rel="stylesheet" href="../../lib/css/all.min.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { width: 375px; height: 812px; overflow: hidden; }
+  html, body { width: 375px; height: 100%; overflow: hidden; }
+  body { padding-bottom: 52px; }
   body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #222; }
-  .scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+  .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   .scroll::-webkit-scrollbar { width: 0; }
   .waterfall { column-count: 2; column-gap: 6px; padding: 6px; }
   .card { break-inside: avoid; margin-bottom: 6px; }
   .cover { width: 100%; display: block; background: #f0f0f0; }
-  .tabbar { height: 52px; border-top: 1px solid #eee; display: flex; background: #fff; }
+  .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; height: 52px; border-top: 1px solid #eee; display: flex; background: #fff; }
   .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
               font-size: 10px; color: #999; text-decoration: none; gap: 2px; }
   .tabbar a.on { color: #ff2442; }
@@ -25,7 +26,7 @@
 <script src="../../js/topbar.js"></script>
 </head>
 <body>
-<div style="display:flex; flex-direction:column; height:812px;">
+<div style="display:flex; flex-direction:column; height:100vh;">
 
   <!-- 顶栏：状态栏占位 + 搜索入口 -->
   <div style="flex:0 0 auto; background:#fff;">
