@@ -48,12 +48,7 @@ node check-references.js --repair
 node inject-config-reference.js --dry-run
 node inject-config-reference.js
 
-# 4) Regenerate form-field config from the real Vue project
-#    NOTE: requires the real Vue repo; the script exits with an error if it is missing
-node extract-form-fields.js --views-root=<path-to>/src/views
-node extract-form-fields.js --allow-fallback    # degrade to header inference (not recommended)
-
-# 5) Re-download / re-localize external images
+# 4) Re-download / re-localize external images
 node localize-images.js --dry-run
 ```
 
@@ -89,7 +84,7 @@ project-root/
 │   ├── modal-manager.js       # Modal dialogs
 │   ├── alignment-manager.js   # Element alignment guides
 │   ├── virtual-scrollbar.js   # Custom scrollbar
-│   ├── page-fields-config.js  # Form/header config（约 225 个通用实体；产品专属 key 需手工补写在文件末尾）
+│   ├── page-fields-config.js  # Form/header config（框架自带 215 个通用实体；产品专属 key 需手工补写在文件末尾）
 │   ├── prototype-components.js # Shared page interaction components (forms, deletes, tabs)
 │   └── topbar.js              # Shared topbar logic (fullscreen state, Ctrl+S intercept)
 ├── css/
@@ -188,7 +183,7 @@ Mobile pages (`pages/app/`) do **not** use the menu system.
 ### Shared Page Scripts
 
 - **`js/debug.js`** — debug gate; desktop pages must load it before the scripts below
-- **`js/page-fields-config.js`** — `window.PAGE_FIELDS_CONFIG`: 225 entities mapping a page title to `{ entityName, fields[], headers[] }`. Consumed by `prototype-components.js` to **auto-generate** add/edit forms and table headers. Keys are Chinese page titles, so renaming a page title silently breaks its form (the code falls back to `<th>`-header inference). Product-specific keys must be hand-written **at the end of the object literal**, on purpose: a later duplicate key wins, so they override the generic extracted entities (`用户管理` / `角色管理` / `菜单管理`) that would otherwise shadow them.
+- **`js/page-fields-config.js`** — `window.PAGE_FIELDS_CONFIG`: 215 个通用实体，key 是页面中文标题，value 为 `{ entityName, fields[], headers[] }`。Consumed by `prototype-components.js` to **auto-generate** add/edit forms and table headers. Keys are Chinese page titles, so renaming a page title silently breaks its form (the code falls back to `<th>`-header inference). 本文件是**框架自带的通用实体库、手工维护，不依赖任何外部工程**；产品专属 key 必须追加在文件**末尾**的「产品专属区块」中 —— JS 对象字面量里后写的同名 key 会覆盖先写的，所以末尾追加才能覆盖上面的通用版本（如 `用户管理` / `角色管理` / `菜单管理`）。
 - **`js/prototype-components.js`** — injected into all prototype pages, handles button clicks (add/edit forms, delete confirmations, export toasts, status toggles, search/reset), and auto-generates tab bar at top of `.main-content`
 - **`js/topbar.js`** — injected into all pages, handles fullscreen toggle + localStorage persistence and Ctrl+S intercept in fullscreen mode
 

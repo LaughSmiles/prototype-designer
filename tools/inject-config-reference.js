@@ -25,6 +25,14 @@ if (!fs.existsSync(JS_DIR)) {
     process.exit(1);
 }
 
+// pages/admin 尚未创建（框架初始为空骨架）时没有页面可注入。
+// 这不是错误 —— 抛裸 ENOENT 堆栈只会让「照 README 走一遍」的新用户一脸茫然。
+if (!fs.existsSync(PAGES_ROOT)) {
+    console.log('pages/admin 目录尚不存在，没有页面需要注入。');
+    console.log(`创建后台页面后重跑本命令即可： ${PAGES_ROOT}`);
+    process.exit(0);
+}
+
 /** 递归收集所有 HTML 文件（不依赖 glob，避免额外依赖与平台差异） */
 function collectHtmlFiles(dir) {
     const files = [];
@@ -77,8 +85,6 @@ for (const file of htmlFiles) {
     let content = original;
     let action = null;
 
-    // 先摘除所有已有的引用（无论正确、错误还是残缺），再统一插入一个正确标签。
-    // 这样既能纠正路径，又能顺带消除重复标签。
     // 先摘除所有已有的引用（无论正确、错误还是残缺），再统一插入一个正确标签。
     // 这样既能纠正路径，又能顺带消除重复标签。
     // 摘除必须连同整行（含缩进与换行）一起删掉，否则会留下空白行，

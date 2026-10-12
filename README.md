@@ -76,7 +76,7 @@
     -   引入页面交互组件（按此顺序）：
         *   <script src="../../../js/topbar.js">（顶栏全屏功能）
         *   <script src="../../../js/debug.js">（调试日志开关，必须先于下面两个）
-        *   <script src="../../../js/page-fields-config.js">（表单字段配置，由 tools/extract-form-fields.js 生成）
+        *   <script src="../../../js/page-fields-config.js">（表单字段配置，框架自带的通用实体库，文件末尾可追加本产品的 key）
         *   <script src="../../../js/prototype-components.js">（按钮交互组件，必须最后加载）
     -   在页面中添加菜单容器：<div id="sidebar-menu"></div>
     -   在 DOMContentLoaded 后初始化：await SidebarMenu.init('sidebar-menu');
@@ -173,37 +173,7 @@ window.SIDEBAR_MENU = [
 | `parentId` | string/null | ❌ | 父菜单 ID（null 表示顶级） |
 | `children` | array | ❌ | 子菜单数组 |
 
-##### 3.5.2 生成表单字段配置
-
-如果你的项目有对应的 Vue3 管理后台项目（如 `yudao-ui-admin-vue3`）：
-
-1. **将 Vue Form 组件复制到项目根目录**：
-   ```
-   项目根目录/
-   └── yudao-ui-admin-vue3/
-       └── src/views/
-           └── system/userForm.vue
-   ```
-
-2. **运行字段提取脚本**：
-   
-   ```bash
-   cd tools
-   node extract-form-fields.js --views-root=<你的Vue工程>/src/views
-```
-   
-   ⚠️ 真实 Vue 工程通常被 `.gitignore` 排除、不会入库。**找不到时脚本会直接报错退出**，
-   而不是悄悄降级——因为降级产物（全靠表头推断）会丢掉控件类型、必填、字典选项等真实信息。
-确需降级时显式加 `--allow-fallback`。
-   
-3. **脚本会自动生成** `js/page-fields-config.js`，包含所有页面的：
-   - 表单字段定义（label, type, required, options）
-   - 表头列表（headers）
-   - 实体名称（entityName）
-
-**如果没有 Vue3 项目**：表单将使用通用默认字段（名称、编码、排序、状态、备注）。
-
-##### 3.5.3 注入配置引用到 HTML 页面
+##### 3.5.2 注入配置引用到 HTML 页面
 
 **方法1：自动注入（推荐）**
 
@@ -242,7 +212,7 @@ node inject-config-reference.js
 > 用 `../../../` 引用 `lib/`、`css/`、`js/`，但**不引入**菜单与表单配置脚本。
 > 写错层级不会报错，只会静默失效——改完务必跑 `node tools/check-references.js`。
 
-##### 3.5.4 验证配置
+##### 3.5.3 验证配置
 
 打开一个管理后台页面，检查：
 - [ ] 左侧菜单正确显示
@@ -277,18 +247,14 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 ├── config.js                  # 项目配置文件(需修改) —— 页面清单的唯一来源
 ├── index.html                 # 项目展示页(读取 config.js 自动渲染，无需维护页面列表)
 ├── pages/                     # 页面文件目录(需修改)
-│   ├── admin/                 #   社区运营后台(桌面端, 1440x900)
-│   │   ├── dashboard.html note.html audit.html user.html
-│   │   └── comment.html topic.html report.html risk.html
-│   └── app/                   #   社区 App(移动端, 375x812)
-│       └── discover note-detail search publish message profile user-home
+│   ├── admin/                 #   桌面端页面 (1440x900)，<模块>/xxx.html 用 ../../../ 引用
+│   └── app/                   #   移动端页面 (375x812)，<模块>/xxx.html 用 ../../../ 引用
 ├── menu/                      # 侧边栏菜单【数据层】(需修改)
 │   └── menu.js                #   window.SIDEBAR_MENU，菜单数据源（手工维护，无生成脚本）
 ├── tools/                     # 校验与维护脚本(无 npm scripts，手动 node 运行)
 │   ├── check-config.js        #   校验 config.js 与 pages/ 一致性
 │   ├── check-references.js    #   校验/修复页面内所有本地引用
 │   ├── inject-config-reference.js  # 批量注入 page-fields-config.js 引用
-│   ├── extract-form-fields.js #   从真实 Vue 工程提取表单字段
 │   └── localize-images.js     #   外部图片本地化到 lib/images/
 ├── js/                        # 框架核心代码(无需修改)
 │   ├── debug.js               # 调试日志开关(需最先加载)
@@ -303,7 +269,7 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 │   ├── history-manager.js     # 撤销/重做
 │   ├── modal-manager.js       # 弹窗管理
 │   ├── alignment-manager.js   # 对齐管理器
-│   ├── page-fields-config.js  # 表单字段配置(222 项; 社区后台 7 项为手工补写, 重新生成会覆盖)
+│   ├── page-fields-config.js  # 表单字段配置(框架自带通用实体库，末尾可追加本产品 key)
 │   ├── prototype-components.js # 共享页面交互组件(表单/弹框/标签栏)
 │   ├── topbar.js              # 共享顶栏逻辑(全屏/Ctrl+S拦截)
 │   └── virtual-scrollbar.js   # 虚拟滚动条
