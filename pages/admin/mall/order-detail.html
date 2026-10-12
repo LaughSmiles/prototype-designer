@@ -6,85 +6,72 @@
     <title>订单详情 - 芋道管理后台</title>
     <script src="../../../lib/js/tailwindcss.js"></script>
     <link rel="stylesheet" href="../../../lib/css/all.min.css">
-    
-    <style>* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
-.sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
-.sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
-.menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
-.menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
-.menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
-.menu-item.active { color: #fff; background: #409eff; }
-.menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
-.menu-item span { margin-left: 10px; }
-.main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
-.search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
-.search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.search-item { display: flex; flex-direction: column; gap: 4px; }
-.search-item label { font-size: 13px; color: #606266; }
-.form-input { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; width: 180px; outline: none; }
-.form-input:focus { border-color: #409eff; }
-.form-select { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; background: #fff; width: 180px; outline: none; }
-.search-btns { display: flex; gap: 8px; align-items: flex-end; }
-.table-card { background: #fff; border-radius: 4px; padding: 16px; }
-.toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ebeef5; font-size: 13px; }
-th { background: #fafafa; color: #909399; font-weight: 500; white-space: nowrap; }
-tr:hover { background: #f5f7fa; }
-.btn { padding: 7px 15px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #dcdfe6; background: #fff; color: #606266; display: inline-flex; align-items: center; gap: 4px; }
-.btn:hover { border-color: #409eff; color: #409eff; }
-.btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
-.btn-text { border: none; background: none; color: #409eff; padding: 0 4px; cursor: pointer; font-size: 13px; }
-.btn-text.danger { color: #f56c6c; }
-.status-tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; display: inline-block; }
-.status-success { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
-.status-danger { background: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2; }
-.status-info { background: #ecf5ff; color: #409eff; border: 1px solid #d9ecff; }
-.status-warning { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
-.pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 13px; color: #606266; }
-.pagination .page-btns { display: flex; gap: 4px; }
-.pagination .page-btn { padding: 4px 10px; border: 1px solid #dcdfe6; border-radius: 3px; cursor: pointer; font-size: 13px; background: #fff; }
-.pagination .page-btn.active { background: #409eff; color: #fff; border-color: #409eff; }
-.desc-card { background: #fff; border-radius: 4px; padding: 16px 20px; margin-bottom: 12px; }
-.desc-card h3 { font-size: 14px; color: #303133; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #ebeef5; }
-.desc-row { display: flex; flex-wrap: wrap; gap: 0; }
-.desc-item { width: 33.33%; padding: 8px 0; display: flex; }
-.desc-item .label { color: #909399; font-size: 13px; min-width: 100px; }
-.desc-item .value { color: #303133; font-size: 13px; }
-.steps { margin-top: 12px; }
-.step-item { display: flex; gap: 12px; padding: 8px 0; position: relative; }
-.step-dot { width: 10px; height: 10px; border-radius: 50%; background: #409eff; margin-top: 4px; flex-shrink: 0; }
-.step-line { position: absolute; left: 4.5px; top: 22px; bottom: 0; width: 1px; background: #dcdfe6; }
-.step-content { font-size: 13px; color: #606266; }
-.step-content .time { color: #909399; font-size: 12px; margin-top: 2px; }
-            .dropdown { position: relative; display: inline-block; }
-        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
-        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
-        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
-        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
-            .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
-        .topbar-left { display: flex; align-items: center; height: 100%; }
-        .topbar-right { display: flex; align-items: center; height: 100%; }
-        .custom-hover { display: flex; height: 100%; padding: 0 10px; cursor: pointer; align-items: center; transition: background 0.2s; }
-        .custom-hover:hover { background-color: #f6f6f6; }
-        .breadcrumb { display: flex; align-items: center; height: 100%; margin-left: 10px; font-size: 14px; }
-        .breadcrumb-sep { margin: 0 6px; color: #c0c4cc; }
-        .breadcrumb a { color: inherit; text-decoration: none; }
-        .breadcrumb a:hover { color: #409eff; }
-        .breadcrumb .last { color: #97a8be; }
-        .notification-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #f56c6c; border-radius: 50%; }
-        .avatar { width: 25px; height: 25px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; }
-        .username-text { padding-left: 5px; font-size: 14px; color: inherit; }
-    
-        .tenant-select { width: 180px; height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 0 30px 0 12px; font-size: 13px; color: #606266; background: #fff; outline: none; cursor: pointer; appearance: auto; }
-        .tenant-select:focus { border-color: #409eff; }
-        .tenant-wrap { position: relative; display: flex; align-items: center; margin-right: 4px; }
-        .tenant-wrap i { position: absolute; right: 10px; font-size: 12px; color: #c0c4cc; pointer-events: none; }
+    <link rel="stylesheet" href="../../../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; white-space: nowrap; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; position: fixed; top: 0; left: 210px; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-right { display: flex; align-items: center; gap: 18px; color: #606266; font-size: 14px; }
+        .breadcrumb { font-size: 14px; color: #909399; }
+        .breadcrumb .last { color: #303133; font-weight: 500; }
+        .breadcrumb-sep { margin: 0 6px; color: #dcdfe6; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+        .card-title { font-size: 15px; font-weight: 600; color: #303133; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .card-title::before { content: ''; width: 3px; height: 14px; background: #409eff; border-radius: 2px; }
+        .card-title .right { margin-left: auto; font-size: 13px; font-weight: 400; }
+        .hero { background: linear-gradient(90deg, #409eff, #66b1ff); border-radius: 4px; padding: 20px 24px; color: #fff; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+        .hero h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+        .hero p { font-size: 13px; opacity: .9; }
+        .hero .oid { font-family: Consolas, monospace; }
+        .hero .right { text-align: right; }
+        .hero .right .amt { font-size: 26px; font-weight: 700; }
+        .hero .right span { font-size: 12px; opacity: .9; }
+        .steps { display: flex; padding: 8px 0 4px; }
+        .step { flex: 1; text-align: center; position: relative; }
+        .step::after { content: ''; position: absolute; top: 13px; left: 50%; width: 100%; height: 2px; background: #ebeef5; }
+        .step:last-child::after { display: none; }
+        .step.done::after { background: #67c23a; }
+        .step .dot { width: 26px; height: 26px; border-radius: 50%; background: #ebeef5; color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 12px; position: relative; z-index: 2; }
+        .step.done .dot { background: #67c23a; }
+        .step.now .dot { background: #409eff; box-shadow: 0 0 0 4px rgba(64,158,255,.15); }
+        .step span { font-size: 12px; color: #909399; }
+        .step.done span, .step.now span { color: #303133; font-weight: 500; }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 24px; font-size: 13px; }
+        .info-grid .k { color: #909399; margin-bottom: 4px; }
+        .info-grid .v { color: #303133; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #fafafa; text-align: left; padding: 12px; font-weight: 500; color: #303133; border-bottom: 1px solid #ebeef5; }
+        td { padding: 12px; border-bottom: 1px solid #ebeef5; color: #606266; }
+        th.right, td.right { text-align: right; }
+        .goods { display: flex; align-items: center; gap: 10px; }
+        .thumb { width: 40px; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; flex-shrink: 0; }
+        .money { color: #f56c6c; font-weight: 500; }
+        .sum-row { display: flex; justify-content: flex-end; gap: 40px; padding: 10px 12px; font-size: 13px; color: #606266; }
+        .sum-row .k { color: #909399; }
+        .sum-row.total { border-top: 1px solid #ebeef5; padding-top: 14px; margin-top: 4px; }
+        .sum-row.total .big { color: #f56c6c; font-size: 20px; font-weight: 700; }
+        .timeline { padding-left: 6px; }
+        .tl { display: flex; gap: 12px; padding-bottom: 18px; position: relative; }
+        .tl::before { content: ''; position: absolute; left: 5px; top: 14px; bottom: 0; width: 1px; background: #ebeef5; }
+        .tl:last-child::before { display: none; }
+        .tl .pt { width: 11px; height: 11px; border-radius: 50%; background: #ebeef5; margin-top: 3px; flex-shrink: 0; z-index: 2; }
+        .tl.on .pt { background: #67c23a; }
+        .tl .c { font-size: 13px; color: #303133; }
+        .tl .t { font-size: 12px; color: #c0c4cc; margin-top: 3px; }
+        .btn { height: 32px; padding: 0 15px; border-radius: 4px; border: 1px solid #dcdfe6; background: #fff; font-size: 13px; color: #606266; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { color: #409eff; border-color: #c6e2ff; background: #ecf5ff; }
+        .btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+        .btn-primary:hover { background: #66b1ff; border-color: #66b1ff; color: #fff; }
+        .btn-success { background: #67c23a; border-color: #67c23a; color: #fff; }
+        .tag { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 12px; line-height: 20px; }
+        .tag-warning { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
     </style>
-<link rel="stylesheet" href="../../../css/sidebar-menu.css">
 </head>
 <body>
     <div class="sidebar" id="sidebar">
@@ -93,83 +80,127 @@ tr:hover { background: #f5f7fa; }
             <span class="logo-text">芋道管理后台</span>
         </div>
         <div id="sidebar-menu"></div>
-        <script src="../../../menu/menu.js"></script>
-        <script src="../../../js/menu/menu-data.js"></script>
-        <script src="../../../js/menu/menu-render.js"></script>
-        <script src="../../../js/menu/menu-interaction.js"></script>
-        <script src="../../../js/menu/menu.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', async function() {
-                try { await SidebarMenu.init('sidebar-menu'); } catch (error) {
-                    console.error('菜单加载失败:', error);
-                }
-            });
-        </script>
     </div>
 
     <div class="topbar">
         <div class="topbar-left">
-            <div class="custom-hover" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px;"></i></div>
-            <div class="breadcrumb"><a>商城管理</a><span class="breadcrumb-sep">/</span><a>订单管理</a><span class="breadcrumb-sep">/</span><span class="last">订单详情</span></div>
+            <div title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px; color: #606266; cursor: pointer;"></i></div>
+            <div class="breadcrumb"><span>商城系统</span><span class="breadcrumb-sep">/</span><span>订单管理</span><span class="breadcrumb-sep">/</span><span class="last">订单详情</span></div>
         </div>
-                <div class="topbar-right">
-            <div class="tenant-wrap">
-                <select class="tenant-select">
-                    <option value="" disabled selected>请选择租户</option>
-                    <option value="1">芋道源码</option>
-                    <option value="2">测试租户</option>
-                </select>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="custom-hover" title="全屏"><i class="fas fa-expand" style="font-size: 18px;"></i></div>
-            <div class="custom-hover" title="搜索"><i class="fas fa-search" style="font-size: 18px;"></i></div>
-            <div class="dropdown custom-hover" title="尺寸">
-                <i class="fas fa-text-height" style="font-size: 18px;"></i>
-                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
-                    <a>Default</a>
-                    <a>Large</a>
-                    <a>Small</a>
-                </div>
-            </div>
-            <div class="dropdown custom-hover" title="语言">
-                <i class="fas fa-language" style="font-size: 18px;"></i>
-                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
-                    <a>简体中文</a>
-                    <a>English</a>
-                </div>
-            </div>
-            <div class="custom-hover" style="position: relative;" title="消息">
-                <i class="fas fa-bell" style="font-size: 18px;"></i>
-                <span class="notification-dot"></span>
-            </div>
-            <div class="dropdown custom-hover">
-                <div style="display: flex; align-items: center; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
-                    <div class="avatar">芋</div>
-                    <span class="username-text">芋道源码</span>
-                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
-                </div>
-                <div class="dropdown-menu" style="right: 0; left: auto;">
-                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
-                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>开发文档</a>
-                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
-                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
-                </div>
+        <div class="topbar-right">
+            <i class="fas fa-search" style="cursor: pointer;"></i>
+            <i class="fas fa-bell" style="cursor: pointer;"></i>
+            <i class="fas fa-expand" id="fullscreenBtn" style="cursor: pointer;" title="全屏"></i>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #409eff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px;">管</div>
+                <span>管理员</span>
             </div>
         </div>
     </div>
+
     <div class="main-content">
-        <div class="desc-card"><h3><i class="fas fa-file-invoice" style="margin-right: 6px;"></i>订单信息</h3><div class="desc-row"><div class="desc-item"><span class="label">订单编号：</span><span class="value">20260421001</span></div><div class="desc-item"><span class="label">订单类型：</span><span class="value">普通订单</span></div><div class="desc-item"><span class="label">订单状态：</span><span class="value"><span class="status-tag warning">待发货</span></span></div><div class="desc-item"><span class="label">用户昵称：</span><span class="value">张三</span></div><div class="desc-item"><span class="label">支付方式：</span><span class="value">微信支付</span></div><div class="desc-item"><span class="label">支付金额：</span><span class="value" style="color: #f56c6c; font-weight: 600;">¥9,999.00</span></div><div class="desc-item"><span class="label">下单时间：</span><span class="value">2026-04-21 09:15:00</span></div><div class="desc-item"><span class="label">支付时间：</span><span class="value">2026-04-21 09:16:30</span></div><div class="desc-item"><span class="label">订单备注：</span><span class="value">请尽快发货</span></div></div></div><div class="desc-card"><h3><i class="fas fa-truck" style="margin-right: 6px;"></i>收货信息</h3><div class="desc-row"><div class="desc-item"><span class="label">收货人：</span><span class="value">张三</span></div><div class="desc-item"><span class="label">联系电话：</span><span class="value">138****8888</span></div><div class="desc-item"><span class="label">收货地址：</span><span class="value">北京市朝阳区建国路88号</span></div></div></div><div class="desc-card"><h3><i class="fas fa-box" style="margin-right: 6px;"></i>商品信息</h3><table style="margin-top: 8px;"><thead><tr><th>商品名称</th><th>规格</th><th>单价</th><th>数量</th><th>小计</th></tr></thead><tbody><tr><td>iPhone 16 Pro Max</td><td>256GB / 深空黑</td><td>¥9,999.00</td><td>1</td><td>¥9,999.00</td></tr></tbody></table></div><div class="desc-card"><h3><i class="fas fa-clock" style="margin-right: 6px;"></i>订单进度</h3><div class="steps"><div class="step-item"><div class="step-dot" style="background: #67c23a;"></div><div class="step-content">用户下单成功<div class="time">2026-04-21 09:15:00</div></div><div class="step-line"></div></div><div class="step-item"><div class="step-dot" style="background: #67c23a;"></div><div class="step-content">支付成功<div class="time">2026-04-21 09:16:30</div></div><div class="step-line"></div></div><div class="step-item"><div class="step-dot" style="background: #e6a23c;"></div><div class="step-content">等待商家发货<div class="time">处理中...</div></div></div></div></div><div style="margin-top: 12px; display: flex; gap: 8px;"><button class="btn btn-primary"><i class="fas fa-truck"></i> 立即发货</button><button class="btn"><i class="fas fa-print"></i> 打印订单</button></div>
-        <div style="margin-top: 12px;">
-            <button class="btn"><i class="fas fa-arrow-left"></i> 返回</button>
+        <div class="hero">
+            <div>
+                <h2>待发货 <span class="tag tag-warning" style="vertical-align: middle;">需人工处理</span></h2>
+                <p>订单编号 <span class="oid">DD20261012000137</span> · 下单时间 2026-10-12 09:18:42</p>
+            </div>
+            <div class="right">
+                <div class="amt">¥1,299.00</div>
+                <span>支付宝 · 已支付</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="steps">
+                <div class="step done"><div class="dot"><i class="fas fa-check"></i></div><span>提交订单</span></div>
+                <div class="step done"><div class="dot"><i class="fas fa-check"></i></div><span>买家付款</span></div>
+                <div class="step now"><div class="dot"><i class="fas fa-box"></i></div><span>商家发货</span></div>
+                <div class="step"><div class="dot"><i class="fas fa-truck"></i></div><span>确认收货</span></div>
+                <div class="step"><div class="dot"><i class="fas fa-star"></i></div><span>交易完成</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">订单信息</div>
+            <div class="info-grid">
+                <div><div class="k">订单编号</div><div class="v">DD20261012000137</div></div>
+                <div><div class="k">下单用户</div><div class="v">李承风（138****6621）</div></div>
+                <div><div class="k">支付方式</div><div class="v">支付宝</div></div>
+                <div><div class="k">下单时间</div><div class="v">2026-10-12 09:18:42</div></div>
+                <div><div class="k">付款时间</div><div class="v">2026-10-12 09:19:05</div></div>
+                <div><div class="k">订单来源</div><div class="v">商城 App</div></div>
+                <div><div class="k">收货人</div><div class="v">李承风</div></div>
+                <div><div class="k">联系电话</div><div class="v">138****6621</div></div>
+                <div><div class="k">配送方式</div><div class="v">顺丰速运</div></div>
+                <div style="grid-column: span 3;"><div class="k">收货地址</div><div class="v">浙江省杭州市西湖区文三路 100 号 A 座 1502 室</div></div>
+                <div style="grid-column: span 3;"><div class="k">买家留言</div><div class="v">请在工作日配送，谢谢</div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">商品明细</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>商品</th>
+                        <th>规格</th>
+                        <th class="right">单价</th>
+                        <th class="right">数量</th>
+                        <th class="right">小计</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><div class="goods"><div class="thumb" style="background:linear-gradient(135deg,#e0c3fc,#8ec5fc);"><i class="fas fa-clock"></i></div>星辰智能手表 S2 血氧监测</div></td>
+                        <td>曜石黑 · 46mm</td>
+                        <td class="right">¥1,299.00</td>
+                        <td class="right">1</td>
+                        <td class="right money">¥1,299.00</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 8px;">
+                <div class="sum-row"><span class="k">商品总额</span><span>¥1,299.00</span></div>
+                <div class="sum-row"><span class="k">运费</span><span>¥0.00</span></div>
+                <div class="sum-row"><span class="k">优惠券</span><span style="color: #67c23a;">−¥0.00</span></div>
+                <div class="sum-row total"><span class="k">实付金额</span><span class="big">¥1,299.00</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">操作记录</div>
+            <div class="timeline">
+                <div class="tl on"><div class="pt"></div><div><div class="c">买家付款成功，等待商家发货</div><div class="t">2026-10-12 09:19:05</div></div></div>
+                <div class="tl on"><div class="pt"></div><div><div class="c">买家提交订单</div><div class="t">2026-10-12 09:18:42</div></div></div>
+            </div>
+        </div>
+
+        <div class="card" style="display: flex; justify-content: flex-end; gap: 8px;">
+            <button class="btn">备注订单</button>
+            <button class="btn">修改价格</button>
+            <button class="btn">关闭订单</button>
+            <button class="btn btn-primary"><i class="fas fa-print"></i>打印发货单</button>
+            <button class="btn btn-success"><i class="fas fa-truck"></i>立即发货</button>
         </div>
     </div>
+
+    <script src="../../../menu/menu.js"></script>
+    <script src="../../../js/menu/menu-data.js"></script>
+    <script src="../../../js/menu/menu-render.js"></script>
+    <script src="../../../js/menu/menu-interaction.js"></script>
+    <script src="../../../js/menu/menu.js"></script>
     <script src="../../../js/debug.js"></script>
     <script src="../../../js/topbar.js"></script>
-
-    
-    
-    
     <script src="../../../js/page-fields-config.js"></script>
     <script src="../../../js/prototype-components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                await SidebarMenu.init('sidebar-menu');
+            } catch (error) {
+                console.error('动态菜单初始化失败:', error);
+            }
+        });
+    </script>
 </body>
 </html>

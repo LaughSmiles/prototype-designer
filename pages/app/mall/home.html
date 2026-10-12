@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商城首页</title>
+    <script src="../../../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../../../lib/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6f8; overflow-x: hidden; padding-bottom: 56px; }
+        .status-bar { background: rgba(255,255,255,.95); backdrop-filter: blur(10px); padding: 12px 20px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; position: sticky; top: 0; z-index: 20; }
+        .status-bar .icons { display: flex; gap: 5px; font-size: 12px; }
+        .search-bar { padding: 8px 16px 12px; background: #fff; position: sticky; top: 38px; z-index: 20; }
+        .search-box { display: flex; align-items: center; gap: 8px; background: #f2f3f5; border-radius: 18px; padding: 8px 14px; color: #9aa0a6; font-size: 13px; }
+        .banner { margin: 12px 16px; border-radius: 12px; height: 150px; background: linear-gradient(135deg, #ff9a9e, #fad0c4); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; color: #fff; position: relative; overflow: hidden; }
+        .banner .txt h3 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+        .banner .txt p { font-size: 12px; opacity: .9; }
+        .banner .tag { background: rgba(255,255,255,.25); border-radius: 12px; padding: 3px 10px; font-size: 11px; margin-top: 8px; display: inline-block; }
+        .banner i { font-size: 64px; opacity: .25; }
+        .dots { display: flex; justify-content: center; gap: 5px; margin-top: -4px; margin-bottom: 12px; }
+        .dots span { width: 6px; height: 6px; border-radius: 50%; background: #d8dbe0; }
+        .dots span.on { background: #ff6b81; width: 14px; border-radius: 3px; }
+        .cats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 4px 12px 16px; }
+        .cat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .cat .ico { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; }
+        .cat span { font-size: 11px; color: #4b5563; }
+        .sec { margin: 0 16px 16px; }
+        .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .sec-head h4 { font-size: 15px; font-weight: 600; color: #1f2937; display: flex; align-items: center; gap: 6px; }
+        .sec-head .more { font-size: 12px; color: #9aa0a6; }
+        .flash { background: #fff; border-radius: 12px; padding: 12px; }
+        .flash-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .flash-top .t { font-size: 15px; font-weight: 600; color: #1f2937; }
+        .flash-top .t i { color: #ff6b81; margin-right: 4px; }
+        .clock { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #6b7280; }
+        .clock b { background: #1f2937; color: #fff; border-radius: 3px; padding: 1px 4px; font-weight: 500; }
+        .flash-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .flash-item { text-align: center; }
+        .flash-item .thumb { height: 76px; border-radius: 8px; margin-bottom: 6px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; }
+        .flash-item .price { color: #ff6b81; font-size: 13px; font-weight: 600; }
+        .flash-item .old { color: #c0c4cc; font-size: 11px; text-decoration: line-through; margin-left: 3px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card { background: #fff; border-radius: 10px; overflow: hidden; }
+        .card .thumb { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 38px; color: #fff; }
+        .card .info { padding: 8px 10px 10px; }
+        .card .name { font-size: 13px; color: #1f2937; line-height: 1.4; height: 36px; overflow: hidden; }
+        .card .row { display: flex; align-items: baseline; justify-content: space-between; margin-top: 6px; }
+        .card .p { color: #ff6b81; font-size: 15px; font-weight: 700; }
+        .card .p small { font-size: 11px; }
+        .card .s { font-size: 11px; color: #9aa0a6; }
+        .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; background: rgba(255,255,255,.97); backdrop-filter: blur(10px); border-top: 1px solid #eceef1; display: flex; z-index: 30; }
+        .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; color: #9aa0a6; text-decoration: none; }
+        .tabbar a i { font-size: 18px; }
+        .tabbar a.on { color: #ff6b81; }
+        .tabbar .badge { position: absolute; top: 8px; margin-left: 14px; background: #ff6b81; color: #fff; font-size: 9px; border-radius: 8px; padding: 0 4px; line-height: 14px; }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="icons">
+            <i class="fas fa-signal"></i><i class="fas fa-wifi"></i><i class="fas fa-battery-three-quarters"></i>
+        </div>
+    </div>
+
+    <div class="search-bar">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <span>搜索商品、品牌、店铺</span>
+        </div>
+    </div>
+
+    <div class="banner">
+        <div class="txt">
+            <h3>新品首发季</h3>
+            <p>全场满 299 减 50</p>
+            <span class="tag">限时 3 天</span>
+        </div>
+        <i class="fas fa-gift"></i>
+    </div>
+    <div class="dots"><span class="on"></span><span></span><span></span></div>
+
+    <div class="cats">
+        <div class="cat"><div class="ico" style="background:#ff8a8a;"><i class="fas fa-mobile-alt"></i></div><span>手机数码</span></div>
+        <div class="cat"><div class="ico" style="background:#7ec8e3;"><i class="fas fa-tv"></i></div><span>家用电器</span></div>
+        <div class="cat"><div class="ico" style="background:#b39ddb;"><i class="fas fa-tshirt"></i></div><span>服饰鞋包</span></div>
+        <div class="cat"><div class="ico" style="background:#9ccc65;"><i class="fas fa-apple-alt"></i></div><span>食品生鲜</span></div>
+        <div class="cat"><div class="ico" style="background:#ffb74d;"><i class="fas fa-spa"></i></div><span>美妆个护</span></div>
+        <div class="cat"><div class="ico" style="background:#4db6ac;"><i class="fas fa-couch"></i></div><span>家居百货</span></div>
+        <div class="cat"><div class="ico" style="background:#f06292;"><i class="fas fa-baby"></i></div><span>母婴玩具</span></div>
+        <div class="cat"><div class="ico" style="background:#7986cb;"><i class="fas fa-dumbbell"></i></div><span>运动户外</span></div>
+        <div class="cat"><div class="ico" style="background:#a1887f;"><i class="fas fa-book"></i></div><span>图书文娱</span></div>
+        <div class="cat"><div class="ico" style="background:#e0e0e0; color:#9aa0a6;"><i class="fas fa-ellipsis-h"></i></div><span>全部</span></div>
+    </div>
+
+    <div class="sec">
+        <div class="flash">
+            <div class="flash-top">
+                <div class="t"><i class="fas fa-bolt"></i>限时秒杀</div>
+                <div class="clock">距结束 <b>02</b>:<b>18</b>:<b>45</b></div>
+            </div>
+            <div class="flash-list">
+                <div class="flash-item">
+                    <div class="thumb" style="background:linear-gradient(135deg,#a1c4fd,#c2e9fb);"><i class="fas fa-headphones"></i></div>
+                    <div class="price">¥399<small class="old">¥899</small></div>
+                </div>
+                <div class="flash-item">
+                    <div class="thumb" style="background:linear-gradient(135deg,#ffecd2,#fcb69f);"><i class="fas fa-blender"></i></div>
+                    <div class="price">¥199<small class="old">¥599</small></div>
+                </div>
+                <div class="flash-item">
+                    <div class="thumb" style="background:linear-gradient(135deg,#d4fc79,#96e6a1);"><i class="fas fa-apple-alt"></i></div>
+                    <div class="price">¥29.9<small class="old">¥49.9</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="sec">
+        <div class="sec-head">
+            <h4><i class="fas fa-fire" style="color:#ff6b81;"></i>为你推荐</h4>
+            <span class="more">更多 <i class="fas fa-angle-right"></i></span>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <div class="thumb" style="background:linear-gradient(135deg,#a1c4fd,#c2e9fb);"><i class="fas fa-mobile-alt"></i></div>
+                <div class="info">
+                    <div class="name">星辰 Pro 智能手机 12+256G 全网通</div>
+                    <div class="row"><span class="p"><small>¥</small>3299</span><span class="s">已售 3.4万</span></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="thumb" style="background:linear-gradient(135deg,#ffecd2,#fcb69f);"><i class="fas fa-headphones"></i></div>
+                <div class="info">
+                    <div class="name">静音降噪蓝牙耳机 Air Pro 长续航</div>
+                    <div class="row"><span class="p"><small>¥</small>899</span><span class="s">已售 1.8万</span></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="thumb" style="background:linear-gradient(135deg,#d4fc79,#96e6a1);"><i class="fas fa-tshirt"></i></div>
+                <div class="info">
+                    <div class="name">轻暖鹅绒羽绒服 男女同款 90% 白鸭绒</div>
+                    <div class="row"><span class="p"><small>¥</small>1299</span><span class="s">已售 9542</span></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="thumb" style="background:linear-gradient(135deg,#e0c3fc,#8ec5fc);"><i class="fas fa-couch"></i></div>
+                <div class="info">
+                    <div class="name">北欧实木布艺沙发 三人位 客厅组合</div>
+                    <div class="row"><span class="p"><small>¥</small>2599</span><span class="s">已售 1207</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabbar">
+        <a href="home.html" class="on"><i class="fas fa-home"></i><span>首页</span></a>
+        <a href="category.html"><i class="fas fa-th-large"></i><span>分类</span></a>
+        <a href="cart.html"><i class="fas fa-shopping-cart"></i><span>购物车</span><span class="badge">3</span></a>
+        <a href="order-list.html"><i class="fas fa-file-alt"></i><span>订单</span></a>
+        <a href="profile.html"><i class="fas fa-user"></i><span>我的</span></a>
+    </div>
+</body>
+</html>

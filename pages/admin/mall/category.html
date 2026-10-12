@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品分类 - 芋道管理后台</title>
+    <script src="../../../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../../../lib/css/all.min.css">
+    <link rel="stylesheet" href="../../../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; white-space: nowrap; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; position: fixed; top: 0; left: 210px; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-right { display: flex; align-items: center; gap: 18px; color: #606266; font-size: 14px; }
+        .breadcrumb { font-size: 14px; color: #909399; }
+        .breadcrumb .last { color: #303133; font-weight: 500; }
+        .breadcrumb-sep { margin: 0 6px; color: #dcdfe6; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+        .search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .search-item { display: flex; flex-direction: column; gap: 6px; }
+        .search-item label { font-size: 13px; color: #606266; }
+        .input { height: 32px; padding: 0 10px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; outline: none; color: #606266; background: #fff; }
+        .input:focus { border-color: #409eff; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .toolbar-left { display: flex; gap: 8px; }
+        .btn { height: 32px; padding: 0 15px; border-radius: 4px; border: 1px solid #dcdfe6; background: #fff; font-size: 13px; color: #606266; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { color: #409eff; border-color: #c6e2ff; background: #ecf5ff; }
+        .btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+        .btn-primary:hover { background: #66b1ff; border-color: #66b1ff; color: #fff; }
+        .btn-success { background: #67c23a; border-color: #67c23a; color: #fff; }
+        .btn-warning { background: #e6a23c; border-color: #e6a23c; color: #fff; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #fafafa; text-align: left; padding: 12px; font-weight: 500; color: #303133; border-bottom: 1px solid #ebeef5; white-space: nowrap; }
+        td { padding: 12px; border-bottom: 1px solid #ebeef5; color: #606266; }
+        tbody tr:hover { background: #f5f7fa; }
+        .tag { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 12px; line-height: 20px; }
+        .tag-success { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
+        .tag-info { background: #f4f4f5; color: #909399; border: 1px solid #e9e9eb; }
+        .link { color: #409eff; cursor: pointer; margin-right: 8px; }
+        .link:hover { text-decoration: underline; }
+        .link-danger { color: #f56c6c; }
+        .expand { color: #c0c4cc; cursor: pointer; display: inline-block; width: 16px; }
+        .cat-name { display: inline-flex; align-items: center; gap: 8px; }
+        .cat-icon { width: 26px; height: 26px; border-radius: 5px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+        .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; font-size: 13px; color: #606266; }
+        .page-btn { min-width: 30px; height: 30px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; cursor: pointer; font-size: 13px; color: #606266; }
+        .page-btn.active { background: #409eff; border-color: #409eff; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <div class="logo-icon"><i class="fas fa-cube text-white text-sm"></i></div>
+            <span class="logo-text">芋道管理后台</span>
+        </div>
+        <div id="sidebar-menu"></div>
+    </div>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <div title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px; color: #606266; cursor: pointer;"></i></div>
+            <div class="breadcrumb"><span>商城系统</span><span class="breadcrumb-sep">/</span><span class="last">商品分类</span></div>
+        </div>
+        <div class="topbar-right">
+            <i class="fas fa-search" style="cursor: pointer;"></i>
+            <i class="fas fa-bell" style="cursor: pointer;"></i>
+            <i class="fas fa-expand" id="fullscreenBtn" style="cursor: pointer;" title="全屏"></i>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #409eff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px;">管</div>
+                <span>管理员</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <div class="search-row">
+                <div class="search-item">
+                    <label>分类名称</label>
+                    <input class="input" type="text" placeholder="请输入分类名称" style="width: 200px;">
+                </div>
+                <div class="search-item">
+                    <label>状态</label>
+                    <select class="input" style="width: 140px;">
+                        <option>全部</option>
+                        <option>启用</option>
+                        <option>停用</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary"><i class="fas fa-search"></i>搜索</button>
+                <button class="btn"><i class="fas fa-redo"></i>重置</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button class="btn btn-primary"><i class="fas fa-plus"></i>新增分类</button>
+                    <button class="btn btn-success"><i class="fas fa-folder-tree"></i>展开全部</button>
+                    <button class="btn btn-warning"><i class="fas fa-sort"></i>调整排序</button>
+                </div>
+                <button class="btn"><i class="fas fa-sync-alt"></i></button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox"></th>
+                        <th>分类名称</th>
+                        <th>分类编码</th>
+                        <th>层级</th>
+                        <th>商品数</th>
+                        <th>排序</th>
+                        <th>状态</th>
+                        <th style="width: 160px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td><span class="cat-name"><span class="expand"><i class="fas fa-caret-down"></i></span><span class="cat-icon" style="background:#ff8a8a;"><i class="fas fa-mobile-alt"></i></span>手机数码</span></td>
+                        <td>MOBILE_DIGITAL</td>
+                        <td>一级</td>
+                        <td>128</td>
+                        <td>1</td>
+                        <td><span class="tag tag-success">启用</span></td>
+                        <td><span class="link">新增子类</span><span class="link">编辑</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td><span class="cat-name" style="padding-left: 24px;"><span class="expand"></span><span class="cat-icon" style="background:#ffa07a;"><i class="fas fa-mobile-alt"></i></span>手机通讯</span></td>
+                        <td>MOBILE_PHONE</td>
+                        <td>二级</td>
+                        <td>64</td>
+                        <td>1</td>
+                        <td><span class="tag tag-success">启用</span></td>
+                        <td><span class="link">新增子类</span><span class="link">编辑</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td><span class="cat-name" style="padding-left: 24px;"><span class="expand"></span><span class="cat-icon" style="background:#ffb347;"><i class="fas fa-headphones"></i></span>耳机音频</span></td>
+                        <td>MOBILE_AUDIO</td>
+                        <td>二级</td>
+                        <td>42</td>
+                        <td>2</td>
+                        <td><span class="tag tag-success">启用</span></td>
+                        <td><span class="link">新增子类</span><span class="link">编辑</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td><span class="cat-name"><span class="expand"><i class="fas fa-caret-right"></i></span><span class="cat-icon" style="background:#7ec8e3;"><i class="fas fa-tv"></i></span>家用电器</span></td>
+                        <td>HOME_APPLIANCE</td>
+                        <td>一级</td>
+                        <td>96</td>
+                        <td>2</td>
+                        <td><span class="tag tag-success">启用</span></td>
+                        <td><span class="link">新增子类</span><span class="link">编辑</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td><span class="cat-name"><span class="expand"><i class="fas fa-caret-right"></i></span><span class="cat-icon" style="background:#b39ddb;"><i class="fas fa-tshirt"></i></span>服饰鞋包</span></td>
+                        <td>CLOTHING</td>
+                        <td>一级</td>
+                        <td>215</td>
+                        <td>3</td>
+                        <td><span class="tag tag-success">启用</span></td>
+                        <td><span class="link">新增子类</span><span class="link">编辑</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td><span class="cat-name"><span class="expand"><i class="fas fa-caret-right"></i></span><span class="cat-icon" style="background:#d0d3d8;"><i class="fas fa-couch"></i></span>家居百货</span></td>
+                        <td>HOME_LIVING</td>
+                        <td>一级</td>
+                        <td>74</td>
+                        <td>4</td>
+                        <td><span class="tag tag-info">停用</span></td>
+                        <td><span class="link">新增子类</span><span class="link">编辑</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <span>共 36 条</span>
+                <button class="page-btn"><i class="fas fa-angle-left"></i></button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn">3</button>
+                <button class="page-btn"><i class="fas fa-angle-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../../menu/menu.js"></script>
+    <script src="../../../js/menu/menu-data.js"></script>
+    <script src="../../../js/menu/menu-render.js"></script>
+    <script src="../../../js/menu/menu-interaction.js"></script>
+    <script src="../../../js/menu/menu.js"></script>
+    <script src="../../../js/debug.js"></script>
+    <script src="../../../js/topbar.js"></script>
+    <script src="../../../js/page-fields-config.js"></script>
+    <script src="../../../js/prototype-components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                await SidebarMenu.init('sidebar-menu');
+            } catch (error) {
+                console.error('动态菜单初始化失败:', error);
+            }
+        });
+    </script>
+</body>
+</html>

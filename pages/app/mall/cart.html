@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物车</title>
+    <script src="../../../lib/js/tailwindcss.js"></script>
+    <link rel="stylesheet" href="../../../lib/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6f8; overflow-x: hidden; padding-bottom: 116px; }
+        .status-bar { background: rgba(255,255,255,.95); padding: 12px 20px 8px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; position: sticky; top: 0; z-index: 20; }
+        .status-bar .icons { display: flex; gap: 5px; font-size: 12px; }
+        .head { background: #fff; padding: 8px 16px 12px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 38px; z-index: 20; }
+        .head h3 { font-size: 17px; font-weight: 600; color: #1f2937; }
+        .head span { font-size: 13px; color: #ff6b81; }
+        .shop-grp { background: #fff; border-radius: 10px; margin: 10px 12px; overflow: hidden; }
+        .shop-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: 13px; color: #1f2937; font-weight: 500; border-bottom: 1px solid #f7f8fa; }
+        .shop-head i { color: #ff6b81; }
+        .shop-head .st { margin-left: auto; font-size: 11px; color: #9aa0a6; font-weight: 400; }
+        .item { display: flex; gap: 10px; padding: 12px 14px; align-items: flex-start; }
+        .item + .item { border-top: 1px solid #f7f8fa; }
+        .cb { width: 18px; height: 18px; border: 1px solid #d0d3d8; border-radius: 50%; flex-shrink: 0; margin-top: 22px; }
+        .cb.on { background: #ff6b81; border-color: #ff6b81; position: relative; }
+        .cb.on::after { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: #fff; font-size: 9px; position: absolute; left: 3.5px; top: 1px; }
+        .thumb { width: 76px; height: 76px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 30px; flex-shrink: 0; }
+        .info { flex: 1; min-width: 0; }
+        .info .name { font-size: 13px; color: #1f2937; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .info .spec { display: inline-block; background: #f5f6f8; color: #9aa0a6; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-top: 6px; }
+        .info .row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+        .info .p { color: #ff6b81; font-size: 15px; font-weight: 700; }
+        .info .p small { font-size: 11px; }
+        .stepper { display: flex; align-items: center; border: 1px solid #eceef1; border-radius: 4px; overflow: hidden; }
+        .stepper button { width: 26px; height: 26px; border: none; background: #fafafa; color: #6b7280; font-size: 13px; }
+        .stepper span { width: 34px; text-align: center; font-size: 13px; color: #1f2937; }
+        .recommend { margin: 16px 12px; }
+        .recommend h4 { font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .card { background: #fff; border-radius: 10px; overflow: hidden; }
+        .card .t { height: 100px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: #fff; }
+        .card .b { padding: 8px 10px 10px; }
+        .card .n { font-size: 12px; color: #1f2937; height: 34px; overflow: hidden; line-height: 1.4; }
+        .card .pr { color: #ff6b81; font-size: 14px; font-weight: 700; margin-top: 4px; }
+        .settle { position: fixed; left: 0; right: 0; bottom: 56px; height: 56px; background: #fff; border-top: 1px solid #eceef1; display: flex; align-items: center; padding: 0 14px; gap: 10px; z-index: 30; }
+        .settle .all { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4b5563; }
+        .settle .total { margin-left: auto; font-size: 12px; color: #6b7280; text-align: right; }
+        .settle .total b { color: #ff6b81; font-size: 17px; font-weight: 700; }
+        .settle .go { background: linear-gradient(90deg, #ff6b81, #ff8fa3); color: #fff; border: none; border-radius: 21px; height: 42px; padding: 0 26px; font-size: 14px; font-weight: 600; }
+        .tabbar { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; background: rgba(255,255,255,.97); border-top: 1px solid #eceef1; display: flex; z-index: 30; }
+        .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; color: #9aa0a6; text-decoration: none; }
+        .tabbar a i { font-size: 18px; }
+        .tabbar a.on { color: #ff6b81; }
+        .tabbar .badge { position: absolute; top: 8px; margin-left: 14px; background: #ff6b81; color: #fff; font-size: 9px; border-radius: 8px; padding: 0 4px; line-height: 14px; }
+    </style>
+</head>
+<body>
+    <div class="status-bar">
+        <span>9:41</span>
+        <div class="icons"><i class="fas fa-signal"></i><i class="fas fa-wifi"></i><i class="fas fa-battery-three-quarters"></i></div>
+    </div>
+
+    <div class="head">
+        <h3>购物车 <span style="font-size:12px; color:#9aa0a6; font-weight:400;">(3)</span></h3>
+        <span>管理</span>
+    </div>
+
+    <div class="shop-grp">
+        <div class="shop-head">
+            <div class="cb on" style="margin-top:0;"></div>
+            <i class="fas fa-store"></i><span>星辰官方旗舰店</span>
+            <span class="st">满 2999 减 300</span>
+        </div>
+        <div class="item">
+            <div class="cb on"></div>
+            <div class="thumb" style="background:linear-gradient(135deg,#a1c4fd,#c2e9fb);"><i class="fas fa-mobile-alt"></i></div>
+            <div class="info">
+                <div class="name">星辰 Pro 智能手机 12+256G 全网通 5G 双卡双待</div>
+                <span class="spec">幻夜黑 · 12+256G</span>
+                <div class="row">
+                    <span class="p"><small>¥</small>3299</span>
+                    <div class="stepper"><button>−</button><span>1</span><button>+</button></div>
+                </div>
+            </div>
+        </div>
+        <div class="item">
+            <div class="cb on"></div>
+            <div class="thumb" style="background:linear-gradient(135deg,#ffecd2,#fcb69f);"><i class="fas fa-headphones"></i></div>
+            <div class="info">
+                <div class="name">静音降噪蓝牙耳机 Air Pro 长续航</div>
+                <span class="spec">云雾白 · 标准版</span>
+                <div class="row">
+                    <span class="p"><small>¥</small>899</span>
+                    <div class="stepper"><button>−</button><span>2</span><button>+</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="shop-grp">
+        <div class="shop-head">
+            <div class="cb" style="margin-top:0;"></div>
+            <i class="fas fa-store"></i><span>优选食品旗舰店</span>
+            <span class="st">生鲜满 99 包邮</span>
+        </div>
+        <div class="item">
+            <div class="cb"></div>
+            <div class="thumb" style="background:linear-gradient(135deg,#d4fc79,#96e6a1);"><i class="fas fa-apple-alt"></i></div>
+            <div class="info">
+                <div class="name">阿克苏冰糖心苹果 5 斤装 顺丰冷链</div>
+                <span class="spec">5 斤 / 箱</span>
+                <div class="row">
+                    <span class="p"><small>¥</small>49.9</span>
+                    <div class="stepper"><button>−</button><span>1</span><button>+</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="recommend">
+        <h4>猜你还想买</h4>
+        <div class="grid">
+            <div class="card">
+                <div class="t" style="background:linear-gradient(135deg,#e0c3fc,#8ec5fc);"><i class="fas fa-clock"></i></div>
+                <div class="b"><div class="n">星辰智能手表 S2 血氧监测</div><div class="pr">¥1299</div></div>
+            </div>
+            <div class="card">
+                <div class="t" style="background:linear-gradient(135deg,#84fab0,#8fd3f4);"><i class="fas fa-tablet-alt"></i></div>
+                <div class="b"><div class="n">星辰平板 Air 11 英寸 128G</div><div class="pr">¥2699</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="settle">
+        <div class="all"><div class="cb on" style="margin-top:0;"></div><span>全选</span></div>
+        <div class="total">合计（不含运费）<br><b>¥5096.9</b></div>
+        <button class="go">结算(3)</button>
+    </div>
+
+    <div class="tabbar">
+        <a href="home.html"><i class="fas fa-home"></i><span>首页</span></a>
+        <a href="category.html"><i class="fas fa-th-large"></i><span>分类</span></a>
+        <a href="cart.html" class="on"><i class="fas fa-shopping-cart"></i><span>购物车</span><span class="badge">3</span></a>
+        <a href="order-list.html"><i class="fas fa-file-alt"></i><span>订单</span></a>
+        <a href="profile.html"><i class="fas fa-user"></i><span>我的</span></a>
+    </div>
+</body>
+</html>

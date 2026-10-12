@@ -6,72 +6,67 @@
     <title>秒杀活动 - 芋道管理后台</title>
     <script src="../../../lib/js/tailwindcss.js"></script>
     <link rel="stylesheet" href="../../../lib/css/all.min.css">
-    
-    <style>* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
-.sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
-.sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; }
-.menu-group-title { color: rgba(255,255,255,0.35); font-size: 12px; padding: 16px 16px 4px; }
-.menu-item { display: flex; align-items: center; padding: 10px 16px; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.2s; text-decoration: none; white-space: nowrap; overflow: hidden; font-size: 13px; }
-.menu-item:hover { color: #fff; background: rgba(255,255,255,0.08); }
-.menu-item.active { color: #fff; background: #409eff; }
-.menu-item i { width: 20px; text-align: center; font-size: 14px; flex-shrink: 0; }
-.menu-item span { margin-left: 10px; }
-.main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
-.search-card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
-.search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
-.search-item { display: flex; flex-direction: column; gap: 4px; }
-.search-item label { font-size: 13px; color: #606266; }
-.form-input { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; width: 180px; outline: none; }
-.form-input:focus { border-color: #409eff; }
-.form-select { padding: 7px 12px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; background: #fff; width: 180px; outline: none; }
-.search-btns { display: flex; gap: 8px; align-items: flex-end; }
-.table-card { background: #fff; border-radius: 4px; padding: 16px; }
-.toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ebeef5; font-size: 13px; }
-th { background: #fafafa; color: #909399; font-weight: 500; white-space: nowrap; }
-tr:hover { background: #f5f7fa; }
-.btn { padding: 7px 15px; border-radius: 4px; font-size: 13px; cursor: pointer; border: 1px solid #dcdfe6; background: #fff; color: #606266; display: inline-flex; align-items: center; gap: 4px; }
-.btn:hover { border-color: #409eff; color: #409eff; }
-.btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
-.btn-text { border: none; background: none; color: #409eff; padding: 0 4px; cursor: pointer; font-size: 13px; }
-.btn-text.danger { color: #f56c6c; }
-.status-tag { padding: 2px 8px; border-radius: 3px; font-size: 12px; display: inline-block; }
-.status-success { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
-.status-danger { background: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2; }
-.status-info { background: #ecf5ff; color: #409eff; border: 1px solid #d9ecff; }
-.status-warning { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
-.pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; font-size: 13px; color: #606266; }
-.pagination .page-btns { display: flex; gap: 4px; }
-.pagination .page-btn { padding: 4px 10px; border: 1px solid #dcdfe6; border-radius: 3px; cursor: pointer; font-size: 13px; background: #fff; }
-.pagination .page-btn.active { background: #409eff; color: #fff; border-color: #409eff; }        .dropdown { position: relative; display: inline-block; }
-        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid #ebeef5; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,.1); z-index: 10; min-width: 100px; padding: 4px 0; }
-        .dropdown-menu a { display: block; padding: 6px 16px; font-size: 13px; color: #606266; text-decoration: none; cursor: pointer; }
-        .dropdown-menu a:hover { background: #ecf5ff; color: #409eff; }
-        .dropdown-menu a.danger:hover { background: #fef0f0; color: #f56c6c; }
-            .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; padding: 0; position: fixed; top: 0; left: 210px; right: 0; z-index: 99; }
-        .topbar-left { display: flex; align-items: center; height: 100%; }
-        .topbar-right { display: flex; align-items: center; height: 100%; }
-        .custom-hover { display: flex; height: 100%; padding: 0 10px; cursor: pointer; align-items: center; transition: background 0.2s; }
-        .custom-hover:hover { background-color: #f6f6f6; }
-        .breadcrumb { display: flex; align-items: center; height: 100%; margin-left: 10px; font-size: 14px; }
-        .breadcrumb-sep { margin: 0 6px; color: #c0c4cc; }
-        .breadcrumb a { color: inherit; text-decoration: none; }
-        .breadcrumb a:hover { color: #409eff; }
-        .breadcrumb .last { color: #97a8be; }
-        .notification-dot { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; background: #f56c6c; border-radius: 50%; }
-        .avatar { width: 25px; height: 25px; border-radius: 50%; background: #409eff; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 600; }
-        .username-text { padding-left: 5px; font-size: 14px; color: inherit; }
-    
-        .tenant-select { width: 180px; height: 32px; border: 1px solid #dcdfe6; border-radius: 4px; padding: 0 30px 0 12px; font-size: 13px; color: #606266; background: #fff; outline: none; cursor: pointer; appearance: auto; }
-        .tenant-select:focus { border-color: #409eff; }
-        .tenant-wrap { position: relative; display: flex; align-items: center; margin-right: 4px; }
-        .tenant-wrap i { position: absolute; right: 10px; font-size: 12px; color: #c0c4cc; pointer-events: none; }
+    <link rel="stylesheet" href="../../../css/sidebar-menu.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; }
+        .sidebar { width: 210px; height: 100vh; background: #001529; position: fixed; left: 0; top: 0; overflow-y: auto; z-index: 100; }
+        .sidebar .logo { height: 50px; display: flex; align-items: center; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .sidebar .logo .logo-icon { width: 32px; height: 32px; border-radius: 6px; background: #409eff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sidebar .logo .logo-text { color: #fff; font-size: 14px; font-weight: 600; margin-left: 10px; white-space: nowrap; }
+        .topbar { height: 50px; background: #fff; border-bottom: 1px solid #e8e8e8; position: fixed; top: 0; left: 210px; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 99; }
+        .topbar-left { display: flex; align-items: center; gap: 16px; }
+        .topbar-right { display: flex; align-items: center; gap: 18px; color: #606266; font-size: 14px; }
+        .breadcrumb { font-size: 14px; color: #909399; }
+        .breadcrumb .last { color: #303133; font-weight: 500; }
+        .breadcrumb-sep { margin: 0 6px; color: #dcdfe6; }
+        .main-content { margin-left: 210px; margin-top: 50px; padding: 16px; min-height: calc(100vh - 50px); }
+        .card { background: #fff; border-radius: 4px; padding: 18px 20px; margin-bottom: 12px; }
+        .search-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+        .search-item { display: flex; flex-direction: column; gap: 6px; }
+        .search-item label { font-size: 13px; color: #606266; }
+        .input { height: 32px; padding: 0 10px; border: 1px solid #dcdfe6; border-radius: 4px; font-size: 13px; outline: none; color: #606266; background: #fff; }
+        .input:focus { border-color: #409eff; }
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .toolbar-left { display: flex; gap: 8px; }
+        .btn { height: 32px; padding: 0 15px; border-radius: 4px; border: 1px solid #dcdfe6; background: #fff; font-size: 13px; color: #606266; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { color: #409eff; border-color: #c6e2ff; background: #ecf5ff; }
+        .btn-primary { background: #409eff; border-color: #409eff; color: #fff; }
+        .btn-primary:hover { background: #66b1ff; border-color: #66b1ff; color: #fff; }
+        .btn-success { background: #67c23a; border-color: #67c23a; color: #fff; }
+        .btn-warning { background: #e6a23c; border-color: #e6a23c; color: #fff; }
+        .btn-danger { background: #f56c6c; border-color: #f56c6c; color: #fff; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #fafafa; text-align: left; padding: 12px; font-weight: 500; color: #303133; border-bottom: 1px solid #ebeef5; white-space: nowrap; }
+        td { padding: 12px; border-bottom: 1px solid #ebeef5; color: #606266; }
+        tbody tr:hover { background: #f5f7fa; }
+        .tag { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 12px; line-height: 20px; }
+        .tag-success { background: #f0f9eb; color: #67c23a; border: 1px solid #e1f3d8; }
+        .tag-info { background: #f4f4f5; color: #909399; border: 1px solid #e9e9eb; }
+        .tag-danger { background: #fef0f0; color: #f56c6c; border: 1px solid #fde2e2; }
+        .tag-warning { background: #fdf6ec; color: #e6a23c; border: 1px solid #faecd8; }
+        .link { color: #409eff; cursor: pointer; margin-right: 8px; }
+        .link:hover { text-decoration: underline; }
+        .link-danger { color: #f56c6c; }
+        .sess { display: flex; align-items: center; gap: 10px; }
+        .sess .clock { width: 62px; height: 42px; border-radius: 5px; background: linear-gradient(135deg, #f56c6c, #ff9a9a); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0; }
+        .sess .clock b { font-size: 15px; line-height: 1; font-weight: 600; }
+        .sess .clock span { font-size: 10px; opacity: .9; margin-top: 2px; }
+        .sess .meta .n { color: #303133; font-weight: 500; margin-bottom: 3px; }
+        .sess .meta .d { color: #c0c4cc; font-size: 12px; }
+        .goods { display: flex; align-items: center; gap: 10px; }
+        .thumb { width: 40px; height: 40px; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 17px; flex-shrink: 0; }
+        .price { color: #f56c6c; font-weight: 600; font-size: 14px; }
+        .price small { font-size: 11px; }
+        .old { color: #c0c4cc; font-size: 12px; text-decoration: line-through; margin-left: 5px; }
+        .bar { width: 96px; }
+        .bar .track { height: 6px; border-radius: 3px; background: #f0f2f5; overflow: hidden; margin-bottom: 5px; }
+        .bar .track i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #f56c6c, #ff9a9a); }
+        .bar span { font-size: 11px; color: #909399; }
+        .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; font-size: 13px; color: #606266; }
+        .page-btn { min-width: 30px; height: 30px; border: 1px solid #dcdfe6; border-radius: 4px; background: #fff; cursor: pointer; font-size: 13px; color: #606266; }
+        .page-btn.active { background: #409eff; border-color: #409eff; color: #fff; }
     </style>
-<link rel="stylesheet" href="../../../css/sidebar-menu.css">
 </head>
 <body>
     <div class="sidebar" id="sidebar">
@@ -80,96 +75,190 @@ tr:hover { background: #f5f7fa; }
             <span class="logo-text">芋道管理后台</span>
         </div>
         <div id="sidebar-menu"></div>
-        <script src="../../../menu/menu.js"></script>
-        <script src="../../../js/menu/menu-data.js"></script>
-        <script src="../../../js/menu/menu-render.js"></script>
-        <script src="../../../js/menu/menu-interaction.js"></script>
-        <script src="../../../js/menu/menu.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', async function() {
-                try { await SidebarMenu.init('sidebar-menu'); } catch (error) {
-                    console.error('菜单加载失败:', error);
-                }
-            });
-        </script>
     </div>
 
     <div class="topbar">
         <div class="topbar-left">
-            <div class="custom-hover" title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px;"></i></div>
-            <div class="breadcrumb"><a>商城管理</a><span class="breadcrumb-sep">/</span><a>营销中心</a><span class="breadcrumb-sep">/</span><span class="last">秒杀活动</span></div>
+            <div title="折叠菜单"><i class="fas fa-outdent" style="font-size: 18px; color: #606266; cursor: pointer;"></i></div>
+            <div class="breadcrumb"><span>商城系统</span><span class="breadcrumb-sep">/</span><span class="last">秒杀活动</span></div>
         </div>
-                <div class="topbar-right">
-            <div class="tenant-wrap">
-                <select class="tenant-select">
-                    <option value="" disabled selected>请选择租户</option>
-                    <option value="1">芋道源码</option>
-                    <option value="2">测试租户</option>
-                </select>
-                <i class="fas fa-chevron-down"></i>
-            </div>
-            <div class="custom-hover" title="全屏"><i class="fas fa-expand" style="font-size: 18px;"></i></div>
-            <div class="custom-hover" title="搜索"><i class="fas fa-search" style="font-size: 18px;"></i></div>
-            <div class="dropdown custom-hover" title="尺寸">
-                <i class="fas fa-text-height" style="font-size: 18px;"></i>
-                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
-                    <a>Default</a>
-                    <a>Large</a>
-                    <a>Small</a>
-                </div>
-            </div>
-            <div class="dropdown custom-hover" title="语言">
-                <i class="fas fa-language" style="font-size: 18px;"></i>
-                <div class="dropdown-menu" style="right: 0; left: auto; min-width: 120px;">
-                    <a>简体中文</a>
-                    <a>English</a>
-                </div>
-            </div>
-            <div class="custom-hover" style="position: relative;" title="消息">
-                <i class="fas fa-bell" style="font-size: 18px;"></i>
-                <span class="notification-dot"></span>
-            </div>
-            <div class="dropdown custom-hover">
-                <div style="display: flex; align-items: center; cursor: pointer;" onclick="var m=this.nextElementSibling;m.style.display=m.style.display==='block'?'none':'block'">
-                    <div class="avatar">芋</div>
-                    <span class="username-text">芋道源码</span>
-                    <i class="fas fa-chevron-down" style="font-size: 10px; color: #909399;"></i>
-                </div>
-                <div class="dropdown-menu" style="right: 0; left: auto;">
-                    <a><i class="fas fa-tools" style="margin-right: 6px;"></i>个人中心</a>
-                    <a><i class="fas fa-book" style="margin-right: 6px;"></i>开发文档</a>
-                    <a><i class="fas fa-lock" style="margin-right: 6px;"></i>锁定屏幕</a>
-                    <a class="danger"><i class="fas fa-sign-out-alt" style="margin-right: 6px;"></i>退出登录</a>
-                </div>
+        <div class="topbar-right">
+            <i class="fas fa-search" style="cursor: pointer;"></i>
+            <i class="fas fa-bell" style="cursor: pointer;"></i>
+            <i class="fas fa-expand" id="fullscreenBtn" style="cursor: pointer;" title="全屏"></i>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: #409eff; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px;">管</div>
+                <span>管理员</span>
             </div>
         </div>
     </div>
 
     <div class="main-content">
-        <div class="search-card">
+        <div class="card">
             <div class="search-row">
-                <div class="search-item"><label>活动名称</label><input type="text" class="form-input" placeholder="请输入活动名称"></div><div class="search-item"><label>状态</label><select class="form-select"><option value="">全部</option><option value="1">进行中</option><option value="2">未开始</option><option value="3">已结束</option></select></div>
-                <div class="search-btns">
-                    <button class="btn btn-primary"><i class="fas fa-search"></i> 搜索</button>
-                    <button class="btn"><i class="fas fa-redo"></i> 重置</button>
+                <div class="search-item">
+                    <label>活动名称</label>
+                    <input class="input" type="text" placeholder="请输入活动名称" style="width: 200px;">
                 </div>
+                <div class="search-item">
+                    <label>秒杀时段</label>
+                    <select class="input" style="width: 160px;">
+                        <option>全部时段</option>
+                        <option>00:00 - 08:00</option>
+                        <option>08:00 - 12:00</option>
+                        <option>12:00 - 18:00</option>
+                        <option>18:00 - 24:00</option>
+                    </select>
+                </div>
+                <div class="search-item">
+                    <label>活动状态</label>
+                    <select class="input" style="width: 140px;">
+                        <option>全部</option>
+                        <option>未开始</option>
+                        <option>进行中</option>
+                        <option>已结束</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary"><i class="fas fa-search"></i>搜索</button>
+                <button class="btn"><i class="fas fa-redo"></i>重置</button>
             </div>
         </div>
-        <div class="table-card">
-            <div class="toolbar"><button class="btn btn-primary"><i class="fas fa-plus"></i> 新增</button></div>
-            <table><thead><tr><th>编号</th><th>活动名称</th><th>秒杀时段</th><th>秒杀价</th><th>限量</th><th>已售</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
-            <tbody><tr><td>1</td><td>限时秒杀-数码专场</td><td>2026-04-21 10:00~12:00</td><td>¥4,999.00</td><td>100</td><td>87</td><td><span class="status-tag success">进行中</span></td><td>2026-04-18 10:00:00</td><td><a class="btn-text">编辑</a><a class="btn-text">详情</a><a class="btn-text danger">删除</a></td></tr><tr><td>2</td><td>限时秒杀-服饰专场</td><td>2026-04-21 14:00~16:00</td><td>¥199.00</td><td>200</td><td>0</td><td><span class="status-tag info">未开始</span></td><td>2026-04-18 10:00:00</td><td><a class="btn-text">编辑</a><a class="btn-text">详情</a><a class="btn-text danger">删除</a></td></tr><tr><td>3</td><td>限时秒杀-食品专场</td><td>2026-04-20 20:00~22:00</td><td>¥49.90</td><td>500</td><td>500</td><td><span class="status-tag danger">已结束</span></td><td>2026-04-15 10:00:00</td><td><a class="btn-text">详情</a><a class="btn-text danger">删除</a></td></tr></tbody>
+
+        <div class="card">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button class="btn btn-primary"><i class="fas fa-plus"></i>新增活动</button>
+                    <button class="btn btn-success"><i class="fas fa-clock"></i>时段配置</button>
+                    <button class="btn btn-warning"><i class="fas fa-chart-line"></i>效果统计</button>
+                    <button class="btn btn-danger"><i class="fas fa-stop-circle"></i>批量结束</button>
+                </div>
+                <button class="btn"><i class="fas fa-sync-alt"></i></button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"><input type="checkbox"></th>
+                        <th>活动 / 时段</th>
+                        <th>秒杀商品</th>
+                        <th>秒杀价</th>
+                        <th>库存进度</th>
+                        <th>限购</th>
+                        <th>状态</th>
+                        <th style="width: 160px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td>
+                            <div class="sess">
+                                <div class="clock"><b>12:00</b><span>进行中</span></div>
+                                <div class="meta"><div class="n">午间限时秒杀</div><div class="d">2026-10-12 12:00 - 18:00</div></div>
+                            </div>
+                        </td>
+                        <td><div class="goods"><div class="thumb" style="background:linear-gradient(135deg,#a1c4fd,#c2e9fb);"><i class="fas fa-headphones"></i></div>静音降噪蓝牙耳机 Air Pro</div></td>
+                        <td><span class="price"><small>¥</small>399</span><span class="old">¥899</span></td>
+                        <td>
+                            <div class="bar">
+                                <div class="track"><i style="width: 78%;"></i></div>
+                                <span>780 / 1000</span>
+                            </div>
+                        </td>
+                        <td>每人 1 件</td>
+                        <td><span class="tag tag-danger">进行中</span></td>
+                        <td><span class="link">编辑</span><span class="link">商品</span><span class="link link-danger">结束</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td>
+                            <div class="sess">
+                                <div class="clock" style="background: linear-gradient(135deg, #e6a23c, #f0c078);"><b>18:00</b><span>未开始</span></div>
+                                <div class="meta"><div class="n">晚间爆款秒杀</div><div class="d">2026-10-12 18:00 - 24:00</div></div>
+                            </div>
+                        </td>
+                        <td><div class="goods"><div class="thumb" style="background:linear-gradient(135deg,#a1c4fd,#c2e9fb);"><i class="fas fa-mobile-alt"></i></div>星辰 Pro 智能手机 12+256G</div></td>
+                        <td><span class="price"><small>¥</small>2799</span><span class="old">¥3299</span></td>
+                        <td>
+                            <div class="bar">
+                                <div class="track"><i style="width: 0%;"></i></div>
+                                <span>0 / 200</span>
+                            </div>
+                        </td>
+                        <td>每人 1 件</td>
+                        <td><span class="tag tag-warning">未开始</span></td>
+                        <td><span class="link">编辑</span><span class="link">商品</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td>
+                            <div class="sess">
+                                <div class="clock" style="background: linear-gradient(135deg, #67c23a, #95d475);"><b>08:00</b><span>已结束</span></div>
+                                <div class="meta"><div class="n">早市生鲜秒杀</div><div class="d">2026-10-12 08:00 - 12:00</div></div>
+                            </div>
+                        </td>
+                        <td><div class="goods"><div class="thumb" style="background:linear-gradient(135deg,#d4fc79,#96e6a1);"><i class="fas fa-apple-alt"></i></div>阿克苏冰糖心苹果 5 斤装</div></td>
+                        <td><span class="price"><small>¥</small>29.9</span><span class="old">¥49.9</span></td>
+                        <td>
+                            <div class="bar">
+                                <div class="track"><i style="width: 100%; background: #c0c4cc;"></i></div>
+                                <span>2000 / 2000</span>
+                            </div>
+                        </td>
+                        <td>每人 3 件</td>
+                        <td><span class="tag tag-info">已结束</span></td>
+                        <td><span class="link">数据</span><span class="link">复制活动</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td>
+                            <div class="sess">
+                                <div class="clock" style="background: linear-gradient(135deg, #b39ddb, #d1c4e9);"><b>00:00</b><span>已结束</span></div>
+                                <div class="meta"><div class="n">零点整点秒杀</div><div class="d">2026-10-12 00:00 - 08:00</div></div>
+                            </div>
+                        </td>
+                        <td><div class="goods"><div class="thumb" style="background:linear-gradient(135deg,#e0c3fc,#8ec5fc);"><i class="fas fa-clock"></i></div>星辰智能手表 S2 血氧监测</div></td>
+                        <td><span class="price"><small>¥</small>999</span><span class="old">¥1299</span></td>
+                        <td>
+                            <div class="bar">
+                                <div class="track"><i style="width: 100%; background: #c0c4cc;"></i></div>
+                                <span>500 / 500</span>
+                            </div>
+                        </td>
+                        <td>每人 1 件</td>
+                        <td><span class="tag tag-info">已结束</span></td>
+                        <td><span class="link">数据</span><span class="link">复制活动</span><span class="link link-danger">删除</span></td>
+                    </tr>
+                </tbody>
             </table>
-            <div class="pagination"><span>共 24 条记录</span><div class="page-btns"><span class="page-btn"><i class="fas fa-chevron-left"></i></span><span class="page-btn active">1</span><span class="page-btn">2</span><span class="page-btn">3</span><span class="page-btn"><i class="fas fa-chevron-right"></i></span></div></div>
+
+            <div class="pagination">
+                <span>共 16 条</span>
+                <button class="page-btn"><i class="fas fa-angle-left"></i></button>
+                <button class="page-btn active">1</button>
+                <button class="page-btn">2</button>
+                <button class="page-btn"><i class="fas fa-angle-right"></i></button>
+            </div>
         </div>
     </div>
+
+    <script src="../../../menu/menu.js"></script>
+    <script src="../../../js/menu/menu-data.js"></script>
+    <script src="../../../js/menu/menu-render.js"></script>
+    <script src="../../../js/menu/menu-interaction.js"></script>
+    <script src="../../../js/menu/menu.js"></script>
     <script src="../../../js/debug.js"></script>
     <script src="../../../js/topbar.js"></script>
-
-    
-    
-    
     <script src="../../../js/page-fields-config.js"></script>
     <script src="../../../js/prototype-components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                await SidebarMenu.init('sidebar-menu');
+            } catch (error) {
+                console.error('动态菜单初始化失败:', error);
+            }
+        });
+    </script>
 </body>
 </html>
