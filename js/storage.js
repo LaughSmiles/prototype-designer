@@ -30,13 +30,27 @@ const Storage = {
         { data: 'photographySchoolCanvas', ui: 'photographySchool_uiState' },
     ],
 
+    // ===== 保存状态（供顶栏指示器与退出兜底使用）=====
+    dirtySince: null,       // 自上次成功落盘后是否还有未保存的改动（null = 已同步）
+    lastSaveAt: null,       // 最后一次成功保存的时间戳
+    lastSaveError: null,    // 最后一次保存失败的结构化结果（成功即清空）
+    _autoSaveTimer: null,   // 自动保存定时器句柄（必须持有，否则无法停止）
+    _quotaWarned: false,    // 配额告警是否已提示过（避免每 60 秒刷屏）
+    _lastQuotaHintAt: 0,
+    _unloadGuardBound: false,
+
+    QUOTA_WARN_RATIO: 0.8,  // 占用超过 80% 即提前预警
+    QUOTA_LIMIT_BYTES: 5 * 1024 * 1024,  // 各浏览器对 localStorage 的常见上限
+
     // 初始化
     init() {
         this.migrateLegacyKeys();
         this.setupEventListeners();
         this.loadAuto(); // 自动加载上次保存的数据
         this.loadUIState(); // 恢复UI状态（侧边栏折叠等）
+        this.setupUnloadGuard(); // 关闭/切后台前的兜底保存
         this.startAutoSave(); // 启动自动保存定时器
+        this.updateSaveIndicator();
     },
 
     /**
@@ -112,46 +126,220 @@ const Storage = {
         }
     },
 
-    // 保存到 localStorage
-    async save() {
-        // 获取所有页面数据
-        const pagesData = await PageManager.getAllPagesData();
-
-        const data = {
-            version: '2.0', // 升级版本号
-            timestamp: new Date().toISOString(),
-            ...pagesData
-        };
-
-        try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
-            this.saveUIState(); // 同时保存UI状态
-            PageLibrary.showHint('✅ 保存成功！');
-            Debug.log('画布数据已保存:', data);
-        } catch (error) {
-            Debug.error('保存失败:', error);
-            alert('保存失败：' + error.message);
-        }
+    // ===== 脏标记 =====
+    // 所有画布变更最终都会走 HistoryManager.saveState()，在这里集中打脏标记，
+    // 避免把 markDirty 散落到十几个交互文件里漏标。
+    markDirty() {
+        this.dirtySince = this.dirtySince || Date.now();
+        this.updateSaveIndicator();
     },
 
-    // 静默保存（不显示提示，用于自动保存）
-    async saveSilently() {
-        // 获取所有页面数据
-        const pagesData = await PageManager.getAllPagesData();
+    clearDirty() {
+        this.dirtySince = null;
+        this.updateSaveIndicator();
+    },
 
-        const data = {
+    isDirty() {
+        return this.dirtySince !== null;
+    },
+
+    // 组装待落盘的数据（不含探测，异步）
+    async _buildPayload() {
+        const pagesData = await PageManager.getAllPagesData();
+        return {
             version: '2.0',
             timestamp: new Date().toISOString(),
             ...pagesData
         };
+    },
+
+    // 组装待落盘的数据（纯内存、零 await）
+    // 卸载场景下 fetch 一定等不到结果，必须有一条完全同步的保存路径。
+    _buildPayloadSync() {
+        const currentPage = PageManager.getCurrentPage();
+        if (currentPage) {
+            currentPage.view = CanvasView.getView();
+            currentPage.elements = ElementManager.getAllElements();
+            currentPage.usageCount = ElementManager.getUsageCounts();
+        }
+        return {
+            version: '2.0',
+            timestamp: new Date().toISOString(),
+            pages: PageManager.pages,
+            currentPageId: PageManager.currentPageId,
+            globalNextElementId: PageManager.globalNextElementId
+        };
+    },
+
+    /**
+     * 唯一的落盘实现。手动保存与自动保存共用，因此不存在"自动保存失败但用户看不见"的分支。
+     * 不做任何 UI 操作，返回结构化结果由调用方决定如何呈现。
+     */
+    _writeCanvas(payload) {
+        let json;
+        try {
+            json = JSON.stringify(payload);
+        } catch (error) {
+            // 循环引用等结构性问题，JSON.stringify 直接抛
+            Debug.error('[Storage] 序列化失败:', error);
+            return { ok: false, reason: 'serialize', error, bytes: 0 };
+        }
+
+        // localStorage 按 UTF-16 计 2 字节/字符
+        const bytes = json.length * 2;
 
         try {
-            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
-            this.saveUIState(); // 同时保存UI状态
-            Debug.log('自动保存成功:', new Date().toLocaleTimeString());
+            localStorage.setItem(this.STORAGE_KEY, json);
         } catch (error) {
-            Debug.error('自动保存失败:', error);
+            const isQuota = this._isQuotaError(error);
+            return { ok: false, reason: isQuota ? 'quota' : 'unavailable', error, bytes };
         }
+
+        try {
+            this.saveUIState(); // 界面状态与画布数据一起落盘
+        } catch (error) {
+            // UI 状态失败不影响画布数据本身
+            Debug.warn('[Storage] UI 状态保存失败:', error);
+        }
+
+        this.lastSaveAt = Date.now();
+        this.lastSaveError = null;
+        this.dirtySince = null;
+        this._quotaWarned = false;
+        this.updateSaveIndicator();
+        return { ok: true, bytes };
+    },
+
+    _isQuotaError(error) {
+        if (!error) return false;
+        return error.name === 'QuotaExceededError'
+            || error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+            || error.code === 22
+            || error.code === 1014;
+    },
+
+    // 估算本 origin 的 localStorage 占用（字节）
+    _estimateUsage() {
+        let total = 0;
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key === null) continue;
+                total += (key.length + (localStorage.getItem(key) || '').length) * 2;
+            }
+        } catch (error) {
+            return null; // 存储不可访问
+        }
+        return total;
+    },
+
+    // 成功保存后的配额预警（接近上限时提醒导出备份）
+    _quotaAdvice() {
+        const usage = this._estimateUsage();
+        if (usage === null) return '';
+        if (usage / this.QUOTA_LIMIT_BYTES < this.QUOTA_WARN_RATIO) return '';
+        return ` ⚠️ 本地存储已用 ${(usage / 1048576).toFixed(2)}MB / 约 5MB，接近上限，请定期 Ctrl+E 导出备份。`;
+    },
+
+    /**
+     * 保存失败的统一出口。
+     * silent=true 表示来自自动保存——过去这条路径只有 Debug.error，
+     * 导致配额溢出后用户零感知、定时保存"永久停止"却毫无提示。
+     */
+    _reportSaveFailure(result, { silent }) {
+        this.lastSaveError = result;
+        this.updateSaveIndicator();
+
+        if (result.reason === 'serialize') {
+            Debug.error('[Storage] 画布数据无法序列化:', result.error);
+            PageLibrary.showHint('❌ 保存失败：画布数据无法序列化（可能存在循环引用）。请按 Ctrl+E 导出 JSON 排查。', 0);
+            return;
+        }
+
+        if (result.reason === 'quota') {
+            const usage = this._estimateUsage();
+            const usedMB = usage === null ? '未知' : (usage / 1048576).toFixed(2);
+            Debug.error('[Storage] 本地存储配额已满:', result.error);
+            // 自动保存路径限频：首次立即常驻提示，之后每 5 分钟复述一次，既不刷屏也不失联
+            const now = Date.now();
+            if (silent && this._quotaWarned && now - this._lastQuotaHintAt < 5 * 60 * 1000) return;
+            this._quotaWarned = true;
+            this._lastQuotaHintAt = now;
+            PageLibrary.showHint(
+                `❌ 保存失败：本地存储空间不足（已用 ${usedMB}MB / 约 5MB），本次改动未保存。`
+                + '请按 Ctrl+E 导出 JSON 备份后清理浏览器存储。',
+                0
+            );
+            return;
+        }
+
+        // 存储不可用：无痕模式 / 隐私策略 / file:// 下被禁用
+        Debug.error('[Storage] 本地存储不可用:', result.error);
+        PageLibrary.showHint(
+            '❌ 保存失败：浏览器拒绝了本地存储写入（无痕模式或存储被禁用）。本次改动未保存，请改用 Ctrl+E 导出 JSON。',
+            0
+        );
+    },
+
+    // 保存到 localStorage
+    async save() {
+        const payload = await this._buildPayload();
+        const result = this._writeCanvas(payload);
+
+        if (result.ok) {
+            PageLibrary.showHint('✅ 保存成功！' + this._quotaAdvice());
+            Debug.log('画布数据已保存:', payload);
+        } else {
+            this._reportSaveFailure(result, { silent: false });
+            // 用户主动点了保存却没存上，弹窗兜底，不能只靠一条 toast
+            alert('保存失败：' + (result.error?.message || '未知错误')
+                + '\n\n本次改动尚未写入本地存储，请立即按 Ctrl+E 导出 JSON 备份。');
+        }
+        return result;
+    },
+
+    // 静默保存（不弹窗，用于自动保存；失败仍必须有可见反馈）
+    async saveSilently() {
+        const payload = await this._buildPayload();
+        const result = this._writeCanvas(payload);
+
+        if (result.ok) {
+            Debug.log('自动保存成功:', new Date().toLocaleTimeString());
+        } else {
+            this._reportSaveFailure(result, { silent: true });
+        }
+        return result;
+    },
+
+    // 同步兜底保存：卸载/切后台时使用。
+    // 不做任何 await（fetch 在卸载时不可能返回），失败只能记日志，靠脏标记在下次进来时提示。
+    saveSync() {
+        if (!this.isDirty()) return { ok: true, skipped: true };
+        const result = this._writeCanvas(this._buildPayloadSync());
+        if (!result.ok) {
+            Debug.error('[Storage] 兜底保存失败:', result.error);
+        } else {
+            Debug.log('[Storage] 兜底保存成功');
+        }
+        return result;
+    },
+
+    // 关闭标签页 / 切到后台时的兜底保存
+    setupUnloadGuard() {
+        if (this._unloadGuardBound) return;
+        this._unloadGuardBound = true;
+
+        const flush = () => {
+            if (!this.isDirty()) return;
+            Debug.log('[Storage] 触发兜底保存（关闭/切后台）');
+            this.saveSync();
+        };
+
+        window.addEventListener('pagehide', flush);
+        window.addEventListener('beforeunload', flush);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') flush();
+        });
     },
 
     // 保存UI状态（侧边栏折叠等）
@@ -205,33 +393,100 @@ const Storage = {
 
     // 启动自动保存定时器（每1分钟自动保存）
     startAutoSave() {
-        setInterval(() => {
+        this.stopAutoSave(); // 防止重复注册
+        this._autoSaveTimer = setInterval(() => {
             this.saveSilently();
+            this.updateSaveIndicator(); // 刷新"未保存 N 分钟"计数
         }, 60000); // 60000毫秒 = 1分钟
 
         Debug.log('✅ 自动保存已启动，每1分钟保存一次');
     },
 
+    // 停止自动保存（清空缓存前必须调用，否则内存中的画布会被下一轮定时器原样写回）
+    stopAutoSave() {
+        if (!this._autoSaveTimer) return false;
+        clearInterval(this._autoSaveTimer);
+        this._autoSaveTimer = null;
+        Debug.log('⏹ 自动保存已停止');
+        return true;
+    },
+
+    // 刷新顶栏的保存状态指示器
+    updateSaveIndicator() {
+        const el = document.getElementById('saveStateIndicator');
+        if (!el) return;
+
+        let text = '';
+        let cls = '';
+
+        if (this.lastSaveError) {
+            text = this.lastSaveError.reason === 'quota' ? '保存失败:存储空间不足'
+                : (this.lastSaveError.reason === 'serialize' ? '保存失败:数据异常' : '保存失败:存储不可用');
+            cls = 'error';
+        } else if (this.isDirty()) {
+            const sec = Math.round((Date.now() - this.dirtySince) / 1000);
+            text = sec >= 60 ? `未保存 ${Math.floor(sec / 60)} 分钟` : '未保存';
+            cls = 'dirty';
+        } else if (this.lastSaveAt) {
+            text = `已保存 ${new Date(this.lastSaveAt).toLocaleTimeString('zh-CN', { hour12: false })}`;
+            cls = 'ok';
+        }
+
+        el.textContent = text;
+        el.className = 'save-state' + (cls ? ` save-state-${cls}` : '');
+    },
+
+    // 数据损坏时保留现场
+    // 修复前这里只 Debug.error：解析失败 → 画布显示为空 → 用户以为本来就空 →
+    // 60 秒后自动保存把空画布覆盖写回 → 原始数据被彻底销毁。
+    _quarantineCorrupt(raw, error) {
+        try {
+            const backupKey = `${this.STORAGE_KEY}.corrupt.${Date.now()}`;
+            localStorage.setItem(backupKey, raw);
+            Debug.error(`[Storage] 画布数据解析失败，原始内容已备份到 "${backupKey}"`, error);
+            PageLibrary.showHint(
+                `❌ 上次保存的画布数据无法解析，已将原始内容备份到 localStorage 键 "${backupKey}"。`
+                + '本次以空画布启动，请勿直接覆盖，优先从 JSON 备份恢复。',
+                0
+            );
+        } catch (e) {
+            Debug.error('[Storage] 数据损坏且备份失败:', error, e);
+            PageLibrary.showHint('❌ 上次保存的画布数据无法解析，且备份失败。请检查浏览器存储权限。', 0);
+        }
+    },
+
     // 自动加载（页面加载时）
     loadAuto() {
+        let saved;
         try {
-            const saved = localStorage.getItem(this.STORAGE_KEY);
-            if (saved) {
-                const data = JSON.parse(saved);
-                // 直接加载,不询问用户
-                this.loadData(data);
-
-                // 检测到缓存加载后,补充当前状态到历史栈
-                if (ElementManager.state.elements.length > 0) {
-                    HistoryManager.saveState();
-                    Debug.log('💾 检测到缓存加载,已补充当前状态到历史栈');
-                }
-
-                PageLibrary.showHint('✅ 已恢复上次的画布');
-                Debug.log('自动加载完成:', data);
-            }
+            saved = localStorage.getItem(this.STORAGE_KEY);
         } catch (error) {
+            Debug.error('读取本地存储失败:', error);
+            PageLibrary.showHint('❌ 无法读取本地存储（浏览器可能禁用了存储）。请使用 Ctrl+E 导出 JSON 保存工作。', 0);
+            return;
+        }
+        if (!saved) return;
+
+        try {
+            const data = JSON.parse(saved);
+            // 直接加载,不询问用户
+            this.loadData(data);
+
+            // 检测到缓存加载后,补充当前状态到历史栈
+            if (ElementManager.state.elements.length > 0) {
+                HistoryManager.saveState();
+                // 只是恢复到"已保存"的状态，不应被算作新的未保存改动
+                this.clearDirty();
+                Debug.log('💾 检测到缓存加载,已补充当前状态到历史栈');
+            }
+
+            PageLibrary.showHint('✅ 已恢复上次的画布');
+            Debug.log('自动加载完成:', data);
+        } catch (error) {
+            // 关键：备份原始内容，并交给 PageManager.init() 建一个空白页启动，
+            // 不能让损坏数据被当成"空画布"再被自动保存覆盖
             Debug.error('自动加载失败:', error);
+            this._quarantineCorrupt(saved, error);
         }
     },
 
@@ -319,28 +574,70 @@ const Storage = {
         reader.readAsText(file);
     },
 
+    // 本框架会写入的全部 localStorage 键
+    // 画布数据/界面状态随 projectName 派生；其余是框架级全局键，
+    // 既然按钮叫"清空浏览器缓存"，这些由本项目产生的本地状态也必须一并清除，
+    // 否则清完还会残留半套状态（侧边栏折叠、主题、菜单展开……）。
+    // 注意：prototypeDebug 不在列表内 —— 那是开发者开关，不是项目数据。
+    getManagedKeys() {
+        return [
+            this.STORAGE_KEY,
+            this.UI_STATE_KEY,
+            'canvasEditor_theme',
+            'sidebarMenuExpanded',
+            'topbar_fullscreen',
+            'prototypeFullscreenState',
+            'prototype_open_tabs',
+            // 历史遗留键名也要顺手清掉，否则 migrateLegacyKeys 会在下次启动把它们搬回来
+            ...this.LEGACY_KEYS.flatMap(l => [l.data, l.ui].filter(Boolean)),
+        ];
+    },
+
     // 清空浏览器缓存
     clearBrowserCache() {
         ModalManager.showConfirm(
-            '确定要清空浏览器缓存吗?\n\n此操作将删除 localStorage 中保存的画布数据,且不可恢复!',
+            '确定要清空浏览器缓存吗?\n\n'
+            + '将删除本项目的全部本地数据：\n'
+            + '· 画布数据（页面布局、箭头、批注）\n'
+            + '· 界面状态（侧边栏折叠、主题、菜单展开、全屏状态）\n\n'
+            + '此操作不可恢复！建议先按 Ctrl+E 导出 JSON 备份。',
             '清空浏览器缓存',
             () => {
-                try {
-                    localStorage.removeItem(this.STORAGE_KEY);
+                // 1) 必须先停掉自动保存。
+                //    否则定时器会在下一轮用内存里的 PageManager.pages 把画布原样写回，
+                //    用户看到的现象就是"明明清空了，刷新一下画布又回来了"。
+                this.stopAutoSave();
 
-                    // 检查是否成功删除
-                    const saved = localStorage.getItem(this.STORAGE_KEY);
-                    if (saved === null) {
-                        PageLibrary.showHint('✅ 浏览器缓存已清空');
-                        Debug.log('浏览器缓存已清空');
-                    } else {
-                        PageLibrary.showHint('❌ 清空失败');
-                        Debug.error('清空缓存失败');
-                    }
+                const existed = [];
+                try {
+                    [...new Set(this.getManagedKeys())].forEach(key => {
+                        if (localStorage.getItem(key) !== null) {
+                            existed.push(key);
+                            localStorage.removeItem(key);
+                        }
+                    });
                 } catch (error) {
-                    Debug.error('清空缓存失败:', error);
-                    alert('清空缓存失败：' + error.message);
+                    Debug.error('[Storage] 清空缓存失败:', error);
+                    PageLibrary.showHint('❌ 清空失败：浏览器拒绝了本地存储访问。', 0);
+                    return;
                 }
+
+                if (existed.length === 0) {
+                    PageLibrary.showHint('ℹ️ 没有可清理的本地数据。');
+                    return;
+                }
+
+                // 2) 清空内存态，保证下一次保存不会把画布写回去
+                PageManager.resetToEmpty();
+                this.clearDirty();
+                this.lastSaveAt = null;
+                this.lastSaveError = null;
+
+                Debug.log('[Storage] 已清空以下键:', existed);
+                PageLibrary.showHint(
+                    `✅ 已清空 ${existed.length} 项本地数据（画布数据 + 全部界面状态）。刷新页面后完全生效。`,
+                    0
+                );
             }
         );
     }

@@ -1,7 +1,8 @@
 /**
- * topbar.js - 顶栏交互功能
+ * topbar.js - 顶栏交互功能 + 画布预览键盘桥
  * 1. 全屏切换（状态缓存到 localStorage，刷新后保持）
  * 2. 全屏状态下拦截 Ctrl+S，阻止浏览器默认保存
+ * 3. Escape 通知父页面退出预览（file:// 协议下父页面注入失效时的降级通道）
  */
 (function () {
     'use strict';
@@ -97,6 +98,24 @@
                     window.parent.postMessage({ type: 'canvas-save' }, '*');
                 }
             }
+        }
+    }, true);
+
+    // ========== Escape：通知父页面退出预览（原位预览 / 全屏浮层） ==========
+    //
+    // 与上面的 Ctrl+S 桥同理：画布编辑器在 file:// 协议下读不到
+    // iframe.contentDocument（Chrome 给每个文件分配不透明来源，跨文档访问被拒），
+    // 父页面注入的监听会静默失效。焦点一旦进入页面内部，Esc 就不再冒泡到父页面，
+    // 只能由页面自己 postMessage 回去。
+    //
+    // 说明：
+    // - http 协议下父页面注入与本桥会同时触发，closePreview() 有幂等保护，安全。
+    // - window.parent !== window 保证在 index.html 总览页中独立浏览时不误触发。
+    // - 本文件被所有原型页面加载（桌面端 + 移动端），因此移动端页面也能退出预览。
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'prototype-escape-preview' }, '*');
         }
     }, true);
 

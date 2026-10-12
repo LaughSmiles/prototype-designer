@@ -84,10 +84,14 @@ const PageLibrary = {
             return;
         }
 
-        // 并行验证所有页面文件是否存在
-        const pageValidationPromises = this.projectConfig.pages.map(async pageConfig => {
+        // 一次性并发探测所有页面文件是否存在（去重 + 超时，避免对同一文件重复发请求）
+        const filePaths = this.projectConfig.pages.map(pageConfig =>
+            pageConfig.path || `pages/${pageConfig.category}/${pageConfig.id}.html`
+        );
+        const statuses = await this.probePages(filePaths);
+
+        this.pages = this.projectConfig.pages.map(pageConfig => {
             const filePath = pageConfig.path || `pages/${pageConfig.category}/${pageConfig.id}.html`;
-            const isValid = await this.checkPageExists(filePath);
             const pageSize = this.getCanvasSizeForPage(pageConfig);
 
             return {
@@ -100,11 +104,9 @@ const PageLibrary = {
                     width: pageSize.width,
                     height: pageSize.height
                 },
-                isValid: isValid  // 标记页面文件是否有效
+                isValid: statuses.get(filePath) === 'exists'  // 标记页面文件是否有效
             };
         });
-
-        this.pages = await Promise.all(pageValidationPromises);
 
         // 统计无效页面数量
         const invalidCount = this.pages.filter(p => !p.isValid).length;
@@ -117,21 +119,72 @@ const PageLibrary = {
         Debug.log(`✅ 已生成 ${this.pages.length} 个页面列表 (${this.pages.length - invalidCount} 个有效)`);
     },
 
-    // 检查页面文件是否存在
-    async checkPageExists(filePath) {
-        // file:// 协议下 fetch 会被 CORS 阻止，直接假设文件有效
+    // 生成兼容旧调用方的布尔版探测结果（内部走三态 probePage）
+    async checkPageExists(filePath, options = {}) {
+        const status = await this.probePage(filePath, options);
+        return status === 'exists';
+    },
+
+    // 单页面文件探测（带超时 + 三态返回）
+    // 返回:
+    //   'exists'  —— 已确认存在
+    //   'missing' —— 已确认不存在(HTTP 404)
+    //   'unknown' —— 无法判定(超时 / 网络错误 / 非 404 的异常响应)
+    // 之所以要区分 unknown：保存时若把 unknown 当 missing 处理，网络抖一下就会静默删掉用户的画布元素。
+    async probePage(filePath, { timeout = 3000 } = {}) {
+        // file:// 协议下 fetch 会被 CORS 阻止，直接假设文件有效（本地双击打开的常用路径）
         if (window.location.protocol === 'file:') {
-            return true;
+            return 'exists';
         }
-        // HTTP/HTTPS 协议下正常验证
         try {
-            const response = await fetch(filePath, { method: 'HEAD' });
-            Debug.log(`🔍 [checkPageExists] ${filePath} - status: ${response.status}, ok: ${response.ok}`);
-            return response.ok;
+            const response = await fetch(filePath, {
+                method: 'HEAD',
+                cache: 'no-cache',
+                signal: this._timeoutSignal(timeout)
+            });
+            if (response.ok) return 'exists';
+            if (response.status === 404) return 'missing';
+            // 其他状态码(403/5xx 等)无法证明文件不存在，按 unknown 保守处理
+            return 'unknown';
         } catch (error) {
-            Debug.error(`❌ [checkPageExists] ${filePath} - error:`, error);
-            return false;
+            Debug.warn(`⚠️ 页面探测失败（判为 unknown，不删除画布元素）: ${filePath}`, error);
+            return 'unknown';
         }
+    },
+
+    // 批量探测：按 filePath 去重 + 并发执行
+    // 修复前保存路径是 for..of + 逐个 await，同一个页面在画布上放 N 次就发 N 次串行 HEAD。
+    async probePages(filePaths, { timeout = 3000 } = {}) {
+        const unique = [...new Set(filePaths.filter(Boolean))];
+        const result = new Map();
+
+        if (window.location.protocol === 'file:') {
+            unique.forEach(p => result.set(p, 'exists'));
+            Debug.log(`🔍 file:// 协议，跳过 ${unique.length} 个页面文件探测`);
+            return result;
+        }
+        if (unique.length === 0) return result;
+
+        const entries = await Promise.all(unique.map(async (path) => {
+            const status = await this.probePage(path, { timeout });
+            return [path, status];
+        }));
+        entries.forEach(([path, status]) => result.set(path, status));
+
+        const missing = [...result.values()].filter(v => v === 'missing').length;
+        const unknown = [...result.values()].filter(v => v === 'unknown').length;
+        Debug.log(`🔍 页面探测完成: 共 ${unique.length} 个(去重后), 缺失 ${missing}, 无法判定 ${unknown}`);
+        return result;
+    },
+
+    // 构造带超时的 AbortSignal（旧浏览器回退到 AbortController）
+    _timeoutSignal(ms) {
+        if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+            return AbortSignal.timeout(ms);
+        }
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), ms);
+        return controller.signal;
     },
 
     // 获取页面信息
@@ -192,7 +245,10 @@ const PageLibrary = {
     },
 
     // 显示临时提示
-    showHint(message) {
-        PageLibraryRender.showHint(message);
+    // 注意：必须透传 duration。
+    // 之前只转发 message，导致"常驻提示"(duration=0) 在这一层被吞成 undefined，
+    // 保存失败提示 2 秒后就消失 —— 等于没提示。
+    showHint(message, duration) {
+        PageLibraryRender.showHint(message, duration);
     }
 };

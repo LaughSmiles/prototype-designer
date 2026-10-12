@@ -242,6 +242,39 @@ The two `{projectName}` keys are **derived from `PROJECT_CONFIG.projectName` at 
 
 Data format version `2.0` supports multiple pages. Old `1.0` format (single page with `elements` array) is auto-migrated on load. Auto-save runs every 60 seconds.
 
+### Failure handling (must not regress)
+
+Saving goes through **one** writer, `Storage._writeCanvas(payload)`, shared by manual (`save()`) and automatic (`saveSilently()`) paths. It returns a structured result — `{ok, reason, error, bytes}` where `reason` is `quota` / `unavailable` / `serialize` — and **never fails silently**:
+
+- Every failure routes through `Storage._reportSaveFailure()`, which shows a **sticky** toast (`PageLibrary.showHint(msg, 0)`) and flips the `#saveStateIndicator` badge in the status bar to red. `duration = 0` means the hint stays until dismissed; a transient hint must never replace a sticky one (`page-library-render.js` enforces this).
+- `showHint(message, duration)` **must forward `duration`** through the `PageLibrary` → `PageLibraryRender` relay, otherwise sticky hints silently degrade to 2-second toasts.
+- Quota warnings are rate-limited to one repeat per 5 minutes so autosave retries every 60s don't spam.
+- Corrupt canvas JSON is **quarantined** to `{projectName}Canvas.corrupt.<timestamp>` before the main key is touched, so an unparsable canvas never gets silently overwritten with an empty one by the next autosave.
+
+### Dirty tracking & save-state badge
+
+`Storage.markDirty()` is called from `HistoryManager.saveState()` — the single choke point every canvas mutation passes through — plus explicitly in `undo()` / `redo()` (which bypass `saveState`). The badge `#saveStateIndicator` in the status bar shows `已保存 hh:mm:ss` / `未保存 N 分钟` / `保存失败:...`.
+
+> ⚠️ Use the bare identifier `Storage`, **not** `window.Storage`: top-level `const` in a classic script lives in the global *lexical* scope, so `window.Storage` is `undefined`.
+
+`Storage.setupUnloadGuard()` flushes via `saveSync()` on `pagehide` / `beforeunload` / `visibilitychange`. `saveSync()` is deliberately **synchronous and network-free** — it snapshots memory via `_buildPayloadSync()` because an `await fetch` can never resolve during unload.
+
+### Page existence probing
+
+`PageLibrary.probePage()` returns a **tri-state**: `exists` / `missing` / `unknown`, with a 3s `AbortSignal.timeout`. `probePages()` dedupes by `filePath` and runs concurrently. `PageManager.cleanInvalidPageReferences()` only deletes an element on a confirmed `missing` (HTTP 404) — `unknown` (timeout / network error / 5xx) **keeps** it, so a flaky server cannot wipe the user's canvas during a save.
+
+Under `file://` probing short-circuits to `exists`, so **this code path is only exercised over HTTP** — test it with `node tools/serve.js`, not by double-clicking the HTML.
+
+### Persistence tests
+
+```bash
+node tools/serve.js 8899      # no-store static server (avoids stale-cache confusion)
+node tools/test-persistence.js      # 36 unit/integration cases (~3s)
+node tools/verify-regression.js     # reverts the fixes in a temp tree, requires cases to go red
+```
+
+See `tools/README-persistence-tests.md` for the full flow, the manual browser checklist, and the gotchas.
+
 ### iframe ↔ canvas messaging
 
 Pages inside the canvas communicate with the editor via `window.postMessage`:

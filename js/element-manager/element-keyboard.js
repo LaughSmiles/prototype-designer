@@ -317,7 +317,8 @@ const ElementKeyboard = {
                     }
                 }
             } catch (err) {
-                // 忽略跨域访问失败
+                // file:// 下必然失败，属预期：降级由页面内 topbar.js 的 Esc 桥接管
+                Debug.warn('全屏预览：注入 <script> 失败，已降级到页面内 topbar.js 的 Esc 桥:', err);
             }
         });
 

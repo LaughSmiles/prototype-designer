@@ -283,13 +283,28 @@ const PageLibraryRender = {
         }
     },
 
-    // 显示临时提示
-    showHint(message) {
+    // 显示提示
+    // duration: 显示时长(ms)。默认 2000(与历史行为一致)；
+    //           传 0 表示常驻，直到被下一次常驻提示替换或用户点关闭按钮。
+    //           保存失败这类"必须被看见"的信息用常驻模式，否则 2 秒后自动消失等于没提示。
+    showHint(message, duration = 2000) {
         const existing = document.querySelector('.temp-hint');
+        const sticky = !duration;
+        const existingIsSticky = existing?.classList.contains('is-sticky');
+
+        // 常驻提示（保存失败等）不被瞬时提示覆盖。
+        // 否则一次"已移除无效页面引用"的 2 秒提示就能把错误横幅顶掉，
+        // 而限频逻辑又不会再补一条 —— 用户就此彻底失去提示。
+        if (existingIsSticky && !sticky) {
+            Debug.log('[Hint] 已有常驻提示，忽略瞬时提示:', message);
+            return;
+        }
+
         if (existing) existing.remove();
 
         const hint = document.createElement('div');
         hint.className = 'temp-hint';
+        if (sticky) hint.classList.add('is-sticky');
         hint.textContent = message;
 
         // 全屏遮罩层存在时，追加到遮罩层内部，确保提示可见
@@ -300,6 +315,20 @@ const PageLibraryRender = {
             document.body.appendChild(hint);
         }
 
-        setTimeout(() => hint.remove(), 2000);
+        if (sticky) {
+            const close = document.createElement('button');
+            close.className = 'temp-hint-close';
+            close.type = 'button';
+            close.title = '关闭提示';
+            close.setAttribute('aria-label', '关闭提示');
+            close.textContent = '×';
+            close.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hint.remove();
+            });
+            hint.appendChild(close);
+        } else {
+            setTimeout(() => hint.remove(), duration);
+        }
     }
 };

@@ -415,6 +415,9 @@ const CanvasViewEvents = {
     // 保存预览前的状态，用于恢复
     _previewElementId: null,
 
+    // 预览 iframe 的 load 监听引用（预览中页面内部跳转后需重新注入 ESC 监听）
+    _previewIframeLoadHandler: null,
+
     // 进入原位预览模式（保持原样，只去掉overlay让iframe可交互）
     openPreview(pageTitle, elementId) {
         // 如果已经在预览模式，先关闭
@@ -448,11 +451,24 @@ const CanvasViewEvents = {
             // 保存引用以便退出时移除
             this._previewIframeKeydownHandler = onIframeKeydown;
             this._previewIframe = iframe;
-            try {
-                iframe.contentDocument?.addEventListener('keydown', onIframeKeydown, true);
-            } catch (err) {
-                // 跨域 iframe 无法访问 contentDocument，忽略
-            }
+
+            // 主路径注入。file:// 下必然抛 SecurityError（Chrome 给每个文件分配不透明来源），
+            // 此时降级到页面内 topbar.js 的 Esc 桥——两条路都监听同一个
+            // prototype-escape-preview 消息，closePreview() 幂等，重复触发无副作用。
+            const inject = () => {
+                if (!CanvasView.isPreviewMode) return;
+                try {
+                    iframe.contentDocument?.addEventListener('keydown', onIframeKeydown, true);
+                } catch (err) {
+                    Debug.warn('无法向预览 iframe 注入 ESC 监听，已降级到页面内 topbar.js 的 Esc 桥:', err);
+                }
+            };
+
+            // 预览过程中页面内部发生跳转时 iframe 会重新加载，注入随之丢失，
+            // 因此每次 load 后重新注入（与 element-keyboard.js 的全屏浮层做法一致）。
+            this._previewIframeLoadHandler = inject;
+            iframe.addEventListener('load', inject);
+            inject();
         }
 
         // 3. 隐藏预览按钮和删除按钮（预览中不需要）
@@ -523,6 +539,10 @@ const CanvasViewEvents = {
                 );
             } catch (err) {
                 // 跨域 iframe 忽略
+            }
+            if (this._previewIframeLoadHandler) {
+                this._previewIframe.removeEventListener('load', this._previewIframeLoadHandler);
+                this._previewIframeLoadHandler = null;
             }
             this._previewIframeKeydownHandler = null;
             this._previewIframe = null;

@@ -31,19 +31,20 @@
 2.  产品界面规划：作为产品经理，定义关键界面，确保产品功能模块和信息架构合理。
 3.  高保真UI设计：作为UI设计师，设计贴近真实iOS设计规范的界面，使用现代化的UI元素，风格简洁，使其具有良好的视觉体验。
 4.  HTML原型实现：使用HTML+TailwindCSS生成所有原型界面，并使用FontAwesome让界面更加精美、接近真实的App设计。注意：TailwindCSS和FontAwesome通过本地路径引入，不要使用CDN链接。
-5.  拆分代码文件，保持结构清晰：
+5.	原型图的图片、视频资源需要下载的本地的lib\images中，在本地引用，不要使用CDN链接。
+6.  拆分代码文件，保持结构清晰：
     -   每个界面应作为独立的HTML文件存放，例如home.html、profile.html、settings.html等。按模块存放在pages目录下的子目录中(如pages/home/、pages/profile/)。
     -   index.html作为主入口，不直接写入所有界面的HTML代码，而是使用iframe的方式嵌入这些HTML片段，并将所有页面直接平铺展示在index页面中，而不是跳转链接。
     -   index.html在主目录下，没有存放在pages目录中
     -   页面HTML文件中引入资源的路径必须使用相对路径：TailwindCSS使用 `../lib/js/tailwindcss.js`，FontAwesome使用 `../lib/css/all.min.css`
-6.  真实感增强：
+7.  真实感增强：
     -   界面尺寸应模拟iPhone 15 Pro，并让界面圆角化，使其更像真实的手机界面。
     -   使用真实的UI图片，而非占位符图片(可从Unsplash、Pexels中选择)。
     -   添加顶部状态栏(模拟iOS状态栏)，并包含App导航栏(类似iOS底部TabBar)。
 请按照以上要求生成完整的HTML代码，并确保其可用于实际iOS App的开发。
 ```
 
-</details>
+
 
 <details>
 <summary>🖥️ 管理后台原型</summary>
@@ -59,11 +60,12 @@
     -   页面布局统一为：顶部导航栏 + 左侧菜单 + 右侧内容区。
     -   页面结构统一为：搜索表单 + 操作工具栏 + 数据表格 + 分页。
     -   页面HTML文件中引入资源的路径必须使用相对路径：TailwindCSS使用 `../../lib/js/tailwindcss.js`，FontAwesome使用 `../../lib/css/all.min.css`
-6.  交互增强：
+6.	原型图的图片、视频资源需要下载的本地的lib\images中，在本地引用，不要使用CDN链接。 
+7.  交互增强：
     -   每个表格行添加操作列(查看/编辑/删除)。
     -   搜索和重置按钮要有真实的交互效果。
     -   新增/编辑使用弹框形式展示表单。
-7.  数据配置（重要）：
+8.  数据配置（重要）：
     -   引入侧边栏菜单系统（数据层必须先于引擎层加载）：
         *   <link rel="stylesheet" href="../../../css/sidebar-menu.css">
         *   <script src="../../../menu/menu.js">（菜单配置数据，定义 window.SIDEBAR_MENU）
@@ -81,7 +83,7 @@
 请按照以上要求生成完整的HTML代码。
 ```
 
-</details>
+
 
 #### 步骤2: 将原型文件复制到项目中
 
@@ -184,15 +186,16 @@ window.SIDEBAR_MENU = [
    ```
 
 2. **运行字段提取脚本**：
+   
    ```bash
    cd tools
    node extract-form-fields.js --views-root=<你的Vue工程>/src/views
-   ```
-
+```
+   
    ⚠️ 真实 Vue 工程通常被 `.gitignore` 排除、不会入库。**找不到时脚本会直接报错退出**，
    而不是悄悄降级——因为降级产物（全靠表头推断）会丢掉控件类型、必填、字典选项等真实信息。
-   确需降级时显式加 `--allow-fallback`。
-
+确需降级时显式加 `--allow-fallback`。
+   
 3. **脚本会自动生成** `js/page-fields-config.js`，包含所有页面的：
    - 表单字段定义（label, type, required, options）
    - 表头列表（headers）

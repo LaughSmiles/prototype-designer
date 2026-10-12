@@ -304,11 +304,17 @@ const PageManager = {
             let allElements = ElementManager.getAllElements();
 
             const cleanedElements = await this.cleanInvalidPageReferences(allElements);
+            const undecidable = this.lastProbeUndecidable || [];
 
             if (cleanedElements.length !== allElements.length) {
                 const removedCount = allElements.length - cleanedElements.length;
                 Debug.warn(`⚠️ 保存时清理了 ${removedCount} 个无效页面引用`);
                 PageLibrary.showHint(`⚠️ 已移除 ${removedCount} 个无效页面引用`);
+            }
+
+            if (undecidable.length > 0) {
+                // 探测不出来 ≠ 文件不存在：已保留元素，但要告诉用户校验没跑通
+                PageLibrary.showHint(`⚠️ ${undecidable.length} 个页面文件校验超时，已保留其画布元素（未删除）`);
             }
 
             currentPage.elements = cleanedElements;
@@ -325,31 +331,75 @@ const PageManager = {
     },
 
     // 清理无效的页面引用
+    // 三点修复：
+    //   1) 去重 —— 同一 filePath 只探测一次（画布上放 3 次"用户管理"也只发 1 个 HEAD）
+    //   2) 并发 —— 总耗时由 Σ(往返) 降为 max(往返)
+    //   3) 三态 —— 只有确认 404 才删除元素；超时/网络错误判为 unknown 一律保留，
+    //      避免服务抖一下就把用户的画布元素静默删掉。
     async cleanInvalidPageReferences(elements) {
-        const validElements = [];
-        let invalidCount = 0;
-
+        // 先做不依赖网络的判定：启动期已确认无效(404)的直接剔除，不必再探测
+        const candidates = [];
         for (const element of elements) {
-            if (element.type === 'page') {
-                const pageInfo = PageLibrary.getPageInfo(element.pageId);
-                if (pageInfo && pageInfo.isValid !== false) {
-                    const exists = await PageLibrary.checkPageExists(pageInfo.filePath);
-                    if (exists) {
-                        validElements.push(element);
-                    } else {
-                        Debug.warn(`⚠️ 移除无效页面元素: ${element.pageId} (${pageInfo.name})`);
-                        invalidCount++;
-                    }
-                } else {
-                    Debug.warn(`⚠️ 移除无效页面元素: ${element.pageId}`);
-                    invalidCount++;
-                }
-            } else {
-                validElements.push(element);
+            if (element.type !== 'page') {
+                candidates.push({ element, info: null, status: 'exists' });
+                continue;
             }
+            const pageInfo = PageLibrary.getPageInfo(element.pageId);
+            if (!pageInfo) {
+                Debug.warn(`⚠️ 移除无效页面元素: ${element.pageId}（页面不在配置中）`);
+                continue;
+            }
+            if (pageInfo.isValid === false) {
+                Debug.warn(`⚠️ 移除无效页面元素: ${element.pageId} (${pageInfo.name})`);
+                continue;
+            }
+            candidates.push({ element, info: pageInfo, status: null });
+        }
+
+        const pending = candidates.filter(c => c.status === null);
+        let statuses = new Map();
+        if (pending.length > 0) {
+            statuses = await PageLibrary.probePages(pending.map(c => c.info.filePath));
+            pending.forEach(c => { c.status = statuses.get(c.info.filePath) || 'unknown'; });
+        }
+
+        const validElements = [];
+        const undecidable = new Set();
+        for (const { element, info, status } of candidates) {
+            if (status === 'missing') {
+                Debug.warn(`⚠️ 移除无效页面元素: ${element.pageId} (${info?.name}) 文件已不存在`);
+                continue;
+            }
+            if (status === 'unknown') {
+                // 探测不出来 ≠ 文件不存在，保守保留
+                undecidable.add(info?.name || element.pageId);
+            }
+            validElements.push(element);
+        }
+
+        this.lastProbeUndecidable = [...undecidable];
+        if (undecidable.size > 0) {
+            Debug.warn(`⚠️ ${undecidable.size} 个页面文件探测超时/失败，已保守保留其画布元素: ${[...undecidable].join(', ')}`);
         }
 
         return validElements;
+    },
+
+    // 重置为一个空白页面（供"清空浏览器缓存"使用）
+    // 关键：必须重建一个默认页面。
+    // 只把 pages 清空的话，getCurrentPage() 会返回 undefined，
+    // 用户清空缓存后继续画的内容再保存时就会存成"零页面"的空画布。
+    resetToEmpty() {
+        this.pages = [];
+        this.currentPageId = null;
+        this.pageCounter = 0;
+        this.globalNextElementId = 1;
+        ElementManager.state.elements = [];
+        ElementManager.state.usageCount = {};
+        ElementManager.state.selectedElement = null;
+        ElementManager.state.selectedElements = [];
+        this.createPage('页面1');
+        Debug.log('🧹 PageManager 已重置为空白状态');
     },
 
     // 设置页面数据(用于加载)

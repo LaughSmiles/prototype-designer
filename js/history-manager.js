@@ -77,6 +77,14 @@ const HistoryManager = {
         }
 
         Debug.log(`💾 历史记录已保存 (${this.currentIndex + 1}/${this.historyStack.length})`);
+
+        // 所有画布变更最终都会走到这里，据此统一打"未保存"标记
+        // （比在十几个交互文件里各写一遍 markDirty 更不容易漏）
+        // 注意：Storage 是经典脚本的顶层 const，只进全局词法作用域，
+        // window.Storage 是 undefined，所以只能用具名标识符 + typeof 判断
+        if (typeof Storage !== 'undefined' && typeof Storage.markDirty === 'function') {
+            Storage.markDirty();
+        }
     },
 
     // 捕获当前完整状态
@@ -246,6 +254,12 @@ const HistoryManager = {
         Debug.log(`↩️ 撤销到 ${time}`);
         PageLibrary.showHint(`已撤销 (${this.currentIndex}/${this.historyStack.length - 1})`);
 
+        // 撤销/redo 改变了画布但不会触发 saveState，需单独打标，
+        // 否则顶栏仍显示"已保存"，而实际内容已与磁盘不一致
+        if (typeof Storage !== 'undefined' && typeof Storage.markDirty === 'function') {
+            Storage.markDirty();
+        }
+
         return true;
     },
 
@@ -264,6 +278,10 @@ const HistoryManager = {
         const time = new Date(state.timestamp).toLocaleTimeString();
         Debug.log(`↪️ 重做到 ${time}`);
         PageLibrary.showHint(`已重做 (${this.currentIndex}/${this.historyStack.length - 1})`);
+
+        if (typeof Storage !== 'undefined' && typeof Storage.markDirty === 'function') {
+            Storage.markDirty();
+        }
 
         return true;
     },

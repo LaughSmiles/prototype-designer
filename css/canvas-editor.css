@@ -2448,6 +2448,55 @@ body {
 }
 
 /* ============================================================
+   常驻提示（保存失败等必须被看见的信息）
+   ============================================================ */
+.temp-hint.is-sticky {
+    animation: none;
+    opacity: 1;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: min(760px, 80vw);
+    line-height: 1.6;
+    z-index: 1000;
+    border-color: #f56c6c;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.temp-hint-close {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.temp-hint-close:hover { opacity: 1; }
+
+/* ============================================================
+   保存状态指示器（顶栏右侧）
+   ============================================================ */
+.save-state {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    transition: color 0.2s, background-color 0.2s;
+}
+
+.save-state:empty { display: none; }
+.save-state-ok { color: var(--text-tertiary); }
+.save-state-dirty { color: #e6a23c; background: rgba(230, 162, 60, 0.14); }
+.save-state-error { color: #fff; background: #f56c6c; font-weight: 600; }
+
+/* ============================================================
    加载状态
    ============================================================ */
 .loading {
