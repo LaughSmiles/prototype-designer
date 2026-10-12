@@ -1,10 +1,9 @@
 .claude/
 
 # Dependencies
-# 注意：依赖锁文件必须入库，否则各环境解析出的依赖版本不可复现。
-# 若某个子项目确实无需锁文件，请在下方用「锚定路径 + 否定规则」显式排除。
+# 本项目零依赖：tools/ 下全部脚本只用 Node 内置模块，无 package.json。
+# 若将来真的引入依赖，锁文件必须入库，否则各环境解析出的版本不可复现。
 node_modules/
-!tools/package-lock.json
 
 # AI 辅助工具的本地调试产物
 .playwright-mcp/
