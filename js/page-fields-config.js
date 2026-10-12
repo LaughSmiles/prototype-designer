@@ -1,7 +1,234 @@
 // 自动生成于 2026-04-23T00:52:13.024Z
 // 从 Vue Form 组件提取的表单字段配置
+//
+// ⚠️ 下方「社区运营后台」区块（数据看板 / 笔记管理 / 内容审核 / 评论管理 /
+//    话题标签 / 举报处理 / 敏感词风控）为本原型项目手工补写，不来自 Vue 工程抽取。
+//    extract-form-fields.js 重新生成整个文件时会覆盖掉它们，届时需重跑
+//    tools/ 中记录的字段定义补回。键名必须与页面 <title> 去掉后缀后的部分完全一致。
 
 window.PAGE_FIELDS_CONFIG = {
+// ========== 社区运营后台（本项目手工补写） ==========
+"数据看板": {
+        "headers": [
+            "日期",
+            "日活跃用户",
+            "新增用户",
+            "笔记发布量",
+            "评论量",
+            "举报量"
+        ],
+        "entityName": "数据看板",
+        "fields": [
+            {
+                "label": "统计日期",
+                "required": true,
+                "type": "date"
+            },
+            {
+                "label": "统计维度",
+                "type": "select",
+                "options": ["日", "周", "月"]
+            },
+            {
+                "label": "备注",
+                "type": "textarea"
+            }
+        ]
+    },
+"笔记管理": {
+        "headers": [
+            "笔记编号",
+            "笔记标题",
+            "作者",
+            "所属话题",
+            "点赞数",
+            "状态",
+            "发布时间"
+        ],
+        "entityName": "笔记",
+        "fields": [
+            {
+                "label": "笔记标题",
+                "required": true,
+                "type": "input"
+            },
+            {
+                "label": "所属话题",
+                "type": "input"
+            },
+            {
+                "label": "笔记内容",
+                "type": "textarea"
+            },
+            {
+                "label": "状态",
+                "type": "select",
+                "options": ["正常", "待审核", "已下架", "违规下架"]
+            },
+            {
+                "label": "置顶",
+                "type": "radio"
+            }
+        ]
+    },
+"内容审核": {
+        "headers": [
+            "审核编号",
+            "笔记标题",
+            "作者",
+            "风险类型",
+            "风险等级",
+            "提交时间",
+            "审核状态"
+        ],
+        "entityName": "审核单",
+        "fields": [
+            {
+                "label": "风险类型",
+                "required": true,
+                "type": "select",
+                "options": ["涉黄涉暴", "广告营销", "不实信息", "人身攻击"]
+            },
+            {
+                "label": "风险等级",
+                "type": "select",
+                "options": ["高", "中", "低"]
+            },
+            {
+                "label": "审核结论",
+                "type": "select",
+                "options": ["通过", "驳回", "下架"]
+            },
+            {
+                "label": "驳回理由",
+                "type": "textarea"
+            }
+        ]
+    },
+"评论管理": {
+        "headers": [
+            "评论编号",
+            "评论内容",
+            "评论人",
+            "所属笔记",
+            "点赞数",
+            "状态",
+            "评论时间"
+        ],
+        "entityName": "评论",
+        "fields": [
+            {
+                "label": "评论内容",
+                "required": true,
+                "type": "textarea"
+            },
+            {
+                "label": "状态",
+                "type": "select",
+                "options": ["正常", "已屏蔽"]
+            },
+            {
+                "label": "处理备注",
+                "type": "textarea"
+            }
+        ]
+    },
+"话题标签": {
+        "headers": [
+            "话题名称",
+            "所属分类",
+            "笔记数量",
+            "热度",
+            "创建人",
+            "状态",
+            "创建时间"
+        ],
+        "entityName": "话题",
+        "fields": [
+            {
+                "label": "话题名称",
+                "required": true,
+                "type": "input"
+            },
+            {
+                "label": "所属分类",
+                "type": "select",
+                "options": ["生活", "美食", "旅行", "穿搭", "家居", "运动"]
+            },
+            {
+                "label": "话题简介",
+                "type": "textarea"
+            },
+            {
+                "label": "状态",
+                "type": "select",
+                "options": ["正常", "屏蔽", "推荐"]
+            }
+        ]
+    },
+"举报处理": {
+        "headers": [
+            "工单编号",
+            "举报类型",
+            "被举报对象",
+            "举报人",
+            "处理状态",
+            "处理结果",
+            "处理时间"
+        ],
+        "entityName": "举报工单",
+        "fields": [
+            {
+                "label": "举报类型",
+                "required": true,
+                "type": "select",
+                "options": ["违规内容", "骚扰广告", "抄袭侵权", "虚假信息"]
+            },
+            {
+                "label": "处理结果",
+                "type": "select",
+                "options": ["删除内容", "禁言", "封号", "驳回举报"]
+            },
+            {
+                "label": "处理说明",
+                "type": "textarea"
+            }
+        ]
+    },
+"敏感词风控": {
+        "headers": [
+            "敏感词",
+            "词库分类",
+            "命中次数",
+            "处置动作",
+            "状态",
+            "更新时间"
+        ],
+        "entityName": "敏感词",
+        "fields": [
+            {
+                "label": "敏感词",
+                "required": true,
+                "type": "input"
+            },
+            {
+                "label": "词库分类",
+                "type": "select",
+                "options": ["政治", "色情", "广告", "辱骂", "其他"]
+            },
+            {
+                "label": "处置动作",
+                "type": "select",
+                "options": ["拦截", "审核后放行", "仅告警"]
+            },
+            {
+                "label": "状态",
+                "type": "select",
+                "options": ["启用", "停用"]
+            }
+        ]
+    },
+// ========== 社区运营后台（以上） ==========
 "用户管理": {
         "headers": [
             "用户编号",

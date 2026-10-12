@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>搜索 - 拾光社区</title>
+<script src="../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../lib/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 375px; height: 812px; overflow: hidden; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #222; }
+  .scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+  .scroll::-webkit-scrollbar { width: 0; }
+  .tabbar { height: 52px; border-top: 1px solid #eee; display: flex; background: #fff; }
+  .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+              font-size: 10px; color: #999; text-decoration: none; gap: 2px; }
+  .tabbar a.on { color: #ff2442; }
+  .tabbar i { font-size: 17px; }
+</style>
+<!-- 框架脚本：topbar.js 提供 Esc → postMessage 的退出预览桥，移动端必需 -->
+<script src="../../js/debug.js"></script>
+<script src="../../js/topbar.js"></script>
+</head>
+<body>
+<div style="display:flex; flex-direction:column; height:812px;">
+
+  <!-- 搜索栏 -->
+  <div style="flex:0 0 auto; background:#fff; padding:30px 12px 10px; border-bottom:1px solid #f5f5f5;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <i class="fas fa-chevron-left" style="font-size:16px; color:#333;"></i>
+      <div style="flex:1; display:flex; align-items:center; gap:6px; height:32px; padding:0 12px;
+                  background:#f4f4f5; border-radius:16px;">
+        <i class="fas fa-search" style="font-size:12px; color:#999;"></i>
+        <span style="flex:1; font-size:13px; color:#333;">露营</span>
+        <i class="fas fa-circle-xmark" style="font-size:13px; color:#ccc;"></i>
+      </div>
+      <span style="font-size:14px; color:#333;">搜索</span>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <!-- 搜索历史 -->
+    <div style="padding:14px 14px 8px;">
+      <div style="display:flex; align-items:center; margin-bottom:10px;">
+        <span style="font-size:13px; font-weight:600;">搜索历史</span>
+        <i class="far fa-trash-can" style="font-size:13px; color:#bbb; margin-left:auto;"></i>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <span style="padding:6px 12px; background:#f5f5f5; border-radius:14px; font-size:12px; color:#555;">#露营装备清单</span>
+        <span style="padding:6px 12px; background:#f5f5f5; border-radius:14px; font-size:12px; color:#555;">民宿推荐</span>
+        <span style="padding:6px 12px; background:#f5f5f5; border-radius:14px; font-size:12px; color:#555;">低卡早餐</span>
+        <span style="padding:6px 12px; background:#f5f5f5; border-radius:14px; font-size:12px; color:#555;">出租屋改造</span>
+      </div>
+    </div>
+
+    <!-- 热门话题 -->
+    <div style="padding:6px 14px 14px;">
+      <div style="font-size:13px; font-weight:600; margin-bottom:10px;">热门话题</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div style="padding:10px; background:#fafafa; border-radius:8px;">
+          <div style="font-size:13px;">#周末去哪儿</div>
+          <div style="font-size:11px; color:#999; margin-top:4px;">2.8万篇笔记</div>
+        </div>
+        <div style="padding:10px; background:#fafafa; border-radius:8px;">
+          <div style="font-size:13px;">#租房改造</div>
+          <div style="font-size:11px; color:#999; margin-top:4px;">1.4万篇笔记</div>
+        </div>
+        <div style="padding:10px; background:#fafafa; border-radius:8px;">
+          <div style="font-size:13px;">#低卡食谱</div>
+          <div style="font-size:11px; color:#999; margin-top:4px;">9865 篇笔记</div>
+        </div>
+        <div style="padding:10px; background:#fafafa; border-radius:8px;">
+          <div style="font-size:13px;">#新手健身</div>
+          <div style="font-size:11px; color:#999; margin-top:4px;">7210 篇笔记</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结果 tabs -->
+    <div style="display:flex; gap:20px; padding:0 14px; border-bottom:1px solid #f0f0f0;">
+      <span style="font-size:14px; font-weight:600; padding-bottom:8px; border-bottom:2px solid #ff2442;">综合</span>
+      <span style="font-size:14px; color:#888; padding-bottom:8px;">笔记</span>
+      <span style="font-size:14px; color:#888; padding-bottom:8px;">用户</span>
+    </div>
+
+    <!-- 笔记结果 -->
+    <div style="padding:6px 14px;">
+      <a href="note-detail.html" style="display:flex; gap:10px; padding:10px 0; border-bottom:1px solid #f7f7f7; text-decoration:none; color:inherit;">
+        <img src="../../lib/images/images_pexels_com_photos27667695pexels-photo-27667695jpeg_750x1000.jpeg"
+             style="width:72px; height:96px; object-fit:cover; border-radius:6px;">
+        <div style="flex:1; overflow:hidden;">
+          <div style="font-size:14px; line-height:1.4;">周末去山里住了两晚，这家民宿真的绝了</div>
+          <div style="font-size:11px; color:#999; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            找了三个月才定到这家民宿，藏在半山腰上…
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; margin-top:8px;">
+            <img src="../../lib/images/images_pexels_com_photos34630594pexels-photo-34630594jpeg_200x200.jpeg"
+                 style="width:14px;height:14px;border-radius:50%;object-fit:cover;">
+            <span style="font-size:11px; color:#999;">山野拾光</span>
+            <span style="font-size:11px; color:#bbb; margin-left:auto;"><i class="far fa-heart"></i> 2.3万</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="note-detail.html" style="display:flex; gap:10px; padding:10px 0; border-bottom:1px solid #f7f7f7; text-decoration:none; color:inherit;">
+        <img src="../../lib/images/images_pexels_com_photos34587497pexels-photo-34587497jpeg_750x1000.jpeg"
+             style="width:72px; height:96px; object-fit:cover; border-radius:6px;">
+        <div style="flex:1; overflow:hidden;">
+          <div style="font-size:14px; line-height:1.4;">露营新手必看｜装备清单+踩坑总结</div>
+          <div style="font-size:11px; color:#999; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            第一次露营带了一堆没用的东西，这次…
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; margin-top:8px;">
+            <img src="../../lib/images/images_pexels_com_photos30494318pexels-photo-30494318jpeg_200x200.jpeg"
+                 style="width:14px;height:14px;border-radius:50%;object-fit:cover;">
+            <span style="font-size:11px; color:#999;">晨跑少女</span>
+            <span style="font-size:11px; color:#bbb; margin-left:auto;"><i class="far fa-heart"></i> 3950</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="note-detail.html" style="display:flex; gap:10px; padding:10px 0; border-bottom:1px solid #f7f7f7; text-decoration:none; color:inherit;">
+        <img src="../../lib/images/images_pexels_com_photos34793814pexels-photo-34793814jpeg_750x1000.jpeg"
+             style="width:72px; height:96px; object-fit:cover; border-radius:6px;">
+        <div style="flex:1; overflow:hidden;">
+          <div style="font-size:14px; line-height:1.4;">带狗去露营必带的 5 样东西</div>
+          <div style="font-size:11px; color:#999; margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            狗子第一次见到草地狂奔的样子…
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; margin-top:8px;">
+            <img src="../../lib/images/images_pexels_com_photos30518441pexels-photo-30518441jpeg_200x200.jpeg"
+                 style="width:14px;height:14px;border-radius:50%;object-fit:cover;">
+            <span style="font-size:11px; color:#999;">橘猫饲养员</span>
+            <span style="font-size:11px; color:#bbb; margin-left:auto;"><i class="far fa-heart"></i> 5123</span>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- 用户结果 -->
+    <div style="padding:10px 14px 24px;">
+      <div style="font-size:13px; font-weight:600; margin-bottom:8px;">相关用户</div>
+      <a href="user-home.html" style="display:flex; align-items:center; gap:10px; padding:9px 0; text-decoration:none; color:inherit;">
+        <img src="../../lib/images/images_pexels_com_photos34630594pexels-photo-34630594jpeg_200x200.jpeg"
+             style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+        <div style="flex:1;">
+          <div style="font-size:14px;">山野拾光</div>
+          <div style="font-size:11px; color:#999;">12.4万粉丝 · 户外 / 旅行</div>
+        </div>
+        <span style="padding:5px 14px; border:1px solid #ff2442; border-radius:14px; color:#ff2442; font-size:12px;">关注</span>
+      </a>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <a href="discover.html" class="on"><i class="fas fa-compass"></i>发现</a>
+    <a href="publish.html"><i class="fas fa-plus-square"></i>发布</a>
+    <a href="message.html"><i class="far fa-comment-dots"></i>消息</a>
+    <a href="profile.html"><i class="fas fa-user"></i>我</a>
+  </nav>
+
+</div>
+</body>
+</html>

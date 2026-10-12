@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>发布笔记 - 拾光社区</title>
+<script src="../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../lib/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 375px; height: 812px; overflow: hidden; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #222; }
+  .scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+  .scroll::-webkit-scrollbar { width: 0; }
+  .tabbar { height: 52px; border-top: 1px solid #eee; display: flex; align-items: center; padding: 0 12px; gap: 14px; }
+</style>
+<!-- 框架脚本：topbar.js 提供 Esc → postMessage 的退出预览桥，移动端必需 -->
+<script src="../../js/debug.js"></script>
+<script src="../../js/topbar.js"></script>
+</head>
+<body>
+<div style="display:flex; flex-direction:column; height:812px;">
+
+  <!-- 顶栏 -->
+  <div style="flex:0 0 auto; display:flex; align-items:center; padding:30px 12px 10px; border-bottom:1px solid #f5f5f5;">
+    <a href="discover.html" aria-label="关闭">
+      <i class="fas fa-xmark" style="font-size:18px; color:#333;"></i>
+    </a>
+    <span style="margin-left:auto; font-size:16px; font-weight:600;">发布笔记</span>
+    <a href="discover.html" style="margin-left:auto; padding:6px 16px; background:#ff2442; color:#fff;
+       border-radius:15px; font-size:13px; text-decoration:none;">发布</a>
+  </div>
+
+  <div class="scroll">
+    <!-- 九宫格选图 -->
+    <div style="padding:12px 12px 4px;">
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:4px;">
+        <div style="position:relative;">
+          <img src="../../lib/images/images_unsplash_com_photo-1624911104820-5316c700b907_750x1000.jpg"
+               style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图1">
+          <i class="fas fa-check-circle" style="position:absolute; top:4px; right:4px; color:#fff;
+             background:#ff2442; border-radius:50%; font-size:16px;"></i>
+        </div>
+        <div style="position:relative;">
+          <img src="../../lib/images/images_unsplash_com_photo-1746864946984-bccda9a48e0f_750x1000.jpg"
+               style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图2">
+          <i class="fas fa-check-circle" style="position:absolute; top:4px; right:4px; color:#fff;
+             background:#ff2442; border-radius:50%; font-size:16px;"></i>
+        </div>
+        <div style="position:relative;">
+          <img src="../../lib/images/images_pexels_com_photos27667695pexels-photo-27667695jpeg_750x1000.jpeg"
+               style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图3">
+          <i class="fas fa-check-circle" style="position:absolute; top:4px; right:4px; color:#fff;
+             background:#ff2442; border-radius:50%; font-size:16px;"></i>
+        </div>
+        <img src="../../lib/images/images_unsplash_com_photo-1478145046317-39f10e56b5e9_750x1000.jpg"
+             style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图4">
+        <img src="../../lib/images/images_pexels_com_photos33663240pexels-photo-33663240jpeg_750x1000.jpeg"
+             style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图5">
+        <img src="../../lib/images/images_pexels_com_photos37963517pexels-photo-37963517jpeg_750x1000.jpeg"
+             style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图6">
+        <img src="../../lib/images/images_pexels_com_photos34864230pexels-photo-34864230jpeg_750x1000.jpeg"
+             style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图7">
+        <img src="../../lib/images/images_pexels_com_photos18060165pexels-photo-18060165jpeg_750x1000.jpeg"
+             style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:4px;" alt="选图8">
+        <div style="width:100%; aspect-ratio:3/4; background:#f5f5f5; border-radius:4px; display:flex;
+             flex-direction:column; align-items:center; justify-content:center; gap:4px;">
+          <i class="fas fa-plus" style="font-size:20px; color:#bbb;"></i>
+          <span style="font-size:10px; color:#bbb;">9/9</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 标题与正文 -->
+    <div style="padding:16px 14px 0;">
+      <input type="text" value="周末去山里住了两晚，这家民宿真的绝了"
+             style="width:100%; border:none; outline:none; font-size:17px; font-weight:600; color:#222;">
+      <textarea rows="7" style="width:100%; border:none; outline:none; resize:none; font-size:14px;
+                line-height:1.8; color:#333; margin-top:12px; font-family:inherit;">找了三个月才定到这家民宿，藏在半山腰上，进门第一眼就愣住了。
+
+早上拉开窗帘整片山谷都是雾，随手拍了一张就很出片。中午在院子里晒太阳吃了老板现做的山菌锅。
+
+最惊喜的是晚上没有光污染，抬头就是整条银河。</textarea>
+    </div>
+
+    <!-- 话题 -->
+    <div style="padding:6px 14px 0;">
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <span style="font-size:13px; color:#3b6fd4;">#山野露营</span>
+        <span style="font-size:13px; color:#3b6fd4;">#民宿推荐</span>
+        <span style="font-size:13px; color:#3b6fd4;">#周末去哪儿</span>
+        <span style="font-size:13px; color:#999;">#  添加话题</span>
+      </div>
+    </div>
+
+    <!-- 附加设置 -->
+    <div style="margin:16px 14px 0; border-top:1px solid #f5f5f5;">
+      <div style="display:flex; align-items:center; padding:13px 0; border-bottom:1px solid #f5f5f5;">
+        <i class="far fa-image" style="font-size:16px; color:#666; width:24px;"></i>
+        <span style="font-size:14px;">添加图片</span>
+        <span style="margin-left:auto; font-size:13px; color:#bbb;">9/9</span>
+        <i class="fas fa-chevron-right" style="font-size:12px; color:#ccc; margin-left:6px;"></i>
+      </div>
+      <div style="display:flex; align-items:center; padding:13px 0; border-bottom:1px solid #f5f5f5;">
+        <i class="far fa-map-location-dot" style="font-size:16px; color:#666; width:24px;"></i>
+        <span style="font-size:14px;">所在位置</span>
+        <span style="margin-left:auto; font-size:13px; color:#bbb;">莫干山</span>
+        <i class="fas fa-chevron-right" style="font-size:12px; color:#ccc; margin-left:6px;"></i>
+      </div>
+      <div style="display:flex; align-items:center; padding:13px 0; border-bottom:1px solid #f5f5f5;">
+        <i class="far fa-at" style="font-size:16px; color:#666; width:24px;"></i>
+        <span style="font-size:14px;">@ 提醒谁看</span>
+        <i class="fas fa-chevron-right" style="font-size:12px; color:#ccc; margin-left:auto;"></i>
+      </div>
+      <div style="display:flex; align-items:center; padding:13px 0;">
+        <i class="far fa-globe" style="font-size:16px; color:#666; width:24px;"></i>
+        <span style="font-size:14px;">公开可见</span>
+        <span style="margin-left:auto; width:38px; height:22px; border-radius:11px; background:#ff2442;
+                     position:relative; display:block;">
+          <span style="position:absolute; top:2px; right:2px; width:18px; height:18px; background:#fff;
+                       border-radius:50%; display:block;"></span>
+        </span>
+      </div>
+    </div>
+
+    <div style="padding:20px 14px 28px; font-size:12px; color:#bbb;">
+      发布即代表你同意《社区规范》，请勿发布违法违规内容。
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <i class="far fa-image" style="font-size:17px; color:#666;"></i>
+    <i class="far fa-at" style="font-size:17px; color:#666;"></i>
+    <i class="far fa-face-smile" style="font-size:17px; color:#666;"></i>
+    <i class="far fa-hash" style="font-size:17px; color:#666; margin-left:auto;"></i>
+  </div>
+
+</div>
+</body>
+</html>

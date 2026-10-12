@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>发现 - 拾光社区</title>
+<script src="../../lib/js/tailwindcss.js"></script>
+<link rel="stylesheet" href="../../lib/css/all.min.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { width: 375px; height: 812px; overflow: hidden; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #fff; color: #222; }
+  .scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+  .scroll::-webkit-scrollbar { width: 0; }
+  .waterfall { column-count: 2; column-gap: 6px; padding: 6px; }
+  .card { break-inside: avoid; margin-bottom: 6px; }
+  .cover { width: 100%; display: block; background: #f0f0f0; }
+  .tabbar { height: 52px; border-top: 1px solid #eee; display: flex; background: #fff; }
+  .tabbar a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+              font-size: 10px; color: #999; text-decoration: none; gap: 2px; }
+  .tabbar a.on { color: #ff2442; }
+  .tabbar i { font-size: 17px; }
+</style>
+<!-- 框架脚本：topbar.js 提供 Esc → postMessage 的退出预览桥，移动端必需 -->
+<script src="../../js/debug.js"></script>
+<script src="../../js/topbar.js"></script>
+</head>
+<body>
+<div style="display:flex; flex-direction:column; height:812px;">
+
+  <!-- 顶栏：状态栏占位 + 搜索入口 -->
+  <div style="flex:0 0 auto; background:#fff;">
+    <div style="height:24px;"></div>
+    <div style="display:flex; align-items:center; gap:10px; padding:6px 12px;">
+      <a href="search.html" style="flex:1; display:flex; align-items:center; gap:6px; height:32px;
+         padding:0 12px; background:#f4f4f5; border-radius:16px; text-decoration:none;">
+        <i class="fas fa-search" style="font-size:12px; color:#999;"></i>
+        <span style="font-size:13px; color:#999;">搜你想看的内容</span>
+      </a>
+      <i class="fas fa-camera" style="font-size:17px; color:#333;"></i>
+    </div>
+    <!-- 频道 -->
+    <div style="display:flex; gap:18px; padding:8px 12px 6px; font-size:14px;">
+      <span style="font-weight:600;">推荐</span>
+      <span style="color:#888;">关注</span>
+      <span style="color:#888;">附近</span>
+      <span style="color:#888;">穿搭</span>
+      <span style="color:#888;">美食</span>
+    </div>
+  </div>
+
+  <!-- 瀑布流推荐 -->
+  <div class="scroll">
+    <div class="waterfall">
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos27667695pexels-photo-27667695jpeg_750x1000.jpeg" alt="湖畔">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">周末去山里住了两晚，这家民宿真的绝了</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos34630594pexels-photo-34630594jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">山野拾光</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">2.3万</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos37963517pexels-photo-37963517jpeg_750x1000.jpeg" alt="猫咪">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">捡到的小橘今天第一次主动让我抱</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos30518441pexels-photo-30518441jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">橘猫饲养员</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">8863</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_unsplash_com_photo-1624911104820-5316c700b907_750x1000.jpg" alt="穿搭">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">155 小个子夏天这样穿显高十公分</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos38178737pexels-photo-38178737jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">小鹿衣柜</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">1.1万</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_unsplash_com_photo-1478145046317-39f10e56b5e9_750x1000.jpg" alt="美食">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">减脂期也能吃的低卡早餐合集</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos31585831pexels-photo-31585831jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">吃货小周</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">6721</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos34864230pexels-photo-34864230jpeg_750x1000.jpeg" alt="家居">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">出租屋改造｜300 块把阳台变花园</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos39842783pexels-photo-39842783jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">租房改造记</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">4.5万</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos18060165pexels-photo-18060165jpeg_750x1000.jpeg" alt="健身">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">坚持三个月肚子的变化，字太小了</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos30494318pexels-photo-30494318jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">晨跑少女</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">9082</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos33663240pexels-photo-33663240jpeg_750x1000.jpeg" alt="旅行">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">川西七日环线｜自驾路线全公开</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos34630594pexels-photo-34630594jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">山野拾光</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">3.7万</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_unsplash_com_photo-1532980400857-e8d9d275d858_750x1000.jpg" alt="美食">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">空气炸锅 10 分钟搞定的懒人晚餐</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos30518441pexels-photo-30518441jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">吃货小周</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">5310</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos4740484pexels-photo-4740484jpeg_750x1000.jpeg" alt="家居">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">10㎡ 卧室的收纳方案，照抄就行</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos38178737pexels-photo-38178737jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">租房改造记</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">1.6万</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos34793814pexels-photo-34793814jpeg_750x1000.jpeg" alt="宠物">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">养猫两年，这些东西真的别买</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos31585831pexels-photo-31585831jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">橘猫饲养员</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">2.2万</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_unsplash_com_photo-1764698192271-d6888c24e071_750x1000.jpg" alt="穿搭">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">通勤衣橱清单｜一件顶三件</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos39842783pexels-photo-39842783jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">小鹿衣柜</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">7412</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos34587497pexels-photo-34587497jpeg_750x1000.jpeg" alt="健身">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">新手第一个月健身计划（附动作图）</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos30494318pexels-photo-30494318jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">晨跑少女</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">3950</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos34273603pexels-photo-34273603jpeg_750x1000.jpeg" alt="旅行">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">大理洱海环湖，落日最佳机位在这</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos34630594pexels-photo-34630594jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">山野拾光</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">2.8万</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_pexels_com_photos38490372pexels-photo-38490372jpeg_750x1000.jpeg" alt="宠物">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">狗子第一次见到雪的反应太好笑了</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos30518441pexels-photo-30518441jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">橘猫饲养员</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">5123</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_unsplash_com_photo-1746864946984-bccda9a48e0f_750x1000.jpg" alt="穿搭">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">面试穿搭｜不出错也不会太正式</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos38178737pexels-photo-38178737jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">小鹿衣柜</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">2894</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="card">
+        <a href="note-detail.html" style="text-decoration:none; color:inherit; display:block;">
+          <img class="cover" src="../../lib/images/images_unsplash_com_photo-1482049016688-2d3e1b311543_750x1000.jpg" alt="美食">
+          <div style="padding:6px 2px 0;">
+            <div style="font-size:13px; line-height:1.35;">三明治的 5 种做法，最简单 3 分钟</div>
+            <div style="display:flex; align-items:center; gap:5px; margin-top:6px;">
+              <img src="../../lib/images/images_pexels_com_photos31585831pexels-photo-31585831jpeg_200x200.jpeg"
+                   style="width:16px;height:16px;border-radius:50%;object-fit:cover;">
+              <span style="font-size:11px; color:#999;">吃货小周</span>
+              <i class="far fa-heart" style="font-size:11px; color:#bbb; margin-left:auto;"></i>
+              <span style="font-size:11px; color:#bbb;">3477</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+    </div>
+    <div style="text-align:center; padding:12px 0 20px; font-size:12px; color:#bbb;">— 到底了 —</div>
+  </div>
+
+  <!-- 底部 Tab -->
+  <nav class="tabbar">
+    <a href="discover.html" class="on"><i class="fas fa-compass"></i>发现</a>
+    <a href="publish.html"><i class="fas fa-plus-square"></i>发布</a>
+    <a href="message.html"><i class="far fa-comment-dots"></i>消息</a>
+    <a href="profile.html"><i class="fas fa-user"></i>我</a>
+  </nav>
+
+</div>
+</body>
+</html>

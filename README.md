@@ -277,18 +277,13 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 ├── config.js                  # 项目配置文件(需修改) —— 页面清单的唯一来源
 ├── index.html                 # 项目展示页(读取 config.js 自动渲染，无需维护页面列表)
 ├── pages/                     # 页面文件目录(需修改)
-│   ├── admin/                 #   管理后台原型(桌面端, 1440x900)
-│   │   ├── mall(43) system(26) infra(25) crm(24) erp(23) ai(20) bpm(15)
-│   │   ├── iot(14) mp(11) member(10) pay(10) report(4) error(3)
-│   │   └── login.html home.html profile.html redirect.html
-│   └── app/                   #   移动应用原型(移动端, 375x812)
-│       ├── home/              #     首页模块
-│       ├── messages/          #     消息模块
-│       ├── profile/           #     个人中心模块
-│       ├── rental/            #     租赁模块
-│       └── works/             #     作品模块
+│   ├── admin/                 #   社区运营后台(桌面端, 1440x900)
+│   │   ├── dashboard.html note.html audit.html user.html
+│   │   └── comment.html topic.html report.html risk.html
+│   └── app/                   #   社区 App(移动端, 375x812)
+│       └── discover note-detail search publish message profile user-home
 ├── menu/                      # 侧边栏菜单【数据层】(需修改)
-│   └── menu.js                #   window.SIDEBAR_MENU，镜像数据库 system_menu 表
+│   └── menu.js                #   window.SIDEBAR_MENU，菜单数据源（手工维护，无生成脚本）
 ├── tools/                     # 校验与维护脚本(无 npm scripts，手动 node 运行)
 │   ├── check-config.js        #   校验 config.js 与 pages/ 一致性
 │   ├── check-references.js    #   校验/修复页面内所有本地引用
@@ -308,7 +303,7 @@ AI生成的页面中，导航链接可能不正确。使用以下提示词修复
 │   ├── history-manager.js     # 撤销/重做
 │   ├── modal-manager.js       # 弹窗管理
 │   ├── alignment-manager.js   # 对齐管理器
-│   ├── page-fields-config.js  # 表单字段配置(生成物, 驱动弹窗表单自动生成)
+│   ├── page-fields-config.js  # 表单字段配置(222 项; 社区后台 7 项为手工补写, 重新生成会覆盖)
 │   ├── prototype-components.js # 共享页面交互组件(表单/弹框/标签栏)
 │   ├── topbar.js              # 共享顶栏逻辑(全屏/Ctrl+S拦截)
 │   └── virtual-scrollbar.js   # 虚拟滚动条

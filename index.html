@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>商城系统 - 高保真原型设计</title>
+    <title>拾光社区 - 高保真原型设计</title>
     <link rel="stylesheet" href="lib/css/all.min.css">
     <!-- 页面清单的唯一来源：必须在本页任何渲染逻辑之前加载 -->
     <script src="config.js"></script>
@@ -345,8 +345,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>🛒 商城系统 · 移动端 & 管理后台</h1>
-        <p>高保真原型设计展示 - 移动端 + 桌面端</p>
+        <h1>📕 拾光社区 · 社区 App &amp; 运营后台</h1>
+        <p>高保真原型设计展示 - 移动端 7 页 + 运营后台 8 页</p>
         <div class="stats">
             <div class="stat-item">
                 <i class="fas fa-mobile-alt"></i>
@@ -444,7 +444,7 @@
             }
 
             /** 卡片渲染：按页面自身所属设备套手机边框或桌面标题栏。
-             *  264 个页面若一次性创建 iframe 会让首屏极慢（浏览器渲染/截图均会超时），
+             *  页面较多时一次性创建 iframe 会让首屏极慢（浏览器渲染/截图均会超时），
              *  因此先渲染占位容器，滚动进入视口附近时再真正挂载 iframe。 */
             function renderCard(page) {
                 var title = '<div class="screen-title"><i class="fas ' + esc(page.icon || 'fa-file') + '"></i> ' + esc(page.name) + '</div>';
