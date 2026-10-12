@@ -185,9 +185,11 @@ Mobile pages (`pages/app/`) do **not** use the menu system.
     fields: [ { label: "客户名称", type: "input", required: true }, ... ]
   };
   ```
-  也接受按标题索引的旧写法 `window.PROTO_FORM = { "订单管理": {...} }`。`type` 取值：`input / textarea / number / date / select / radio / checkbox`。
+  也接受按标题索引的旧写法 `window.PROTO_FORM = { "订单管理": {...} }`。`type` 取值：`input / textarea / number / date / select / radio / checkbox / password`。
   ⚠️ 每个 `field.label` 必须与本页 `<th>` 文字**一字不差**，否则「编辑」回填为空且不报错。
+  只在表单里、表格里本就没有的字段（密码 / 确认密码）必须加 `"formOnly": true`，或用 `type: "password"`（自动豁免）。
   未定义时 `prototype-components.js` 依次退化为：`<th>` 关键字推断 → 通用 5 字段（名称/编码/排序/状态/备注），控件类型多半是错的。
+  推断档会跳过「编号 / 创建人 / 更新时间 / 创建时间 / 更新日期」这类系统列，但**含「时间/日期」的其他列会生成 date 控件**。
 - **`js/prototype-components.js`** — injected into all prototype pages, handles button clicks (add/edit forms, delete confirmations, export toasts, status toggles, search/reset), and auto-generates tab bar at top of `.main-content`. 表单与详情按**列位置**对齐 DOM 的 `<th>`/`<td>`（`getAlignedHeaders()`），不要用配置里的表头——那是死字段。
 - **`js/topbar.js`** — injected into all pages, handles fullscreen toggle + localStorage persistence and Ctrl+S intercept in fullscreen mode
 

@@ -13,16 +13,50 @@
     // 此时退化为「截掉结尾的 ' - 任意段'」）。不再写死项目名：
     // 一旦改名，写死的截断就会失配，表单静默降级为猜测 <th>，且不报任何错。
     function getPageTitleKey() {
-        let title = document.title.trim();
+        const title = document.title.trim();
         const name = (window.PROJECT_CONFIG || {}).projectName;
         if (name) {
             const suffix = ' - ' + name;
             if (title.endsWith(suffix)) return title.slice(0, -suffix.length).trim();
-            return title;
         }
-        // 无配置：截掉最后一个 ' - xxx' 段（页面名本身不含 ' - '）
+        // 兜底：截掉最后一个 ' - xxx' 段（页面名本身不含 ' - '）。
+        // ⚠️ projectName 不匹配时也必须走这里 —— 原先此处直接返回整串，
+        //    于是「标题后缀还是旧项目名」的页面能查到字段、却会被守卫插件判成键失配，
+        //    而插件给出的修法（把键改成完整标题）会把本来能跑的页面改坏。
         const idx = title.lastIndexOf(' - ');
         return (idx > 0) ? title.slice(0, idx).trim() : title;
+    }
+
+    /**
+     * HTML 文本/属性转义。
+     *
+     * 弹窗里的一切动态内容都来自表格单元格的真实文本与 PROTO_FORM 配置，
+     * 一律经此函数后再拼进 innerHTML。不转义时后果有二，都已实测：
+     *   ① 值里含英文双引号 → 属性被截断，回填静默丢字（"规格 15" 显示器 → "规格 15"）
+     *   ② 值里含尖括号 → 生成带事件处理器的活元素，且 onerror/onfocus 确实会执行
+     */
+    function esc(s) {
+        return String(s == null ? '' : s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    /**
+     * 判断某个单元格是不是「操作列」。
+     *
+     * 早先的两种做法都会误伤真实数据：
+     *   · 按文本过滤（text.includes('修改'|'删除'|'详情'|'更多')）→ 备注写「请修改收货地址」就被丢
+     *   · 按表头过滤（header.includes('操作')）→ 「操作人」这种正常业务列被当成操作列丢弃
+     * 现在只认两种：表头恰好是「操作」，或单元格内含按钮且按钮文案像操作动词。
+     * 纯数据单元格（即使文案含"修改"）永远不会被跳过。
+     */
+    function isActionCell(header, cell) {
+        if (header && header.trim() === '操作') return true;
+        if (!cell.querySelector('button')) return false;
+        return /修改|编辑|删除|详情|查看|更多|启用|停用/.test(cell.textContent);
     }
 
     /**
@@ -235,80 +269,92 @@
         // 新增/编辑表单弹框
         form(options) {
             const { title = '新增', fields = [], data = null } = options;
+            const safeFields = Array.isArray(fields) ? fields : [];
             let formHtml = '<div class="proto-form">';
-            fields.forEach((field, fi) => {
+
+            safeFields.forEach((field, fi) => {
+                // 字段项来自页面配置，容错：null / 非对象直接跳过。
+                // 此前不做判空，fields 里混进一个 null 就会在读 .required 时抛
+                // 未捕获 TypeError —— 弹窗根本打不开，控制台只留一条红字。
+                if (!field || typeof field !== 'object') return;
+
+                const label = esc(field.label);
                 const required = field.required ? '<span style="color:#f56c6c;">*</span>' : '';
 
-                // 获取字段值（用于编辑回填）
-                const fieldValue = data && data[field.label] ? data[field.label] : '';
+                // 回填取值：先判「有没有这个键」再取值。
+                // 两种老写法都会出错：
+                //   · 真值判断 data[label] ? … : ''  → 数字 0、布尔 false 被吞成空
+                //   · 直接 data[label]              → 键名命中原型链时把函数源码灌进输入框
+                const has = !!data && Object.prototype.hasOwnProperty.call(data, field.label);
+                const raw = has ? data[field.label] : '';
+                const fieldValue = raw == null ? '' : String(raw);
 
                 if (field.type === 'select') {
                     const optionsHtml = (field.options || []).map(o =>
-                        `<option value="${o}"${fieldValue === o ? ' selected' : ''}>${o}</option>`
+                        `<option value="${esc(o)}"${fieldValue === String(o) ? ' selected' : ''}>${esc(o)}</option>`
                     ).join('');
                     formHtml += `
                         <div class="proto-form-item">
-                            <label>${required}${field.label}</label>
+                            <label>${required}${label}</label>
                             <select class="proto-form-select"><option value="">请选择</option>${optionsHtml}</select>
                         </div>`;
                 } else if (field.type === 'textarea') {
                     formHtml += `
                         <div class="proto-form-item">
-                            <label>${required}${field.label}</label>
-                            <textarea class="proto-form-textarea" rows="3" placeholder="请输入${field.label}">${fieldValue}</textarea>
+                            <label>${required}${label}</label>
+                            <textarea class="proto-form-textarea" rows="3" placeholder="请输入${label}">${esc(fieldValue)}</textarea>
                         </div>`;
                 } else if (field.type === 'date') {
                     formHtml += `
                         <div class="proto-form-item">
-                            <label>${required}${field.label}</label>
-                            <input type="date" class="proto-form-input" value="${fieldValue}" placeholder="请选择${field.label}">
+                            <label>${required}${label}</label>
+                            <input type="date" class="proto-form-input" value="${esc(fieldValue)}" placeholder="请选择${label}">
                         </div>`;
                 } else if (field.type === 'number') {
                     formHtml += `
                         <div class="proto-form-item">
-                            <label>${required}${field.label}</label>
-                            <input type="number" class="proto-form-input" value="${fieldValue}" placeholder="请输入${field.label}">
+                            <label>${required}${label}</label>
+                            <input type="number" class="proto-form-input" value="${esc(fieldValue)}" placeholder="请输入${label}">
                         </div>`;
                 } else if (field.type === 'radio' || field.type === 'checkbox') {
                     // radio / checkbox：此前一律落进最后的 else，被渲染成普通文本框
                     // （旧词表里 81 个 radio 字段、涉及 59 个实体全部中招）。
                     // 只有带 options 才画选项组；配置漏写 options 时给出可用的退化形态。
                     const isRadio = field.type === 'radio';
-                    const opts = field.options || [];
+                    const opts = Array.isArray(field.options) ? field.options : [];
 
                     let controlHtml;
                     if (opts.length) {
                         // 用字段序号而不是 label 当分组名：label 是自由文本，可能含引号或空格
                         const groupName = `proto-field-${fi}`;
                         // 回填：radio 比单个字符串；checkbox 接受数组或单个字符串
-                        const picked = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
+                        const raw = has ? data[field.label] : '';
+                        const picked = (Array.isArray(raw) ? raw : [raw]).map(v => String(v));
                         controlHtml = '<div class="proto-form-checks">' + opts.map(o =>
                             `<label class="proto-form-check">` +
-                            `<input type="${isRadio ? 'radio' : 'checkbox'}" name="${groupName}" value="${o}"` +
-                            `${picked.includes(o) ? ' checked' : ''}> ${o}` +
+                            `<input type="${isRadio ? 'radio' : 'checkbox'}" name="${groupName}" value="${esc(o)}"` +
+                            `${picked.includes(String(o)) ? ' checked' : ''}> ${esc(o)}` +
                             `</label>`
                         ).join('') + '</div>';
                     } else if (isRadio) {
                         // 没有选项的 radio 无从选择，退化为文本框
-                        controlHtml = `<input type="text" class="proto-form-input" value="${fieldValue}" placeholder="请输入${field.label}">`;
+                        controlHtml = `<input type="text" class="proto-form-input" value="${esc(fieldValue)}" placeholder="请输入${label}">`;
                     } else {
-                        // 只有一个勾选框时，字段名直接跟在后面
-                        controlHtml = `<label class="proto-form-check">` +
-                            `<input type="checkbox" ${fieldValue ? 'checked' : ''}> ${field.label}` +
-                            `</label>`;
+                        // 只有一个勾选框时不重复字段名 —— 外层 label 已经写了一遍
+                        controlHtml = `<input type="checkbox" class="proto-form-check" ${fieldValue ? 'checked' : ''}>`;
                     }
 
                     formHtml += `
                         <div class="proto-form-item">
-                            <label>${required}${field.label}</label>
+                            <label>${required}${label}</label>
                             ${controlHtml}
                         </div>`;
                 } else {
                     // 其余（含未写 type 的字段）一律文本框
                     formHtml += `
                         <div class="proto-form-item">
-                            <label>${required}${field.label}</label>
-                            <input type="text" class="proto-form-input" value="${fieldValue}" placeholder="请输入${field.label}">
+                            <label>${required}${label}</label>
+                            <input type="text" class="proto-form-input" value="${esc(fieldValue)}" placeholder="请输入${label}">
                         </div>`;
                 }
             });
@@ -435,7 +481,7 @@
                 sw.addEventListener('change', () => {
                     const state = sw.checked ? '开启' : '关闭';
                     const entityName = this.getEntityName();
-                    Dialog.confirm(`确定要${state}${entityName}吗？`, () => {
+                    Dialog.confirm(`确定要${state}${esc(entityName)}吗？`, () => {
                         Dialog.success(`已${state}`);
                     });
                 });
@@ -487,7 +533,7 @@
                             onConfirm: () => Dialog.success('分配成功')
                         });
                     } else {
-                        Dialog.success(`${text}操作成功`);
+                        Dialog.success(`${esc(text)}操作成功`);
                     }
 
                     // 关闭菜单
@@ -520,17 +566,23 @@
         },
 
         // 根据页面标题生成表单字段
-        getPageFields() {
+        getPageFields(table) {
             // 1. 页面自带的表单定义 —— 最高优先级
             //    表格是这一页的、表单也是这一页的，同源写就才不会张冠李戴
             //    （预置词表里的字段名经常和本页表头对不上，回填会静默变空）
             const protoForm = getProtoForm();
-            if (protoForm && Array.isArray(protoForm.fields) && protoForm.fields.length) {
+            if (protoForm && Array.isArray(protoForm.fields)) {
+                if (!protoForm.fields.length) {
+                    // 显式空数组：按「本表单不要字段」处理，同时留痕，
+                    // 否则它与「压根没写 PROTO_FORM」完全无法区分，静默降级无从排查。
+                    Debug.warn('PROTO_FORM.fields 是空数组，按「本表单无字段」处理');
+                    return [];
+                }
                 return protoForm.fields;
             }
 
-            // 2. 从 HTML <th> 表头自动推断
-            const autoFields = this.inferFieldsFromHeaders();
+            // 2. 从当前表的 <th> 表头自动推断（必须限定在本表，否则多表页面字段会串味）
+            const autoFields = this.inferFieldsFromHeaders(table);
             if (autoFields.length > 0) return autoFields;
 
             // 3. 兜底通用字段
@@ -545,20 +597,26 @@
             return defaultFields;
         },
 
-        // 从 HTML <th> 表头自动推断字段
-        inferFieldsFromHeaders() {
-            const headers = this.getTableHeaders();
+        // 从当前表的 <th> 表头自动推断字段
+        inferFieldsFromHeaders(table) {
+            const headers = this.getTableHeaders(table);
             if (!headers || headers.length === 0) return [];
 
             const fields = [];
             const seenLabels = new Set();
 
             for (const header of headers) {
-                // 跳过 ID、时间、操作类字段
+                if (!header || header === '操作') continue;
+                // 编号 / ID / 创建人 / 更新时间 这类系统列不进表单
                 if (header.includes('编号') || header.includes('ID') ||
-                    header.includes('时间') || header.includes('日期') ||
-                    header.includes('创建人') || header.includes('更新') ||
-                    header.includes('操作') || header === '') {
+                    header.includes('创建人') || header.includes('更新时间')) {
+                    continue;
+                }
+                // ⚠️ 「创建时间 / 更新日期」这类由系统生成的列也跳过，
+                //    但不能把含「时间/日期」的所有列一律跳过 —— 那会让下面第 620 行
+                //    的 date 推断成为永不可达的死代码（实测「下单日期」整列从表单消失）。
+                if ((header.includes('时间') || header.includes('日期')) &&
+                    (header.includes('创建') || header.includes('更新'))) {
                     continue;
                 }
 
@@ -597,13 +655,19 @@
         /**
          * 从 DOM 提取表头（仅用于「按 <th> 猜字段」这条兜底路径）。
          *
-         * ⚠️ 这份列表【不能】用于把单元格对齐到字段：它会滤掉空表头（checkbox 列）
-         * 与「操作」列，与 td 的位置差着 1~2 列。凡是按位置对齐的场景请用 getAlignedHeaders()。
+         * @param {Element} [table] 限定在某张表内取表头。
+         *   ⚠️ 必须传：此前扫的是整个 document，同页有两张表时，
+         *      A 表与 B 表点「修改」弹出的表单字段会一模一样（实测 12 个字段横跨 5 张表）。
+         *
+         * 这份列表【不能】用于把单元格对齐到字段：它会滤掉空表头（checkbox 列）
+         * 与「操作」列，与单元格的位置差着 1~2 列。凡是按位置对齐的场景请用 getAlignedHeaders()。
          */
-        getTableHeaders() {
-            const ths = document.querySelectorAll('table thead th');
+        getTableHeaders(table) {
+            const root = table || document;
+            const ths = root.querySelectorAll('table thead th, thead th');
             const headers = [];
             ths.forEach(th => {
+                if (th.querySelector('input[type=checkbox]')) return;
                 const text = th.textContent.trim();
                 if (text && text !== '操作') {
                     headers.push(text);
@@ -611,6 +675,14 @@
             });
 
             return headers;
+        },
+
+        /** 找出某个按钮所在区域里的主表格（新增按钮通常在工具栏，不在行内） */
+        getNearestTable(el) {
+            if (!el) return document.querySelector('table');
+            return el.closest('table') ||
+                   (el.closest('.main-content') || document).querySelector('table') ||
+                   document.querySelector('table');
         },
 
         // 获取实体名称（用于提示文案）
@@ -625,7 +697,7 @@
         },
 
         handleAdd(btn) {
-            const fields = this.getPageFields();
+            const fields = this.getPageFields(this.getNearestTable(btn));
             Dialog.form({
                 title: '新增',
                 fields,
@@ -637,16 +709,18 @@
 
         handleEdit(btn) {
             const row = btn.closest('tr');
+            const table = row ? row.closest('table') : this.getNearestTable(btn);
+
             if (!row) {
                 Dialog.form({
                     title: '编辑',
-                    fields: this.getPageFields(),
+                    fields: this.getPageFields(table),
                     onConfirm: () => Dialog.success('修改成功')
                 });
                 return;
             }
 
-            const fields = this.getPageFields();
+            const fields = this.getPageFields(table);
             const rowData = this.extractRowData(row);
 
             Dialog.form({
@@ -662,35 +736,84 @@
         // 取与某个表格行的列位置严格对齐的表头数组。
         //
         // 不能用 getTableHeaders()：那份会滤掉空表头（checkbox 列）与「操作」列，
-        // 而 td / th 是按位置索引的。两份基准不同就会整体错开一列——
+        // 而单元格是按位置索引的。两份基准不同就会整体错开一列——
         // 详情与编辑回填曾把「用户编号」显示成「用户名称」。
         // 凡是需要「第 N 格 ↔ 第 N 个字段」的场景，都必须用这一份。
+        //
+        // 必须正确处理三种表格形态（都实测过会错位）：
+        //   ① 多层表头 + colspan/rowspan —— 分组标题不承载字段，
+        //      取「最下层」占据该列的那个 th；被 rowspan 占住的位置要留空让后面的 th 补位
+        //   ② 表头单元格带 checkbox —— 记空串（它不对应任何字段）
+        //   ③ tbody 首格是 <th scope="row"> —— 数据侧也要按同样方式取格子
         getAlignedHeaders(row) {
             const table = row && row.closest ? row.closest('table') : null;
-            if (!table) return this.getTableHeaders();
-            return Array.from(table.querySelectorAll('thead th')).map(th => {
-                // 只有 checkbox、没有文字的表头
-                if (th.querySelector('input[type=checkbox]')) return '';
-                return th.textContent.trim();
+            if (!table) return [];
+
+            const headRows = Array.from(table.querySelectorAll('thead tr'));
+            if (!headRows.length) return [];
+
+            // 先把表头铺成 grid[r][c]，横向按 colspan 展开、纵向按 rowspan 占位
+            const grid = [];
+            headRows.forEach((tr, r) => {
+                grid[r] = grid[r] || [];
+                let c = 0;
+                for (const th of Array.from(tr.querySelectorAll('th'))) {
+                    while (grid[r][c] !== undefined) c++;      // 让开被上一行 rowspan 占住的格
+                    const text = th.querySelector('input[type=checkbox]') ? '' : th.textContent.trim();
+                    const cs = Math.max(1, parseInt(th.getAttribute('colspan'), 10) || 1);
+                    const rs = Math.max(1, parseInt(th.getAttribute('rowspan'), 10) || 1);
+                    for (let i = 0; i < cs; i++) {
+                        for (let j = 0; j < rs; j++) {
+                            grid[r + j] = grid[r + j] || [];
+                            // rowspan/colspan 的上、左部分保持空，只在最下一层写文字
+                            grid[r + j][c + i] = (j === rs - 1) ? text : undefined;
+                        }
+                    }
+                    c += cs;
+                }
             });
+
+            // 每列取「最下层」的非空表头 —— 分组标题因此不会泄漏成字段名
+            const width = grid.reduce((m, r) => Math.max(m, r.length), 0);
+            const out = [];
+            for (let c = 0; c < width; c++) {
+                let v = '';
+                for (let r = grid.length - 1; r >= 0; r--) {
+                    if (grid[r] && grid[r][c] !== undefined) { v = grid[r][c]; break; }
+                }
+                out.push(v);
+            }
+            return out;
+        },
+
+        // 取与表头等长的单元格数组（含 tbody 里的 th，colspan 也展开）
+        getAlignedCells(row) {
+            const out = [];
+            for (const cell of Array.from(row.querySelectorAll('td, th'))) {
+                const cs = Math.max(1, parseInt(cell.getAttribute('colspan'), 10) || 1);
+                out.push(cell);
+                for (let i = 1; i < cs; i++) out.push(null);   // 被合并掉的列没有独立取值
+            }
+            return out;
         },
 
         // 从表格行提取数据（编辑回填的数据源）
         extractRowData(row) {
-            const cells = row.querySelectorAll('td');
             const headers = this.getAlignedHeaders(row);
+            const cells = this.getAlignedCells(row);
             const data = {};
 
             cells.forEach((cell, index) => {
                 if (index >= headers.length) return;
                 const header = headers[index];
-                // 空表头 = checkbox 列；操作列不属于任何字段
-                if (!header || header.includes('操作')) return;
+                // 空表头 = checkbox 列
+                if (!header) return;
+                // 操作列：只认表头恰为「操作」，或格内确实是按钮 —— 见 isActionCell()
+                if (isActionCell(header, cell)) return;
+                if (!cell) return;
 
                 const text = cell.textContent.trim();
                 if (!text) return;
-                if (text.includes('修改') || text.includes('删除') ||
-                    text.includes('更多') || text.includes('详情')) return;
 
                 data[header] = text;
             });
@@ -702,7 +825,7 @@
             const row = btn.closest('tr');
             if (!row) return;
             const headers = this.getAlignedHeaders(row);
-            const cells = row.querySelectorAll('td');
+            const cells = this.getAlignedCells(row);
 
             let detailHtml = '<div class="proto-detail-grid">';
             cells.forEach((cell, index) => {
@@ -710,17 +833,20 @@
                 const headerText = headers[index];
                 // 空表头 = checkbox 列
                 if (!headerText) return;
-                // 跳过操作列与 checkbox 单元格
-                if (headerText.includes('操作') || cell.querySelector('input[type=checkbox]')) return;
+                if (!cell) return;
+                // 操作列：与 extractRowData 同一套判定，避免两处口径不一致
+                if (isActionCell(headerText, cell)) return;
+                if (cell.querySelector('input[type=checkbox]')) return;
 
                 const value = cell.textContent.trim();
-                // 跳过空值和按钮文本
-                if (!value || value.includes('修改') || value.includes('更多') || value.includes('详情') || value.includes('删除')) return;
+                if (!value) return;
 
+                // ⚠️ 必须转义：此处曾把单元格原文直接拼进 innerHTML，
+                // 实测一个 <img src=x onerror=…> 的文本会变成带事件处理器的真元素并执行。
                 detailHtml += `
                     <div class="proto-detail-item">
-                        <span class="proto-detail-label">${headerText}</span>
-                        <span class="proto-detail-value">${value}</span>
+                        <span class="proto-detail-label">${esc(headerText)}</span>
+                        <span class="proto-detail-value">${esc(value)}</span>
                     </div>`;
             });
             detailHtml += '</div>';

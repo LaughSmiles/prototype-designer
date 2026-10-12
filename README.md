@@ -93,10 +93,11 @@
                   ]
               };
             </script>
-    -   两条铁律（违反不会报错，只会静默失效）：
+    -   三条铁律（违反不会报错，只会静默失效）：
         *   每个 field.label 必须与表格中对应的 <th> 文字【一字不差】，否则「编辑」回填为空。
         *   只写「新增时该填什么」，不要把编号、创建时间、操作列写进 fields。
-    -   type 可选值：input / textarea / number / date / select / radio / checkbox
+        *   只在表单里、表格里本就没有的字段（如密码、确认密码），必须加 "formOnly": true。
+    -   type 可选值：input / textarea / number / date / select / radio / checkbox / password
         （select、radio、checkbox 必须给 options；radio 无 options 会退化成文本框）
     -   不写这一段时表单不会坏，但会退化为「按表头猜字段」，控件类型多半是错的。
 请按照以上要求生成完整的HTML代码。
@@ -213,6 +214,19 @@ window.SIDEBAR_MENU = [
 
 之所以要写：表格是「读」，表单是「写」，两者字段集合**并不相同**——编号、创建时间、操作列只在表格里；
 密码、邮箱这类只进表单。`<th>状态</th>` 也推不出下拉框的选项。框架无法从表格反推出表单。
+
+`type` 可选值：`input` / `textarea` / `number` / `date` / `select` / `radio` / `checkbox` / `password`。
+
+**三条约定**：
+
+1. `field.label` 必须与表格里对应的 `<th>` 文字**一字不差**，否则「编辑」回填该字段会是空的；
+2. 只在表单里、表格里本就没有的字段（**密码、确认密码**）必须加 `"formOnly": true`：
+
+   ```javascript
+   { label: "初始密码", type: "password", formOnly: true }
+   ```
+
+3. `select` / `radio` / `checkbox` 必须给 `options`，否则会退化成普通文本框。
 
 > 不写这段**不会报错**，但表单会退化为「按 `<th>` 猜字段」，控件类型多半是错的。
 > 守卫插件会在你写入页面时直接报出来。
