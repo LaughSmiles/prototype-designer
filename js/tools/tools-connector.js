@@ -29,6 +29,16 @@ const ToolsConnector = {
         hoverAnchor: null,
     },
 
+    // 段拖拽中的状态（MasterGo：hover 每段中点的胶囊，按住拖动整段平移）
+    segState: {
+        active: false,
+        connectorId: null,
+        segIndex: -1,      // 第 i 段 = points[i] → points[i+1]
+        basePoints: null,  // 按下那一刻的路径点，作为拖动基准
+        grabX: 0,          // 按下时的鼠标画布坐标，算位移用
+        grabY: 0,
+    },
+
     /** 当前悬停的页面元素（用于显示锚点），null = 不显示 */
     hoverElementId: null,
 
@@ -408,6 +418,137 @@ const ToolsConnector = {
             connectorId: handle.dataset.connectorId,
             end: handle.dataset.end,
         };
+    },
+
+    // ------------------------------------------------------------ 段拖拽
+
+    /**
+     * 判断鼠标是否命中某一段中点的胶囊。
+     * @returns {?{connectorId:string, segIndex:number}}
+     */
+    hitTestSegmentHandle(e) {
+        const target = e.target;
+        if (!target || !target.closest) return null;
+        const h = target.closest('.connector-seg-handle');
+        if (!h) return null;
+        const idx = parseInt(h.dataset.segIndex, 10);
+        if (!Number.isFinite(idx)) return null;
+        return { connectorId: h.dataset.connectorId, segIndex: idx };
+    },
+
+    /** 开始拖拽某一段（由 tools.js 在 mousedown 命中胶囊时调用） */
+    beginSegmentDrag(connectorId, segIndex, e) {
+        const el = ElementManager.getElement(connectorId);
+        if (!el || el.type !== 'connector') return false;
+
+        const points = el._routePoints;
+        if (!Array.isArray(points) || points.length < 2) return false;
+        if (segIndex < 0 || segIndex >= points.length - 1) return false;
+
+        const pos = this.toCanvasCoords(e);
+        this.segState.active = true;
+        this.segState.connectorId = connectorId;
+        this.segState.segIndex = segIndex;
+        this.segState.basePoints = points.map(p => ({ x: p.x, y: p.y }));
+        this.segState.grabX = pos.x;
+        this.segState.grabY = pos.y;
+        return true;
+    },
+
+    /**
+     * 第 i 段控制的是哪个拐点。
+     *
+     * 规则（实测反推）：第 i 段控制 min(i+1, n-2) 号拐点。
+     *   · Z 形 4 点：seg0 → P1、seg1 → P2、seg2 → P2
+     *   · L 形 3 点：seg0 → P1、seg1 → P1（末段的末端是钉死的终点，只能动内侧角）
+     * 也就是：优先动「靠后那个拐点」，但它如果是钉死的终点，就退回靠前那个。
+     */
+    _segInnerIndex(segIndex, pointCount) {
+        return Math.min(segIndex + 1, pointCount - 2);
+    },
+
+    /** 拖动中：重算路径并就地重绘 */
+    handleSegmentMouseMove(e) {
+        const st = this.segState;
+        if (!st.active) return;
+
+        const el = ElementManager.getElement(st.connectorId);
+        if (!el) return;
+        const base = st.basePoints;
+        if (!base || base.length < 2) return;
+
+        const fromEl = ElementManager.getElement(el.fromId);
+        const toEl = ElementManager.getElement(el.toId);
+        if (!fromEl || !toEl) return;
+
+        const cursor = this.toCanvasCoords(e);
+        const i = st.segIndex;
+        const a = base[i];
+        const b = base[i + 1];
+
+        // 只取**法线分量**：水平段只吃 dy，垂直段只吃 dx。
+        // 斜着拖时另一个分量被丢弃 —— 这正是「始终保持正交」的实现方式。
+        const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+        const delta = horizontal ? (cursor.y - st.grabY) : (cursor.x - st.grabX);
+
+        const pts = base.map(p => ({ x: p.x, y: p.y }));
+        const inner = this._segInnerIndex(i, base.length);
+        if (horizontal) pts[inner].y += delta;
+        else pts[inner].x += delta;
+
+        // 首尾钉回当前锚点，再正交化 —— 跟 MasterGo 的拖段语义一致
+        //
+        // ⚠️ bend 必须传：它告诉正交化「这次是哪个拐点、动的哪根坐标」，
+        //    拐角补全的方向要跟着它走。少了它，横段能拖、竖段一律拖不动
+        //    （新 x 被补成水平短头后又被共线合并吃掉），且不报任何错。
+        const first = el._routePoints[0];
+        const last = el._routePoints[el._routePoints.length - 1];
+        const next = ConnectorRouter.applyWaypoints(pts, el._routePoints, first, last,
+            { index: inner, axis: horizontal ? 'y' : 'x' });
+        if (!next || next.length < 2) return;
+
+        // 第一次掰形状时记下两端的绝对位置；之后页面框移动就按这个基准算位移
+        if (!el.wpRef) {
+            el.wpRef = {
+                from: { x: fromEl.position.x, y: fromEl.position.y },
+                to: { x: toEl.position.x, y: toEl.position.y },
+            };
+        }
+        el.waypoints = next;
+
+        const div = document.querySelector(`[data-element-id="${el.id}"]`);
+        if (div) {
+            if (!div.classList.contains('seg-dragging')) div.classList.add('seg-dragging');
+            ElementManager.renderConnectorInto(div, el);
+        }
+    },
+
+    /** 结束段拖拽 */
+    endSegmentDrag() {
+        const st = this.segState;
+        if (!st.active) return;
+
+        const el = ElementManager.getElement(st.connectorId);
+        st.active = false;
+        st.connectorId = null;
+        st.segIndex = -1;
+        st.basePoints = null;
+        st.grabX = 0;
+        st.grabY = 0;
+
+        if (!el) return;
+
+        const div = document.querySelector(`[data-element-id="${el.id}"]`);
+        if (div) div.classList.remove('seg-dragging');
+
+        if (Array.isArray(el.waypoints) && el.waypoints.length >= 2) {
+            HistoryManager.saveState();
+        }
+    },
+
+    /** 是否正在拖段 */
+    isSegmentDragging() {
+        return !!this.segState.active;
     },
 
     // ------------------------------------------------------------ 预览渲染

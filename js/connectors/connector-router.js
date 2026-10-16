@@ -266,6 +266,130 @@ const ConnectorRouter = {
         return this.route(fromRect, toRect);
     },
 
+    // ------------------------------------------------- 手动路径点（MasterGo 拖段）
+
+    /**
+     * 用手动掰出来的路径点覆盖自动路由结果。
+     *
+     * 移植自 MasterGo 实测（用户文件上量过）：
+     *   拖某一段的胶囊 = 该段**靠内的拐点**跟手平移 → 整条路径正交化
+     *   （斜的地方自动补拐点）→ 首尾锚点钉死不动。
+     *   实测 3 段 Z 形拖首段后塌成 2 段 L 形，全程正交、两端坐标纹丝不动。
+     *
+     * 所以这里的职责只有三件：钉端点 → 正交化 → 去重。
+     * 形状本身由 tools-connector.js 在拖动时写进 element.waypoints。
+     *
+     * @param {Array<{x,y}>} waypoints 手动路径点（含首尾）
+     * @param {Array<{x,y}>} fallback  自动路由结果；手动数据不可用时原样返回
+     * @param {?{x,y}} fromPoint       起点解析坐标（钉回首端）
+     * @param {?{x,y}} toPoint         终点解析坐标（钉回末端）
+     * @param {?{index:number, axis:'x'|'y'}} bend 本次拖动改动的拐点；
+     *        不传则沿用历史行为（统一「先竖后横」），渲染路径一律不传
+     */
+    applyWaypoints(waypoints, fallback, fromPoint, toPoint, bend = null) {
+        if (!Array.isArray(waypoints) || waypoints.length < 2) return fallback;
+
+        const pts = waypoints.map(p => ({ x: Number(p.x), y: Number(p.y) }));
+        if (pts.some(p => !Number.isFinite(p.x) || !Number.isFinite(p.y))) return fallback;
+
+        // 首尾钉回锚点：手动形状永远不改变「连谁、连哪个点」
+        if (fromPoint && Number.isFinite(fromPoint.x) && Number.isFinite(fromPoint.y)) {
+            pts[0] = { x: fromPoint.x, y: fromPoint.y };
+        }
+        if (toPoint && Number.isFinite(toPoint.x) && Number.isFinite(toPoint.y)) {
+            pts[pts.length - 1] = { x: toPoint.x, y: toPoint.y };
+        }
+
+        const deduped = this._dedupe(
+            this._dedupeCollinear(this._orthogonalizeWaypoints(pts, bend)));
+        return deduped.length >= 2 ? deduped : fallback;
+    },
+
+    /**
+     * 去掉落在同一条直线段中间的多余拐点。
+     *
+     * 正交化会补出共线的中间点（先竖后横补出一个角时，角两侧常常各留一段），
+     * 不归并的话一条本该是 L 形的线会被算成 4 点，胶囊也会多画两个。
+     *
+     * 实测对照：MasterGo 拖首段后，3 段 Z 形塌成 2 段 L 形；
+     * 归并后本实现得到的点数与它逐点一致。
+     */
+    _dedupeCollinear(pts) {
+        const out = [];
+        for (let i = 0; i < pts.length; i++) {
+            const p = pts[i];
+            if (out.length >= 2) {
+                const a = out[out.length - 2];
+                const b = out[out.length - 1];
+                const collinear = (a.x === b.x && b.x === p.x) || (a.y === b.y && b.y === p.y);
+                if (collinear) {
+                    // 共线 → 用当前点替掉前一个（把直线段延长出去）
+                    out[out.length - 1] = p;
+                    continue;
+                }
+            }
+            out.push(p);
+        }
+        return out;
+    },
+
+    /**
+     * 手动路径点专用的正交化。
+     *
+     * ⚠️ 默认方向是「先竖后横」，与普通路由用的 _orthogonalize（「先横后竖」）相反，
+     *    这是**故意的**：MasterGo 实测拖首段胶囊后，线是从起点先**竖着**下去再横向走
+     *    过去的（截图逐点核对过）。改掉会让所有存量连线变形，所以这里单独开一个。
+     *
+     * ⚠️⚠️ 但「统一先竖后横」只对**横段**成立，这是本函数原来最贵的一个 bug：
+     *    拖竖段时拐点改的是 x，而先竖后横插入的角是 {x: prev.x, y: cur.y}
+     *    —— 它永远保留**前一个点**的 x，于是新 x 只变成一小截水平短头，
+     *    紧接着又和后面的横段共线，被 _dedupeCollinear 合并掉，
+     *    路径逐点回到拖之前 = **拖了等于没拖，且不报任何错**。
+     *    实测：6 段折线里 seg0/2/4（竖）全部无效，只有 seg1/3（横）能动。
+     *
+     * ⚠️ 正确规则：**每一处拐角都要保住「被拖动的那一点」的新坐标**，
+     *    补出来的角落在哪一侧，取决于被动的点是被动的 cur 还是 prev：
+     *      · 被动的点是 cur → 先竖后横（保留 cur.y）/ 先横后竖（保留 cur.x）
+     *      · 被动的点是 prev → 方向反过来（保留 prev 的那个坐标）
+     *    末段拖动正是靠「prev 分支」才生效：末端的终点被钉死在锚点上，
+     *    拐角必须补在它前面，线段才真的平移过去。
+     *
+     * @param {Array<{x,y}>} pts
+     * @param {?{index:number, axis:'x'|'y'}} bend 被拖动拐点的下标与被改动的坐标轴
+     */
+    _orthogonalizeWaypoints(pts, bend = null) {
+        if (!pts || pts.length === 0) return [];
+        const mi = bend && Number.isInteger(bend.index) ? bend.index : -1;
+        const mx = bend && bend.axis === 'x';
+
+        const out = [pts[0]];
+        for (let i = 1; i < pts.length; i++) {
+            const prev = out[out.length - 1];
+            const cur = pts[i];
+            if (prev.x === cur.x || prev.y === cur.y) {
+                out.push(cur);
+                continue;
+            }
+            if (i === mi) {
+                // 被动点是 cur：保住 cur 被改动的那根坐标
+                out.push(mx ? { x: cur.x, y: prev.y } : { x: prev.x, y: cur.y });
+            } else if (i - 1 === mi) {
+                // 被动点是 prev：方向反过来，保住 prev 被改动的那根坐标
+                out.push(mx ? { x: prev.x, y: cur.y } : { x: cur.x, y: prev.y });
+            } else {
+                out.push({ x: prev.x, y: cur.y });   // 历史默认：先竖后横
+            }
+            out.push(cur);
+        }
+        return out;
+    },
+
+    /** 路径点整体平移（两端页面框移动时，让手动形状跟着走） */
+    translatePoints(points, dx, dy) {
+        if (!Array.isArray(points)) return points;
+        return points.map(p => ({ x: p.x + dx, y: p.y + dy }));
+    },
+
     /**
      * 锚点圆心的默认外移量。
      *

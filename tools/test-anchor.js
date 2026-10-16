@@ -1807,11 +1807,25 @@ test('renderPreview 必须真正使用 resolveEndpoints 的结果（而非调用
 
 test('渲染器必须用 resolveEndpoints 的结果算路径', () => {
     const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
-    const m = src.match(/routeFor\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
-    assert(m, '应能找到 routeFor');
-    assert(/resolveEndpoints/.test(m[1]), '必须调用 resolveEndpoints');
-    assert(/ep\.fromRect|ep\.toRect/.test(m[1]),
+    // ⚠️ 解析本体已从 routeFor 拆进 _routeBase（routeFor 现在还要负责叠加
+    //    手动路径点 waypoints，两者职责不同，硬塞一个函数反而看不清）。
+    //    契约没变：**全项目只允许有一处 resolveEndpoints**，
+    //    所以改为分别锁住「解析点」与「委托点」，两段都必须在。
+    const base = src.match(/_routeBase\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(base, '应能找到 _routeBase');
+    assert(/resolveEndpoints/.test(base[1]), '必须调用 resolveEndpoints');
+    assert(/ep\.fromRect|ep\.toRect/.test(base[1]),
         '必须把 ep 的矩形传给 routeFromAnchor —— 调用后丢弃等于没调用');
+
+    const rf = src.match(/routeFor\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(rf, '应能找到 routeFor');
+    assert(/_routeBase\(/.test(rf[1]), 'routeFor 必须走 _routeBase，不许自己再解析一遍');
+    assert(!/resolveEndpoints/.test(rf[1]),
+        'routeFor 里不应再直接解析端点 —— 有第二处就等于又埋了一份分叉');
+
+    const hits = src.match(/resolveEndpoints\(/g) || [];
+    assert(hits.length === 1,
+        'element-renderer.js 里 resolveEndpoints 只允许出现一次，实得 ' + hits.length);
 });
 
 test('renderAnchors 必须真正使用两层结果（而非调用后丢弃）', () => {

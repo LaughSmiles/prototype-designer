@@ -2317,6 +2317,57 @@ body {
     transform: scale(1.25);
 }
 
+/* ================================================================
+   连接线段胶囊（MasterGo：hover 连线 → 每段中点浮出胶囊，按住整段平移）
+   ================================================================
+   MasterGo 实测（50% / 89% 两档缩放下量得）：
+     · 胶囊 18.5 × 6.5 屏幕 px（横段）/ 6.5 × 18.5（竖段），实心蓝
+     · 端点圆点则只在**选中**时出现，且是空心的
+   ⚠️ 尺寸**不在 CSS 里写死**：由 JS 按 18/zoom、6/zoom 写成画布坐标，
+      缩放时胶囊在**屏幕上**保持恒定 —— 与 .connector-hit 完全同一个道理
+      （否则 zoom=0.25 时胶囊只剩 4px 高，根本点不中）。
+
+   ⚠️ pointer-events：父级 .connector-element 是 none，靠这里显式 auto 恢复命中。
+      pointer-events 可继承但可被覆盖，和 .connector-hit 用的是同一招。 */
+.connector-seg-handle {
+    position: absolute;
+    border-radius: 999px;
+    background: #409EFF;
+    opacity: 0;
+    pointer-events: none;
+    cursor: move;
+    z-index: 6;
+    transition: opacity 0.12s ease;
+}
+
+/* 悬停连线即出现 —— MasterGo 不要求先选中。
+   .seg-dragging 是拖动中由 JS 挂的：拖动时鼠标会离开原胶囊所在的段，
+   不锁住的话胶囊会在拖到一半时集体消失。 */
+.canvas-element.connector-element:hover .connector-seg-handle,
+.canvas-element.connector-element.selected .connector-seg-handle,
+.canvas-element.connector-element.seg-dragging .connector-seg-handle {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.connector-seg-handle:hover {
+    background: #ffffff;
+    box-shadow: 0 0 0 2px #409EFF;
+}
+
+/* 命中区比视觉大一圈。
+   ⚠️ 胶囊只有 6px 高，实测这就是 MasterGo 的手感难点（要精准对准段中点）。
+   这里不改变视觉，只把命中区上下各扩 5px、左右各扩 3px —— 纯手感优化。 */
+.connector-seg-handle::before {
+    content: '';
+    position: absolute;
+    inset: -5px -3px;
+}
+
+:root[data-theme="light"] .connector-seg-handle {
+    background: #337ecc;
+}
+
 /* 选中时视觉线高亮 */
 .canvas-element.connector-element.selected .connector-path {
     stroke: var(--accent-blue);

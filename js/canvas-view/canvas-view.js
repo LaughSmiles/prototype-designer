@@ -153,6 +153,12 @@ const CanvasView = {
             ElementRenderer.refreshHitStrokeWidths();
         }
 
+        // ⚠️ 段胶囊同理：宽高也是「屏幕恒定 18×6px」换算到画布坐标写死的，
+        //    zoom 变了不重写就会「放大后糊成一大坨 / 缩小时看不见」。
+        if (typeof ElementRenderer !== 'undefined' && ElementRenderer.refreshSegHandleSizes) {
+            ElementRenderer.refreshSegHandleSizes();
+        }
+
         this.updateScrollbars();
     },
 

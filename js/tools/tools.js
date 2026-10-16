@@ -55,6 +55,11 @@ const Tools = {
             ToolsConnector.cancelDrawing();
         }
 
+        // 拖段途中切工具：收尾并落一次历史，否则这次拖动会变成"按了没动"
+        if (typeof ToolsConnector !== 'undefined' && ToolsConnector.isSegmentDragging()) {
+            ToolsConnector.endSegmentDrag();
+        }
+
         // 切换工具时收起锚点层：锚点只在连接线工具下显示（对齐 MasterGo）
         if (typeof ToolsConnector !== 'undefined') {
             ToolsConnector.setHoverElement(null);
@@ -127,11 +132,21 @@ const Tools = {
                 return;
             }
 
+            // 段拖拽（MasterGo：hover 连线 → 每段中点冒出胶囊，按住整段平移）
+            // 优先级在端点之下 —— 两者在不同的段上，不会互相遮挡，
+            // 但端点圆点是"改连谁"的主操作，排在前面更符合直觉。
+            const segHit = ToolsConnector.hitTestSegmentHandle(e);
+            if (segHit && ToolsConnector.beginSegmentDrag(segHit.connectorId, segHit.segIndex, e)) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
             if (this.currentTool !== 'connector') return;
             ToolsConnector.handleMouseDown(e);
         }, true);
 
-        // 端点拖拽的移动/释放走 document 级监听（指针可能在 iframe 上，
+        // 端点/段拖拽的移动与释放走 document 级监听（指针可能在 iframe 上，
         // 停在 wrapper 上会丢事件），在 setupCanvasEvents 末尾统一注册
 
         // ===== 点击事件（用于箭头和批注标记工具）=====
@@ -188,13 +203,15 @@ const Tools = {
             }
         });
 
-        // ⚠️ 端点拖拽期间指针可能移出 wrapper（甚至落到 iframe 上），
+        // ⚠️ 端点/段拖拽期间指针可能移出 wrapper（甚至落到 iframe 上），
         // 只在 wrapper 上监听 mouseup 会丢事件，所以拖拽期间改挂 document。
         document.addEventListener('mousemove', (e) => {
             if (ToolsConnector.dragState.active) ToolsConnector.handleMouseMove(e);
+            else if (ToolsConnector.isSegmentDragging()) ToolsConnector.handleSegmentMouseMove(e);
         });
         document.addEventListener('mouseup', (e) => {
             if (ToolsConnector.dragState.active) ToolsConnector.handleMouseUp(e);
+            else if (ToolsConnector.isSegmentDragging()) ToolsConnector.endSegmentDrag();
         });
 
         // 右键事件（用于完成箭头绘制）

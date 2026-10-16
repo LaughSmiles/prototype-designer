@@ -342,6 +342,12 @@ const ElementRenderer = {
      * 路径与升级前逐像素一致。
      */
     routeFor(element, fromEl, toEl, fromRect, toRect) {
+        return this.applyWaypointsTo(
+            element, fromEl, toEl, this._routeBase(element, fromEl, toEl, fromRect, toRect));
+    },
+
+    /** 自动路由本体（不含手动路径点） */
+    _routeBase(element, fromEl, toEl, fromRect, toRect) {
         const hasAnchor = !!(element.fromAnchor || element.toAnchor);
         if (!hasAnchor) {
             return ConnectorRouter.route(fromRect, toRect);
@@ -356,6 +362,42 @@ const ElementRenderer = {
         }
         return ConnectorRouter.routeFromAnchor(
             ep.fromRect, ep.toRect, ep.fromSide, ep.toSide);
+    },
+
+    /**
+     * 应用手动路径点（MasterGo「拖段」的产物）。
+     *
+     * ⚠️ 为什么不能把 waypoints 存成「每段一个偏移量」：
+     *    实测拖一次段，段数会变（3 段 Z 形塌成 2 段 L 形；再拖末段又回到 3 段），
+     *    按段索引存的偏移当场就对不上。所以这里存的是**完整路径点**。
+     *
+     * ⚠️ 页面框移动时的行为（实验实测，对应用户确认的「平移」方案）：
+     *    把 waypoints 整体平移两端绑定元素的位移**平均值**，
+     *    再把首尾钉回锚点 → 形状跟着框走，不会被拉扁。
+     *    实测：框水平左移 135，线的 X 不变、W 减 135、H 一像素不动。
+     *
+     * 没有 waypoints 的旧数据走 base，行为逐像素不变。
+     */
+    applyWaypointsTo(element, fromEl, toEl, base) {
+        const wp = element.waypoints;
+        const ref = element.wpRef;
+        if (!Array.isArray(wp) || wp.length < 2) return base;
+        if (!Array.isArray(base) || base.length < 2) return base;
+
+        let moved = wp;
+        if (ref && fromEl && toEl && fromEl.position && toEl.position) {
+            const dfx = fromEl.position.x - ref.from.x;
+            const dfy = fromEl.position.y - ref.from.y;
+            const dtx = toEl.position.x - ref.to.x;
+            const dty = toEl.position.y - ref.to.y;
+            const dx = (dfx + dtx) / 2;
+            const dy = (dfy + dty) / 2;
+            if (dx !== 0 || dy !== 0) {
+                moved = ConnectorRouter.translatePoints(wp, dx, dy);
+            }
+        }
+
+        return ConnectorRouter.applyWaypoints(moved, base, base[0], base[base.length - 1]);
     },
 
     /**
@@ -391,7 +433,28 @@ const ElementRenderer = {
         element.width = maxX - minX;
         element.height = maxY - minY;
 
-        const padding = 12;   // 给箭头头部留空间
+        // 不在这里 appendChild，由调用者统一添加
+        this.renderConnectorParts(div, element, points, minX, minY);
+    },
+
+    /**
+     * 画一条连接线的**全部可视内容**：SVG + 端点手柄 + 段胶囊。
+     *
+     * ⚠️ 为什么必须抽成公共函数：renderConnectorElement（首次绘制）与
+     *    renderConnectorInto（改连 / 拖段后的就地重绘）过去各写了一份，
+     *    本仓库已被"同一逻辑写两份"坑过三次。只要它们有任何一处漏改，
+     *    就会出现「首次画得出、改连后缺手柄」这类只在交互里才暴露的 bug。
+     *
+     * ⚠️ 容器定位在 minX - CONNECTOR_PADDING，所以**子元素落位必须补回这个 padding**：
+     *    `left = 点.x - minX + padding` 才对得上画布坐标。
+     *    漏掉它会把端点圆点与段胶囊整体偏移 12px —— 端点圆点只是"看着稍微歪一点"，
+     *    而 18×6 的胶囊偏 12px 后整条飞出线的 stroke 范围，
+     *    于是 hover 不亮、点不中，且**不报任何错**。
+     */
+    renderConnectorParts(div, element, points, minX, minY) {
+        if (!div || !Array.isArray(points) || points.length < 2) return;
+
+        const padding = this.CONNECTOR_PADDING;   // 给箭头头部留空间
 
         div.style.left = `${minX - padding}px`;
         div.style.top = `${minY - padding}px`;
@@ -438,25 +501,150 @@ const ElementRenderer = {
         div.appendChild(svg);
 
         // 端点手柄（仅选中时显示），坐标已换算到 div 的局部系
-        const fromHandle = document.createElement('div');
-        fromHandle.className = 'connector-handle';
-        fromHandle.dataset.connectorId = element.id;
-        fromHandle.dataset.end = 'from';
-        fromHandle.style.left = `${points[0].x - minX}px`;
-        fromHandle.style.top = `${points[0].y - minY}px`;
-        fromHandle.title = '拖动可改连起点';
-        div.appendChild(fromHandle);
+        this._appendHandle(div, element, points[0], minX, minY, 'from', '拖动可改连起点');
+        this._appendHandle(div, element, points[points.length - 1], minX, minY, 'to', '拖动可改连终点');
 
-        const toHandle = document.createElement('div');
-        toHandle.className = 'connector-handle';
-        toHandle.dataset.connectorId = element.id;
-        toHandle.dataset.end = 'to';
-        toHandle.style.left = `${points[points.length - 1].x - minX}px`;
-        toHandle.style.top = `${points[points.length - 1].y - minY}px`;
-        toHandle.title = '拖动可改连终点';
-        div.appendChild(toHandle);
+        // 段胶囊（MasterGo：每段中点一个，悬停连线即出现）
+        this._appendSegmentHandles(div, element, points, minX, minY);
+    },
 
-        // 不在这里appendChild，由调用者统一添加
+    /** 端点拖拽圆点 */
+    _appendHandle(div, element, point, minX, minY, end, title) {
+        const h = document.createElement('div');
+        h.className = 'connector-handle';
+        h.dataset.connectorId = element.id;
+        h.dataset.end = end;
+        // ⚠️ 补回 padding：容器原点在 minX - padding（见 renderConnectorParts）
+        h.style.left = `${point.x - minX + this.CONNECTOR_PADDING}px`;
+        h.style.top = `${point.y - minY + this.CONNECTOR_PADDING}px`;
+        h.title = title;
+        div.appendChild(h);
+    },
+
+    /**
+     * 段胶囊 —— MasterGo 实测：hover 到连线上，每一段的中点都冒出一个
+     * 18.5×6.5 屏幕像素的粗蓝胶囊；按住拖动可以把这一段整段平移。
+     * 端点圆点则只在**选中**时出现。
+     *
+     * ⚠️ 胶囊落在「直线部分」的中点，不是几何中点：
+     *    段的两头是圆角（DEFAULT_RADIUS=16），算几何中点会正好压在圆弧上。
+     *    实测扣掉两端各 8 屏幕 px（=16 画布 px × 0.5 缩放）后与 MasterGo 逐像素吻合。
+     */
+    _appendSegmentHandles(div, element, points, minX, minY) {
+        const size = this.getSegHandleSize();
+        for (let i = 0; i < points.length - 1; i++) {
+            const a = points[i];
+            const b = points[i + 1];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const len = Math.hypot(dx, dy);
+            // 微段（亚像素残差）不放手柄，否则会堆出一堆点不中的小圆点
+            if (len <= 1) continue;
+
+            const vertical = Math.abs(dy) > Math.abs(dx);
+            const inset = this.getCornerRadius();   // 画布坐标，无需再除 zoom
+            const a1 = vertical ? { x: a.x, y: a.y + inset } : { x: a.x + inset, y: a.y };
+            const b1 = vertical ? { x: b.x, y: b.y - inset } : { x: b.x - inset, y: b.y };
+            if (Math.hypot(b1.x - a1.x, b1.y - a1.y) <= 1) continue;
+
+            const cx = (a1.x + b1.x) / 2;
+            const cy = (a1.y + b1.y) / 2;
+
+            // ⚠️ 朝向必须跟随线段：竖段要用「窄而长」的竖胶囊，横段用「宽而扁」的横胶囊。
+            //    MasterGo 实测就是这样（横段 18.5×6.5、竖段 6.5×18.5，屏幕像素），
+            //    写成固定朝向时竖线上会躺着一个横把手 —— 不报错，只是明显不对。
+            const boxW = vertical ? size.h : size.w;
+            const boxH = vertical ? size.w : size.h;
+
+            const h = document.createElement('div');
+            h.className = 'connector-seg-handle';
+            h.dataset.connectorId = element.id;
+            h.dataset.segIndex = String(i);
+            h.dataset.vertical = vertical ? '1' : '0';
+            // 存下中心坐标，缩放重算尺寸时才能把中心钉回原处（见 refreshSegHandleSizes）
+            // ⚠️ 补回 padding：容器原点在 minX - padding（见 renderConnectorParts）
+            h.dataset.cx = String(cx - minX + this.CONNECTOR_PADDING);
+            h.dataset.cy = String(cy - minY + this.CONNECTOR_PADDING);
+            h.style.left = `${cx - minX + this.CONNECTOR_PADDING - boxW / 2}px`;
+            h.style.top = `${cy - minY + this.CONNECTOR_PADDING - boxH / 2}px`;
+            h.style.width = `${boxW}px`;
+            h.style.height = `${boxH}px`;
+            h.title = '拖动可调整这一段的位置';
+            div.appendChild(h);
+        }
+    },
+
+    /** 段胶囊的屏幕尺寸（MasterGo 实测 18.5×6.5px，缩放时保持恒定） */
+    SEG_HANDLE_SCREEN_W: 18,
+    SEG_HANDLE_SCREEN_H: 6,
+
+    /**
+     * 连接线容器四周留白（画布坐标）。
+     * 容器定位在 minX - padding，手柄/胶囊落位时必须用同一个值补回来，
+     * 否则两者差一个 padding，手柄会整体偏移（且不报错）。
+     */
+    CONNECTOR_PADDING: 12,
+
+    /** 段胶囊尺寸（画布坐标系） */
+    getSegHandleSize() {
+        return {
+            w: this.SEG_HANDLE_SCREEN_W / this.getZoom(),
+            h: this.SEG_HANDLE_SCREEN_H / this.getZoom(),
+        };
+    },
+
+    /** 圆角半径（与 toRoundedPath 用同一个值） */
+    getCornerRadius() {
+        return ConnectorRouter.DEFAULT_RADIUS;
+    },
+
+    /** 当前画布缩放（读不到时按 1 处理） */
+    getZoom() {
+        try {
+            // ⚠️ 用裸标识符 CanvasView（不要 window.CanvasView）：
+            //    classic script 的顶层 const 活在全局**词法**作用域，不挂到 window。
+            if (typeof CanvasView !== 'undefined' && CanvasView.getView) {
+                const v = CanvasView.getView();
+                if (v && typeof v.zoom === 'number' && v.zoom > 0) return v.zoom;
+            }
+        } catch (e) { /* 读不到就按 1 处理 */ }
+        return 1;
+    },
+
+    /**
+     * 缩放后重算段胶囊尺寸。
+     *
+     * ⚠️ 与 refreshHitStrokeWidths 同理：胶囊的宽高是在渲染时算成画布坐标写死的，
+     *    画布 zoom 变了但 DOM 不会自动重算，不重写就会「放大后胶囊糊成一大坨、
+     *    缩小时小到看不见」。
+     */
+    refreshSegHandleSizes() {
+        if (this._segRefreshPending) return;
+        this._segRefreshPending = true;
+        const run = () => {
+            this._segRefreshPending = false;
+            const size = this.getSegHandleSize();
+            const nodes = document.querySelectorAll('.connector-seg-handle');
+            for (let i = 0; i < nodes.length; i++) {
+                const el = nodes[i];
+                // ⚠️ 必须沿用渲染时的朝向（dataset.vertical），否则缩放一次
+                //    就会把所有竖段上的竖胶囊打回横的 —— 缩放不该改变外观。
+                const vertical = el.dataset.vertical === '1';
+                const boxW = vertical ? size.h : size.w;
+                const boxH = vertical ? size.w : size.h;
+                el.style.width = `${boxW}px`;
+                el.style.height = `${boxH}px`;
+                // left/top 是按旧尺寸居中算的，换尺寸后要把中心钉回原处
+                const cx = parseFloat(el.dataset.cx);
+                const cy = parseFloat(el.dataset.cy);
+                if (Number.isFinite(cx) && Number.isFinite(cy)) {
+                    el.style.left = `${cx - boxW / 2}px`;
+                    el.style.top = `${cy - boxH / 2}px`;
+                }
+            }
+        };
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+        else run();
     },
 
     // ================================================================ 锚点层

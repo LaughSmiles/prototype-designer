@@ -1064,6 +1064,371 @@ test('框选线：_routePoints 缺失/退化时不选中，且不得抛异常', 
         '只有一个点（<2）不构成线');
 });
 
+// ================================================================ 12. 手动路径点（拖段）
+//
+// 基准全部来自 **MasterGo 实测**（用户文件上量到的画布坐标，50% 缩放）：
+//   实验 A：Z 形 4 点，拖**首段**胶囊下移 40px
+//           拖前 (559.9,316.9) (629.9,316.9) (629.9,356.9) (699.9,356.9)
+//           拖后 (559.9,316.9) (559.9,356.9) (699.9,356.9)
+//   实验 B：接着拖该 L 形**末段**胶囊下移 40px
+//           拖前 (559.9,316.9) (559.9,356.9) (699.9,356.9)
+//           拖后 (559.9,316.9) (559.9,396.9) (699.9,396.9) (699.9,356.9)
+
+suite('12. 手动路径点：拖段（MasterGo 实测对齐）');
+
+const MG_Z = [
+    { x: 559.9, y: 316.9 },
+    { x: 629.9, y: 316.9 },
+    { x: 629.9, y: 356.9 },
+    { x: 699.9, y: 356.9 },
+];
+const MG_Z_DRAGGED = [
+    { x: 559.9, y: 316.9 },
+    { x: 559.9, y: 356.9 },
+    { x: 699.9, y: 356.9 },
+];
+const MG_L = [
+    { x: 559.9, y: 316.9 },
+    { x: 559.9, y: 356.9 },
+    { x: 699.9, y: 356.9 },
+];
+
+test('⚠️ 拖首段：结果与 MasterGo 实测逐点一致（3 段 Z 形塌成 2 段 L 形）', () => {
+    const moved = MG_Z.map(p => ({ x: p.x, y: p.y }));
+    moved[1].y += 40;            // 首段是水平段 → 只取 dy；内侧拐点是 P1
+    const got = Router.applyWaypoints(moved, MG_Z, MG_Z[0], MG_Z[3]);
+
+    assertEqual(got.length, MG_Z_DRAGGED.length,
+        `点数应与 MasterGo 一致（${MG_Z_DRAGGED.length}），实得 ${got.length}`);
+    MG_Z_DRAGGED.forEach((w, i) => {
+        assertEqual(got[i].x, w.x, `第 ${i} 点 x 应为 ${w.x}`);
+        assertEqual(got[i].y, w.y, `第 ${i} 点 y 应为 ${w.y}`);
+    });
+});
+
+test('⚠️ 拖动后仍然全程正交（不允许出现任何斜段）', () => {
+    const moved = MG_Z.map(p => ({ x: p.x, y: p.y }));
+    moved[1].y += 137;            // 故意拖一个非整数值
+    const got = Router.applyWaypoints(moved, MG_Z, MG_Z[0], MG_Z[3]);
+    assertOrthogonal(got, '拖首段后');
+});
+
+test('⚠️ 首尾永远钉在传入的锚点上（手动形状不得改变「连谁」）', () => {
+    // 把首尾手动改到别处去，看 applyWaypoints 会不会照单全收
+    const moved = MG_Z.map(p => ({ x: p.x, y: p.y }));
+    moved[0] = { x: 0, y: 0 };
+    moved[moved.length - 1] = { x: 9999, y: 9999 };
+    const got = Router.applyWaypoints(moved, MG_Z, { x: 111, y: 222 }, { x: 333, y: 444 });
+    assertEqual(got[0].x, 111, '首点必须被钉回起点锚点');
+    assertEqual(got[0].y, 222, '首点必须被钉回起点锚点');
+    assertEqual(got[got.length - 1].x, 333, '末点必须被钉回终点锚点');
+    assertEqual(got[got.length - 1].y, 444, '末点必须被钉回终点锚点');
+});
+
+test('共线拐点必须归并（否则一条 L 形会被算成 4 点、画出多余的胶囊）', () => {
+    // 纯竖线上的三点 → 收成一条
+    assertEqual(Router._dedupeCollinear([
+        { x: 0, y: 0 }, { x: 0, y: 100 }, { x: 0, y: 200 },
+    ]).length, 2, '竖线上的三点应收成一条直线');
+    // 纯横线上的三点 → 收成一条，且终点保留最远那个
+    const h = Router._dedupeCollinear([
+        { x: 0, y: 0 }, { x: 50, y: 0 }, { x: 100, y: 0 },
+    ]);
+    assertEqual(h.length, 2, '横线上的三点应收成一条直线');
+    assertEqual(h[1].x, 100, '直线终点必须保留最远那个点');
+    // 真正的拐点不能被误删
+    assertEqual(Router._dedupeCollinear([
+        { x: 0, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 },
+    ]).length, 3, '拐点不是共线点，必须保留');
+});
+
+test('正交化方向是「先竖后横」（MasterGo 拖首段后先竖着下去）', () => {
+    const got = Router._orthogonalizeWaypoints([
+        { x: 0, y: 0 }, { x: 100, y: 100 },
+    ]);
+    assertEqual(got.length, 3, '一个斜点应补成两个拐点');
+    assertEqual(got[1].x, 0, '中间的角应取前一列的 x（先走竖）');
+    assertEqual(got[1].y, 100, '中间的角应取后一行的 y');
+});
+
+test('⚠️ 拖段不会改动传入的数组（否则基准被污染，第二次拖会累积误差）', () => {
+    const moved = MG_Z.map(p => ({ x: p.x, y: p.y }));
+    const before = JSON.stringify(moved);
+    Router.applyWaypoints(moved, MG_Z, MG_Z[0], MG_Z[3]);
+    assertEqual(JSON.stringify(moved), before, 'applyWaypoints 必须深拷贝后再改');
+});
+
+test('无效/退化数据一律回落到自动路由结果，不得产出 NaN 路径', () => {
+    const fallback = MG_L;
+    assert(Router.applyWaypoints(null, fallback) === fallback, 'null → 原样返回');
+    assert(Router.applyWaypoints([], fallback) === fallback, '空数组 → 原样返回');
+    assert(Router.applyWaypoints([{ x: 1, y: 1 }], fallback) === fallback, '只有 1 个点 → 原样返回');
+    assert(Router.applyWaypoints('x', fallback) === fallback, '非数组 → 原样返回');
+    assert(Router.applyWaypoints([{ x: NaN, y: 0 }, { x: 1, y: 1 }], fallback) === fallback,
+        '含 NaN → 原样返回（不能把 NaN 画到 SVG 上）');
+});
+
+test('translatePoints 整体平移且不改动原数组', () => {
+    const src = [{ x: 0, y: 0 }, { x: 10, y: 20 }];
+    const out = Router.translatePoints(src, 5, -3);
+    assertEqual(out[0].x, 5, '');
+    assertEqual(out[0].y, -3, '');
+    assertEqual(out[1].x, 15, '');
+    assertEqual(out[1].y, 17, '');
+    assertEqual(src[0].x, 0, '原数组不得被就地修改');
+    assertEqual(src[0].y, 0, '原数组不得被就地修改');
+});
+
+// ================================================================ 13. 静态契约
+
+suite('13. 静态契约：拖段的接线');
+
+const readSrc = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
+
+test('第 i 段控制的拐点 = min(i+1, n-2)（实测反推的规则）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    assert(/Math\.min\(\s*segIndex\s*\+\s*1\s*,\s*pointCount\s*-\s*2\s*\)/.test(src),
+        'tools-connector.js 必须按 min(i+1, n-2) 取拐点 —— 改了就与 MasterGo 不一致');
+});
+
+test('⚠️ 改连必须清空 waypoints（换了一端 = 手动形状作废）', () => {
+    const m = readSrc('js', 'element-manager', 'element-manager.js')
+        .match(/retargetConnector\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 retargetConnector');
+    assert(/delete\s+connector\.waypoints/.test(m[1]),
+        '改连后必须 delete connector.waypoints，否则新终点会继承旧的拐点');
+    assert(/delete\s+connector\.wpRef/.test(m[1]),
+        '改连后必须一并清掉 wpRef，否则新终点会按旧基准算位移');
+});
+
+test('⚠️ 段胶囊只能有一个渲染实现（禁止再写第二份）', () => {
+    const renderer = readSrc('js', 'element-manager', 'element-renderer.js');
+    const manager = readSrc('js', 'element-manager', 'element-manager.js');
+    assertEqual((renderer.match(/className = 'connector-seg-handle'/g) || []).length, 1,
+        '段胶囊的 className 只许在渲染器里出现一次（querySelectorAll 那处是缩放重算，不算）');
+    assertEqual((manager.match(/connector-seg-handle/g) || []).length, 0,
+        'element-manager 里不许再出现段胶囊');
+    assert(/renderConnectorParts/.test(manager),
+        'element-manager 必须改调 ElementRenderer.renderConnectorParts，不许自己再画一遍');
+    assert(/_appendSegmentHandles/.test(renderer), '渲染器应有 _appendSegmentHandles');
+});
+
+test('⚠️ 连接线绘制必须只有一份（消除历史上的双实现分叉）', () => {
+    const m = readSrc('js', 'element-manager', 'element-manager.js')
+        .match(/renderConnectorInto\([^)]*\)\s*\{([\s\S]*?)\n    \},\n/);
+    assert(m, '应能找到 renderConnectorInto');
+    assert(!/createElementNS/.test(m[1]),
+        'renderConnectorInto 里不再自己拼 SVG —— 有 createElementNS 就是第二份实现');
+    assert(!/connector-handle/.test(m[1]),
+        '端点手柄也已下沉到 renderConnectorParts，不许在这里再建');
+});
+
+test('⚠️ 段胶囊尺寸必须是「屏幕恒定 18×6px」（不能写死画布坐标）', () => {
+    const m = readSrc('js', 'element-manager', 'element-renderer.js')
+        .match(/getSegHandleSize\(\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 getSegHandleSize');
+    assert(/SEG_HANDLE_SCREEN_W\s*\/\s*this\.getZoom\(\)/.test(m[1]),
+        '宽必须除以 zoom，否则缩放时胶囊会变形');
+    assert(/SEG_HANDLE_SCREEN_H\s*\/\s*this\.getZoom\(\)/.test(m[1]),
+        '高必须除以 zoom，否则缩小后胶囊细到点不中');
+});
+
+test('⚠️ 缩放时必须重算段胶囊尺寸（与命中区同一个理由）', () => {
+    assert(/refreshSegHandleSizes/.test(readSrc('js', 'canvas-view', 'canvas-view.js')),
+        'canvas-view 的缩放回调里必须调 refreshSegHandleSizes');
+    assert(/refreshSegHandleSizes/.test(readSrc('js', 'element-manager', 'element-renderer.js')),
+        '渲染器必须提供 refreshSegHandleSizes');
+});
+
+test('⚠️ 段胶囊靠 CSS :hover 显形（MasterGo 不要求先选中）', () => {
+    const css = readSrc('css', 'canvas-editor.css');
+    assert(/\.connector-seg-handle/.test(css), '缺少 .connector-seg-handle 样式');
+    assert(/connector-element:hover \.connector-seg-handle/.test(css),
+        '必须在 hover 连线时显形');
+    assert(/seg-dragging/.test(css),
+        '拖动中必须锁住可见性 —— 鼠标离开原胶囊时胶囊会整片消失');
+});
+
+test('⚠️ 段拖拽的 move/up 必须挂在 document（指针可能落到 iframe 上）', () => {
+    const src = readSrc('js', 'tools', 'tools.js');
+    const m = src.match(/document\.addEventListener\('mousemove'([\s\S]*?)\}\);/);
+    assert(m, '应能找到 document 级 mousemove');
+    assert(/isSegmentDragging\(\)/.test(m[1]) && /handleSegmentMouseMove/.test(m[1]),
+        'document 级 mousemove 必须转调 handleSegmentMouseMove');
+    const u = src.match(/document\.addEventListener\('mouseup'([\s\S]*?)\}\);/);
+    assert(u, '应能找到 document 级 mouseup');
+    assert(/endSegmentDrag/.test(u[1]), 'document 级 mouseup 必须收尾段拖拽');
+});
+
+test('⚠️ mousedown 命中段胶囊的优先级必须低于端点圆点', () => {
+    const src = readSrc('js', 'tools', 'tools.js');
+    const idxEnd = src.indexOf('hitTestEndpoint(e)');
+    const idxSeg = src.indexOf('hitTestSegmentHandle(e)');
+    assert(idxEnd > 0 && idxSeg > 0, '两种命中检测都要在');
+    assert(idxEnd < idxSeg, '端点圆点优先级更高（改连是主操作）');
+});
+
+test('⚠️ 手柄与胶囊落位必须补回 CONNECTOR_PADDING（漏掉会整体偏 12px 且不报错）', () => {
+    const src = readSrc('js', 'element-manager', 'element-renderer.js');
+    // 容器定位在 minX - padding，子元素要落在 minX - padding + (px - minX + padding)
+    const handle = src.match(/_appendHandle\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(handle, '应能找到 _appendHandle');
+    assert(/point\.x\s*-\s*minX\s*\+\s*this\.CONNECTOR_PADDING/.test(handle[1]),
+        '端点圆点 left 必须补回 CONNECTOR_PADDING');
+    assert(/point\.y\s*-\s*minY\s*\+\s*this\.CONNECTOR_PADDING/.test(handle[1]),
+        '端点圆点 top 必须补回 CONNECTOR_PADDING');
+
+    const seg = src.match(/_appendSegmentHandles\([^)]*\)\s*\{([\s\S]*?)\n    \},\n/);
+    assert(seg, '应能找到 _appendSegmentHandles');
+    assert(/cx\s*-\s*minX\s*\+\s*this\.CONNECTOR_PADDING/.test(seg[1]),
+        '段胶囊 left 必须补回 CONNECTOR_PADDING');
+    assert(/cy\s*-\s*minY\s*\+\s*this\.CONNECTOR_PADDING/.test(seg[1]),
+        '段胶囊 top 必须补回 CONNECTOR_PADDING');
+
+    // 偏移量必须与容器留白同源，两处各写一个 12 就会再次分叉
+    const parts = src.match(/renderConnectorParts\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(/padding\s*=\s*this\.CONNECTOR_PADDING/.test(parts[1]),
+        '容器留白必须读同一个常量，不许另写一个字面量');
+    assert(!/padding\s*=\s*12\b/.test(parts[1]),
+        '不许在 renderConnectorParts 里写死 12');
+});
+
+test('⚠️ 胶囊朝向必须跟随线段（竖段用竖胶囊，横段用横胶囊）', () => {
+    const src = readSrc('js', 'element-manager', 'element-renderer.js');
+
+    const seg = src.match(/_appendSegmentHandles\([^)]*\)\s*\{([\s\S]*?)\n    \},\n/);
+    assert(seg, '应能找到 _appendSegmentHandles');
+    assert(/const\s+vertical\s*=\s*Math\.abs\(dy\)\s*>\s*Math\.abs\(dx\)/.test(seg[1]),
+        '必须先判断该段是竖的还是横的');
+    assert(/boxW\s*=\s*vertical\s*\?\s*size\.h\s*:\s*size\.w/.test(seg[1]),
+        '竖段的宽高必须互换（否则竖线上会躺着一个横把手）');
+    assert(/boxH\s*=\s*vertical\s*\?\s*size\.w\s*:\s*size\.h/.test(seg[1]),
+        '竖段的高宽必须互换');
+    assert(/dataset\.vertical/.test(seg[1]),
+        '必须把朝向记进 dataset，缩放重算时才知道该用哪套尺寸');
+
+    // 缩放重算不得把朝向打回横的
+    const refresh = src.match(/refreshSegHandleSizes\(\)\s*\{([\s\S]*?)\n    \},\n/);
+    assert(refresh, '应能找到 refreshSegHandleSizes');
+    assert(/dataset\.vertical/.test(refresh[1]),
+        'refreshSegHandleSizes 必须沿用渲染时的朝向 —— 否则缩放一次外观就变了');
+    assert(!/el\.style\.width\s*=\s*`\$\{size\.w\}px`/.test(refresh[1]),
+        '不许在缩放重算里无条件套用横版尺寸');
+});
+
+suite('14. 拖段：每一段都必须拖得动（竖段回归）');
+
+/**
+ * 模拟 tools-connector.handleSegmentMouseMove 的核心三步：
+ * 取法线位移 → 改对应拐点 → 带 bend 提示做正交化。
+ * 这是「用户按住胶囊拖一下」在纯函数层的等价物。
+ */
+function dragSegment(base, segIndex, delta) {
+    const pts = base.map(p => ({ x: p.x, y: p.y }));
+    const a = pts[segIndex];
+    const b = pts[segIndex + 1];
+    const horizontal = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+    const inner = Math.min(segIndex + 1, pts.length - 2);
+    if (horizontal) pts[inner].y += delta;
+    else pts[inner].x += delta;
+    return Router.applyWaypoints(pts, base, base[0], base[base.length - 1],
+        { index: inner, axis: horizontal ? 'y' : 'x' });
+}
+
+const samePath = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+/** 4 段正交折线：竖-横-竖-横，覆盖首段 / 中段 / 末段 */
+const PATH4 = [
+    { x: 0, y: 0 },
+    { x: 0, y: 100 },
+    { x: 200, y: 100 },
+    { x: 200, y: 300 },
+    { x: 400, y: 300 },
+];
+
+test('⚠️ 每一段都能拖动（不许出现「按住没反应」的段）', () => {
+    const dead = [];
+    for (let i = 0; i < PATH4.length - 1; i++) {
+        const got = dragSegment(PATH4, i, 80);
+        if (samePath(got, PATH4)) dead.push(i);
+        assertOrthogonal(got, `拖第 ${i} 段后`);
+    }
+    assertEqual(dead.length, 0,
+        `这些段按住完全没反应（竖段的新 x 被补成水平短头后又被共线合并吃掉了）：${dead.join('、')}`);
+});
+
+test('⚠️ 竖段横向拖动：整段必须真的平移过去', () => {
+    // 首段是竖段，内侧拐点 x 由 0 改成 80
+    const got = dragSegment(PATH4, 0, 80);
+    assert(!samePath(got, PATH4), '竖段拖动后路径不得与拖动前逐点相同');
+    // 竖线必须落在新的 x 上（先横后竖补角）
+    const verticals = got.filter((p, i) => i > 0 && got[i - 1].x === p.x).map(p => p.x);
+    assert(verticals.indexOf(80) !== -1,
+        `竖段应平移到 x=80，实得竖线 x=${JSON.stringify(verticals)}`);
+});
+
+test('⚠️ 末段拖动必须生效（末端的终点被钉死，靠 prev 分支补角）', () => {
+    const got = dragSegment(PATH4, 3, 80);
+    assert(!samePath(got, PATH4), '末段拖动后路径不得与拖动前逐点相同');
+    assertOrthogonal(got, '拖末段后');
+    // 末段是横段，拖动后应多出一个拐点把线接回被钉死的终点
+    assert(got.length >= PATH4.length, '末段平移后应保留新拐点');
+    assertEqual(got[0].x, PATH4[0].x, '首点必须仍钉在起点锚点');
+    assertEqual(got[got.length - 1].x, PATH4[PATH4.length - 1].x, '末点必须仍钉在终点锚点');
+    assertEqual(got[got.length - 1].y, PATH4[PATH4.length - 1].y, '末点必须仍钉在终点锚点');
+});
+
+test('⚠️ 首尾永远钉在锚点上（带 bend 时同样不得被改动）', () => {
+    for (let i = 0; i < PATH4.length - 1; i++) {
+        const got = dragSegment(PATH4, i, 137);
+        assertEqual(got[0].x, PATH4[0].x, `拖第 ${i} 段后首点 x 被改了`);
+        assertEqual(got[0].y, PATH4[0].y, `拖第 ${i} 段后首点 y 被改了`);
+        assertEqual(got[got.length - 1].x, PATH4[4].x, `拖第 ${i} 段后末点 x 被改了`);
+        assertEqual(got[got.length - 1].y, PATH4[4].y, `拖第 ${i} 段后末点 y 被改了`);
+    }
+});
+
+test('⚠️ 不传 bend 时行为与历史逐点一致（渲染路径不许被这次修复影响）', () => {
+    // element-renderer 的 applyWaypointsTo 只传 4 个参数 → bend 必须完全惰性
+    const inert = Router.applyWaypoints(MG_L, MG_L, MG_L[0], MG_L[MG_L.length - 1],
+        { index: -1, axis: 'y' });
+    const plain = Router.applyWaypoints(MG_L, MG_L, MG_L[0], MG_L[MG_L.length - 1]);
+    assert(JSON.stringify(inert) === JSON.stringify(plain),
+        'bend.index 指向不存在的位置时，bend 必须不起任何作用');
+});
+
+test('⚠️ 带 bend 拖首段：仍与 MasterGo 实测逐点一致（3 段 Z 形塌成 2 段 L 形）', () => {
+    const got = dragSegment(MG_Z, 0, 40);
+    assertEqual(got.length, MG_Z_DRAGGED.length,
+        `点数应与 MasterGo 一致（${MG_Z_DRAGGED.length}），实得 ${got.length}`);
+    MG_Z_DRAGGED.forEach((w, i) => {
+        assertEqual(got[i].x, w.x, `第 ${i} 点 x 应为 ${w.x}`);
+        assertEqual(got[i].y, w.y, `第 ${i} 点 y 应为 ${w.y}`);
+    });
+});
+
+test('⚠️ 拖段必须把 bend 传给正交化（少传就退回「只有横段能动」）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/handleSegmentMouseMove\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 handleSegmentMouseMove');
+    const call = fn[1].match(/applyWaypoints\(([\s\S]*?)\);/);
+    assert(call, '应能找到 applyWaypoints 调用');
+    assert(/index\s*:\s*inner/.test(call[1]),
+        '必须告诉正交化「这次动的是第几个拐点」');
+    assert(/axis\s*:\s*horizontal\s*\?\s*'y'\s*:\s*'x'/.test(call[1]),
+        "必须告诉正交化「动的是哪根坐标」—— 横段改 y、竖段改 x");
+});
+
+test('⚠️ 渲染路径不得传 bend（页面框移动时必须走历史行为）', () => {
+    const src = readSrc('js', 'element-manager', 'element-renderer.js');
+    const fn = src.match(/applyWaypointsTo\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 applyWaypointsTo');
+    const call = fn[1].match(/ConnectorRouter\.applyWaypoints\(([^)]*)\)/);
+    assert(call, '应能找到 applyWaypoints 调用');
+    assertEqual(call[1].split(',').length, 4,
+        `渲染路径只应有 4 个实参，实得 ${call[1].split(',').length} 个：${call[1]}`);
+});
+
 // ---------------------------------------------------------------- 运行
 
 (async () => {

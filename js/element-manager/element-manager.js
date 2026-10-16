@@ -83,6 +83,13 @@ const ElementManager = {
             connector.toAnchor = newAnchor || null;
         }
 
+        // ⚠️ 换了一端 = 手动掰出来的形状作废。
+        //    那些拐点是为了「连原来那个页面」才摆的，换了终点后多半绕得很难看，
+        //    强行留着还要求一层兜底去处理「终点离得很远/很近」的极端情况。
+        //    直接清空 → 回落自动路由，简单且不会出错（用户确认的口径）。
+        delete connector.waypoints;
+        delete connector.wpRef;
+
         // 就地重绘而非重建：保住选中态与端点手柄（改连后线仍是选中状态）
         const div = document.querySelector(`[data-element-id="${connectorId}"]`);
         if (div) {
@@ -417,67 +424,13 @@ const ElementManager = {
         element.width = maxX - minX;
         element.height = maxY - minY;
 
-        const padding = 12;
-        div.style.left = `${minX - padding}px`;
-        div.style.top = `${minY - padding}px`;
-        div.style.width = `${element.width + padding * 2}px`;
-        div.style.height = `${element.height + padding * 2}px`;
-
         // 清空旧内容（保留容器）
         div.innerHTML = '';
 
-        const d = ConnectorRouter.toRoundedPath(points, ConnectorRouter.DEFAULT_RADIUS);
-        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('class', 'connector-svg');
-        svg.setAttribute('viewBox',
-            `${minX - padding} ${minY - padding} ${element.width + padding * 2} ${element.height + padding * 2}`);
-        svg.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;';
-
-        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        hit.setAttribute('class', 'connector-hit');
-        hit.setAttribute('d', d);
-        hit.setAttribute('fill', 'none');
-        hit.setAttribute('stroke', 'transparent');
-        // 屏幕恒定 10px → 画布坐标 10/zoom；规则与理由见 ElementRenderer.getHitStrokeWidth
-        hit.setAttribute('stroke-width', String(ElementRenderer.getHitStrokeWidth()));
-
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('class', 'connector-path');
-        path.setAttribute('d', d);
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', '#999999');
-        path.setAttribute('stroke-width', '2');
-        path.setAttribute('stroke-linecap', 'round');
-        path.setAttribute('stroke-linejoin', 'round');
-
-        const arrowHead = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        arrowHead.setAttribute('class', 'connector-arrow');
-        arrowHead.setAttribute('d', ElementRenderer.getArrowHeadPath(points[points.length - 2], points[points.length - 1], 0, 0));
-        arrowHead.setAttribute('fill', '#999999');
-
-        svg.appendChild(hit);
-        svg.appendChild(path);
-        svg.appendChild(arrowHead);
-        div.appendChild(svg);
-
-        // 端点手柄（仅选中时可见）
-        const fromHandle = document.createElement('div');
-        fromHandle.className = 'connector-handle';
-        fromHandle.dataset.connectorId = element.id;
-        fromHandle.dataset.end = 'from';
-        fromHandle.style.left = `${points[0].x - minX}px`;
-        fromHandle.style.top = `${points[0].y - minY}px`;
-        fromHandle.title = '拖动可改连起点';
-        div.appendChild(fromHandle);
-
-        const toHandle = document.createElement('div');
-        toHandle.className = 'connector-handle';
-        toHandle.dataset.connectorId = element.id;
-        toHandle.dataset.end = 'to';
-        toHandle.style.left = `${points[points.length - 1].x - minX}px`;
-        toHandle.style.top = `${points[points.length - 1].y - minY}px`;
-        toHandle.title = '拖动可改连终点';
-        div.appendChild(toHandle);
+        // ⚠️ 绘制全部交给渲染器的公共函数：这里曾经自己抄了一份
+        //    （svg + hit + path + arrow + 两个端点手柄），漏改就会
+        //    出现「首次画得出、改连后缺手柄」只在交互里暴露的 bug。
+        ElementRenderer.renderConnectorParts(div, element, points, minX, minY);
     },
 
     // 显示右键菜单
