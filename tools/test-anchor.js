@@ -712,14 +712,102 @@ test('结构性标签被跳过（html/head/script 等不是连接目标）', () 
     assertEqual(hosts.map(h => h.selector), ['#real'], 'script/style 应被跳过');
 });
 
-test('收集结果的 rect 是画布坐标（已换算）', () => {
-    // 用 200×200（面积 40000）以通过尺寸过滤
+test('收集结果的 rect 是页面框局部坐标（不含 position）', () => {
+    // ⚠️ 语义已变更（修复「拖拽页面框后内部锚点整体错位」）：
+    //    collectInnerHosts 不再折算成画布绝对坐标，而是只存
+    //    **相对页面框左上角**的偏移。position 的加法推迟到
+    //    AnchorSession._innerHostsOf 消费时实时进行（见下面「拖拽跟随」用例）。
+    //
+    //    为什么必须这样：iframe 内的 getBoundingClientRect() 相对 iframe
+    //    视口，页面框拖拽**完全不影响**它。把 position 一起烤进缓存，
+    //    等于把拖拽前的坐标焊死 —— 拖完整体偏移 (-Δx, -Δy)。
+    //
+    //    用 200×200（面积 40000）以通过尺寸过滤
     const root = tree({ tag: 'body', children: [{ tag: 'div', id: 'x', rect: [5, 6, 200, 200] }] });
     const hosts = Bridge.collectInnerHosts(root, { pageElement: PAGE });
     assertEqual(hosts.length, 1, '应被收集');
-    assertEqual(hosts[0].rect.x, 1000 + 5, 'x 应换算为画布坐标');
-    assertEqual(hosts[0].rect.y, 500 + Bridge.IFRAME_TOP_OFFSET + 6, 'y 应含 iframe 下沉量');
+    assertEqual(hosts[0].rect.x, 5, 'x 应是相对页面框的偏移，不含 position.x');
+    assertEqual(hosts[0].rect.y, Bridge.IFRAME_TOP_OFFSET + 6, 'y 应含 iframe 下沉量（结构性偏移，恒定）');
     assertEqual(hosts[0].rect.width, 200, '宽度不应被改');
+});
+
+test('⚠️ 拖拽页面框后内部锚点跟随（本次修复的回归锁）', () => {
+    // 复现步骤：拖出页面 → hover 看锚点（对）→ 拖拽位移 → 再 hover（错位）。
+    // 根因：缓存里烤了拖拽前的 position，且缓存键不含 position，
+    // 拖拽后命中旧缓存，锚点整体偏移 (-Δx, -Δy)。
+    //
+    // 这里走完整链路（AnchorSession 消费时折算），而不是只测纯函数 ——
+    // 单测 toFrameRect 只能证明"没烤 position"，证明不了"消费时真的加了"。
+    const Session = require(path.join(ROOT, 'js', 'connectors', 'anchor-session.js'));
+
+    // ① 采集：iframe 内 (8, 8, 200, 200)
+    const root = tree({ tag: 'body', children: [{ tag: 'div', id: 'card', rect: [8, 8, 200, 200] }] });
+    const el = { id: 'p1', position: { x: 1000, y: 500 }, width: 375, height: 812 };
+    const collected = Bridge.collectInnerHosts(root, { pageElement: el });
+    assertEqual(collected.length, 1, '前置条件：应采集到 1 个宿主');
+
+    // ② 入缓存（模拟 primeInnerHosts 拿到结果）
+    Session._innerCache.set(Session._cacheKey(el), collected);
+
+    const readAt = (x, y) => {
+        const hs = Session._innerHostsOf({ ...el, position: { x, y } });
+        return hs[0] && hs[0].rect;
+    };
+
+    // ③ 拖拽前
+    const before = readAt(1000, 500);
+    assertEqual(before.x, 1000 + 8, '拖拽前 x = position.x + 8');
+    assertEqual(before.y, 500 + Bridge.IFRAME_TOP_OFFSET + 8, '拖拽前 y 含 iframe 下沉量');
+
+    // ④ 拖拽后：position 变了，**缓存键不变**（只含 id@WxH）→ 命中同一份缓存
+    const after = readAt(1300, 700);
+    assertEqual(Session._cacheKey({ ...el, position: { x: 1300, y: 700 } }), Session._cacheKey(el),
+        '前置条件：缓存键不含 position，拖拽后必然命中同一份缓存（这正是 bug 的成因）');
+    assertEqual(after.x, 1300 + 8, '拖拽后 x 必须跟随新的 position.x');
+    assertEqual(after.y, 700 + Bridge.IFRAME_TOP_OFFSET + 8, '拖拽后 y 必须跟随新的 position.y');
+    assertEqual(after.x - before.x, 300, '位移量应恰好等于拖拽位移量 300');
+    assertEqual(after.y - before.y, 200, '位移量应恰好等于拖拽位移量 200');
+
+    // ⑤ 缓存本身不得被污染成绝对坐标（否则下一次读又会错）
+    const raw = Session._innerCache.get(Session._cacheKey(el))[0].rect;
+    assertEqual(raw.x, 8, '缓存里存的必须是局部坐标，不得含 position');
+    assertEqual(raw.y, Bridge.IFRAME_TOP_OFFSET + 8, '缓存里的 y 只含结构性偏移');
+
+    Session._innerCache.clear();
+});
+
+test('⚠️ bridge（file://）路径与 direct 路径坐标系一致（否则 http/file:// 表现分叉）', () => {
+    // _normalizeReported 与 collectInnerHosts 必须落在**同一坐标系**，
+    // 否则同一页面在 http 与 file:// 下会看到错位量不同的锚点。
+    const el = { id: 'p1', position: { x: 1000, y: 500 }, width: 375, height: 812 };
+
+    // direct：真 DOM 树
+    const direct = Bridge.collectInnerHosts(
+        tree({ tag: 'body', children: [{ tag: 'div', id: 'card', rect: [8, 8, 200, 200] }] }),
+        { pageElement: el });
+    // bridge：子侧上报（topbar.js 里 rect 是 {left,top,width,height}）
+    const bridged = Bridge._normalizeReported(
+        [{ selector: '#card', rect: { left: 8, top: 8, width: 200, height: 200 } }], el);
+
+    assertEqual(bridged.map(h => h.rect), direct.map(h => h.rect),
+        '两条路径必须给出同一坐标系的 rect');
+    assertEqual(direct[0].rect.x, 8, 'direct 也应是局部坐标');
+});
+
+test('⚠️ position 非法时不得让 NaN 流进渲染/路由（线会整条消失且不报错）', () => {
+    const Session = require(path.join(ROOT, 'js', 'connectors', 'anchor-session.js'));
+    const el = { id: 'p1', position: { x: 1000, y: 500 }, width: 375, height: 812 };
+    const collected = Bridge.collectInnerHosts(
+        tree({ tag: 'body', children: [{ tag: 'div', id: 'card', rect: [8, 8, 200, 200] }] }),
+        { pageElement: el });
+    Session._innerCache.set(Session._cacheKey(el), collected);
+
+    for (const bad of [null, undefined, { x: NaN, y: 0 }, { x: 0, y: NaN }, {}]) {
+        const hs = Session._innerHostsOf({ ...el, position: bad });
+        assertEqual(hs[0].rect, { x: 8, y: Bridge.IFRAME_TOP_OFFSET + 8, width: 200, height: 200 },
+            `position 非法(${JSON.stringify(bad)})时必须原样返回局部坐标，不得产出 NaN`);
+    }
+    Session._innerCache.clear();
 });
 
 test('每个宿主都带 depth，便于调试与裁剪', () => {
@@ -959,16 +1047,43 @@ test('取消裁剪不等于取消过滤（小图标仍应被滤掉）', () => {
 
 suite('17. 尺寸过滤（MasterGo：大块元素出锚点，小元素不出）');
 
-test('小元素被过滤，MasterGo 实测头像/数字/图标都无锚点', () => {
+test('无意义的小元素被过滤（数字/图标/细条），MasterGo 实测这些都不出锚点', () => {
+    // ⚠️ 本组用例 2026-10-16 调整过一次判据，请先读下面的说明再改。
+    //
+    // 【历史】最初阈值是 4000，本组原本还包含「圆形头像 32×32 = 1024」。
+    // 【调整原因】用户实测把阈值下调到 500 后**认可**该行为 ——
+    //   因为第一轮报的 bug 正是「底部 tab 栏的图标选不中」：
+    //   `.by-tabbar a` 只有 75×48 = 3600，在 4000 门槛下被整个滤掉，
+    //   于是 tab 栏内部一个锚点都没有。头像 32×32 与 tab 图标同属
+    //   「小而可点」的尺寸档，放行它是这个取舍的**直接后果**，不是回归。
+    //
+    // 【现在锁什么】锁「真正无意义的小东西仍被滤掉」这条**意图**，
+    // 而不是死绑某一个实测数值。
     const roots = [
-        ['圆形头像 32×32', node('div', [10, 100, 32, 32])],
-        ['点赞数字 20×14', node('span', [10, 200, 20, 14])],
-        ['小图标 16×16', node('i', [10, 300, 16, 16])],
+        ['点赞数字 20×14（height<MIN_HOST_EDGE）', node('span', [10, 200, 20, 14])],
+        ['小图标 16×16（area<MIN_HOST_AREA）', node('i', [10, 300, 16, 16])],
+        ['极小方块 20×20（area<MIN_HOST_AREA）', node('i', [10, 400, 20, 20])],
+        ['细横条 300×10（height<MIN_HOST_EDGE）', node('div', [10, 500, 300, 10])],
     ];
     for (const [label, el] of roots) {
         const body = node('body', [0, 0, 375, 812], [el]);
         const hosts = Bridge.collectInnerHosts(body, { pageElement: CLIP_PAGE, viewportOffset: 0 });
         assertEqual(hosts.length, 0, `${label} 不应产生锚点宿主（MasterGo 实测无锚点）`);
+    }
+});
+
+test('⚠️ 小而可点的元素必须出锚点（tab 栏图标，3600 —— 这是 4000 门槛的漏网之鱼）', () => {
+    // 这条锁的是**用户实测认可**的行为：tab 栏的每个 <a> 只有 75×48 = 3600，
+    // 正是第一轮 bug 的核心。阈值一旦涨回 4000，用户点「我的」图标就会选不中。
+    const cases = [
+        ['tab 栏图标 75×48', [10, 100, 75, 48]],
+        ['小圆形头像 32×32', [200, 200, 32, 32]],
+    ];
+    for (const [label, rect] of cases) {
+        const body = node('body', [0, 0, 375, 812], [node('a', rect)]);
+        const hosts = Bridge.collectInnerHosts(body, { pageElement: CLIP_PAGE, viewportOffset: 0 });
+        assert(hosts.length >= 1,
+            `${label}（面积 ${rect[2] * rect[3]}）应产生锚点宿主 —— 否则回到「tab 栏点不中」的 bug`);
     }
 });
 
@@ -985,14 +1100,19 @@ test('大块结构元素被保留，MasterGo 实测卡片/输入框都有锚点'
     }
 });
 
-test('过滤阈值落在实测数据的分界处（MasterGo 实测值）', () => {
-    // 实测 MasterGo：有锚点 = 输入框 351×44=15444、卡片 351×80=28080、媒体区 375×200
-    //               无锚点 = 头像 32×32=1024、数字 20×14=280、图标 16×16=256
-    // 阈值必须落在 1024 与 15444 之间，否则要么小元素冒锚点，要么大元素被砍。
-    assert(Bridge.MIN_HOST_AREA > 32 * 32,
-        `阈值 ${Bridge.MIN_HOST_AREA} 必须大于头像面积 1024，否则头像会冒锚点`);
-    assert(Bridge.MIN_HOST_AREA < 351 * 44,
-        `阈值 ${Bridge.MIN_HOST_AREA} 必须小于输入框面积 15444，否则输入框会被砍掉`);
+test('过滤阈值落在实测数据的分界处（用户 2026-10-16 实测认可值）', () => {
+    // 【意图】阈值必须夹在「无意义小元素」与「值得连的小元素」之间：
+    //   下界 —— 仍须挡住 16×16=256、20×14=280 这类装饰性碎片
+    //   上界 —— 必须放行 tab 栏 a 的 75×48=3600，否则回到「tab 栏点不中」
+    //
+    // ⚠️ 上界原来是 32*32=1024（拿头像当界），但用户实测下调到 500 并**认可**：
+    //    32×32 头像与 tab 图标同属「小而可点」档，放行它是该取舍的直接后果。
+    //    所以现在用 tab 图标的真实尺寸当上界，判据才与用户实际需求对齐。
+    assert(Bridge.MIN_HOST_AREA > 20 * 14,
+        `阈值 ${Bridge.MIN_HOST_AREA} 必须大于点赞数字面积 280，否则小数字会冒锚点`);
+    assert(Bridge.MIN_HOST_AREA < 75 * 48,
+        `阈值 ${Bridge.MIN_HOST_AREA} 必须小于 tab 栏图标面积 3600，` +
+        `否则底部 tab 栏内部一个锚点都没有（用户实测的 bug）`);
 });
 
 test('边界两侧行为符合预期：阈值以下过滤，以上保留', () => {

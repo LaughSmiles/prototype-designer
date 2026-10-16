@@ -63,7 +63,7 @@ const AnchorBridge = {
      * 上一版用 MAX_INNER_HOSTS 截断是错解：它把"大元素"和"小元素"
      * 混在一起随机取前 N 个，用户要的"连到那个按钮"反而连不上。
      */
-    MIN_HOST_AREA: 4000,
+    MIN_HOST_AREA: 500,
 
     /**
      * 内部宿主的**最短边下限**（画布 px）。
@@ -200,6 +200,43 @@ const AnchorBridge = {
         };
     },
 
+    /**
+     * iframe 内部元素的 rect → **相对页面框左上角**的 rect（不含 position）。
+     *
+     * ⚠️ 这是缓存层专用的坐标系，和 toCanvasRect 的区别就是"加不加 position"：
+     *
+     *    toCanvasRect 采集时就折算成画布绝对坐标（x = position.x + innerRect.left）。
+     *    问题在于 pageElement.position 会被拖拽改掉，而 iframe 内的
+     *    getBoundingClientRect() 相对 iframe 视口**完全不受拖拽影响**。
+     *    两者相加等于把「稳定的量」和「不稳定的量」烤在一起存进缓存 ——
+     *    实测症状：拖拽页面框后，页面框自身的 12 个锚点是对的，
+     *    内部元素的锚点整体偏移 (-Δx, -Δy)。
+     *
+     *    这里只保留内层坐标，把 position 的加法**推迟到消费时**
+     *    （见 AnchorSession._innerHostsOf）。拖拽于是天然跟随，
+     *    不需要在任何失效链路上补代码。
+     *
+     *    IFRAME_TOP_OFFSET 仍然要加：iframe 有 marginTop:30px 让出拖拽条，
+     *    那是**结构性偏移**，与 position 无关，恒定存在。
+     *
+     * @param {object} innerRect  iframe 内元素的 rect（相对 iframe 视口）
+     * @param {object} pageElement 画布上的 page 元素（仅用于校验 position 存在）
+     * @returns {?object} 页面框局部坐标 rect；入参非法时返回 null
+     */
+    toFrameRect(innerRect, pageElement) {
+        if (!innerRect || !pageElement || !pageElement.position) return null;
+        const vals = [innerRect.left, innerRect.top, innerRect.width, innerRect.height,
+                      pageElement.position.x, pageElement.position.y];
+        if (!vals.every(Number.isFinite)) return null;
+
+        return {
+            x: innerRect.left,
+            y: this.IFRAME_TOP_OFFSET + innerRect.top,
+            width: innerRect.width,
+            height: innerRect.height,
+        };
+    },
+
     /** 矩形是否够格当锚点宿主（尺寸过滤，对齐 MasterGo） */
 
     /**
@@ -302,16 +339,19 @@ const AnchorBridge = {
 
                 const raw = getRect(child);
                 if (raw && Number.isFinite(raw.width) && Number.isFinite(raw.height)) {
-                    // 换算到画布坐标；**不再裁剪**（页面展示全部内容）
-                    const canvasRect = pageElement
-                        ? this.toCanvasRect(raw, pageElement)
+                    // 换算到**页面框局部坐标**（不含 position）；**不再裁剪**（页面展示全部内容）
+                    // ⚠️ 这里刻意不折算成画布绝对坐标：那会把拖拽前的 position 烤进缓存，
+                    //    拖拽后整体错位。position 的加法推迟到 AnchorSession._innerHostsOf。
+                    //    尺寸过滤/去重只看宽高与彼此间距，与 position 无关，折算与否数值相同。
+                    const frameRect = pageElement
+                        ? this.toFrameRect(raw, pageElement)
                         : { x: raw.left, y: raw.top, width: raw.width, height: raw.height };
-                    if (canvasRect) {
+                    if (frameRect) {
                         found.push({
                             selector: pathOf(child),
-                            rect: canvasRect,
+                            rect: frameRect,
                             depth: depth + 1,
-                            area: canvasRect.width * canvasRect.height,
+                            area: frameRect.width * frameRect.height,
                         });
                     }
                 }
@@ -432,7 +472,8 @@ const AnchorBridge = {
             const left = Number(r.left), top = Number(r.top);
             const width = Number(r.width), height = Number(r.height);
             if (![left, top, width, height].every(Number.isFinite)) continue;
-            const rect = this.toCanvasRect({ left, top, width, height }, pageElement);
+            // 与 direct 模式同坐标系：页面框局部坐标（不含 position）
+            const rect = this.toFrameRect({ left, top, width, height }, pageElement);
             if (!rect) continue;
             // ⚠️ 不裁剪（与 direct 模式一致，页面展示全部内容）；
             //    尺寸 / 等大 / 去重叠统一交给 finalizeInnerHosts —— 不在这里重写一遍。

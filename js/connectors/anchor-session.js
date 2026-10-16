@@ -436,13 +436,58 @@ const AnchorSession = {
         return out;
     },
 
-    /** 取某页面元素的内部宿主（带缓存） */
+    /**
+     * 取某页面元素的内部宿主（带缓存）。
+     *
+     * ⚠️ 这里做**实时折算** —— 缓存里存的是"页面框局部坐标"，
+     *    消费时才加上当前的 element.position。
+     *
+     *    为什么不把 position 一起缓存（改法上更省事）：
+     *    AnchorBridge.collectInnerHosts 采集时把
+     *    `pageElement.position.x + innerRect.left` 烤成了画布绝对坐标。
+     *    而 iframe 内的 getBoundingClientRect() 是相对 iframe 视口的，
+     *    **页面框在画布上怎么拖都不影响它** —— 两个量相加缓存下来，
+     *    就把拖拽前的 position 焊死了。
+     *
+     *    实测症状：拖拽页面框后，页面框自身的 12 个锚点正确，
+     *    内部元素的锚点整体偏移 (-Δx, -Δy)；已连好的、连到内部元素的
+     *    连接线端点同样停在原地（_hostRectFor → _hostOf 读的是同一份缓存）。
+     *
+     *    把加法推迟到消费时，拖拽天然跟随，
+     *    不必在 canvas-view-events 的拖拽链路上补任何失效调用。
+     *
+     * @param {object} pageElement 画布上的 page 元素
+     * @returns {Array} 内部宿主（画布坐标）
+     */
     _innerHostsOf(pageElement) {
         const key = this._cacheKey(pageElement);
-        if (this._innerCache.has(key)) return this._innerCache.get(key) || [];
-        return [];   // 未就绪时先返回空，异步结果回来后由调用方重绘
+        if (!this._innerCache.has(key)) return [];   // 未就绪时先返回空，异步结果回来后重绘
+        const cached = this._innerCache.get(key) || [];
+        if (!cached.length) return cached;
+
+        const pos = pageElement.position;
+        // position 缺失/非法时原样返回，绝不让 NaN 流进渲染与路由
+        if (!pos || !Number.isFinite(pos.x) || !Number.isFinite(pos.y)) return cached;
+
+        return cached.map(h => ({
+            ...h,
+            rect: {
+                x: h.rect.x + pos.x,
+                y: h.rect.y + pos.y,
+                width: h.rect.width,
+                height: h.rect.height,
+            },
+        }));
     },
 
+    /**
+     * 内部宿主的缓存键。
+     *
+     * ⚠️ 只含尺寸是**刻意的**，不是漏了 position：
+     *    缓存里存的是 iframe 局部坐标，拖拽不影响它，无需因 position 失效；
+     *    而尺寸一变（autofit 撑高 iframe）iframe 视口就变了，
+     *    内部元素的 gBCR 全部作废 —— 这才是唯一的失效信号。
+     */
     _cacheKey(pageElement) {
         return `${pageElement.id}@${pageElement.width}x${pageElement.height}`;
     },
