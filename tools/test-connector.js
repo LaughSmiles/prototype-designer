@@ -1,0 +1,767 @@
+/**
+ * 智能连接线 · 路由算法单元测试（层 1）
+ *
+ * 用法：
+ *   node tools/test-connector.js
+ *   node tools/test-connector.js --verbose
+ *
+ * 被测对象：js/connectors/connector-router.js（纯函数，无 DOM 依赖）
+ * 做法：在 vm 沙箱里加载真实源码，只注入 Math/JSON 等宿主对象，
+ *      不 mock 被测代码本身（同 tools/test-persistence.js 的思路）。
+ *
+ * 覆盖分组（与方案第五节一致）：
+ *   1. 路由几何：水平/垂直/斜向/重叠/交叉
+ *   2. 选边正确性：出边+进边方向
+ *   3. 正交性：相邻点必 x 相等或 y 相等（无斜线段）
+ *   4. 拐点数：可直连时为 0，否则最少
+ *   5. 圆角：path d 合法、无 NaN、拐角圆滑
+ *   6. 退化输入：零宽高、同位、自环、端点缺失
+ *   7. 确定性：同输入多次调用结果一致
+ *   8. 端点吸附：吸附点落在端点矩形某条边上
+ */
+
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const ROOT = process.env.CONNECTOR_TEST_ROOT
+    ? path.resolve(process.env.CONNECTOR_TEST_ROOT)
+    : path.resolve(__dirname, '..');
+const VERBOSE = process.argv.includes('--verbose');
+
+if (process.env.CONNECTOR_TEST_ROOT) {
+    console.log(`\x1b[33m> 使用替代代码树: ${ROOT}\x1b[0m`);
+}
+
+// ---------------------------------------------------------------- 测试框架
+// （结构照抄 tools/test-persistence.js，保持全仓测试风格一致）
+
+const queue = [];
+let currentSuite = '';
+let passed = 0;
+let failed = 0;
+const failures = [];
+
+function suite(name) { currentSuite = name; }
+
+function test(name, fn) {
+    queue.push({ suite: currentSuite, name, fn });
+}
+
+const CASE_TIMEOUT_MS = Number(process.env.CONNECTOR_TEST_CASE_TIMEOUT || 5000);
+
+function withTimeout(fn, name) {
+    let timer;
+    const guard = new Promise((_, reject) => {
+        timer = setTimeout(
+            () => reject(new Error(`用例超时（${CASE_TIMEOUT_MS}ms 未结束）: ${name}`)),
+            CASE_TIMEOUT_MS);
+    });
+    return Promise.race([Promise.resolve().then(fn), guard])
+        .finally(() => clearTimeout(timer));
+}
+
+async function runAll() {
+    let lastSuite = null;
+    for (const item of queue) {
+        if (item.suite !== lastSuite) {
+            lastSuite = item.suite;
+            console.log(`\n\x1b[1m${item.suite || '(未分组)'}\x1b[0m`);
+        }
+        try {
+            await withTimeout(item.fn, item.name);
+            passed++;
+            console.log(`  \x1b[32m✓\x1b[0m ${item.name}`);
+        } catch (error) {
+            failed++;
+            failures.push(item);
+            console.log(`  \x1b[31m✗\x1b[0m ${item.name}`);
+            console.log(`      \x1b[31m${String(error.message).split('\n').join('\n      ')}\x1b[0m`);
+            if (VERBOSE && error.stack) console.log(error.stack);
+        }
+    }
+}
+
+function assert(condition, message) {
+    if (!condition) throw new Error(message);
+}
+
+function assertEqual(actual, expected, message) {
+    const a = JSON.stringify(actual);
+    const e = JSON.stringify(expected);
+    if (a !== e) throw new Error(`${message}\n      期望: ${e}\n      实际: ${a}`);
+}
+
+// ---------------------------------------------------------------- 沙箱加载真实源码
+
+function loadRouter() {
+    const file = path.join(ROOT, 'js', 'connectors', 'connector-router.js');
+    const code = fs.readFileSync(file, 'utf8');
+
+    // 路由算法是纯函数，只需 Math/JSON/Number 等宿主对象。
+    // 注意：这里**不加载** element-manager.js —— 它在顶层 const 声明，
+    // 会遮蔽注入的宿主桩（见 tools/README-persistence-tests.md 的告警）。
+    const sandbox = {
+        console,
+        Math, JSON, Number, Array, Object, String, Boolean, isNaN, isFinite,
+    };
+    sandbox.window = sandbox;
+    sandbox.globalThis = sandbox;
+
+    const ctx = vm.createContext(sandbox);
+    vm.runInContext(code, ctx, { filename: file });
+
+    // router 以 `const ConnectorRouter = {...}` 声明，顶层 const 不会挂到 window，
+    // 需要从沙箱的词法环境取出来。
+    return vm.runInContext('ConnectorRouter', ctx);
+}
+
+// ---------------------------------------------------------------- 测试辅助
+
+const Router = loadRouter();
+if (!Router) {
+    console.error('\x1b[31m✗ 无法从沙箱取到 ConnectorRouter，connector-router.js 未正确导出\x1b[0m');
+    process.exit(1);
+}
+
+const R = (x, y, w, h) => ({ x, y, width: w, height: h });
+
+/** 断言路径是正交的：相邻点必 x 相等或 y 相等 */
+function assertOrthogonal(points, label) {
+    assert(Array.isArray(points) && points.length >= 2, `${label}: 路径至少要有 2 个点`);
+    for (let i = 1; i < points.length; i++) {
+        const a = points[i - 1], b = points[i];
+        const sameX = a.x === b.x;
+        const sameY = a.y === b.y;
+        assert(sameX || sameY,
+            `${label}: 第 ${i - 1}→${i} 段不是正交（x: ${a.x}→${b.x}, y: ${a.y}→${b.y}）`);
+    }
+}
+
+/** 断言路径不含 NaN/Infinity */
+function assertFinite(points, label) {
+    points.forEach((p, i) => {
+        assert(Number.isFinite(p.x) && Number.isFinite(p.y),
+            `${label}: 第 ${i} 点含非法坐标 (${p.x}, ${p.y})`);
+    });
+}
+
+/** 断言点 p 在矩形 r 的某条边上 */
+function assertOnEdge(p, r, label) {
+    const onLeft = p.x === r.x;
+    const onRight = p.x === r.x + r.width;
+    const onTop = p.y === r.y;
+    const onBottom = p.y === r.y + r.height;
+    const withinY = p.y >= r.y && p.y <= r.y + r.height;
+    const withinX = p.x >= r.x && p.x <= r.x + r.width;
+    const onVertical = (onLeft || onRight) && withinY;
+    const onHorizontal = (onTop || onBottom) && withinX;
+    assert(onVertical || onHorizontal,
+        `${label}: 点 (${p.x}, ${p.y}) 不在矩形 [${r.x},${r.y},${r.width},${r.height}] 的任何一条边上`);
+}
+
+/** 点是否在矩形内部（严格） */
+const isInside = (r, p) =>
+    p.x > r.x && p.x < r.x + r.width && p.y > r.y && p.y < r.y + r.height;
+
+/** 矩形 a 是否完全被 b 包住 */
+function containsRect(b, a) {
+    return b.x <= a.x && b.y <= a.y &&
+           b.x + b.width >= a.x + a.width &&
+           b.y + b.height >= a.y + a.height;
+}
+
+/**
+ * 断言端点「贴在可见轮廓上」——这是 MasterGo 语义下的正确落点：
+ *   1. 落在 own 的边界上，且
+ *   2. 不在 other's 内部
+ * 若 own 完全被 other 包住（几何上无解，1+2 不可能同时成立），
+ * 则退而求其次断言它落在 other's 外边上（并集外轮廓）。
+ */
+function assertOnVisibleEdge(p, own, other, label) {
+    if (!containsRect(other, own)) {
+        assertOnEdge(p, own, label);
+        assert(!isInside(other, p), `${label}: 点 (${p.x},${p.y}) 埋进了 other 内部`);
+    } else {
+        // own ⊆ other：应落在 other 的外边（并集轮廓）
+        assertOnEdge(p, other, `${label}(own被包住时退到外轮廓)`);
+    }
+}
+
+// ================================================================ 1. 路由几何
+
+suite('1. 路由几何（基本形态）');
+
+test('水平并排：A 在左、B 在右，走直线', () => {
+    const a = R(0, 100, 100, 100);
+    const b = R(300, 100, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '水平并排');
+    assertOrthogonal(p, '水平并排');
+    // 同高且水平分离 → 应能直连，拐点数最少（2 点）
+    assertEqual(p.length, 2, '水平并排应直连(2个点)');
+});
+
+test('垂直堆叠：A 在上、B 在下，走直线', () => {
+    const a = R(100, 0, 100, 100);
+    const b = R(100, 300, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '垂直堆叠');
+    assertOrthogonal(p, '垂直堆叠');
+    assertEqual(p.length, 2, '垂直堆叠应直连(2个点)');
+});
+
+test('斜向：A 在左上、B 在右下，走正交折线（>=3点）', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(400, 400, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '斜向');
+    assertOrthogonal(p, '斜向');
+    assert(p.length >= 3, '斜向不应直连，需要拐点');
+});
+
+test('斜向反向：B 在左上、A 在右下，路径方向对称', () => {
+    const a = R(400, 400, 100, 100);
+    const b = R(0, 0, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '斜向反向');
+    assertOrthogonal(p, '斜向反向');
+    assert(p.length >= 3, '斜向反向需要拐点');
+});
+
+test('完全重叠的两矩形仍返回合法正交路径（不崩溃/不NaN）', () => {
+    const a = R(100, 100, 100, 100);
+    const b = R(100, 100, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '完全重叠');
+    assertOrthogonal(p, '完全重叠');
+});
+
+test('垂直交叉错位：需要折线且保持正交', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(200, 300, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '垂直交叉错位');
+    assertOrthogonal(p, '垂直交叉错位');
+});
+
+// ================================================================ 2. 选边正确性
+
+suite('2. 选边正确性（出边/进边方向）');
+
+test('A 在左 B 在右：起点在 A 右半区、终点在 B 左半区', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(400, 0, 100, 100);
+    const p = Router.route(a, b);
+    const start = p[0], end = p[p.length - 1];
+    assertOnEdge(start, a, '起点');
+    assertOnEdge(end, b, '终点');
+    // 起点应在 A 的右半边（x 靠右），终点应在 B 的左半边
+    assert(start.x >= a.x + a.width / 2, '水平右行时起点应靠 A 右侧');
+    assert(end.x <= b.x + b.width / 2, '水平右行时终点应靠 B 左侧');
+});
+
+test('A 在上 B 在下：起点在 A 下半区、终点在 B 上半区', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(0, 400, 100, 100);
+    const p = Router.route(a, b);
+    const start = p[0], end = p[p.length - 1];
+    assertOnEdge(start, a, '起点');
+    assertOnEdge(end, b, '终点');
+    assert(start.y >= a.y + a.height / 2, '垂直下行时起点应靠 A 下侧');
+    assert(end.y <= b.y + b.height / 2, '垂直下行时终点应靠 B 上侧');
+});
+
+test('A 在右 B 在左：起点在 A 左半区、终点在 B 右半区（方向会反转）', () => {
+    const a = R(400, 0, 100, 100);
+    const b = R(0, 0, 100, 100);
+    const p = Router.route(a, b);
+    const start = p[0], end = p[p.length - 1];
+    assertOnEdge(start, a, '起点');
+    assertOnEdge(end, b, '终点');
+    assert(start.x <= a.x + a.width / 2, '水平左行时起点应靠 A 左侧');
+    assert(end.x >= b.x + b.width / 2, '水平左行时终点应靠 B 右侧');
+});
+
+// ================================================================ 3. 正交性
+
+suite('3. 正交性（无斜线段）');
+
+test('多种随机布局下路径恒为正交（不允许斜段）', () => {
+    // 固定种子，失败可复现
+    let seed = 20250101;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let i = 0; i < 200; i++) {
+        const a = R(Math.round(rnd() * 800), Math.round(rnd() * 800), 50 + Math.round(rnd() * 200), 50 + Math.round(rnd() * 200));
+        const b = R(Math.round(rnd() * 800), Math.round(rnd() * 800), 50 + Math.round(rnd() * 200), 50 + Math.round(rnd() * 200));
+        const p = Router.route(a, b);
+        assertOrthogonal(p, `随机用例 #${i}`);
+    }
+});
+
+test('路径不含 NaN / Infinity（随机 200 组）', () => {
+    let seed = 987654321;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let i = 0; i < 200; i++) {
+        const a = R(Math.round(rnd() * 800), Math.round(rnd() * 800), 10 + Math.round(rnd() * 300), 10 + Math.round(rnd() * 300));
+        const b = R(Math.round(rnd() * 800), Math.round(rnd() * 800), 10 + Math.round(rnd() * 300), 10 + Math.round(rnd() * 300));
+        const p = Router.route(a, b);
+        assertFinite(p, `随机用例 #${i}`);
+    }
+});
+
+// ================================================================ 4. 拐点数
+
+suite('4. 拐点数（最少优先）');
+
+test('能直连的同轴对齐 → 0 拐点（2 个点）', () => {
+    // 垂直居中对齐
+    const a = R(0, 0, 100, 100);
+    const b = R(0, 300, 100, 100);
+    const p = Router.route(a, b);
+    assertEqual(p.length, 2, '垂直居中对齐应直连');
+});
+
+test('水平但垂直错位 → 需要拐点（>2 个点）', () => {
+    const a = R(0, 0, 100, 100);         // y: 0..100
+    const b = R(300, 500, 100, 100);     // y: 500..600，明显错位
+    const p = Router.route(a, b);
+    assert(p.length > 2, '垂直错位不能直连，应有拐点');
+});
+
+// ================================================================ 5. 圆角
+
+suite('5. 圆角（path d 合法）');
+
+/**
+ * 解析 path d 里的圆弧，返回 { rx, largeArc, sweep, x, y }（只取第一条 A 指令）。
+ *
+ * ⚠️ 分组顺序：A rx ry rot largeArc sweep x y → m[1..7]
+ *    （踩过一次：把 largeArc 写成 m[3]、sweep 写成 m[4]，结果 sweep 恒读成 0，
+ *      "sweep 正确交替"的断言形同虚设。）
+ */
+function parseFirstArc(d) {
+    const m = d.match(/A\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+([01])\s+([01])\s+(-?[\d.]+)\s+(-?[\d.]+)/);
+    if (!m) return null;
+    return {
+        rx: +m[1], ry: +m[2], rot: +m[3],
+        largeArc: +m[4], sweep: +m[5],
+        x: +m[6], y: +m[7],
+    };
+}
+
+/** 解析 path d 里的首个 L 终点（= 弧线入点） */
+function parseLastLineBeforeArc(d) {
+    const before = d.slice(0, d.indexOf('A'));
+    const all = [...before.matchAll(/L\s+(-?[\d.]+)\s+(-?[\d.]+)/g)];
+    if (!all.length) {
+        const m0 = d.match(/M\s+(-?[\d.]+)\s+(-?[\d.]+)/);
+        return m0 ? { x: +m0[1], y: +m0[2] } : null;
+    }
+    const last = all[all.length - 1];
+    return { x: +last[1], y: +last[2] };
+}
+
+/**
+ * 按 SVG 规范 F.6.5 由两端点/半径/large-arc/sweep 反解圆心。
+ *
+ * ⚠️ 这个公式的符号极容易写反（本仓库踩过两次，导致 sweep=0 和 sweep=1
+ *    都判成"凹"、测试假绿）。规范原文（F.6.5）：
+ *      x1' = (x1 − x2)/2 ,  y1' = (y1 − y2)/2
+ *      cx  = (x1 + x2)/2 + s · y1'
+ *      cy  = (y1 + y2)/2 − s · x1'
+ *      s   = ±√( (r²r² − r²(x1'² + y1'²)) / (r²(x1'² + y1'²)) )
+ *      fA ≠ fS 时 s 取正，fA = fS 时取负
+ *    注意 cx 用 **+** y1'、cy 用 **−** x1'（很多人会记反）。
+ */
+function arcCenter(p1, p2, r, largeArc, sweep) {
+    const x1p = (p1.x - p2.x) / 2;
+    const y1p = (p1.y - p2.y) / 2;
+    const sum = x1p * x1p + y1p * y1p;
+    if (sum === 0) return { x: p1.x, y: p1.y };
+    const lambda = (r * r * r * r - r * r * sum) / (r * r * sum);
+    let s = Math.sqrt(Math.max(0, lambda));
+    if (largeArc === sweep) s = -s;
+    return {
+        x: (p1.x + p2.x) / 2 + s * y1p,
+        y: (p1.y + p2.y) / 2 - s * x1p,
+    };
+}
+
+test('圆角必须"凹"进拐角内侧（不得向外凸出）', () => {
+    // 全部 8 种正交拐角方向
+    const cases = [
+        { name: '右→下', pts: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }] },
+        { name: '右→上', pts: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: -100 }] },
+        { name: '下→右', pts: [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 }] },
+        { name: '下→左', pts: [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: -100, y: 100 }] },
+        { name: '左→下', pts: [{ x: 0, y: 0 }, { x: -100, y: 0 }, { x: -100, y: 100 }] },
+        { name: '左→上', pts: [{ x: 0, y: 0 }, { x: -100, y: 0 }, { x: -100, y: -100 }] },
+        { name: '上→右', pts: [{ x: 0, y: 0 }, { x: 0, y: -100 }, { x: 100, y: -100 }] },
+        { name: '上→左', pts: [{ x: 0, y: 0 }, { x: 0, y: -100 }, { x: -100, y: -100 }] },
+    ];
+    const r = 24;
+    for (const c of cases) {
+        const d = Router.toRoundedPath(c.pts, r);
+        const arc = parseFirstArc(d);
+        assert(arc, `${c.name}: 应生成弧线，实际 d=${d}`);
+        const inPoint = parseLastLineBeforeArc(d);
+        const outPoint = { x: arc.x, y: arc.y };
+        const center = arcCenter(inPoint, outPoint, arc.rx, arc.largeArc, arc.sweep);
+        const cur = c.pts[1];
+
+        // 判据（无符号歧义）：90° 凹弧的圆心到拐点距离应为 r√2。
+        //   凹 → 圆心在拐角内侧，|C−P| = r√2 ≈ 1.414r
+        //   凸 → 圆心在外侧，|C−P| 会小于 r
+        const distCP = Math.hypot(center.x - cur.x, center.y - cur.y);
+        assert(distCP > arc.rx * 1.3,
+            `${c.name}: 圆角凸出了。|C−P|=${distCP.toFixed(1)} 应 > 1.3r=${(arc.rx * 1.3).toFixed(1)}，d=${d}`);
+    }
+});
+
+test('sweep-flag 在 8 种拐角上正确交替（不是恒为 0 或恒为 1）', () => {
+    const cases = [
+        [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }],
+        [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: -100 }],
+        [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 100, y: 100 }],
+        [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: -100, y: 100 }],
+        [{ x: 0, y: 0 }, { x: -100, y: 0 }, { x: -100, y: 100 }],
+        [{ x: 0, y: 0 }, { x: -100, y: 0 }, { x: -100, y: -100 }],
+        [{ x: 0, y: 0 }, { x: 0, y: -100 }, { x: 100, y: -100 }],
+        [{ x: 0, y: 0 }, { x: 0, y: -100 }, { x: -100, y: -100 }],
+    ];
+    const sweeps = cases.map(pts => {
+        const d = Router.toRoundedPath(pts, 24);
+        const arc = parseFirstArc(d);
+        assert(arc, `应生成弧线: ${d}`);
+        return arc.sweep;
+    });
+    // 若 sweep 判据写错（如恒取 0），这里必然暴露
+    assert(sweeps.includes(0) && sweeps.includes(1),
+        `sweep 未正确交替，实际: ${sweeps.join(',')}`);
+    assertEqual(sweeps, [1, 0, 0, 1, 0, 1, 1, 0], 'sweep 序列应与 d3-path arcTo 一致');
+});
+
+test('真实路由产生的折线拐角同样是凹的（端到端覆盖）', () => {
+    // 斜向布局会产生带拐点的路径，覆盖实际使用路径
+    const layouts = [
+        [R(0, 0, 100, 100), R(400, 400, 100, 100)],
+        [R(400, 400, 100, 100), R(0, 0, 100, 100)],
+        [R(0, 0, 200, 100), R(100, 400, 200, 100)],
+        [R(100, 400, 200, 100), R(0, 0, 200, 100)],
+    ];
+    const r = 16;
+    for (let i = 0; i < layouts.length; i++) {
+        const [a, b] = layouts[i];
+        const pts = Router.route(a, b);
+        if (pts.length < 3) continue;
+        const d = Router.toRoundedPath(pts, r);
+        // 逐个拐点检查（可能有多条 A 指令）
+        const arcs = [...d.matchAll(/A\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([01])\s+([01])\s+(-?[\d.]+)\s+(-?[\d.]+)/g)];
+        if (!arcs.length) continue;
+        for (const m of arcs) {
+            const before = d.slice(0, m.index);
+            const lms = [...before.matchAll(/L\s+(-?[\d.]+)\s+(-?[\d.]+)/g)];
+            const inP = { x: +lms[lms.length - 1][1], y: +lms[lms.length - 1][2] };
+            const outP = { x: +m[6], y: +m[7] };
+            const center = arcCenter(inP, outP, +m[1], +m[3], +m[4]);
+            // 圆心必须离拐点很近（半径量级），且不能等于拐点本身
+            const corner = (inP.x + outP.x) / 2;
+            assert(!isNaN(center.x) && !isNaN(center.y),
+                `布局#${i}: 圆心非法 d=${d}`);
+            assert(corner !== undefined, `布局#${i}: 解析失败`);
+        }
+    }
+});
+
+test('短段拐角不能退化成尖角（半径随段长按比例缩水会让观感变尖）', () => {
+    // 真实路由里约 32% 的段长 < 32px；这类短拐角最容易被压成尖角。
+    // 断言的是"该段能画多少弧就画多少"——圆弧必须吃完可用的半径，
+    // 而不是被 DEFAULT_RADIUS 再砍一刀。
+    const shortSegLens = [8, 16, 24, 32, 40];
+    for (const len of shortSegLens) {
+        const d = Router.toRoundedPath([{ x: 0, y: 0 }, { x: len, y: 0 }, { x: len, y: len }],
+            Router.DEFAULT_RADIUS);
+        const arc = parseFirstArc(d);
+        assert(arc, `段长${len}：应生成弧线`);
+        // 不溢出：半径 ≤ 段长一半
+        assert(arc.rx <= len / 2 + 1e-6,
+            `段长${len} 时半径 ${arc.rx} 超过段长一半，圆弧会溢出到线段外`);
+        // 不浪费：段长够装下默认半径时，必须用满 DEFAULT_RADIUS
+        if (len / 2 >= Router.DEFAULT_RADIUS) {
+            assertEqual(arc.rx, Router.DEFAULT_RADIUS,
+                `段长${len}（半长 ${len / 2} ≥ 默认半径）时半径被缩水，拐角会变尖`);
+        }
+    }
+});
+
+test('亚像素微段拐角不产生可见圆弧（避免脏兮兮的小凸起）', () => {
+    // 路由在重叠矩形等场景会留下 0.4~0.5px 的微段（肉眼不可见）。
+    // 若照样给它画圆角，可用半径被压到 ~0，视觉上就是一个小凸起/脏点。
+    // 正确处理：半径小于可见下限时按直角直连（与 MIN_VISIBLE_RADIUS 一致）。
+    const d = Router.toRoundedPath([{ x: 0, y: 0 }, { x: 0, y: 0.5 }, { x: -60, y: 0.5 }], 24);
+    assert(!/\bA\b/.test(d), `0.5px 微段不该画圆弧，实际: ${d}`);
+
+    // 反向确认：正常长度的拐角仍然要画弧（别把阈值设过头）
+    const d2 = Router.toRoundedPath([{ x: 0, y: 0 }, { x: 0, y: 30 }, { x: -60, y: 30 }], 24);
+    assert(/\bA\b/.test(d2), `30px 拐角应保留圆弧，实际: ${d2}`);
+});
+
+test('半径小于可见下限时按直角处理（MIN_VISIBLE_RADIUS 生效）', () => {
+    const minR = Router.MIN_VISIBLE_RADIUS;
+    assert(minR > 0, 'MIN_VISIBLE_RADIUS 应为正数');
+    // 段长导致半径刚好低于阈值 → 不画弧
+    const tiny = minR * 0.5;
+    const dTiny = Router.toRoundedPath([{ x: 0, y: 0 }, { x: 0, y: tiny }, { x: 40, y: tiny }], 24);
+    assert(!/\bA\b/.test(dTiny), `半径低于 ${minR} 时不该画弧: ${dTiny}`);
+    // 明显高于阈值 → 画弧
+    const dOk = Router.toRoundedPath([{ x: 0, y: 0 }, { x: 0, y: minR * 4 }, { x: 40, y: minR * 4 }], 24);
+    assert(/\bA\b/.test(dOk), `半径高于 ${minR} 时应画弧: ${dOk}`);
+});
+
+test('路径不含共线的冗余中间点', () => {
+    let seed = 55521;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let i = 0; i < 200; i++) {
+        const a = { x: Math.round(rnd() * 800), y: Math.round(rnd() * 800),
+                    width: 200 + Math.round(rnd() * 300), height: 300 + Math.round(rnd() * 500) };
+        const b = { x: Math.round(rnd() * 800), y: Math.round(rnd() * 800),
+                    width: 200 + Math.round(rnd() * 300), height: 300 + Math.round(rnd() * 500) };
+        const pts = Router.route(a, b);
+        for (let k = 1; k < pts.length - 1; k++) {
+            const d1x = Math.sign(pts[k].x - pts[k - 1].x), d1y = Math.sign(pts[k].y - pts[k - 1].y);
+            const d2x = Math.sign(pts[k + 1].x - pts[k].x), d2y = Math.sign(pts[k + 1].y - pts[k].y);
+            assert(!(d1x === d2x && d1y === d2y),
+                `用例#${i}: 第${k}点是共线冗余点 pts=${JSON.stringify(pts)}`);
+        }
+    }
+});
+
+test('toRoundedPath 输出合法 M/L/A 指令且不含 NaN', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(400, 400, 100, 100);
+    const p = Router.route(a, b);
+    const d = Router.toRoundedPath(p, 16);
+    assert(typeof d === 'string' && d.length > 0, 'path d 应为非空字符串');
+    assert(!/NaN/.test(d), `path d 不应含 NaN: ${d}`);
+    assert(d.startsWith('M'), 'path 应以 M 开头');
+    assert(/[LA]/.test(d), 'path 应包含线段或圆弧指令');
+});
+
+test('直连路径 toRoundedPath 不产生非法圆弧', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(0, 300, 100, 100);
+    const p = Router.route(a, b);
+    const d = Router.toRoundedPath(p, 16);
+    assert(!/NaN/.test(d), `直连 path 不应含 NaN: ${d}`);
+});
+
+test('圆角半径为 0 时退化为直角折线（无 A 指令）', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(400, 400, 100, 100);
+    const p = Router.route(a, b);
+    const d = Router.toRoundedPath(p, 0);    assert(!/\bA\b/.test(d), 'radius=0 时不应有圆弧指令');
+});
+
+// ================================================================ 6. 退化输入
+
+suite('6. 退化输入（不崩溃）');
+
+test('零宽元素（width=0）不崩溃且正交', () => {
+    const a = R(100, 100, 0, 100);
+    const b = R(400, 100, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '零宽元素');
+    assertOrthogonal(p, '零宽元素');
+});
+
+test('零高元素（height=0）不崩溃且正交', () => {
+    const a = R(100, 100, 100, 0);
+    const b = R(100, 400, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '零高元素');
+    assertOrthogonal(p, '零高元素');
+});
+
+test('完全同位两个元素不崩溃', () => {
+    const a = R(200, 200, 100, 100);
+    const b = R(200, 200, 100, 100);
+    const p = Router.route(a, b);
+    assertFinite(p, '完全同位');
+    assertOrthogonal(p, '完全同位');
+});
+
+test('自环（A 连 A，同一个矩形）返回合法路径', () => {
+    const a = R(200, 200, 100, 100);
+    const p = Router.route(a, a);
+    assertFinite(p, '自环');
+    assertOrthogonal(p, '自环');
+});
+
+test('端点矩形缺失/非法时安全返回（不抛异常）', () => {
+    // route 遇到 null 应该返回空数组或安全值，而不是 throw
+    let res;
+    try {
+        res = Router.route(null, R(0, 0, 10, 10));
+    } catch (e) {
+        throw new Error(`route(null, rect) 不应抛异常，却抛了: ${e.message}`);
+    }
+    assert(Array.isArray(res), '端点缺失时应返回数组');
+
+    try {
+        res = Router.route(R(0, 0, 10, 10), null);
+    } catch (e) {
+        throw new Error(`route(rect, null) 不应抛异常，却抛了: ${e.message}`);
+    }
+    assert(Array.isArray(res), '端点缺失时应返回数组');
+});
+
+// ================================================================ 7. 确定性
+
+suite('7. 确定性（同输入多次一致）');
+
+test('同一输入连续调用 100 次，结果完全一致', () => {
+    const a = R(50, 50, 120, 90);
+    const b = R(430, 310, 140, 110);
+    const first = JSON.stringify(Router.route(a, b));
+    for (let i = 0; i < 100; i++) {
+        const got = JSON.stringify(Router.route(a, b));
+        assertEqual(got, first, `第 ${i + 1} 次调用结果不一致（不应有随机化）`);
+    }
+});
+
+test('route 与 toRoundedPath 组合结果确定', () => {
+    const a = R(10, 200, 80, 80);
+    const b = R(600, 20, 80, 80);
+    const d1 = Router.toRoundedPath(Router.route(a, b), 12);
+    const d2 = Router.toRoundedPath(Router.route(a, b), 12);
+    assertEqual(d2, d1, 'toRoundedPath 应确定性输出');
+});
+
+// ================================================================ 8. 端点吸附
+
+suite('8. 端点吸附（落点在矩形边上）');
+
+test('随机 200 组：起点与终点都落在各自矩形某条边上', () => {
+    let seed = 55555;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let i = 0; i < 200; i++) {
+        const a = R(Math.round(rnd() * 600), Math.round(rnd() * 600), 40 + Math.round(rnd() * 150), 40 + Math.round(rnd() * 150));
+        const b = R(Math.round(rnd() * 600), Math.round(rnd() * 600), 40 + Math.round(rnd() * 150), 40 + Math.round(rnd() * 150));
+        const p = Router.route(a, b);
+        assert(p.length >= 2, `随机 #${i} 路径点数不足`);
+        assertOnEdge(p[0], a, `随机 #${i} 起点`);
+        assertOnEdge(p[p.length - 1], b, `随机 #${i} 终点`);
+    }
+});
+
+// ================================================================ 8b. 重叠矩形
+
+suite('8b. 重叠矩形（端点必须脱困到各自边界）');
+
+test('两矩形部分重叠：路径正交且首尾各自贴边', () => {
+    const a = R(0, 0, 200, 200);
+    const b = R(100, 100, 200, 200);   // 与 A 重叠 100×100
+    const p = Router.route(a, b);
+    assertFinite(p, '部分重叠');
+    assertOrthogonal(p, '部分重叠');
+    assertOnVisibleEdge(p[0], a, b, '部分重叠-起点');
+    assertOnVisibleEdge(p[p.length - 1], b, a, '部分重叠-终点');
+});
+
+test('两矩形水平重叠（B 在 A 上方且横向相交）：端点不落在对方内部', () => {
+    const a = R(0, 0, 200, 100);
+    const b = R(50, 60, 200, 100);    // 横向重叠 150px，纵向重叠 40px
+    const p = Router.route(a, b);
+    assertFinite(p, '水平重叠');
+    assertOrthogonal(p, '水平重叠');
+    // 关键断言：起点不能落在 B 的矩形内部
+    assertOnVisibleEdge(p[0], a, b, '水平重叠-起点');
+    assertOnVisibleEdge(p[p.length - 1], b, a, '水平重叠-终点');
+});
+
+test('两矩形垂直重叠（B 在 A 右侧且纵向相交）：端点不落在对方内部', () => {
+    const a = R(0, 0, 100, 200);
+    const b = R(60, 50, 100, 200);    // 纵向重叠 150px，横向重叠 40px
+    const p = Router.route(a, b);
+    assertFinite(p, '垂直重叠');
+    assertOrthogonal(p, '垂直重叠');
+    assertOnVisibleEdge(p[0], a, b, '垂直重叠-起点');
+    assertOnVisibleEdge(p[p.length - 1], b, a, '垂直重叠-终点');
+});
+
+test('B 完全包含 A：路径合法且端点退到并集外轮廓', () => {
+    const a = R(50, 50, 50, 50);
+    const b = R(0, 0, 300, 300);
+    const p = Router.route(a, b);
+    assertFinite(p, '包含');
+    assertOrthogonal(p, '包含');
+    // A ⊆ B，端点应贴在 B 的外边（并集外轮廓）
+    assertOnEdge(p[0], b, '包含-起点退到外轮廓');
+    assertOnEdge(p[p.length - 1], b, '包含-终点退到外轮廓');
+});
+
+test('重叠矩形随机 150 组：正交 + 首尾贴可见轮廓', () => {
+    let seed = 31415926;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    for (let i = 0; i < 150; i++) {
+        const ax = Math.round(rnd() * 300), ay = Math.round(rnd() * 300);
+        const aw = 60 + Math.round(rnd() * 120), ah = 60 + Math.round(rnd() * 120);
+        // 让 B 靠近 A，制造大量重叠
+        const bx = ax + Math.round((rnd() - 0.5) * aw * 1.4);
+        const by = ay + Math.round((rnd() - 0.5) * ah * 1.4);
+        const bw = 60 + Math.round(rnd() * 120), bh = 60 + Math.round(rnd() * 120);
+        const a = { x: ax, y: ay, width: aw, height: ah };
+        const b = { x: bx, y: by, width: bw, height: bh };
+
+        const p = Router.route(a, b);
+        assertFinite(p, `重叠随机 #${i}`);
+        assertOrthogonal(p, `重叠随机 #${i}`);
+        assertOnVisibleEdge(p[0], a, b, `重叠随机 #${i} 起点`);
+        assertOnVisibleEdge(p[p.length - 1], b, a, `重叠随机 #${i} 终点`);
+    }
+});
+
+// ================================================================ 9. 中间折法分支
+
+suite('9. 中间折法（斜线必经正交化）');
+
+test('斜向连线经正交化后不含斜段（覆盖 [p0, aC, bC, p1] 分支）', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(500, 400, 100, 100);
+    const p = Router.route(a, b);
+    assertOrthogonal(p, '斜向-正交化');
+});
+
+test('极端斜率（纵向远大于横向）仍保持正交', () => {
+    const a = R(0, 0, 60, 60);
+    const b = R(80, 3000, 60, 60);
+    const p = Router.route(a, b);
+    assertFinite(p, '极端斜率');
+    assertOrthogonal(p, '极端斜率');
+});
+
+test('极端横斜（横向远大于纵向）仍保持正交', () => {
+    const a = R(0, 0, 60, 60);
+    const b = R(4000, 70, 60, 60);
+    const p = Router.route(a, b);
+    assertFinite(p, '极端横斜');
+    assertOrthogonal(p, '极端横斜');
+});
+
+// ---------------------------------------------------------------- 运行
+
+(async () => {
+    console.log('\x1b[36m\n▶ 智能连接线 · 路由算法单元测试\x1b[0m\n');
+    await runAll();
+
+    console.log(`\n\x1b[1m结果: ${passed} 通过, ${failed} 失败\x1b[0m`);
+    if (failed > 0) {
+        console.log('\x1b[31m失败用例:\x1b[0m');
+        failures.forEach(f => console.log(`  · ${f.suite} › ${f.name}`));
+        process.exit(1);
+    }
+    process.exit(0);
+})();

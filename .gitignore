@@ -7,6 +7,7 @@ node_modules/
 
 # AI 辅助工具的本地调试产物
 .playwright-mcp/
+.dsh-tmp/
 *.local.md
 
 # IDE

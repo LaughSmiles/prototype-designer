@@ -58,6 +58,36 @@ const ElementManager = {
         ElementAdder.addArrowElement(points);
     },
 
+    // 添加智能连接线（绑定 fromId/toId，路径实时计算）
+    addConnectorElement(fromId, toId) {
+        ElementAdder.addConnectorElement(fromId, toId);
+    },
+
+    // 改连连接线的某一端
+    retargetConnector(connectorId, end, newTargetId) {
+        const connector = this.getElement(connectorId);
+        if (!connector || connector.type !== 'connector') return;
+
+        // 不能连到自己
+        const otherId = end === 'from' ? connector.toId : connector.fromId;
+        if (newTargetId === otherId) return;
+
+        if (end === 'from') {
+            connector.fromId = newTargetId;
+        } else {
+            connector.toId = newTargetId;
+        }
+
+        // 就地重绘而非重建：保住选中态与端点手柄（改连后线仍是选中状态）
+        const div = document.querySelector(`[data-element-id="${connectorId}"]`);
+        if (div) {
+            this.renderConnectorInto(div, connector);
+        } else {
+            this.renderElement(connector);
+        }
+        this.updateStatusBar();
+    },
+
     // 添加批注标记元素
     addAnnotationElement(boxX, boxY) {
         return ElementAdder.addAnnotationElement(boxX, boxY);
@@ -96,6 +126,9 @@ const ElementManager = {
         if (div) {
             div.classList.add('selected');
         }
+
+        // 状态栏要同步（连接线的文案按两端元素名生成，必须在选中态确定后算）
+        this.updateStatusBar();
     },
 
     // 取消选中
@@ -152,6 +185,8 @@ const ElementManager = {
 
         if (element.type === 'page') {
             this.decrementUsageCount(element.pageId);
+            // 删除页面元素时，连带删除所有以它为端点的连接线
+            this.removeConnectorsForElement(element.id);
         }
 
         this.state.elements.splice(index, 1);
@@ -168,6 +203,27 @@ const ElementManager = {
 
         this.updateStatusBar();
         HistoryManager.saveState();
+    },
+
+    /**
+     * 删除所有以 elementId 为端点的连接线。
+     * MasterGo 同样行为：连线是端点的从属物，端点没了连线也没了。
+     */
+    removeConnectorsForElement(elementId) {
+        const doomed = this.state.elements.filter(
+            el => el.type === 'connector' && (el.fromId === elementId || el.toId === elementId)
+        );
+        for (const c of doomed) {
+            const i = this.state.elements.indexOf(c);
+            if (i !== -1) this.state.elements.splice(i, 1);
+            document.querySelector(`[data-element-id="${c.id}"]`)?.remove();
+            this.state.selectedElements = this.state.selectedElements.filter(el => el !== c.id);
+            if (this.state.selectedElement === c.id) this.state.selectedElement = null;
+        }
+        if (doomed.length > 0) {
+            Debug.log(`已连带删除 ${doomed.length} 条连接线`);
+        }
+        return doomed.length;
     },
 
     // 删除所有元素
@@ -226,6 +282,10 @@ const ElementManager = {
                     info = `选中: ${pageName} (拖拽手柄移动)`;
                 } else if (element.type === 'arrow') {
                     info = `选中: 箭头 (点击任意位置拖动)`;
+                } else if (element.type === 'connector') {
+                    const fromName = PageLibrary.getPageName((this.getElement(element.fromId) || {}).pageId) || '?';
+                    const toName = PageLibrary.getPageName((this.getElement(element.toId) || {}).pageId) || '?';
+                    info = `选中: 连接线 ${fromName} → ${toName} (拖两端圆点可改连)`;
                 } else if (element.type === 'annotation') {
                     info = `选中: 批注标记 (拖动锚点或框)`;
                 }
@@ -270,9 +330,113 @@ const ElementManager = {
         return path;
     },
 
-    // 更新连接线
+    /**
+     * 更新与指定元素相连的所有连接线。
+     *
+     * 这是一个原本就存在的空占位钩子（canvas-view-events.js 在拖动页面元素的
+     * 每一帧都会调用它），现在由连接线功能填实。
+     *
+     * 连接线不存坐标 —— 路径每次由 ConnectorRouter 按两端元素当前位置实时算出，
+     * 所以这里只需把受影响的连线**重画一遍**即可自动跟随。
+     */
     updateConnectionsForElement(elementId) {
-        // 占位函数
+        const canvas = document.getElementById('canvas');
+        if (!canvas) return;
+
+        for (const connector of this.state.elements) {
+            if (connector.type !== 'connector') continue;
+            if (connector.fromId !== elementId && connector.toId !== elementId) continue;
+
+            const div = canvas.querySelector(`[data-element-id="${connector.id}"]`);
+            if (!div) continue;
+
+            // 就地重画：不销毁重建，避免打断选中态与事件绑定
+            this.renderConnectorInto(div, connector);
+        }
+    },
+
+    /** 把连接线内容重新渲染进已有容器（保留容器本身与选中态） */
+    renderConnectorInto(div, element) {
+        const fromEl = this.getElement(element.fromId);
+        const toEl = this.getElement(element.toId);
+        if (!fromEl || !toEl) return;
+
+        const fromRect = { x: fromEl.position.x, y: fromEl.position.y, width: fromEl.width, height: fromEl.height };
+        const toRect = { x: toEl.position.x, y: toEl.position.y, width: toEl.width, height: toEl.height };
+        const points = ConnectorRouter.route(fromRect, toRect);
+        if (!points || points.length < 2) return;
+
+        element._routePoints = points;
+
+        const allX = points.map(p => p.x);
+        const allY = points.map(p => p.y);
+        const minX = Math.min(...allX), maxX = Math.max(...allX);
+        const minY = Math.min(...allY), maxY = Math.max(...allY);
+
+        element.position = { x: minX, y: minY };
+        element.width = maxX - minX;
+        element.height = maxY - minY;
+
+        const padding = 12;
+        div.style.left = `${minX - padding}px`;
+        div.style.top = `${minY - padding}px`;
+        div.style.width = `${element.width + padding * 2}px`;
+        div.style.height = `${element.height + padding * 2}px`;
+
+        // 清空旧内容（保留容器）
+        div.innerHTML = '';
+
+        const d = ConnectorRouter.toRoundedPath(points, ConnectorRouter.DEFAULT_RADIUS);
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'connector-svg');
+        svg.setAttribute('viewBox',
+            `${minX - padding} ${minY - padding} ${element.width + padding * 2} ${element.height + padding * 2}`);
+        svg.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;';
+
+        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        hit.setAttribute('class', 'connector-hit');
+        hit.setAttribute('d', d);
+        hit.setAttribute('fill', 'none');
+        hit.setAttribute('stroke', 'transparent');
+        hit.setAttribute('stroke-width', '12');
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'connector-path');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#999999');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-linecap', 'round');
+        path.setAttribute('stroke-linejoin', 'round');
+
+        const arrowHead = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        arrowHead.setAttribute('class', 'connector-arrow');
+        arrowHead.setAttribute('d', ElementRenderer.getArrowHeadPath(points[points.length - 2], points[points.length - 1], 0, 0));
+        arrowHead.setAttribute('fill', '#999999');
+
+        svg.appendChild(hit);
+        svg.appendChild(path);
+        svg.appendChild(arrowHead);
+        div.appendChild(svg);
+
+        // 端点手柄（仅选中时可见）
+        const fromHandle = document.createElement('div');
+        fromHandle.className = 'connector-handle';
+        fromHandle.dataset.connectorId = element.id;
+        fromHandle.dataset.end = 'from';
+        fromHandle.style.left = `${points[0].x - minX}px`;
+        fromHandle.style.top = `${points[0].y - minY}px`;
+        fromHandle.title = '拖动可改连起点';
+        div.appendChild(fromHandle);
+
+        const toHandle = document.createElement('div');
+        toHandle.className = 'connector-handle';
+        toHandle.dataset.connectorId = element.id;
+        toHandle.dataset.end = 'to';
+        toHandle.style.left = `${points[points.length - 1].x - minX}px`;
+        toHandle.style.top = `${points[points.length - 1].y - minY}px`;
+        toHandle.title = '拖动可改连终点';
+        div.appendChild(toHandle);
     },
 
     // 显示右键菜单

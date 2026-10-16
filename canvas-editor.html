@@ -373,6 +373,9 @@
                     <button class="tool-icon-btn" data-tool="annotation" title="批注标记 (3)">
                         <i class="fas fa-tag"></i>
                     </button>
+                    <button class="tool-icon-btn" data-tool="connector" title="连接线工具 (4) — 在两个页面框之间拖出智能连线">
+                        <i class="fas fa-link"></i>
+                    </button>
 
                     <!-- 分隔符 -->
                     <div class="status-bar-divider"></div>
@@ -485,6 +488,10 @@
     <script src="js/tools/tools.js"></script>
     <script src="js/tools/tools-arrow.js"></script>
     <script src="js/tools/tools-annotation.js"></script>
+
+    <!-- 智能连接线：路由算法是纯函数模块，必须在使用它的工具之前加载 -->
+    <script src="js/connectors/connector-router.js"></script>
+    <script src="js/tools/tools-connector.js"></script>
     <script src="js/modal-manager.js"></script>
     <script src="js/storage.js"></script>
     <!-- PageManager 模块 -->

@@ -2224,6 +2224,80 @@ body {
     z-index: 100;
 }
 
+/* ================================================================ 智能连接线 */
+
+.canvas-element.connector-element {
+    background: transparent;
+    border: none;
+    /* 连接线 z-index(99) 高于页面元素(10)，天然在页面框之上，
+       所以这里不能用 pointer-events:none —— 那会连带阻断 SVG 命中区
+       （pointer-events:none 在父级会向下屏蔽整棵子树），导致线永远点不中。 */
+    z-index: 99;
+}
+
+.canvas-element.connector-element.selected {
+    outline: 1px dashed var(--accent-blue);
+    outline-offset: 0;
+}
+
+/* 视觉线本身不接收指针事件，统一由更宽的透明命中区负责。
+   ⚠️ pointer-events 会在 SVG 上「继承」到 <svg> 本身，所以 .connector-svg
+   也必须显式放开，否则命中区的 stroke 永远收不到事件。 */
+.connector-svg {
+    pointer-events: none;   /* svg 盒子本身穿透，只有 stroke 区域接事件 */
+}
+.connector-svg path {
+    pointer-events: none;
+}
+.connector-svg .connector-hit {
+    pointer-events: stroke;
+    cursor: pointer;
+}
+
+/* 端点拖拽圆点：仅选中时可见（默认隐藏，选中时由 .selected 显形） */
+.connector-handle {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    margin-left: -6px;
+    margin-top: -6px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #409EFF;
+    opacity: 0;
+    pointer-events: none;
+    cursor: move;
+    z-index: 5;
+    transition: opacity 0.12s ease;
+}
+
+/* 选中态：端点圆点显形并可拖 */
+.canvas-element.connector-element.selected .connector-handle {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.canvas-element.connector-element.selected .connector-handle:hover {
+    background: #409EFF;
+    border-color: #ffffff;
+    transform: scale(1.25);
+}
+
+/* 选中时视觉线高亮 */
+.canvas-element.connector-element.selected .connector-path {
+    stroke: var(--accent-blue);
+    stroke-width: 3;
+}
+.canvas-element.connector-element.selected .connector-arrow {
+    fill: var(--accent-blue);
+}
+
+/* 浅色主题下的对比度调整 */
+:root[data-theme="light"] .connector-handle {
+    background: #ffffff;
+    border-color: #337ecc;
+}
+
 .canvas-element.text-element {
     background: transparent;
     border: 1px dashed var(--accent-blue);

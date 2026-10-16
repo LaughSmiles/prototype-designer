@@ -46,6 +46,33 @@ const ElementAdder = {
         HistoryManager.saveState();
     },
 
+    // 添加智能连接线
+    // 只存 fromId/toId —— 路径由 ConnectorRouter 按两端元素当前位置实时计算，
+    // 不存坐标（这是 MasterGo 连接线的核心语义，见 js/connectors/connector-router.js）
+    addConnectorElement(fromId, toId) {
+        const fromEl = ElementManager.state.elements.find(el => el.id === fromId);
+        const toEl = ElementManager.state.elements.find(el => el.id === toId);
+        if (!fromEl || !toEl) return;
+
+        const element = {
+            id: PageManager.generateElementId(),
+            type: 'connector',
+            fromId: fromId,
+            toId: toId,
+            position: { x: 0, y: 0 },
+            width: 0,
+            height: 0
+        };
+
+        ElementManager.state.elements.push(element);
+        ElementManager.renderElement(element);
+        ElementManager.updateStatusBar();
+
+        HistoryManager.saveState();
+
+        return element.id;
+    },
+
     // 添加批注标记元素
     addAnnotationElement(boxX, boxY) {
         const BOX_WIDTH = 200;

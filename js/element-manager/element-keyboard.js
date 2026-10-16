@@ -37,6 +37,8 @@ const ElementKeyboard = {
                     Tools.setTool('arrow');
                 } else if (e.key === '3' && !e.ctrlKey) {
                     Tools.setTool('annotation');
+                } else if (e.key === '4' && !e.ctrlKey) {
+                    Tools.setTool('connector');
                 }
             }
         });

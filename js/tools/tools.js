@@ -15,6 +15,13 @@ const Tools = {
     annotationState: {
     },
 
+    // 智能连接线工具状态
+    connectorState: {
+        isDrawing: false,
+        fromId: null,
+        hoverId: null,
+    },
+
     // 初始化
     init() {
         this.setupToolButtons();
@@ -43,12 +50,18 @@ const Tools = {
             this.arrowState.isDrawing = false;
         }
 
+        // 如果正在绘制连接线时切换工具,清理预览
+        if (this.connectorState.isDrawing && typeof ToolsConnector !== 'undefined') {
+            ToolsConnector.cancelDrawing();
+        }
+
         // 更新状态
         this.currentTool = tool;
 
         // 重置工具状态
         this.arrowState = { points: [], isDrawing: false };
         this.annotationState = { };
+        this.connectorState = { isDrawing: false, fromId: null, hoverId: null };
 
         // 更新UI
         const buttons = document.querySelectorAll('.tool-icon-btn');
@@ -70,6 +83,8 @@ const Tools = {
                 canvasWrapper.style.cursor = 'crosshair';
             } else if (tool === 'annotation') {
                 canvasWrapper.style.cursor = 'text';  // 批注标记工具
+            } else if (tool === 'connector') {
+                canvasWrapper.style.cursor = 'crosshair';  // 连接线工具
             }
         }
 
@@ -77,9 +92,10 @@ const Tools = {
         const toolNames = {
             'select': '选择工具',
             'arrow': '箭头工具',
-            'annotation': '批注标记'
+            'annotation': '批注标记',
+            'connector': '连接线工具 (从一个页面框拖到另一个)'
         };
-        PageLibrary.showHint(`切换到: ${toolNames[tool]}`);
+        PageLibrary.showHint(`切换到: ${toolNames[tool] || tool}`);
     },
 
     // 设置画布事件
@@ -87,10 +103,36 @@ const Tools = {
         const canvasWrapper = document.getElementById('canvasWrapper');
         if (!canvasWrapper) return;
 
-        // 点击事件（用于箭头和批注标记工具）
+        // ===== 智能连接线工具：mousedown/mousemove/mouseup 三段式 =====
+        // 必须挂在 wrapper 上且用捕获阶段，iframe 内部的指针事件也要能拿到
+        canvasWrapper.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+
+            // 端点拖拽优先级最高，且在**任何工具下**都可用 ——
+            // MasterGo 的行为是「选中连线后拖两端圆点即可改连」，
+            // 不需要切回连接线工具，所以这里不判断 currentTool。
+            const hit = ToolsConnector.hitTestEndpoint(e);
+            if (hit) {
+                ToolsConnector.beginEndpointDrag(hit.connectorId, hit.end);
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+
+            if (this.currentTool !== 'connector') return;
+            ToolsConnector.handleMouseDown(e);
+        }, true);
+
+        // 端点拖拽的移动/释放走 document 级监听（指针可能在 iframe 上，
+        // 停在 wrapper 上会丢事件），在 setupCanvasEvents 末尾统一注册
+
+        // ===== 点击事件（用于箭头和批注标记工具）=====
         // 关键修复：在canvas-wrapper上监听,而不是canvas
         // 这样可以避免iframe拦截事件,确保工具在iframe上方也能正常工作
         canvasWrapper.addEventListener('click', (e) => {
+            // 连接线工具用 mousedown/mouseup，不走 click 分发
+            if (this.currentTool === 'connector') return;
+
             // 只在选择工具模式下才防止点击元素时触发
             // 工具模式(箭头/批注标记)需要在元素上方也能正常工作
             if (this.currentTool === 'select' && e.target.closest('.canvas-element')) {
@@ -104,12 +146,30 @@ const Tools = {
             }
         });
 
-        // 鼠标移动（用于箭头预览）
+        // 鼠标移动（用于箭头预览 / 连接线实时预览）
         // 也在canvas-wrapper上监听,确保箭头预览在iframe上方正常工作
         canvasWrapper.addEventListener('mousemove', (e) => {
             if (this.currentTool === 'arrow' && this.arrowState.isDrawing) {
                 ToolsArrow.updateArrowPreview(e);
+            } else if (this.currentTool === 'connector' || ToolsConnector.dragState.active) {
+                ToolsConnector.handleMouseMove(e);
             }
+        });
+
+        // 鼠标释放（连接线落点建线 / 端点改连）
+        canvasWrapper.addEventListener('mouseup', (e) => {
+            if (this.currentTool === 'connector' || ToolsConnector.dragState.active) {
+                ToolsConnector.handleMouseUp(e);
+            }
+        });
+
+        // ⚠️ 端点拖拽期间指针可能移出 wrapper（甚至落到 iframe 上），
+        // 只在 wrapper 上监听 mouseup 会丢事件，所以拖拽期间改挂 document。
+        document.addEventListener('mousemove', (e) => {
+            if (ToolsConnector.dragState.active) ToolsConnector.handleMouseMove(e);
+        });
+        document.addEventListener('mouseup', (e) => {
+            if (ToolsConnector.dragState.active) ToolsConnector.handleMouseUp(e);
         });
 
         // 右键事件（用于完成箭头绘制）

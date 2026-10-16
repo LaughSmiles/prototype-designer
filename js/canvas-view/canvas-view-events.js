@@ -141,10 +141,13 @@ const CanvasViewEvents = {
 
         // 检查是否点击了元素（包括箭头的SVG路径）
         let targetElement = e.target.closest('.canvas-element');
-        let targetElementId = null;
+        let targetElementId = targetElement ? targetElement.dataset.elementId : null;
 
-        // 如果没有找到canvas-element,检查是否点击了箭头SVG路径
-        if (!targetElement) {
+        // 连接线命中优先：透明加粗的命中区 path 先于视觉线响应
+        if (targetElement && targetElement.classList.contains('connector-element')) {
+            // 已命中连接线容器，targetElementId 已就绪
+        } else {
+            // 如果点的是箭头/连接线的 SVG path（path 不在 .canvas-element 里）
             const arrowPath = e.target.closest('svg.arrow-svg path');
             if (arrowPath) {
                 const arrowDiv = arrowPath.closest('.canvas-element.arrow-element');
@@ -152,11 +155,17 @@ const CanvasViewEvents = {
                     targetElement = arrowDiv;
                     targetElementId = arrowDiv.dataset.elementId;
                 }
+            } else {
+                const connPath = e.target.closest('svg.connector-svg path');
+                if (connPath) {
+                    const connDiv = connPath.closest('.canvas-element.connector-element');
+                    if (connDiv) {
+                        targetElement = connDiv;
+                        targetElementId = connDiv.dataset.elementId;
+                    }
+                }
             }
-        } else {
-            targetElementId = targetElement.dataset.elementId;
         }
-
         // 检查是否点击了拖拽手柄（仅手柄可拖拽）
         const isDragHandle = e.target.closest('.page-drag-handle');
 
