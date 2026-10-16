@@ -2229,20 +2229,45 @@ body {
 .canvas-element.connector-element {
     background: transparent;
     border: none;
-    /* 连接线 z-index(99) 高于页面元素(10)，天然在页面框之上，
-       所以这里不能用 pointer-events:none —— 那会连带阻断 SVG 命中区
-       （pointer-events:none 在父级会向下屏蔽整棵子树），导致线永远点不中。 */
+    /* ⚠️ 这里必须 pointer-events:none —— div 的盒子 = 路径包围盒 + 12px，
+       一条 L 形线中间那片空白会被整个框住，导致「点空白也选中线」。
+       用户诉求：只有点击线本身才可以选择。
+
+       ⚠️ 旧注释说「父级 none 会向下屏蔽整棵子树，线会永远点不中」——
+       这条是错的。CSS 规范里 pointer-events 是**可继承但可被覆盖**的属性，
+       子元素自己声明了别的值就照子元素的算。
+       本文件下方 .connector-svg / .connector-hit 用的正是同一招
+       （父级 none + 子级 stroke），这里只是把同一招再往上套一层。
+       参考 https://www.w3.org/TR/SVG2/interact.html#pointer-events-property */
+    pointer-events: none;
+    /* 连接线 z-index(99) 高于页面元素(10)，天然在页面框之上。
+       盒子穿透后它不再挡事件，只保留层叠顺序。 */
     z-index: 99;
 }
 
+/* ⚠️ 选中态**不再有任何矩形外框**。
+   两处都要关掉，漏一处就还剩半个"框"：
+     1) outline —— 本规则原本有 `outline: 1px dashed`（虚线矩形）
+     2) box-shadow —— ⚠️ 它来自上面那条通用的 `.canvas-element.selected`
+        （`0 0 0 2px rgba(91,141,239,.25), var(--shadow-lg)`）。
+        那条只写 border-color 和 box-shadow，而本元素 `border: none`，
+        所以 border-color 无效、**box-shadow 却照样生效**，
+        会围着包围盒画一圈蓝色辉光 + 一圈投影 —— 那还是一个大矩形。
+        两规则特异性相同(.canvas-element.selected 与本条都是 0,2,0)，
+        靠"写在后面"取胜，所以必须在下面显式置 none。
+   依据 MasterGo：连接线选中后只有线本身加粗变蓝 + 两端圆点手柄，无包围矩形。
+   包围盒对一条 L 形线来说是「一大块空气」，画出来既误导（看着像可拖动的框）
+   又和真实可点区域不一致。 */
 .canvas-element.connector-element.selected {
-    outline: 1px dashed var(--accent-blue);
-    outline-offset: 0;
+    outline: none;
+    box-shadow: none;
 }
 
 /* 视觉线本身不接收指针事件，统一由更宽的透明命中区负责。
    ⚠️ pointer-events 会在 SVG 上「继承」到 <svg> 本身，所以 .connector-svg
-   也必须显式放开，否则命中区的 stroke 永远收不到事件。 */
+   也必须显式放开，否则命中区的 stroke 永远收不到事件。
+   命中区（.connector-hit）的 stroke-width 由 JS 写成 10/zoom，
+   保证手感带在**屏幕上**恒为 10px，不随画布缩放变粗变细。 */
 .connector-svg {
     pointer-events: none;   /* svg 盒子本身穿透，只有 stroke 区域接事件 */
 }

@@ -170,6 +170,26 @@ const CanvasViewBoxSelection = {
     isElementInBox(element, box) {
         let elemLeft, elemTop, elemRight, elemBottom;
 
+        // 连接线：规则与其它元素**不同** —— 必须「完全包含」才算选中。
+        //
+        // ⚠️ 为什么不能用下面那段通用的「有交集就算」：
+        //    线的包围盒是一大块空气（L 形线尤其明显），用相交判定会
+        //    把框外根本看不见的线卷进多选，选中后用户一脸问号。
+        //    改成完全包含后，「框住了就选中」和「没框住就不选」是同一条直觉。
+        //    MasterGo 对连接线也是完全包含。
+        //
+        // ⚠️ 判据用 _routePoints（路径上的点）而不是 element.position/width/height：
+        //    后者是包围盒+不含 padding 的松弛值，用它判会误收边界外的线。
+        if (element.type === 'connector') {
+            const pts = element._routePoints;
+            if (!pts || pts.length < 2) return false;
+            const boxRight = box.x + box.width;
+            const boxBottom = box.y + box.height;
+            return pts.every(p =>
+                p.x >= box.x && p.x <= boxRight &&
+                p.y >= box.y && p.y <= boxBottom);
+        }
+
         // 根据元素类型获取边界
         if (element.type === 'annotation') {
             // 批注元素使用boxX, boxY, boxWidth, boxHeight

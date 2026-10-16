@@ -438,7 +438,8 @@ const ElementManager = {
         hit.setAttribute('d', d);
         hit.setAttribute('fill', 'none');
         hit.setAttribute('stroke', 'transparent');
-        hit.setAttribute('stroke-width', '12');
+        // 屏幕恒定 10px → 画布坐标 10/zoom；规则与理由见 ElementRenderer.getHitStrokeWidth
+        hit.setAttribute('stroke-width', String(ElementRenderer.getHitStrokeWidth()));
 
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('class', 'connector-path');

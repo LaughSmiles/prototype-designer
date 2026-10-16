@@ -146,6 +146,13 @@ const CanvasView = {
             canvas.style.transform = `translate(${this.state.pan.x}px, ${this.state.pan.y}px) scale(${this.state.zoom})`;
         }
 
+        // ⚠️ 连接线命中区宽度写的是「屏幕恒定 10px」，即画布坐标里的 10/zoom。
+        //    zoom 一变，之前写进 DOM 的值就过期了 —— 不重写就会出现
+        //    「放大后点不中线 / 缩小后乱点一大片」。内部已按 rAF 节流。
+        if (typeof ElementRenderer !== 'undefined' && ElementRenderer.refreshHitStrokeWidths) {
+            ElementRenderer.refreshHitStrokeWidths();
+        }
+
         this.updateScrollbars();
     },
 

@@ -269,6 +269,65 @@ const ElementRenderer = {
         return `M ${x1} ${y1} L ${x2} ${y2} L ${x3} ${y3} Z`;
     },
 
+    // ================================================================
+    // 连接线命中区（手感带）
+
+    /**
+     * 命中区应当是**屏幕上恒定 10px** 宽的透明带，不随画布缩放变粗变细。
+     *
+     * ⚠️ 为什么不能写死 stroke-width：
+     *    #canvas 用 `transform: scale(zoom)` 缩放（canvas-view.js:146），
+     *    SVG 元素的 stroke 会跟着这个 transform 一起缩放。
+     *    zoom=0.25 时写死的 12 在屏幕上只剩 3px —— 细到几乎点不中；
+     *    zoom=4 时又变成 48px，一条线能"点中"半张页面。
+     *    所以必须在**画布坐标系**里写 10 / zoom，屏幕上的实际宽度
+     *    才是 (10/zoom) * zoom = 10。
+     *
+     * 与锚点恒定 10px 是同一条原则（见 renderAnchors 里 AnchorProvider.RADIUS
+     * 不除 zoom 的注释）。⚠️ 但**不能**用 vector-effect="non-scaling-stroke"
+     * 偷懒：那个属性不跟随祖先 transform 的 zoom，只是让它不缩放，
+     *    并不能把宽度调成"屏幕上 10px"，也无法按 zoom 动态改值。
+     *
+     * @returns {number} 画布坐标系下的 stroke-width
+     */
+    getHitStrokeWidth() {
+        let zoom = 1;
+        try {
+            // ⚠️ 用裸标识符 CanvasView（不要 window.CanvasView）：
+            //    classic script 的顶层 const 活在全局**词法**作用域，不挂到 window。
+            if (typeof CanvasView !== 'undefined' && CanvasView.getView) {
+                const v = CanvasView.getView();
+                if (v && typeof v.zoom === 'number' && v.zoom > 0) zoom = v.zoom;
+            }
+        } catch (e) {
+            zoom = 1;
+        }
+        return 10 / zoom;
+    },
+
+    /**
+     * 重算**已渲染**的所有连接线命中区宽度。
+     *
+     * ⚠️ 缩放时必须调用：命中区是在 renderConnectorElement 里写死的，
+     *    画布 zoom 变了但 DOM 不会自动重算，不重写就会出现
+     *    「放大后点不中线 / 缩小后乱点」。
+     *    用 requestAnimationFrame 节流，连续滚轮缩放时每帧最多跑一次。
+     */
+    refreshHitStrokeWidths() {
+        if (this._hitRefreshPending) return;
+        this._hitRefreshPending = true;
+        const run = () => {
+            this._hitRefreshPending = false;
+            const w = this.getHitStrokeWidth();
+            const hits = document.querySelectorAll('.connector-hit');
+            for (let i = 0; i < hits.length; i++) {
+                hits[i].setAttribute('stroke-width', String(w));
+            }
+        };
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+        else run();
+    },
+
     // ================================================================ 智能连接线
 
     /**
@@ -365,7 +424,7 @@ const ElementRenderer = {
         hit.setAttribute('d', ConnectorRouter.toRoundedPath(points, round));
         hit.setAttribute('fill', 'none');
         hit.setAttribute('stroke', 'transparent');
-        hit.setAttribute('stroke-width', '12');
+        hit.setAttribute('stroke-width', String(this.getHitStrokeWidth()));
 
         const arrowHead = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         arrowHead.setAttribute('class', 'connector-arrow');
