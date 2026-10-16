@@ -226,12 +226,26 @@ const AnchorSession = {
      * 取最内层是必须的：否则大容器永远盖住里面的按钮，
      * 用户想连"立即使用"却只能连到包着它的大盒子。
      *
+     * ⚠️ 除了严格包含，还认一段**就近回退带**（第二段逻辑）：
+     *    浏览器实测「底部 tab 栏没有锚点」—— 鼠标移到 tab 栏的图标上时，
+     *    图标是 `<a>` 且只有约 30×48，达不到 4000 的面积门槛，本就没进宿主表；
+     *    而 tab 栏整体（`.by-tabbar`）是 fixed 元素，锚点坐标绑在 iframe 视口上，
+     *    自适应撑高后又整体漂移。用户看到的是"这个区域什么都没有"。
+     *
+     *    没有回退带时，一旦鼠标停在任何宿主之外，第二层立刻空掉，
+     *    画面只剩页面框自己的 12 个锚点 —— 用户完全无从判断这个区域可不可连。
+     *    回退带让鼠标**贴着**某个元素边缘（哪怕在它外面几个像素）时仍能选中它。
+     *
+     *    顺序不能反：先严格包含（选最内层），再回退带（选最近的）。
+     *
      * @param {{x,y}} point 画布坐标
      * @param {Array} hosts 候选宿主
      * @returns {?object} 命中的内部宿主；只命中页面框或在空白处时返回 null
      */
     hoveredInnerHost(point, hosts) {
         if (!point || !Array.isArray(hosts)) return null;
+
+        // ---- 第一段：严格包含，取面积最小的最内层 ----
         let best = null;
         let bestArea = Infinity;
         for (const h of hosts) {
@@ -246,7 +260,32 @@ const AnchorSession = {
                 best = h;
             }
         }
-        return best;
+        if (best) return best;
+
+        // ---- 第二段：就近回退带 ----
+        // ⚠️ 必须**限定在页面框之内**：页面框之外的鼠标位置根本不是这个页面的，
+        //    此时不该给它的内部元素亮锚点（否则光标移出画布也会亮着）。
+        const pageFrame = hosts.find(h => h && h.kind === 'element' && h.rect);
+        if (!pageFrame) return null;
+        const pr = pageFrame.rect;
+        const inFrame = point.x >= pr.x && point.x <= pr.x + pr.width &&
+                        point.y >= pr.y && point.y <= pr.y + pr.height;
+        if (!inFrame) return null;
+
+        // 复用与 ownerOf 同一套外扩带判据（OFFSET + RADIUS），
+        // 保证"框外锚点能归属"与"贴近元素能高亮"是同一条边界。
+        const band = this.BAND;
+        let near = null;
+        let nearDist = Infinity;
+        for (const h of hosts) {
+            if (!h || h.kind !== 'inner' || !h.rect) continue;
+            const d = this._distToRect(point, h.rect);
+            if (d <= band && d < nearDist) {
+                nearDist = d;
+                near = h;
+            }
+        }
+        return near;
     },
 
     // ------------------------------------------------------------ 视口固定系换算

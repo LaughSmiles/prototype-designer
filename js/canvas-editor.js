@@ -13,6 +13,51 @@ const CanvasEditor = {
         maxWidth: 500
     },
 
+    // ================================================================
+    // 页面自适应高度 → 锚点缓存重算（修「position:fixed 的元素没有锚点」）
+    // ================================================================
+    //
+    // ⚠️ 根因：锚点内部宿主缓存的键 `${id}@${declaredW}x${declaredH}` 只含**声明**尺寸，
+    //    而自适应只写 div.style.height，声明尺寸永远不变 → 缓存永不失效。
+    //    而 iframe 里的 `position:fixed` 元素（移动端 tabbar、pc 顶栏、toast）
+    //    锚点是**相对 iframe 视口**计算的：首次预热时 iframe 还只有一屏高，
+    //    缓存下来的 tabbar 停在 y=843；自适应把 iframe 撑到 1699 后，
+    //    它其实已经在 y=1777 —— 偏差 934px，锚点全部落到鼠标够不到的地方。
+    //
+    // 对策：实测高度**真的变了**就丢掉该元素的内部宿主缓存并重新预热。
+    // 去抖是因为 page-autofit.js 在内容稳定前会连着报好几次（ResizeObserver + rAF）。
+
+    /** @type {Object<string, number>} elementId -> 定时器 id */
+    _anchorRefreshTimers: Object.create(null),
+
+    /** 自适应尺寸变化后重算某页面元素的内部锚点宿主（去抖） */
+    scheduleAnchorRefresh(elementId, iframeEl) {
+        if (!elementId || typeof AnchorSession === 'undefined') return;
+
+        const prevTimer = this._anchorRefreshTimers[elementId];
+        if (prevTimer) clearTimeout(prevTimer);
+
+        this._anchorRefreshTimers[elementId] = setTimeout(() => {
+            delete this._anchorRefreshTimers[elementId];
+            if (!iframeEl || !iframeEl.isConnected) return;
+
+            AnchorSession.invalidate(elementId);
+
+            const el = (typeof ElementManager !== 'undefined' && ElementManager.getElement)
+                ? ElementManager.getElement(elementId) : null;
+            if (!el) return;
+
+            AnchorSession.primeInnerHosts(el, iframeEl, () => {
+                // 只有用户此刻正悬停在这个元素上才补绘，否则下一帧画布本就无锚点
+                const hovering = typeof ToolsConnector !== 'undefined'
+                    && ToolsConnector.hoverElementId === elementId;
+                if (hovering && typeof ElementManager !== 'undefined' && ElementManager.renderAnchors) {
+                    ElementManager.renderAnchors([elementId], ToolsConnector.state && ToolsConnector.state.cursor);
+                }
+            });
+        }, 120);
+    },
+
     // 初始化
     init() {
         const projectName = this.getProjectName();
@@ -155,10 +200,18 @@ const CanvasEditor = {
 
                 // 只写样式，不改 element.width/height：自适应是渲染表现，不是画布数据
                 const elementId = div.dataset.elementId;
+                const prev = window.ProtoAutoFit._cache[elementId];
                 window.ProtoAutoFit.remember(elementId, { h: height, w: width });
                 window.ProtoAutoFit.apply(elementId, div);
 
                 if (window.Debug) Debug.log('[autofit] 页面框尺寸 →', width + '×' + height, div.dataset.elementId);
+
+                // 实测高度真的变了 → iframe 视口变了 → 内部宿主几何全部作废。
+                // ⚠️ 必须比较**实测高度**：这是 fixed 元素锚点唯一的失效信号
+                //    （声明尺寸不变，缓存键永远不会失效）。
+                if (!prev || prev.h !== height || prev.w !== width) {
+                    this.scheduleAnchorRefresh(elementId, iframe);
+                }
             }
         });
     },

@@ -31,6 +31,8 @@ const COPY = [
     'js/element-manager/element-renderer.js',
     'js/tools/tools-connector.js',
     'js/topbar.js',
+    // 静态契约用例会读它（自适应撑高后必须重算锚点缓存的触发点）
+    'js/canvas-editor.js',
 ];
 
 /**
@@ -104,15 +106,17 @@ const DEFECTS = [
     {
         name: 'I. 重新引入按声明高度的裁剪（页面下半部分永远没锚点）',
         file: 'js/connectors/anchor-bridge.js',
-        find: '                    if (canvasRect && this.isUsableHost(canvasRect)) {',
-        replace: '                    if (canvasRect && this.isUsableHost(canvasRect) && canvasRect.y + canvasRect.height <= pageElement.position.y + pageElement.height) {',
+        // ⚠️ 筛选尾部已收敛到 finalizeInnerHosts（direct 与 bridge 共用），
+        //    裁剪若要重新引入，也只能发生在那里 —— 注入点随之迁移。
+        find: '        const sized = found.filter(h =>',
+        replace: '        const sized = found.filter(h =>\n            !this._clipToDeclared(h));',
         expectRed: '页面下半部分也产生锚点',
     },
     {
         name: 'J. file:// 上报路径重新引入裁剪（两条路径行为不一致）',
         file: 'js/connectors/anchor-bridge.js',
-        find: '            if (!rect || !this.isUsableHost(rect)) continue;',
-        replace: '            if (!rect || !this.isUsableHost(rect) || rect.height > pageElement.height) continue;',
+        find: '            if (!rect) continue;',
+        replace: '            if (!rect || rect.height > pageElement.height) continue;',
         expectRed: '上报项同样不做裁剪',
     },
     {
@@ -149,15 +153,16 @@ const DEFECTS = [
     {
         name: 'Q. 不剔除与页面框等大的根容器（锚点与页面框重复，纯噪音）',
         file: 'js/connectors/anchor-bridge.js',
-        find: 'if (ratio < this.HOST_VS_PAGE_RATIO) {',
-        replace: 'if (true) {',
+        // ⚠️ 等大判据已抽成 isPageSized()（单点实现），注入点随之迁移。
+        find: '            !this.isPageSized(h.rect, pageArea));',
+        replace: '            true);',
         expectRed: '铺满全屏的根容器不产生锚点',
     },
     {
         name: 'R. 不做宿主去重叠（嵌套容器锚点叠在同一位置）',
         file: 'js/connectors/anchor-bridge.js',
-        find: '        const deduped = opts.dedupe === false ? found : this.dedupeHosts(found);',
-        replace: '        const deduped = found;',
+        find: '        const deduped = opts.dedupe === false ? sized : this.dedupeHosts(sized);',
+        replace: '        const deduped = sized;',
         expectRed: '边几乎重合的嵌套容器只应保留一个宿主',
     },
     {
@@ -177,8 +182,10 @@ const DEFECTS = [
     {
         name: 'U. 第二层把页面框也算进去（页面框既当第一层又当高亮层）',
         file: 'js/connectors/anchor-session.js',
-        find: "            if (!h || h.kind !== 'inner' || !h.rect) continue;",
-        replace: '            if (!h || !h.rect) continue;',
+        // ⚠️ hoveredInnerHost 里两段逻辑都有这句 kind 过滤，只替换**第一段**。
+        //    用「带注释的上下文」定位，避免 replace 命中多处导致语义漂移。
+        find: "            // 页面框本身不算第二层 —— 它已经是第一层了\n            if (!h || h.kind !== 'inner' || !h.rect) continue;",
+        replace: "            // 页面框本身不算第二层 —— 它已经是第一层了\n            if (!h || !h.rect) continue;",
         expectRed: '只命中页面框本身时，第二层应为空',
     },
     {
@@ -231,6 +238,78 @@ const DEFECTS = [
         find: "                if (lockStart) {\n                    ortho[0] = this._fixLockedEndpoint(a, fromAnchor, b);",
         replace: "                if (lockStart) {\n                    ortho[0] = this.projectToBoundary(a, this._anchorPoint(a, fromAnchor), b);",
         expectRed: '换边说明锚点被偷改了',
+    },
+
+    // ── 本轮修复（tab 栏没有锚点）的三条防线 ────────────────────────────────
+
+    {
+        name: 'AA. 自适应撑高后不失效锚点缓存（fixed 元素锚点永远停在旧视口）',
+        file: 'js/canvas-editor.js',
+        // ⚠️ canvas-editor.js 是 CRLF 文件，多行 find/replace 必须用 \r\n。
+        //    匹配不上比没注入更危险：脚本会以为自己在工作，实际漏检。
+        find: '                const prev = window.ProtoAutoFit._cache[elementId];\r\n                window.ProtoAutoFit.remember(elementId, { h: height, w: width });',
+        replace: '                window.ProtoAutoFit.remember(elementId, { h: height, w: width });',
+        expectRed: '实测高度变化后必须清掉',
+    },
+    {
+        name: 'AB. 重算链缺「重新预热」（invalidate 只清空，新数据永远不取）',
+        file: 'js/canvas-editor.js',
+        find: '            AnchorSession.invalidate(elementId);\r\n',
+        replace: '            // 只清空不重取\r\n',
+        expectRed: '必须重新 primeInnerHosts',
+    },
+    {
+        name: 'AC. 去抖用单一全局定时器（A 元素的上报会吞掉 B 元素的刷新）',
+        file: 'js/canvas-editor.js',
+        find: '        const prevTimer = this._anchorRefreshTimers[elementId];\r\n        if (prevTimer) clearTimeout(prevTimer);\r\n',
+        replace: '        const prevTimer = this._anchorRefreshTimers.__all;\r\n        if (prevTimer) clearTimeout(prevTimer);\r\n',
+        expectRed: 'clearTimeout 与赋值必须用同一个 key',
+    },
+    {
+        // ⚠️ AD / AE 是本轮最险的两条：注入只改控制流，源码里该有的
+        //    字符串**一个都没少** —— 早期版本就是这样逃过静态检查的。
+        //    现在由 32b「子侧真机执行」兜住：topbar.js 在 vm 里真跑一遍，
+        //    与 direct 模式逐个宿主比对。
+        name: 'AD. 子侧不做等大剔除（同一页面 http 58 / file:// 72 个锚点）',
+        file: 'js/topbar.js',
+        find: "            var sized = found;\n            if (pageArea > 0) {",
+        replace: "            var sized = found;\n            if (false) {",
+        expectRed: '必须被剔除 —— 其 12 个锚点与页面框完全重叠',
+    },
+    {
+        name: 'AE. 子侧不做边重合去重叠（嵌套容器的锚点叠在同一位置）',
+        file: 'js/topbar.js',
+        find: '                if (idx === -1) { out.push(h); continue; }\n                // ⚠️ 面积相等也**不**替换',
+        replace: '                if (idx !== -1) continue;\n                if (idx === -1) { out.push(h); continue; }\n                // ⚠️ 面积相等也**不**替换',
+        expectRed: '边重合的一组最多只能留一个',
+    },
+    {
+        name: 'AF. 父页面不下发 pageArea（子侧无从剔除等大根容器）',
+        file: 'js/connectors/anchor-bridge.js',
+        find: '                pageArea: pageElement.width * pageElement.height,',
+        replace: '                pageArea: 0,',
+        expectRed: '父页面必须在请求里下发 pageArea',
+    },
+    {
+        name: 'AG. 第二层没有就近回退带（鼠标停在宿主之外就什么都不亮）',
+        file: 'js/connectors/anchor-session.js',
+        find: '        if (best) return best;',
+        replace: '        if (best || true) return best;',
+        expectRed: '贴近 nav 下方应仍能高亮它',
+    },
+    {
+        name: 'AH. 回退带不管页面框边界（光标移出画布也亮着）',
+        file: 'js/connectors/anchor-session.js',
+        find: '        if (!inFrame) return null;',
+        replace: '        if (!inFrame) { /* 继续 */ }',
+        expectRed: '页面框之外不该高亮它的内部元素',
+    },
+    {
+        name: 'AI. 回退带宽度写成魔数（与 ownerOf 的外扩带分叉）',
+        file: 'js/connectors/anchor-session.js',
+        find: '        const band = this.BAND;\n        let near = null;',
+        replace: '        const band = 400;\n        let near = null;',
+        expectRed: '回退带宽度必须用 BAND',
     },
 ];
 

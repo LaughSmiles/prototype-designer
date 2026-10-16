@@ -182,8 +182,14 @@
     // ⚠️ 为什么内联在这里而不是引 js/connectors/anchor-bridge.js：
     //    本文件已被**所有**原型页面加载（DESKTOP_REQUIRED + MOBILE_REQUIRED
     //    都含它），内联等于零页面改动；引外部文件则要改 40+ 个 HTML。
-    //    代价是消息类型与选择器算法在两侧各存一份 —— 已由
-    //    tools/test-anchor.js 的「协议常量一致性」用例锁死，改一边就变红。
+    //    代价是协议常量与选择器算法在两侧各存一份 —— 已由
+    //    tools/test-anchor.js 的「协议常量一致性」「两侧筛选一致」用例锁死，
+    //    改一边就变红。
+    //
+    // ⚠️ 筛选规则已收敛成**四步**（与 anchor-bridge.js 的 finalizeInnerHosts 同序）：
+    //    ① 尺寸门槛 ② 剔除等大根容器 ③ 边重合去重叠 ④ 面积降序
+    //    早期版本这里只做了 ①，②③④ 全缺 —— 于是同一页面在 http 下 58 个宿主、
+    //    file:// 下 72 个，多出来的全是"铺满全屏的根容器"和"边重合的嵌套层"。
     //
     // 独立打开页面时 window.parent === window，直接跳过，不做无谓遍历。
 
@@ -193,6 +199,8 @@
         // 尺寸过滤（对齐 MasterGo 实测：小图标/数字/头像不出锚点，大块结构元素出）
         var ANCHOR_MIN_AREA = 4000;
         var ANCHOR_MIN_EDGE = 16;
+        // 边重合去重叠的容差（与 anchor-bridge.js 的 edgesNearlyEqual 默认值一致）
+        var ANCHOR_EDGE_TOL = 8;
         var ANCHOR_SKIP = { HTML: 1, HEAD: 1, BODY: 1, SCRIPT: 1, STYLE: 1, LINK: 1, META: 1, TITLE: 1, BR: 1 };
 
         // 生成稳定的 CSS 选择器路径（与 anchor-bridge.js 的 cssPath 同算法）
@@ -226,8 +234,26 @@
             return parts.join(' > ');
         }
 
-        // 收集可作为锚点宿主的元素（按尺寸过滤，不按数量截断）
-        function anchorCollect() {
+        // 两个矩形是否"边几乎重合"（与 anchor-bridge.js 的 edgesNearlyEqual 同算法）
+        function anchorEdgesNearlyEqual(a, b) {
+            return Math.abs(a.x - b.x) <= ANCHOR_EDGE_TOL &&
+                Math.abs(a.y - b.y) <= ANCHOR_EDGE_TOL &&
+                Math.abs((a.x + a.width) - (b.x + b.width)) <= ANCHOR_EDGE_TOL &&
+                Math.abs((a.y + a.height) - (b.y + b.height)) <= ANCHOR_EDGE_TOL;
+        }
+
+        /**
+         * 收集可作为锚点宿主的元素。
+         *
+         * ⚠️ 四步筛选的**顺序与判据**必须与 anchor-bridge.js 的 finalizeInnerHosts
+         *    完全一致 —— 少任何一步，同一页面在 http 与 file:// 下就会看到
+         *    不同的锚点集合（实测差 14 个）。
+         *
+         * @param {number} pageArea 页面框面积（声明宽 × 声明高）；父页面会随请求下发，
+         *                          页面自己不知道画布上框多大。用 0 表示"不做等大剔除"，
+         *                          但父页面收到后仍会用 finalizeInnerHosts 再挡一道。
+         */
+        function anchorCollect(pageArea) {
             var found = [];
             function walk(node, depth) {
                 if (!node || depth > 32) return;
@@ -237,7 +263,6 @@
                     if (!child || !child.tagName) continue;
                     if (ANCHOR_SKIP[String(child.tagName).toUpperCase()]) continue;
                     var r = child.getBoundingClientRect();
-                    // 尺寸过滤：与 anchor-bridge.js 的 isUsableHost 同判据
                     if (r && r.width >= ANCHOR_MIN_EDGE && r.height >= ANCHOR_MIN_EDGE &&
                         r.width * r.height >= ANCHOR_MIN_AREA) {
                         found.push({
@@ -251,10 +276,42 @@
                 }
             }
             walk(document.body, 0);
+
+            // ② 剔除与页面框几乎等大的根容器（锚点与页面框位置重合，纯噪音）
+            var sized = found;
+            if (pageArea > 0) {
+                sized = found.filter(function (h) {
+                    return (h.rect.width * h.rect.height) / pageArea < 0.9;
+                });
+            }
+
+            // ③ 边重合去重叠：一组里只留面积最小的（最内层，语义最准）
+            // ⚠️ 与 anchor-bridge.js 的 dedupeHosts 同算法：
+            //    边几乎重合的一组里，**先遍历到的**在先；后面碰到同组更小的才替换。
+            var out = [];
+            for (var k = 0; k < sized.length; k++) {
+                var h = sized[k];
+                var idx = -1;
+                for (var j = 0; j < out.length; j++) {
+                    var or = out[j].rect;
+                    if (anchorEdgesNearlyEqual(
+                        { x: or.left, y: or.top, width: or.width, height: or.height },
+                        { x: h.rect.left, y: h.rect.top, width: h.rect.width, height: h.rect.height })) {
+                        idx = j;
+                        break;
+                    }
+                }
+                if (idx === -1) { out.push(h); continue; }
+                // ⚠️ 面积相等也**不**替换 —— 否则并排容器会互相顶掉，
+                //    结果取决于遍历顺序，与 direct 模式（保留先遍历到的）分叉。
+                if (h.area < out[idx].area) out[idx] = h;
+            }
+
+            // ④ 面积降序，仅为渲染顺序稳定
             // ⚠️ 不截断：MasterGo 是「够大就出锚点」，不是「只出前 N 个」。
             //    可视区裁剪由父页面做（它才知道页面框在画布上的位置）。
-            found.sort(function (a, b) { return b.area - a.area || a.depth - b.depth; });
-            return found;
+            out.sort(function (a, b) { return b.area - a.area || a.depth - b.depth; });
+            return out;
         }
 
         window.addEventListener('message', function (event) {
@@ -263,7 +320,9 @@
 
             var hosts = [];
             try {
-                hosts = anchorCollect().map(function (h) {
+                // 父页面把页面框面积一并下发，等大剔除才能与 direct 模式对齐
+                var area = Number(data.pageArea);
+                hosts = anchorCollect(isFinite(area) && area > 0 ? area : 0).map(function (h) {
                     return { selector: h.selector, depth: h.depth, rect: h.rect };
                 });
             } catch (err) {

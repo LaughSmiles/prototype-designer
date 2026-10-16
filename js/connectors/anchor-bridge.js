@@ -165,6 +165,21 @@ const AnchorBridge = {
     },
 
     /**
+     * 宿主是否「与页面框几乎等大」。
+     *
+     * 铺满整页的根容器，它的锚点与页面框自己的 12 个位置重合、语义重复，
+     * 纯噪音却贡献 12 个。与页面框尺寸接近的一律不算独立宿主。
+     *
+     * @param {object} rect  画布坐标矩形
+     * @param {number} pageArea 页面框面积（声明宽 × 声明高）
+     * @param {number} [ratio] 阈值，默认 HOST_VS_PAGE_RATIO
+     */
+    isPageSized(rect, pageArea, ratio = this.HOST_VS_PAGE_RATIO) {
+        if (!rect || !(pageArea > 0)) return false;
+        return (rect.width * rect.height) / pageArea >= ratio;
+    },
+
+    /**
      * iframe 内部元素的 rect → 画布坐标 rect。
      *
      * @param {object} innerRect  iframe 内元素的 rect（相对 iframe 视口）
@@ -226,18 +241,46 @@ const AnchorBridge = {
     },
 
     /**
-     * 从一棵（假或真）节点树里收集可作为锚点宿主的元素。
+     * 把 collectInnerHosts 的**筛选尾部**抽成唯一入口。
      *
-     * 过滤顺序（缺一不可）：
-     *   1) 尺寸过滤 —— 小元素不出锚点（对齐 MasterGo 实测）
-     *   2) 可视区裁剪 —— 滚动区外的内容不出锚点（修「锚点跑到框外」）
-     *   3) 裁剪后再次尺寸过滤 —— 只露出 4px 细缝的元素仍要滤掉
+     * ⚠️ 为什么要抽出来：`collectInnerHosts` 只处理"父页面能直接读 DOM"的场景，
+     *    但筛选规则（尺寸门槛 → 等大根容器剔除 → 边重合去重叠 → 排序）
+     *    在 file:// 下走的是完全不同的代码路径（js/topbar.js 内联的 anchorCollect）。
+     *    两边各写一份，就出现过实测事故：同一页面在 http 下 58 个宿主、
+     *    file:// 下 72 个，多出来的全是"铺满全屏的根容器"和"边重合的嵌套层"。
+     *
+     *    现在 direct 与 bridge 共用本方法，**规则只有一份**。
+     *
+     * @param {Array} found      遍历得到的原始宿主（rect 为 iframe 内坐标）
+     * @param {number} pageArea  页面框面积；无页面框时传 0 表示不做等大剔除
+     * @param {object} [opts]    { dedupe }
+     * @returns {Array} 排序去重后的宿主
+     */
+    finalizeInnerHosts(found, pageArea, opts = {}) {
+        if (!Array.isArray(found) || found.length === 0) return [];
+
+        // ① 尺寸过滤（小图标/数字/头像不出锚点）
+        const sized = found.filter(h =>
+            h && h.rect && this.isUsableHost(h.rect) &&
+            // ② 剔除与页面框几乎等大的根容器（锚点与页面框重复）
+            !this.isPageSized(h.rect, pageArea));
+
+        // ③ 去重叠：边几乎重合的一组只留最内层（「锚点糊成一片」的直接解药）
+        const deduped = opts.dedupe === false ? sized : this.dedupeHosts(sized);
+
+        // ④ 面积大的排前面仅为渲染顺序稳定（不做截断）
+        deduped.sort((a, b) => b.area - a.area || a.depth - b.depth);
+        return deduped;
+    },
+
+    /**
+     * 从一棵（假或真）节点树里收集可作为锚点宿主的元素。
      *
      * ⚠️ 不做数量截断。MasterGo 的规则是「够大就出」，
      *    截断会随机丢掉用户真正想连的那个按钮。
      *
      * @param {object} root 根节点；需有 children、tagName 与 getBoundingClientRect
-     * @param {object} opts { pageElement, viewportOffset, minSize, skipTags, pathOf, getRect }
+     * @param {object} opts { pageElement, skipTags, pathOf, getRect, dedupe }
      * @returns {Array<{selector, rect, depth, area}>} 画布坐标 rect
      */
     collectInnerHosts(root, opts = {}) {
@@ -249,7 +292,7 @@ const AnchorBridge = {
         const found = [];
         // 页面框面积，用于剔除"与页面框几乎等大的根容器"
         const pageArea = pageElement
-            ? pageElement.width * pageElement.height : Infinity;
+            ? pageElement.width * pageElement.height : 0;
 
         const walk = (n, depth) => {
             if (!n || depth > 32) return;
@@ -263,18 +306,13 @@ const AnchorBridge = {
                     const canvasRect = pageElement
                         ? this.toCanvasRect(raw, pageElement)
                         : { x: raw.left, y: raw.top, width: raw.width, height: raw.height };
-                    if (canvasRect && this.isUsableHost(canvasRect)) {
-                        // 剔除与页面框几乎等大的根容器（锚点与页面框重复）
-                        const ratio = pageArea > 0
-                            ? (canvasRect.width * canvasRect.height) / pageArea : 0;
-                        if (ratio < this.HOST_VS_PAGE_RATIO) {
-                            found.push({
-                                selector: pathOf(child),
-                                rect: canvasRect,
-                                depth: depth + 1,
-                                area: canvasRect.width * canvasRect.height,
-                            });
-                        }
+                    if (canvasRect) {
+                        found.push({
+                            selector: pathOf(child),
+                            rect: canvasRect,
+                            depth: depth + 1,
+                            area: canvasRect.width * canvasRect.height,
+                        });
                     }
                 }
                 walk(child, depth + 1);
@@ -282,14 +320,8 @@ const AnchorBridge = {
         };
         walk(root, 0);
 
-        // 去重叠：嵌套容器边几乎重合时只留最内层。
-        // ⚠️ 这一步是「锚点糊成一片」的直接解药 —— 不是限制数量，
-        //    而是消除**位置重合**的重复锚点。
-        const deduped = opts.dedupe === false ? found : this.dedupeHosts(found);
-
-        // 面积大的排前面仅为渲染顺序稳定（不做截断）
-        deduped.sort((a, b) => b.area - a.area || a.depth - b.depth);
-        return deduped;
+        // 尺寸过滤 / 等大剔除 / 去重叠 / 排序 —— 全部走唯一入口（见上方说明）
+        return this.finalizeInnerHosts(found, pageArea, { dedupe: opts.dedupe });
     },
 
     // ------------------------------------------------------------ 真实 DOM 入口
@@ -370,6 +402,9 @@ const AnchorBridge = {
             iframeEl.contentWindow.postMessage({
                 type: this.MSG_REQUEST,
                 elementId: pageElement.id,
+                // 下发页面框面积：页面自己不知道画布上框多大，
+                // 没有它就无法执行「剔除等大根容器」这一步，两条路径会分叉。
+                pageArea: pageElement.width * pageElement.height,
             }, '*');
         } catch (e) {
             finish([]);
@@ -398,8 +433,9 @@ const AnchorBridge = {
             const width = Number(r.width), height = Number(r.height);
             if (![left, top, width, height].every(Number.isFinite)) continue;
             const rect = this.toCanvasRect({ left, top, width, height }, pageElement);
-            if (!rect || !this.isUsableHost(rect)) continue;
-            // ⚠️ 不裁剪：与 direct 模式一致（页面展示全部内容）
+            if (!rect) continue;
+            // ⚠️ 不裁剪（与 direct 模式一致，页面展示全部内容）；
+            //    尺寸 / 等大 / 去重叠统一交给 finalizeInnerHosts —— 不在这里重写一遍。
             out.push({
                 selector: h.selector,
                 rect,
@@ -407,14 +443,22 @@ const AnchorBridge = {
                 area: rect.width * rect.height,
             });
         }
-        out.sort((a, b) => b.area - a.area);
-        return out;   // 不截断：与 direct 模式一致
+        const pageArea = pageElement ? pageElement.width * pageElement.height : 0;
+        // 与 direct 模式走**同一个**筛选尾部，否则同一页面 http/file:// 锚点集合不同
+        return this.finalizeInnerHosts(out, pageArea);
     },
 
     /**
      * 子页面侧：响应父页面的上报请求。
      *
-     * 由 js/topbar.js 在所有原型页面里调用（一行接入，不改各页面）。
+     * ⚠️ 实测本项目**并未**使用本方法 —— 子侧逻辑内联在 js/topbar.js 里
+     *    （那个文件被所有原型页面加载，内联等于零页面改动；引外部文件要改 40+ 个 HTML）。
+     *    保留本方法是为了让"子侧该怎么实现"有唯一参考实现，且仍可在测试里调用。
+     *
+     *    两条子侧路径都必须与 collectInnerHosts 用**同一个**筛选尾部
+     *    （finalizeInnerHosts），否则同一页面在 http 与 file:// 下
+     *    会看到不同的锚点集合。
+     *
      * 只在被 iframe 嵌入时才有意义 —— 独立打开时 window.parent === window，
      * 此时直接忽略，避免无意义遍历。
      */
@@ -430,7 +474,7 @@ const AnchorBridge = {
             try {
                 const raw = this.collectInnerHosts(document.body, {
                     getRect: n => n.getBoundingClientRect(),
-                    // 无 pageElement → 不做可视区裁剪，由父页面裁（它才知道页面框位置）
+                    // 无 pageElement → 不换算坐标、不做等大剔除，由父页面收尾时统一处理
                 });
                 hosts = raw.map(h => ({
                     selector: h.selector,
