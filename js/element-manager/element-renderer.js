@@ -348,6 +348,25 @@ const ElementRenderer = {
 
     /** 自动路由本体（不含手动路径点） */
     _routeBase(element, fromEl, toEl, fromRect, toRect) {
+        // ---- 自由端分支：至少一端不在任何页面框上（MasterGo 实测的独立连接线）----
+        //
+        // ⚠️ 这条分支必须排在最前面，且**不得**碰下面那段绑定逻辑：
+        //    两端都绑定时逐像素不变是这个模块的立身之本，
+        //    一旦共用同一段代码就再也分不清了。
+        if (!fromEl || !toEl) {
+            const a = AnchorSession.resolveOne(element.fromId, element.fromAnchor, element.fromFree);
+            const b = AnchorSession.resolveOne(element.toId, element.toAnchor, element.toFree);
+            // 两端都能定出具体坐标 → 走「中点台阶」路由（对齐 MasterGo）
+            if (a && b && a.point && b.point) {
+                return ConnectorRouter.routeFreePoints(a.point, b.point);
+            }
+            // 绑定端没带锚点 → 退回整元素矩形路由，至少保证有线可看
+            const ar = a ? a.rect : fromRect;
+            const br = b ? b.rect : toRect;
+            if (ar && br) return ConnectorRouter.route(ar, br);
+            return null;
+        }
+
         const hasAnchor = !!(element.fromAnchor || element.toAnchor);
         if (!hasAnchor) {
             return ConnectorRouter.route(fromRect, toRect);
@@ -406,15 +425,44 @@ const ElementRenderer = {
      * 路径不存坐标 —— 每次都由 ConnectorRouter 按两端元素**当前**的位置实时算出，
      * 所以这里读的是元素实时 position，元素一动，线就跟着重算。
      */
+    /**
+     * 取一条连接线两端的「路由矩形」。
+     *
+     * 绑定端 → 元素自身的矩形；自由端 → 用它存的坐标造一个 0×0 矩形。
+     *
+     * ⚠️ 必须抽成公共函数：renderConnectorElement（首次绘制）与
+     *    renderConnectorInto（改连 / 拖段后就地重绘）过去各造一份，
+     *    本仓库已被"同一逻辑写两份"坑过三次。这里一次写死，两处共用。
+     */
+    endpointRects(element, fromEl, toEl) {
+        const rectOf = (el, free) => {
+            if (el) {
+                return { x: el.position.x, y: el.position.y, width: el.width, height: el.height };
+            }
+            if (free && Number.isFinite(free.x) && Number.isFinite(free.y)) {
+                return { x: free.x, y: free.y, width: 0, height: 0 };
+            }
+            return null;
+        };
+        return {
+            fromRect: rectOf(fromEl, element.fromFree),
+            toRect: rectOf(toEl, element.toFree),
+        };
+    },
+
+    /**
+     * 渲染智能连接线。
+     *
+     * 绑定端：路径不存坐标 —— 每次由 ConnectorRouter 按两端元素**当前**的位置实时算出。
+     * 自由端：路径由 fromFree/toFree + waypoints 决定。
+     */
     renderConnectorElement(div, element, canvas) {
         const fromEl = ElementManager.getElement(element.fromId);
         const toEl = ElementManager.getElement(element.toId);
 
-        // 端点元素已不存在：静默跳过（deleteElement 会连带清理）
-        if (!fromEl || !toEl) return;
-
-        const fromRect = { x: fromEl.position.x, y: fromEl.position.y, width: fromEl.width, height: fromEl.height };
-        const toRect = { x: toEl.position.x, y: toEl.position.y, width: toEl.width, height: toEl.height };
+        // 两端都解析不出来（元素被删光且没存自由坐标）→ 静默跳过
+        const { fromRect, toRect } = this.endpointRects(element, fromEl, toEl);
+        if (!fromRect || !toRect) return;
 
         // 锚点优先；旧数据没有锚点字段 → 退化为整元素路由（路径与升级前一致）
         const points = this.routeFor(element, fromEl, toEl, fromRect, toRect);

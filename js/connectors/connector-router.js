@@ -266,6 +266,34 @@ const ConnectorRouter = {
         return this.route(fromRect, toRect);
     },
 
+    // ------------------------------------------------- 自由端（无页面框可绑）
+
+    /**
+     * 两端都是「点」时的路由 —— 自由连接线、以及「绑定端 + 自由端」的混合连线。
+     *
+     * ⚠️ 为什么不直接用 route(零尺寸矩形, 零尺寸矩形)：
+     *    它给的是 2 段 L 形（拐点落在终点的 x 上），而 MasterGo 实测是
+     *    **3 段的「中点台阶」**：横 → 竖 → 横，拐点落在两端点 x 的**正中**。
+     *    用户在用户文件上拖 (143,252)→(393,402)，出来的拐点在 x=268
+     *    = (143+393)/2，**与中点逐像素吻合**；
+     *    另一条 (853,590)→(500,400) 拐点在 676.5 = (853+500)/2，同样吻合。
+     *    差的这一个拐点很显眼（少一段、拐角位置完全不同），必须对齐。
+     *
+     * 两端同 x 或同 y 时不拐弯，直接一条直线。
+     */
+    routeFreePoints(from, to) {
+        if (!from || !to) return null;
+        if (!Number.isFinite(from.x) || !Number.isFinite(from.y) ||
+            !Number.isFinite(to.x) || !Number.isFinite(to.y)) return null;
+
+        const a = { x: from.x, y: from.y };
+        const b = { x: to.x, y: to.y };
+        if (a.x === b.x || a.y === b.y) return [a, b];
+
+        const midX = (a.x + b.x) / 2;
+        return this._dedupe([a, { x: midX, y: a.y }, { x: midX, y: b.y }, b]);
+    },
+
     // ------------------------------------------------- 手动路径点（MasterGo 拖段）
 
     /**

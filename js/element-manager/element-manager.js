@@ -60,27 +60,44 @@ const ElementManager = {
 
     // 添加智能连接线（绑定 fromId/toId + 可选锚点，路径实时计算）
     // 返回新元素 id（调用方常需要它，比如紧接着改锚点或选中）
-    addConnectorElement(fromId, toId, fromAnchor = null, toAnchor = null) {
-        return ElementAdder.addConnectorElement(fromId, toId, fromAnchor, toAnchor);
+    addConnectorElement(fromId, toId, fromAnchor = null, toAnchor = null, fromFree = null, toFree = null) {
+        return ElementAdder.addConnectorElement(fromId, toId, fromAnchor, toAnchor, fromFree, toFree);
     },
 
-    // 改连连接线的某一端（可同时指定新的锚点）
-    retargetConnector(connectorId, end, newTargetId, newAnchor = null) {
+    /**
+     * 改连连接线的某一端（可同时指定新的锚点）。
+     *
+     * ⚠️ newTargetId 传 null = **把这一端改成自由端**（MasterGo 语义）：
+     *    · 原本绑定的一端拖到空白处 → 解绑，坐标落在鼠标处
+     *    · 原本自由的一端拖到页面框上 → newTargetId 有值，走下面的绑定分支
+     * 两种形态由这一入口统一收口，别处不要再各写一套改端逻辑。
+     */
+    retargetConnector(connectorId, end, newTargetId, newAnchor = null, freePoint = null) {
         const connector = this.getElement(connectorId);
         if (!connector || connector.type !== 'connector') return;
 
-        // 不能连到自己
-        const otherId = end === 'from' ? connector.toId : connector.fromId;
-        if (newTargetId === otherId) return;
+        const isFrom = end === 'from';
+        const idKey = isFrom ? 'fromId' : 'toId';
+        const anchorKey = isFrom ? 'fromAnchor' : 'toAnchor';
+        const freeKey = isFrom ? 'fromFree' : 'toFree';
 
-        if (end === 'from') {
-            connector.fromId = newTargetId;
+        // 不能连到自己
+        const otherId = isFrom ? connector.toId : connector.fromId;
+        if (newTargetId && newTargetId === otherId) return;
+
+        if (!newTargetId) {
+            // —— 解绑成自由端 ——
+            if (!freePoint || !Number.isFinite(freePoint.x) || !Number.isFinite(freePoint.y)) return;
+            connector[idKey] = null;
+            connector[anchorKey] = null;
+            connector[freeKey] = { x: freePoint.x, y: freePoint.y };
+        } else {
+            // —— 绑定到元素 ——
+            connector[idKey] = newTargetId;
             // 锚点必须跟着宿主一起换：旧锚点指向的是旧元素，
             // 留着它会让 _hostRectOf 去新元素上找一个不存在的 selector。
-            connector.fromAnchor = newAnchor || null;
-        } else {
-            connector.toId = newTargetId;
-            connector.toAnchor = newAnchor || null;
+            connector[anchorKey] = newAnchor || null;
+            connector[freeKey] = null;
         }
 
         // ⚠️ 换了一端 = 手动掰出来的形状作废。
@@ -328,9 +345,13 @@ const ElementManager = {
                 } else if (element.type === 'arrow') {
                     info = `选中: 箭头 (点击任意位置拖动)`;
                 } else if (element.type === 'connector') {
-                    const fromName = PageLibrary.getPageName((this.getElement(element.fromId) || {}).pageId) || '?';
-                    const toName = PageLibrary.getPageName((this.getElement(element.toId) || {}).pageId) || '?';
-                    info = `选中: 连接线 ${fromName} → ${toName} (拖两端圆点可改连)`;
+                    // 自由端没有页面名，显示「自由点」，别让用户以为线坏了
+                    const nameOf = (id) => {
+                        if (!id) return '自由点';
+                        const el = this.getElement(id);
+                        return (el && PageLibrary.getPageName(el.pageId)) || '?';
+                    };
+                    info = `选中: 连接线 ${nameOf(element.fromId)} → ${nameOf(element.toId)} (拖两端圆点可改连)`;
                 } else if (element.type === 'annotation') {
                     info = `选中: 批注标记 (拖动锚点或框)`;
                 }
@@ -404,10 +425,12 @@ const ElementManager = {
     renderConnectorInto(div, element) {
         const fromEl = this.getElement(element.fromId);
         const toEl = this.getElement(element.toId);
-        if (!fromEl || !toEl) return;
 
-        const fromRect = { x: fromEl.position.x, y: fromEl.position.y, width: fromEl.width, height: fromEl.height };
-        const toRect = { x: toEl.position.x, y: toEl.position.y, width: toEl.width, height: toEl.height };
+        // ⚠️ 矩形一律由渲染器的公共函数出（绑定端取元素矩形、自由端取 0×0），
+        //    这里再写一份就会重演"首次画得出、改连后变形"的老问题。
+        const { fromRect, toRect } = ElementRenderer.endpointRects(element, fromEl, toEl);
+        if (!fromRect || !toRect) return;
+
         // ⚠️ 必须复用渲染器的锚点感知路由，不能在这里再写一份 route()：
         //    两处逻辑一旦分叉，就会出现「首次渲染走锚点、改连后走整元素」的鬼影。
         const points = ElementRenderer.routeFor(element, fromEl, toEl, fromRect, toRect);

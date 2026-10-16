@@ -219,6 +219,45 @@ const AnchorSession = {
     },
 
     /**
+     * 只解析**一端**的宿主矩形与路由锚点。
+     *
+     * ⚠️ 为什么不直接把 resolveEndpoints 拿来用：它要求两端都有 id，
+     *    而「绑定端 + 自由端」的连线里，自由端压根没有元素。
+     *    硬塞一个假 id 会让 fromRect/toRect 混着同一个元素，
+     *    读代码的人再也分不清哪一半是真数据 —— 这里单开一个入口，
+     *    语义干净，且不改动 resolveEndpoints 的既有契约（那条被测试锁死）。
+     *
+     * @param {?string} elementId 元素 id；自由端传 null
+     * @param {?object} anchorRef 锚点引用；自由端传 null
+     * @param {?{x,y}} freePoint  自由端坐标；绑定端传 null
+     * @returns {?{rect, side, point}} point = 端点在画布上的实际坐标
+     */
+    resolveOne(elementId, anchorRef, freePoint) {
+        // 自由端：没有元素、没有锚点，端点就是它自己
+        if (!elementId) {
+            if (!freePoint || !Number.isFinite(freePoint.x) || !Number.isFinite(freePoint.y)) return null;
+            return {
+                rect: { x: freePoint.x, y: freePoint.y, width: 0, height: 0 },
+                side: null,
+                point: { x: freePoint.x, y: freePoint.y },
+            };
+        }
+
+        let el = null;
+        if (typeof ElementManager !== 'undefined' && ElementManager.getElement) {
+            el = ElementManager.getElement(elementId);
+        }
+        if (!el) return null;
+
+        const rect = this._hostRectFor(anchorRef, el, this.rectOf(el), {});
+        const side = anchorRef ? { side: anchorRef.side, t: anchorRef.t } : null;
+        const point = side && AnchorProvider.resolvePoint
+            ? AnchorProvider.resolvePoint(rect, side)
+            : null;
+        return { rect, side, point };
+    },
+
+    /**
      * 单个端点的宿主矩形。
      *
      * inner 锚点必须用**子元素自己的矩形**，否则线会从整个页面框的边出发，

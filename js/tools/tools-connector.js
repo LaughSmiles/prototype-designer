@@ -13,8 +13,9 @@ const ToolsConnector = {
     // 绘制中的状态
     state: {
         isDrawing: false,
-        fromId: null,      // 起点的页面元素 id
+        fromId: null,      // 起点的页面元素 id；空白处起笔时为 null
         fromAnchor: null,  // 起点锚点引用（从锚点起拖时非空）
+        fromFree: null,    // 起点在空白处时的坐标（MasterGo：起点不必落在页面上）
         hoverId: null,     // 拖拽时鼠标下的页面元素 id
         hoverAnchor: null, // 鼠标吸附到的锚点引用
         cursor: null,      // 当前鼠标画布坐标
@@ -271,27 +272,32 @@ const ToolsConnector = {
 
     // ------------------------------------------------------------ 绘制
 
-    /** mousedown：在锚点上按下 → 从该锚点起画；在元素内按下 → 元素级起画 */
+    /**
+     * mousedown：起笔。
+     *
+     * ⚠️ 起点**不要求**落在页面框上（MasterGo 实测：空白处按住就能拉出独立连接线）。
+     *    落在页面框/锚点上 → 起点绑定；落在空白 → 起点自由，坐标记在 fromFree。
+     *    这两种形态由后面的 resolveOne 统一分流，调用方不必再判断。
+     */
     handleMouseDown(e) {
         if (e.button !== 0) return;
 
-        // ⚠️ 必须用 findAnchorOwnerAt 而不是 findPageElementAt：
-        //    锚点画在框外 6px，findPageElementAt 对它返回 null，
-        //    结果是**点在锚点上却连画都起不来**（实测 started=false）。
-        const from = this.findAnchorOwnerAt(e);
-        if (!from) return;
-
         const pos = this.toCanvasCoords(e);
 
-        // 优先吸附到已渲染的锚点：点中圆点 = 用户明确指定了连接点
-        const snap = this.snapToAnchor(from, pos);
-        this.state.fromAnchor = snap ? snap.ref : null;
+        // ⚠️ 必须用 findAnchorOwnerAt 而不是 findPageElementAt：
+        //    锚点画在框外 6px，findPageElementAt 对它返回 null，
+        //    结果是「点在锚点上却连画都起不来」（实测 started=false）。
+        //    返回 null 不是错误 —— 那就是「在空白处起笔」。
+        const from = this.findAnchorOwnerAt(e);
+        const snap = from ? this.snapToAnchor(from, pos) : null;
 
+        this.state.fromId = from ? from.id : null;
+        this.state.fromAnchor = snap ? snap.ref : null;
+        this.state.fromFree = from ? null : { x: pos.x, y: pos.y };
         this.state.isDrawing = true;
-        this.state.fromId = from.id;
         this.state.cursor = pos;
         // 立刻把源元素的锚点画出来，让用户看到"线从这儿出发"
-        this._renderAnchorIds([from.id], pos);
+        if (from) this._renderAnchorIds([from.id], pos);
         e.preventDefault();
         e.stopPropagation();
     },
@@ -323,17 +329,34 @@ const ToolsConnector = {
         }
     },
 
-    /** mouseup：落点建线 / 端点改连 */
+    /** mouseup：落线 */
     handleMouseUp(e) {
         if (this.state.isDrawing) {
+            const cursor = this.toCanvasCoords(e);
+            const hit = this.findAnchorOwnerAt(e);
             const to = this.resolveDropTarget(e);
-            if (to && to !== this.state.fromId) {
-                ElementManager.addConnectorElement(
-                    this.state.fromId, to, this.state.fromAnchor, this.state.hoverAnchor);
-                PageLibrary.showHint('✅ 连接线已创建');
-                HistoryManager.saveState();
+
+            // ⚠️ 拖回自己身上 = 无效，必须拦。
+            //    这里不能只看 resolveDropTarget 的返回值：它对「没命中」和
+            //    「命中了自己」都返回 null，两者混在一起就会把回拖到自己
+            //    的操作误判成"落点自由"，凭空画出一条线。
+            const droppedOnSelf = !!(this.state.fromId && hit && hit.id === this.state.fromId);
+
+            if (droppedOnSelf) {
+                PageLibrary.showHint('⚠️ 不能连到自己');
             } else {
-                PageLibrary.showHint('⚠️ 需要拖到另一个页面框上');
+                // 落点没落在任何页面框上 → 那一端自由（MasterGo：两端都可自由）
+                const toFree = to ? null : { x: cursor.x, y: cursor.y };
+                const created = ElementManager.addConnectorElement(
+                    this.state.fromId, to,
+                    this.state.fromAnchor, this.state.hoverAnchor,
+                    this.state.fromFree, toFree);
+                if (created) {
+                    PageLibrary.showHint('✅ 连接线已创建');
+                    HistoryManager.saveState();
+                } else {
+                    PageLibrary.showHint('⚠️ 连接线创建失败');
+                }
             }
             this.cancelDrawing();
             Tools.setTool('select');
@@ -346,12 +369,20 @@ const ToolsConnector = {
             const targetId = this.dragState.hoverId;
             if (connectorId) {
                 if (targetId) {
+                    // 落在页面框上 → 绑定：绑定端改连，自由端转成绑定端
                     ElementManager.retargetConnector(connectorId, end, targetId, this.dragState.hoverAnchor);
-                    HistoryManager.saveState();
                     PageLibrary.showHint('✅ 连接线已改连');
+                } else if (this.findAnchorOwnerAt(e)) {
+                    // 命中了元素却是 null → 命中的是另一端，会成自环
+                    PageLibrary.showHint('⚠️ 不能连到自己');
                 } else {
-                    PageLibrary.showHint('⚠️ 未落在页面框上，改连已取消');
+                    // 落在空白 → 这一端自由：
+                    //   原来绑定的 → 解绑；原来自由的 → 挪坐标（同一个入口收口）
+                    const cursor = this.toCanvasCoords(e);
+                    ElementManager.retargetConnector(connectorId, end, null, null, cursor);
+                    PageLibrary.showHint('✅ 端点已移到空白处');
                 }
+                HistoryManager.saveState();
             }
             this.dragState.active = false;
             this.dragState.connectorId = null;
@@ -362,7 +393,14 @@ const ToolsConnector = {
         }
     },
 
-    /** 解析落点元素（排除另一端已有的元素，避免连成自环） */
+    /**
+     * 解析落点元素（排除另一端已有的元素，避免连成自环）。
+     *
+     * ⚠️ 返回 null 有**两种**含义，调用方必须自己区分：
+     *    ① 鼠标不在任何页面框上 → 这一端自由
+     *    ② 落点就是另一端 → 无效（handleMouseUp 里用 findAnchorOwnerAt 复核）
+     * 起点是自由端时没有"另一端元素"，第 ② 条不适用。
+     */
     resolveDropTarget(e) {
         // ⚠️ 同样走 findAnchorOwnerAt：用户会直接点在目标框外侧的锚点上落线，
         //    用 findPageElementAt 的话这种情况会被判为"没落在任何元素上"，
@@ -370,15 +408,15 @@ const ToolsConnector = {
         const hit = this.findAnchorOwnerAt(e);
         if (!hit) return null;
 
-        // 绘制新线：不能连到自己
-        if (this.state.isDrawing && hit.id === this.state.fromId) return null;
+        // 绘制新线：不能连到自己（起点自由时没有"自己"，跳过）
+        if (this.state.isDrawing && this.state.fromId && hit.id === this.state.fromId) return null;
 
         // 改连端点：不能连到另一端（否则变成自环）
         if (this.dragState.active) {
             const connector = ElementManager.getElement(this.dragState.connectorId);
             if (connector) {
                 const otherId = this.dragState.end === 'from' ? connector.toId : connector.fromId;
-                if (hit.id === otherId) return null;
+                if (otherId && hit.id === otherId) return null;
             }
         }
         return hit.id;
@@ -388,6 +426,7 @@ const ToolsConnector = {
         this.state.isDrawing = false;
         this.state.fromId = null;
         this.state.fromAnchor = null;
+        this.state.fromFree = null;
         this.state.hoverId = null;
         this.state.hoverAnchor = null;
         this.removePreview();
@@ -477,9 +516,11 @@ const ToolsConnector = {
         const base = st.basePoints;
         if (!base || base.length < 2) return;
 
-        const fromEl = ElementManager.getElement(el.fromId);
-        const toEl = ElementManager.getElement(el.toId);
-        if (!fromEl || !toEl) return;
+        // ⚠️ 两端都自由时 fromEl/toEl 都是 null —— 早年的 `if (!fromEl || !toEl) return`
+        //    会让**所有自由连接线的段都拖不动**，且不报任何错。
+        //    wpRef 的平移基准本来就依赖两端元素，自由端不需要平移，跳过即可。
+        const fromEl = el.fromId ? ElementManager.getElement(el.fromId) : null;
+        const toEl = el.toId ? ElementManager.getElement(el.toId) : null;
 
         const cursor = this.toCanvasCoords(e);
         const i = st.segIndex;
@@ -507,8 +548,10 @@ const ToolsConnector = {
             { index: inner, axis: horizontal ? 'y' : 'x' });
         if (!next || next.length < 2) return;
 
-        // 第一次掰形状时记下两端的绝对位置；之后页面框移动就按这个基准算位移
-        if (!el.wpRef) {
+        // 第一次掰形状时记下两端的绝对位置；之后页面框移动就按这个基准算位移。
+        // ⚠️ 两端都得是绑定端才记 —— 自由端没有元素位置可记，
+        //    硬记 null.position 会在这里直接抛 TypeError。
+        if (!el.wpRef && fromEl && toEl) {
             el.wpRef = {
                 from: { x: fromEl.position.x, y: fromEl.position.y },
                 to: { x: toEl.position.x, y: toEl.position.y },
@@ -569,69 +612,98 @@ const ToolsConnector = {
         document.getElementById('connectorPreview')?.remove();
     },
 
-    /** 渲染当前拖拽的预览线 */
+    /**
+     * 把当前状态解析成两端规格：[端0, 端1]，每项 {id, anchor, free, useCursor}。
+     * id 为 null = 那一端是自由端（坐标取 free，或 useCursor 时取鼠标位置）。
+     */
+    _previewEnds() {
+        const s = this.state;
+        if (s.isDrawing) {
+            return [
+                { id: s.fromId, anchor: s.fromAnchor, free: s.fromFree },
+                { id: s.hoverId, anchor: s.hoverAnchor, free: null, useCursor: true },
+            ];
+        }
+
+        const d = this.dragState;
+        if (d.active) {
+            const c = ElementManager.getElement(d.connectorId);
+            if (!c) return null;
+            const isFrom = d.end === 'from';
+            // 固定不动的那一端
+            const fixedId = isFrom ? c.toId : c.fromId;
+            const fixedAnchor = isFrom ? c.toAnchor : c.fromAnchor;
+            const fixedFree = isFrom ? c.toFree : c.fromFree;
+            // 正在被拖的那一端：命中页面框就用命中锚点，否则退回原锚点/原自由坐标
+            const baseAnchor = isFrom ? c.fromAnchor : c.toAnchor;
+            return [
+                {
+                    id: d.hoverId,
+                    anchor: d.hoverAnchor || baseAnchor,
+                    free: null,
+                    useCursor: true,
+                },
+                { id: fixedId, anchor: fixedAnchor, free: fixedFree },
+            ];
+        }
+        return null;
+    },
+
+    /**
+     * 渲染当前拖拽的预览线。
+     *
+     * ⚠️ 两条分支**故意不合并**：
+     *    两端都绑定时必须逐像素复现历史行为（resolveEndpoints + routeFromAnchor），
+     *    一旦和自由端共用同一段代码，日后任一侧改动都会连累另一侧。
+     */
     renderPreview() {
         const preview = this.ensurePreview();
         if (!preview) return;
 
-        let fromId = null, toId = null;
-        let fromAnchor = null, toAnchor = null;
+        const ends = this._previewEnds();
+        if (!ends) return;
 
-        if (this.state.isDrawing) {
-            fromId = this.state.fromId;
-            fromAnchor = this.state.fromAnchor;
-            // 拖到页面框上 → 预览吸附；否则用光标位置当自由点
-            toId = this.state.hoverId;
-            toAnchor = this.state.hoverAnchor;
-        } else if (this.dragState.active) {
-            const connector = ElementManager.getElement(this.dragState.connectorId);
-            if (!connector) return;
-            // 被拖的一端用鼠标下的锚点（或保持原锚点），另一端保持不动
-            const movingAnchor = this.dragState.end === 'from'
-                ? (this.dragState.hoverAnchor || connector.fromAnchor)
-                : (this.dragState.hoverAnchor || connector.toAnchor);
-            if (this.dragState.end === 'from') {
-                toId = connector.fromId;
-                toAnchor = movingAnchor;
-                fromId = connector.toId;
-                fromAnchor = connector.toAnchor;
+        let pts = null;
+
+        if (ends[0].id && ends[1].id) {
+            // —— 两端都绑定：历史路径 ——
+            // ⚠️ 端点解析走**唯一入口** AnchorSession.resolveEndpoints。
+            //    这里曾经自己 rectOf() 拿页面框矩形，而落线走 _hostRectOf
+            //    拿内部子元素矩形 —— 同一个锚点，预览终点 y=54、
+            //    实际终点 y=521.5，用户看到的正是「预览和实际不一样」。
+            const ep = AnchorSession.resolveEndpoints(
+                ends[0].id, ends[1].id, ends[0].anchor, ends[1].anchor);
+
+            let fromRect, toRect, fromSide, toSide;
+            if (ep) {
+                fromRect = ep.fromRect; toRect = ep.toRect;
+                fromSide = ep.fromSide; toSide = ep.toSide;
             } else {
-                fromId = connector.fromId;
-                fromAnchor = connector.fromAnchor;
-                toId = connector.toId;
-                toAnchor = movingAnchor;
+                // 端点元素刚消失：退回页面框，至少把预览画出来
+                const f = ElementManager.getElement(ends[0].id);
+                const t = ElementManager.getElement(ends[1].id);
+                if (!f || !t) return;
+                fromRect = this.rectOf(f); toRect = this.rectOf(t);
+                fromSide = ends[0].anchor ? { side: ends[0].anchor.side, t: ends[0].anchor.t } : null;
+                toSide = ends[1].anchor ? { side: ends[1].anchor.side, t: ends[1].anchor.t } : null;
             }
-        }
-
-        if (!fromId || !toId) return;
-
-        // ⚠️ 端点解析走**唯一入口** AnchorSession.resolveEndpoints。
-        //    这里曾经自己 rectOf() 拿页面框矩形，而落线走 _hostRectOf
-        //    拿内部子元素矩形 —— 同一个锚点，预览终点 y=54、
-        //    实际终点 y=521.5，用户看到的正是「预览和实际不一样」。
-        const ep = AnchorSession.resolveEndpoints(fromId, toId, fromAnchor, toAnchor);
-
-        let fromRect, toRect, fromSide, toSide;
-        if (ep) {
-            fromRect = ep.fromRect; toRect = ep.toRect;
-            fromSide = ep.fromSide; toSide = ep.toSide;
+            pts = this.routeWithAnchors(fromRect, toRect, fromSide, toSide);
         } else {
-            // 端点元素刚消失：退回页面框，至少把预览画出来
-            const f = ElementManager.getElement(fromId);
-            const t = ElementManager.getElement(toId);
-            if (!f || !t) return;
-            fromRect = this.rectOf(f); toRect = this.rectOf(t);
-            fromSide = fromAnchor ? { side: fromAnchor.side, t: fromAnchor.t } : null;
-            toSide = toAnchor ? { side: toAnchor.side, t: toAnchor.t } : null;
+            // —— 至少一端自由：两端都解析成「点」，走中点台阶路由 ——
+            const resolve = (end) => {
+                const free = end.free ||
+                    (end.useCursor && this.state.cursor
+                        ? { x: this.state.cursor.x, y: this.state.cursor.y }
+                        : null);
+                return AnchorSession.resolveOne(end.id, end.anchor, free);
+            };
+            const a = resolve(ends[0]);
+            const b = resolve(ends[1]);
+            if (!a || !b) return;
+            pts = (a.point && b.point)
+                ? ConnectorRouter.routeFreePoints(a.point, b.point)
+                : ConnectorRouter.route(a.rect, b.rect);
         }
-
-        // 光标不在任何元素上时（还没拖到目标框），终点用自由点
-        if (!toId) {
-            toRect = { x: this.state.cursor.x, y: this.state.cursor.y, width: 0, height: 0 };
-            toSide = null;
-        }
-
-        const pts = this.routeWithAnchors(fromRect, toRect, fromSide, toSide);
 
         if (!pts || pts.length < 2) return;
 

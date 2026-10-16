@@ -2687,6 +2687,131 @@ test('resolveEndpoints 必须经由 rectOf → measuredRectOf（锁住调用关�
         'rectOf 必须调用 measuredRectOf；直接读 el.height 会让底部锚点再次错位');
 });
 
+suite('36. 单端解析 resolveOne（自由连接线：端点各自判绑不绑）');
+
+/**
+ * resolveOne 与 resolveEndpoints 的区别：前者允许一端没有元素 id（自由端）。
+ * ⚠️ 自由端这个分支**不能**靠 resolveEndpoints 硬塞一个假 id 绕过去 ——
+ *    那样 fromRect/toRect 会混着同一个元素，读代码的人再也分不清哪半是真数据。
+ */
+test('自由端：端点就是它自己，返回 0×0 矩形 + 坐标', () => {
+    const r = AnchorSession.resolveOne(null, null, { x: 137, y: 249 });
+    assert(r, '自由端必须能解析出来');
+    assertEqual(r.rect.x, 137, '矩形 x');
+    assertEqual(r.rect.y, 249, '矩形 y');
+    assertEqual(r.rect.width, 0, '自由端矩形宽必须是 0');
+    assertEqual(r.rect.height, 0, '自由端矩形高必须是 0');
+    assertEqual(r.side, null, '自由端没有锚点描述符');
+    assertEqual(r.point.x, 137, '端点坐标 x');
+    assertEqual(r.point.y, 249, '端点坐标 y');
+});
+
+test('自由端：坐标缺失或非法一律返回 null（不许返回半截数据）', () => {
+    assertEqual(AnchorSession.resolveOne(null, null, null), null, '坐标为 null');
+    assertEqual(AnchorSession.resolveOne(null, null, { x: NaN, y: 1 }), null, 'NaN');
+    assertEqual(AnchorSession.resolveOne(null, null, { x: 1, y: undefined }), null, 'undefined');
+    assertEqual(AnchorSession.resolveOne(null, null, { x: '5', y: 1 }), null, '字符串');
+});
+
+test('自由端即使传了锚点也必须忽略（id 为 null 就无从谈宿主）', () => {
+    const r = AnchorSession.resolveOne(null, { side: 'top', t: 0.5 }, { x: 10, y: 20 });
+    assert(r && r.side === null, '没有宿主就不该凭空造出锚点描述符');
+    assert(r && r.point.x === 10 && r.point.y === 20, '坐标仍取自由点');
+});
+
+test('⚠️ 绑定端必须走 rectOf（不得读 element.height 声明值）', () => {
+    // 组 35 锁的就是这个坑：锚点圆点用实测高度、连线端点用声明高度，差 887px。
+    // resolveOne 是自由连线里唯一的绑定端解析入口，同一个坑必须一起堵。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'connectors', 'anchor-session.js'), 'utf8');
+    const fn = src.match(/resolveOne\(elementId, anchorRef, freePoint\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 resolveOne');
+    assert(/this\.rectOf\(el\)/.test(fn[1]),
+        '绑定端必须经由 rectOf（页面框走实测矩形），直接读 el.height 会重演 887px 分叉');
+    assert(!/el\.height\b/.test(fn[1]),
+        'resolveOne 里不许直接读声明高度');
+});
+
+test('⚠️ resolveOne 不得成为第二份「端点解析」实现（双入口禁令）', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'connectors', 'anchor-session.js'), 'utf8');
+    // _hostRectFor 是共用的，resolveOne 必须复用它，而不是自己再判一次 inner 锚点
+    const fn = src.match(/resolveOne\(elementId, anchorRef, freePoint\)\s*\{([\s\S]*?)\n    \},/);
+    assert(/this\._hostRectFor\(/.test(fn[1]),
+        '必须复用 _hostRectFor —— 否则 inner 锚点会在自由连线里指错元素');
+    assert(!/kind\s*===\s*'inner'/.test(fn[1]),
+        'inner 锚点的判定只允许写在 _hostRectFor 里一处');
+});
+
+// ================================================================ 36b. 静态契约（自由端贯通全链路）
+
+suite('36b. 自由连接线贯通全链路（静态契约）');
+
+const readSrc36 = (...p) => fs.readFileSync(path.join(ROOT, ...p), 'utf8');
+
+test('⚠️ 路由层：自由分支必须排在绑定分支之前', () => {
+    const src = readSrc36('js', 'element-manager', 'element-renderer.js');
+    const fn = src.match(/_routeBase\(element, fromEl, toEl, fromRect, toRect\)\s*\{([\s\S]*?)\n        const hasAnchor/);
+    assert(fn, '应能找到 _routeBase 的自由端分支');
+    assert(/if \(!fromEl \|\| !toEl\)/.test(fn[1]),
+        '必须先判「有没有端是自由的」，再走绑定的历史逻辑');
+    assert(/routeFreePoints/.test(fn[1]), '自由分支要用中点台阶路由');
+    assert(!/resolveEndpoints/.test(fn[1]),
+        '自由分支不得调用 resolveEndpoints —— 它要求两端都有 id');
+});
+
+test('⚠️ 数据模型：两套端点来源互斥，不得同时非空', () => {
+    const src = readSrc36('js', 'element-manager', 'element-adder.js');
+    const fn = src.match(/addConnectorElement\([\s\S]*?\n    \},/);
+    assert(fn, '应能找到 addConnectorElement');
+    assert(/fromId: fromId \|\| null/.test(fn[0]) && /toId: toId \|\| null/.test(fn[0]),
+        '绑定字段必须显式归一到 null');
+    assert(/fromFree: fromFree \? \{/.test(fn[0]) && /toFree: toFree \? \{/.test(fn[0]),
+        '自由坐标必须独立成字段');
+    assert(/!okFrom \|\| !okTo/.test(fn[0]),
+        '每一端都要么有元素、要么有坐标，否则拒绝创建');
+    assert(/fromId === toId/.test(fn[0]), '自环必须拒绝');
+
+    const retarget = readSrc36('js', 'element-manager', 'element-manager.js')
+        .match(/retargetConnector\([\s\S]*?\n    \},/);
+    assert(/connector\[freeKey\] = null/.test(retarget[0]),
+        '转成绑定端时必须清空自由坐标');
+});
+
+test('⚠️ 工具层：落点分辨必须区分「没命中」与「命中自己」', () => {
+    const src = readSrc36('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/handleMouseUp\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 handleMouseUp');
+    assert(/const hit = this\.findAnchorOwnerAt\(e\);/.test(fn[1]),
+        '必须先拿到原始命中，才能把「命中了自己」和「没命中」分开');
+    assert(/const toFree = to \? null :/.test(fn[1]),
+        '没命中页面框 → 那一端自由，坐标取鼠标位置');
+});
+
+test('⚠️ 工具层：预览必须能画出至少一端自由的情况', () => {
+    const src = readSrc36('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/renderPreview\(\)\s*\{([\s\S]*?)\n        if \(!pts \|\| pts\.length < 2\) return;/);
+    assert(fn, '应能找到 renderPreview');
+    assert(!/if \(!fromId \|\| !toId\) return;/.test(fn[1]),
+        '自由端没有 id，这个早退会让空白处起笔时**连预览都不画**');
+    assert(/AnchorSession\.resolveOne/.test(fn[1]), '自由分支必须走 resolveOne');
+    assert(/routeFreePoints/.test(fn[1]), '自由分支的预览路径必须和落线一致');
+    // 两端都绑定的历史分支必须原样保留
+    assert(/resolveEndpoints/.test(fn[1]) && /routeWithAnchors/.test(fn[1]),
+        '两端绑定时仍须走 resolveEndpoints + routeWithAnchors（逐像素不变）');
+});
+
+test('⚠️ 存活的存量连接线不得被改坏（两端都绑定时行为逐点不变）', () => {
+    const src = readSrc36('js', 'element-manager', 'element-renderer.js');
+    const fn = src.match(/_routeBase\(element, fromEl, toEl, fromRect, toRect\)\s*\{([\s\S]*?)\n    \},/);
+    const bound = fn[1].split('const hasAnchor')[1];
+    assert(bound, '应能找到绑定分支');
+    assert(/ConnectorRouter\.route\(fromRect, toRect\)/.test(bound),
+        '无锚点的老数据仍走 route()');
+    assert(/AnchorSession\.resolveEndpoints\(\s*\n?\s*fromEl\.id, toEl\.id/.test(bound),
+        '有锚点的仍走 resolveEndpoints(fromEl.id, toEl.id, ...)');
+});
+
+
+
 // ================================================================ 收尾
 
 (async () => {

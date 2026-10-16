@@ -48,26 +48,38 @@ const ElementAdder = {
 
     // 添加智能连接线
     //
-    // 只存 fromId/toId + 锚点描述符 —— 路径与端点坐标都由 ConnectorRouter
-    // 按两端元素当前位置实时计算，**不存任何像素坐标**
-    // （这是 MasterGo 连接线的核心语义，见 js/connectors/connector-router.js）
+    // 两种形态，MasterGo 实测都支持（用户在文件上逐条验过）：
+    //
+    //   ① 绑定连接线：两端都有页面框。只存 fromId/toId + 锚点描述符 ——
+    //      路径与端点坐标都由 ConnectorRouter 按两端元素当前位置实时计算，
+    //      **不存任何像素坐标**（这是 MasterGo 连接线的核心语义）
+    //   ② 自由连接线：至少一端不在任何页面框上。那个端没有元素可绑，
+    //      只能存坐标 —— fromFree/toFree 就是干这个的。
+    //
+    // 两端各自独立判定，所以 绑-绑 / 绑-自由 / 自由-绑 / 自由-自由 四种都有。
     //
     // 锚点描述符形如 {elementId, kind:'element'|'inner', selector?, side, t}：
     //   - side/t 是归一化位置，元素缩放后锚点自动跟着变，无需迁移数据
     //   - inner 锚点额外记 selector，用于在 iframe 里重新定位那个子元素
-    addConnectorElement(fromId, toId, fromAnchor = null, toAnchor = null) {
-        const fromEl = ElementManager.state.elements.find(el => el.id === fromId);
-        const toEl = ElementManager.state.elements.find(el => el.id === toId);
-        if (!fromEl || !toEl) return;
+    addConnectorElement(fromId, toId, fromAnchor = null, toAnchor = null, fromFree = null, toFree = null) {
+        // 每一端要么有元素、要么有自由坐标，否则这条线无从画起
+        const okFrom = fromId || (fromFree && Number.isFinite(fromFree.x) && Number.isFinite(fromFree.y));
+        const okTo = toId || (toFree && Number.isFinite(toFree.x) && Number.isFinite(toFree.y));
+        if (!okFrom || !okTo) return null;
+        // 自环（两端同一个元素）没有意义，直接拒绝
+        if (fromId && toId && fromId === toId) return null;
 
         const element = {
             id: PageManager.generateElementId(),
             type: 'connector',
-            fromId: fromId,
-            toId: toId,
+            fromId: fromId || null,
+            toId: toId || null,
             // 旧行为兼容：没给锚点时保持为 null，渲染时退化为整元素路由
             fromAnchor: fromAnchor || null,
             toAnchor: toAnchor || null,
+            // 自由端坐标（绑定端恒为 null）
+            fromFree: fromFree ? { x: fromFree.x, y: fromFree.y } : null,
+            toFree: toFree ? { x: toFree.x, y: toFree.y } : null,
             position: { x: 0, y: 0 },
             width: 0,
             height: 0

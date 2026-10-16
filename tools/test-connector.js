@@ -1429,6 +1429,132 @@ test('⚠️ 渲染路径不得传 bend（页面框移动时必须走历史行�
         `渲染路径只应有 4 个实参，实得 ${call[1].split(',').length} 个：${call[1]}`);
 });
 
+suite('15. 自由连接线：两端都不在页面框上（MasterGo 实测）');
+
+const MG_FREE_A = [
+    { x: 143, y: 252 },
+    { x: 268, y: 252 },
+    { x: 268, y: 402 },
+    { x: 393, y: 402 },
+];
+const MG_FREE_B = [
+    { x: 853, y: 590 },
+    { x: 676.5, y: 590 },
+    { x: 676.5, y: 400 },
+    { x: 500, y: 400 },
+];
+
+const assertSamePath = (got, want, label) => {
+    assertEqual(got.length, want.length, `${label}: 点数应为 ${want.length}，实得 ${got.length}`);
+    want.forEach((w, i) => {
+        assertEqual(got[i].x, w.x, `${label}: 第 ${i} 点 x 应为 ${w.x}`);
+        assertEqual(got[i].y, w.y, `${label}: 第 ${i} 点 y 应为 ${w.y}`);
+    });
+};
+
+test('⚠️ 自由线走「中点台阶」，逐点对齐 MasterGo 实测（横→竖→横 3 段）', () => {
+    // 用户文件上实测：空白处拖 (143,252)→(393,402)，拐点落在 x=268=(143+393)/2
+    assertSamePath(
+        Router.routeFreePoints({ x: 143, y: 252 }, { x: 393, y: 402 }),
+        MG_FREE_A, '实测A');
+    // 第二条：拖 (853,590)→(500,400)，拐点落在 676.5=(853+500)/2
+    assertSamePath(
+        Router.routeFreePoints({ x: 853, y: 590 }, { x: 500, y: 400 }),
+        MG_FREE_B, '实测B');
+});
+
+test('⚠️ 同 x / 同 y 不拐弯（不该凭空多出一个台阶）', () => {
+    assertEqual(Router.routeFreePoints({ x: 10, y: 20 }, { x: 300, y: 20 }).length, 2,
+        '同 y 应是一条直线');
+    assertEqual(Router.routeFreePoints({ x: 10, y: 20 }, { x: 10, y: 300 }).length, 2,
+        '同 x 应是一条直线');
+});
+
+test('⚠️ 自由线全程正交且无 NaN（随机 200 组）', () => {
+    for (let i = 0; i < 200; i++) {
+        const a = { x: Math.round(Math.random() * 2000), y: Math.round(Math.random() * 2000) };
+        const b = { x: Math.round(Math.random() * 2000), y: Math.round(Math.random() * 2000) };
+        const pts = Router.routeFreePoints(a, b);
+        assertFinite(pts, `随机第 ${i} 组`);
+        assertOrthogonal(pts, `随机第 ${i} 组`);
+        assertEqual(pts[0].x, a.x, `随机第 ${i} 组起点被改了`);
+        assertEqual(pts[pts.length - 1].x, b.x, `随机第 ${i} 组终点被改了`);
+        assertEqual(pts[pts.length - 1].y, b.y, `随机第 ${i} 组终点被改了`);
+    }
+});
+
+test('⚠️ 退化输入返回 null 而不是半截路径', () => {
+    assertEqual(Router.routeFreePoints(null, { x: 1, y: 1 }), null, '缺起点应返回 null');
+    assertEqual(Router.routeFreePoints({ x: 1, y: 1 }, null), null, '缺终点应返回 null');
+    assertEqual(Router.routeFreePoints({ x: NaN, y: 1 }, { x: 1, y: 1 }), null, 'NaN 应返回 null');
+});
+
+test('⚠️ 自由线也必须能拖段（handleSegmentMouseMove 不得因为没有元素就早退）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/handleSegmentMouseMove\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 handleSegmentMouseMove');
+    // ⚠️ 用行首锚定匹配，否则**注释里**引用这句也会被当成代码命中
+    assert(!/^\s*if\s*\(\s*!fromEl\s*\|\|\s*!toEl\s*\)\s*return;/m.test(fn[1]),
+        '自由线的 fromEl/toEl 本来就是 null，这个早退会让所有自由线的段都拖不动');
+    assert(/el\.fromId\s*\?\s*ElementManager\.getElement\(el\.fromId\)\s*:\s*null/.test(fn[1]),
+        '必须按 fromId 是否存在分别取元素');
+    assert(/if\s*\(\s*!el\.wpRef\s*&&\s*fromEl\s*&&\s*toEl\s*\)/.test(fn[1]),
+        'wpRef 只在两端都绑定时才记 —— 自由端硬记 null.position 会直接抛 TypeError');
+});
+
+test('⚠️ 起笔不得要求落在页面框上（否则空白处拉不出线）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/handleMouseDown\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 handleMouseDown');
+    assert(!/const from = this\.findAnchorOwnerAt\(e\);\s*\n\s*if \(!from\) return;/.test(fn[1]),
+        '起点落在空白处也必须能起笔（MasterGo 实测：空白处直接拖就能出线）');
+    assert(/this\.state\.fromFree\s*=\s*from\s*\?\s*null\s*:\s*\{\s*x:\s*pos\.x,\s*y:\s*pos\.y\s*\}/.test(fn[1]),
+        '空白起笔时必须把坐标记进 fromFree');
+});
+
+test('⚠️ 落回自己身上要拦（否则会凭空画出一条自由线）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/handleMouseUp\(e\)\s*\{([\s\S]*?)\n        if \(this\.dragState\.active\)/);
+    assert(fn, '应能找到 handleMouseUp 的绘制分支');
+    assert(/droppedOnSelf/.test(fn[1]),
+        '必须用 findAnchorOwnerAt 复核落点 —— resolveDropTarget 对「没命中」和「命中自己」都返回 null');
+});
+
+test('⚠️ 端点矩形只能有一个实现（两处渲染入口共用）', () => {
+    const src = readSrc('js', 'element-manager', 'element-renderer.js');
+    const fn = src.match(/endpointRects\(element, fromEl, toEl\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 endpointRects');
+    const LITERAL = /x:\s*\w+\.position\.x,\s*y:\s*\w+\.position\.y,\s*width:\s*\w+\.width/g;
+    assert(LITERAL.test(fn[1]),
+        'endpointRects 里必须用元素自身的矩形（绑定端）');
+    // 全文件只允许出现这一处 —— 多一处就意味着又有人手搓了一份
+    const total = (src.match(/x:\s*\w+\.position\.x,\s*y:\s*\w+\.position\.y,\s*width:\s*\w+\.width/g) || []).length;
+    assertEqual(total, 1,
+        `element-renderer.js 里「元素矩形」字面量应只在 endpointRects 出现 1 次，实得 ${total} 次`);
+
+    const mgr = readSrc('js', 'element-manager', 'element-manager.js');
+    const into = mgr.match(/renderConnectorInto\(div, element\)\s*\{([\s\S]*?)\n    \},/);
+    assert(into, '应能找到 renderConnectorInto');
+    assert(/ElementRenderer\.endpointRects\(/.test(into[1]),
+        'renderConnectorInto 必须复用 ElementRenderer.endpointRects，不能自己再造一份');
+    assert(!/^\s*if \(!fromEl \|\| !toEl\) return;/m.test(into[1]),
+        '自由端本来就没有元素，这个早退会让自由连接线**根本不渲染**');
+});
+
+test('⚠️ 端点可在绑定与自由之间来回切换（改连入口统一收口）', () => {
+    const src = readSrc('js', 'element-manager', 'element-manager.js');
+    const fn = src.match(/retargetConnector\([\s\S]*?\n    \},/);
+    assert(fn, '应能找到 retargetConnector');
+    assert(/freeKey/.test(fn[0]), '必须同时处理绑定 id/锚点与自由坐标两套字段');
+    assert(/connector\[freeKey\]\s*=\s*null/.test(fn[0]),
+        '转成绑定端时必须清掉自由坐标 —— 两个来源同时非空会让 resolveOne 取错');
+
+    const tools = readSrc('js', 'tools', 'tools-connector.js');
+    const up = tools.match(/handleMouseUp\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(/retargetConnector\(connectorId, end, null, null, cursor\)/.test(up[1]),
+        '端点落在空白处时必须走「解绑成自由端」分支，而不是提示「改连已取消」');
+});
+
 // ---------------------------------------------------------------- 运行
 
 (async () => {
