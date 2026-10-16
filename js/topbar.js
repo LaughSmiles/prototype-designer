@@ -197,7 +197,7 @@
         var ANCHOR_REQ = 'connector-anchor-request';
         var ANCHOR_RES = 'connector-anchor-response';
         // 尺寸过滤（对齐 MasterGo 实测：小图标/数字/头像不出锚点，大块结构元素出）
-        var ANCHOR_MIN_AREA = 4000;
+        var ANCHOR_MIN_AREA = 500;
         var ANCHOR_MIN_EDGE = 16;
         // 边重合去重叠的容差（与 anchor-bridge.js 的 edgesNearlyEqual 默认值一致）
         var ANCHOR_EDGE_TOL = 8;
