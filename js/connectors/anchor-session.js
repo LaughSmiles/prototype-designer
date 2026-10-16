@@ -136,6 +136,46 @@ const AnchorSession = {
     // ------------------------------------------------------------ 端点解析（唯一入口）
 
     /**
+     * 取一个元素用于**端点解析**的矩形（画布坐标）。
+     *
+     * ⚠️ 这是本轮修复「底部锚点连接异常」的核心。
+     *
+     *    背景（页面内容溢出导致的两套矩形）：
+     *      · **锚点圆点**走 hostsOf → measuredRectOf → **实测** DOM 尺寸。
+     *        页面去掉滚轮后改为展示全部内容，内容高 1699px，
+     *        而 element.height 仍是声明值 **812**。
+     *      · **连线**此前在本模块里直接读 element.width/height → **声明值**。
+     *
+     *    两套矩形一混，底部锚点必然错位：锚点画在真实底边(y=1699)，
+     *    线却奔着声明底边(y=812)去 —— 用户点底部锚点，线停在页面中间。
+     *    用户报的现象正是「起点/终点在底部时连接异常」。
+     *
+     * ⚠️ 为什么**只对页面框**用实测：
+     *    只有页面框会内容溢出（iframe 去掉滚轮后撑高）。
+     *    文本框、箭头、批注的声明值就是真值，对它们做 getBoundingClientRect()
+     *    既会引入亚像素抖动，又要白付一次强制重排，纯属倒贴。
+     *
+     * ⚠️ measuredRectOf 自带兜底：读不到 DOM / 没有 view 时原样返回声明值，
+     *    所以最坏情况就是退回本轮改动前的行为，绝不崩、绝不产生 NaN。
+     *
+     * @param {object} el 画布元素
+     * @param {?object} [opts] { getDomRect, view } 依赖注入（测试用），透传给 measuredRectOf
+     * @returns {{x,y,width,height}}
+     */
+    rectOf(el, opts = {}) {
+        if (!el || !el.position) {
+            return { x: 0, y: 0, width: 0, height: 0 };
+        }
+        // pageId 存在的即页面框（type 字段的历史数据可能缺失，两者都认）
+        const isPage = el.type === 'page' || !!el.pageId;
+        if (isPage) return this.measuredRectOf(el, opts);
+        return {
+            x: el.position.x, y: el.position.y,
+            width: el.width, height: el.height,
+        };
+    },
+
+    /**
      * 解析一条连接线两端的「宿主矩形 + 路由锚点描述符」。
      *
      * ⚠️ 这是**唯一**的解析入口。预览、渲染、改连都必须走这里。
@@ -145,6 +185,9 @@ const AnchorSession = {
      *   2) hitRendered（清单命中）与 hitTest（几何推导）各写一份 → 「选了 A 连到 B」
      *   3) renderPreview 用页面框矩形、落线用内部宿主矩形
      *      → 同一锚点，预览终点 y=54、实际终点 y=521.5，**用户看到的「预览和实际不一样」**
+     *   4) 锚点画在**实测**矩形上、连线端点读**声明**矩形
+     *      → 页面内容溢出时（声明 812 / 实测 1699），底部锚点与线的终点差了 887px，
+     *        用户报「起点终点在底部时连接异常」。现由下方 rectOf() 统一到实测。
      * 收敛成单一入口后，这类分叉在结构上就不可能再发生。
      *
      * @param {string} fromId   起点元素 id
@@ -163,10 +206,7 @@ const AnchorSession = {
         const toEl = getElement(toId);
         if (!fromEl || !toEl) return null;
 
-        const rawOf = (el) => ({
-            x: el.position.x, y: el.position.y,
-            width: el.width, height: el.height,
-        });
+        const rawOf = (el) => this.rectOf(el, opts);
 
         const sideOf = (a) => (a ? { side: a.side, t: a.t } : null);
 

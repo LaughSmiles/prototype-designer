@@ -2524,6 +2524,155 @@ test('fixed 元素换算 = 声明高度无关，实测高度一变坐标就跟�
         '画布坐标应直接采用当前 iframe 视口内的实测位置，不按声明高度折算');
 });
 
+// ================================================================ 35. 端点矩形与锚点同源（修「底部连接异常」）
+
+suite('35. 端点矩形必须与锚点同源（修「起点/终点在底部时连接异常」）');
+
+/**
+ * ⚠️ 本组用例锁的是一个**曾经真实存在、且已修好**的分叉：
+ *
+ *   · 锚点圆点 → hostsOf → measuredRectOf → **实测** DOM 高度（1699）
+ *   · 连线端点 → resolveEndpoints → 直接读 element.height → **声明**高度（812）
+ *
+ *   两者差 887px。于是用户在页面**底部**点锚点，锚点圆点在真实底边，
+ *   线却停在页面中间 —— 用户报的现象就是「起点/终点在底部，会连接异常」。
+ *
+ *   修法：端点解析也走 measuredRectOf（AnchorSession.rectOf）。
+ *   预览 / 落线 / 改连三处共用 resolveEndpoints，所以改一处三个入口同时生效。
+ */
+
+/** 注入依赖：getElement + 一个声称"实测 DOM 更高"的 getDomRect */
+function overflowDeps(domH, els) {
+    const table = els || { A: OVERFLOW_EL, B: END_B };
+    return {
+        getElement: (id) => table[id] || null,
+        getInnerRect: () => null,
+        getDomRect: () => (domH == null ? null : { width: 375 * 0.62, height: domH * 0.62 }),
+        view: { zoom: 0.62, pan: { x: 0, y: 0 } },
+    };
+}
+
+/**
+ * 搭一个**带 DOM 的沙箱**，让 hostsOf / resolveEndpoints 在同一环境下运行。
+ *
+ * ⚠️ 为什么必须单独搭：hostsOf 不接受 opts 注入，它只能读全局 document + CanvasView
+ *    去拿实测尺寸（这正是浏览器里的真实取数方式）。没有这两个全局时它会静默退回
+ *    声明值，于是"锚点路径"在测试里测的根本不是生产行为 —— 那样的同源断言是假的。
+ */
+function loadSessionWithDom(domW, domH, zoom) {
+    const sandbox = {
+        console, Math, JSON, Number, Array, Object, String, Boolean, isNaN, isFinite,
+    };
+    sandbox.window = sandbox;
+    sandbox.globalThis = sandbox;
+    sandbox.CanvasView = { getView: () => ({ zoom, pan: { x: 0, y: 0 } }) };
+    sandbox.document = {
+        querySelector: () => ({
+            getBoundingClientRect: () => ({ width: domW, height: domH }),
+        }),
+    };
+    const ctx = vm.createContext(sandbox);
+    for (const rel of [
+        ['js', 'connectors', 'anchor-provider.js'],
+        ['js', 'connectors', 'connector-router.js'],
+        ['js', 'connectors', 'anchor-bridge.js'],
+        ['js', 'connectors', 'anchor-session.js'],
+    ]) {
+        const file = path.join(ROOT, ...rel);
+        vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: file });
+    }
+    return {
+        Anchor: vm.runInContext('AnchorProvider', ctx),
+        Session: vm.runInContext('AnchorSession', ctx),
+    };
+}
+
+test('⚠️ 页面框溢出时，端点矩形必须用实测高度而不是声明值', () => {
+    const r = AnchorSession.resolveEndpoints('A', 'B',
+        { elementId: 'A', kind: 'element', side: 'bottom', t: 0.5 },
+        { elementId: 'B', kind: 'element', side: 'top', t: 0.5 },
+        overflowDeps(1699));
+
+    assert(r, '应解析成功');
+    assert(r.fromRect.height > 1698 && r.fromRect.height < 1700,
+        '起点矩形高度应取实测 1699，而不是声明 812；实得 ' + r.fromRect.height);
+    assertEqual(r.fromRect.x, 100, '左上角仍取声明值（位置与高度无关）');
+});
+
+test('⚠️ 底部锚点的终点必须落在真实底边（差 800+px 就是原 bug 的量级）', () => {
+    const r = AnchorSession.resolveEndpoints('A', 'B',
+        { elementId: 'A', kind: 'element', side: 'bottom', t: 0.5 },
+        { elementId: 'B', kind: 'element', side: 'top', t: 0.5 },
+        overflowDeps(1699));
+
+    const bottomPt = Anchor.resolvePoint(r.fromRect, r.fromSide);
+    const realBottom = OVERFLOW_EL.position.y + 1699 + Anchor.OFFSET;
+    assertClose(bottomPt.y, realBottom, 1e-9,
+        '底部锚点必须贴真实底边 y=100+1699+6，而不是声明底边 y=100+812+6');
+
+    // 用声明矩形算会得到 y=918，与真实底边差 887
+    const wrong = Anchor.resolvePoint(
+        { x: 100, y: 100, width: 375, height: 812 }, { side: 'bottom', t: 0.5 });
+    assert(bottomPt.y - wrong.y > 800,
+        '确认两者确实差 800+px —— 这就是原 bug 的量级');
+});
+
+test('⚠️ 锚点圆点与连线端点必须落在同一个 y（同源，才谈得上一致）', () => {
+    // ⚠️ 这条必须在**带 DOM 的沙箱**里跑，才是真机语义。
+    //    hostsOf 不接受 opts，它只能靠全局 document + CanvasView 拿实测尺寸；
+    //    而 resolveEndpoints 默认也走同一套。两者在同一环境里必须给出同一个矩形，
+    //    否则就是「锚点在真实底边、线在声明底边」那个分叉。
+    const env = loadSessionWithDom(375 * 0.62, 1699 * 0.62, 0.62);
+    const els = { A: OVERFLOW_EL, B: END_B };
+    const d = { getElement: (id) => els[id] || null };
+
+    // 路径一：锚点绘制（hostsOf → measuredRectOf → 默认 document/CanvasView）
+    const hosts = env.Session.hostsOf({ ...OVERFLOW_EL, id: 'A' });
+    const pageHost = hosts.find(h => h && h.kind === 'element');
+    assert(pageHost, '应能枚举出页面级宿主');
+    const anchorPt = env.Anchor.resolvePoint(pageHost.rect, { side: 'bottom', t: 0.5 });
+
+    // 路径二：连线端点（resolveEndpoints → rectOf → measuredRectOf）
+    const r = env.Session.resolveEndpoints('A', 'B', null, null, d);
+    assert(r, '应解析成功');
+    const fromEndpoint = env.Anchor.resolvePoint(r.fromRect, { side: 'bottom', t: 0.5 });
+
+    // 自检：两条路径确实都读到了实测值（否则下面的一致性是巧合）
+    assert(pageHost.rect.height > 1698, '锚点路径应取实测 1699，实得 ' + pageHost.rect.height);
+    assert(r.fromRect.height > 1698, '端点路径应取实测 1699，实得 ' + r.fromRect.height);
+
+    assertClose(fromEndpoint.y, anchorPt.y, 1e-9,
+        `连线端点 y=${fromEndpoint.y} 与锚点圆点 y=${anchorPt.y} 必须一致，否则点底部锚点线就接不上`);
+    assert(anchorPt.y > 1700,
+        `底部锚点必须在页面真实底边附近（y≈1805），实得 ${anchorPt.y} —— 若≈918 说明用错了声明矩形`);
+});
+
+test('非页面元素仍用声明值（不做实测，避免亚像素抖动与无谓重排）', () => {
+    const text = { id: 'T', type: 'text', position: { x: 10, y: 20 }, width: 120, height: 40 };
+    const r = AnchorSession.resolveEndpoints('T', 'B', null, null,
+        overflowDeps(9999, { T: text, B: END_B }));
+    assertEqual(r.fromRect, { x: 10, y: 20, width: 120, height: 40 },
+        '文本框的声明值就是真值，不该被实测高度改写');
+});
+
+test('读不到 DOM 时退回声明值（不崩，线仍可见）', () => {
+    const r = AnchorSession.resolveEndpoints('A', 'B', null, null, overflowDeps(null));
+    assertEqual(r.fromRect, { x: 100, y: 100, width: 375, height: 812 },
+        '拿不到 DOM 矩形时应退回声明值，而不是抛异常或产生 NaN');
+});
+
+test('resolveEndpoints 必须经由 rectOf → measuredRectOf（锁住调用关系）', () => {
+    // rectOf 是这次的修复点。若有人把 rawOf 改回直接读 element.height，
+    // 上面几条行为断言会红，但这条能第一时间指出分叉被重新引入。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'connectors', 'anchor-session.js'), 'utf8');
+    assert(/const rawOf = \(el\) => this\.rectOf\(/.test(src),
+        'rawOf 必须走 this.rectOf(...)');
+    const m = src.match(/rectOf\(el, opts = \{\}\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 rectOf');
+    assert(/measuredRectOf\(/.test(m[1]),
+        'rectOf 必须调用 measuredRectOf；直接读 el.height 会让底部锚点再次错位');
+});
+
 // ================================================================ 收尾
 
 (async () => {
