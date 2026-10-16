@@ -2298,6 +2298,30 @@ body {
     border-color: #337ecc;
 }
 
+/* ================================================================
+   连接线锚点层（MasterGo 的「连接点」）
+   ================================================================
+   锚点画在元素边界**外侧**，塞进元素自己的 div 会被 overflow 裁掉；
+   iframe 内子元素的锚点更不属于任何画布元素的 DOM 子树。
+   所以统一画在顶层 SVG #connectorAnchorLayer 里。
+
+   该层整体 pointer-events:none —— 锚点命中靠几何计算
+   （AnchorSession.hitTest），不需要 DOM 事件，也就不会挡住任何既有交互。 */
+.connector-anchor-layer {
+    pointer-events: none;
+}
+
+.connector-anchor {
+    /* 外圈是描边、内圈是白底，形成 MasterGo 那种蓝色空心圆环 */
+    pointer-events: none;
+    transition: r 0.1s ease;
+}
+
+/* 浅色主题下加深描边，避免白底上发灰看不清 */
+:root[data-theme="light"] .connector-anchor {
+    stroke: #337ecc;
+}
+
 .canvas-element.text-element {
     background: transparent;
     border: 1px dashed var(--accent-blue);

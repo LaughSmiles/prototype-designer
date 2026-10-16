@@ -14,7 +14,9 @@ const ToolsConnector = {
     state: {
         isDrawing: false,
         fromId: null,      // 起点的页面元素 id
+        fromAnchor: null,  // 起点锚点引用（从锚点起拖时非空）
         hoverId: null,     // 拖拽时鼠标下的页面元素 id
+        hoverAnchor: null, // 鼠标吸附到的锚点引用
         cursor: null,      // 当前鼠标画布坐标
     },
 
@@ -24,7 +26,17 @@ const ToolsConnector = {
         connectorId: null,
         end: null,         // 'from' | 'to'
         hoverId: null,
+        hoverAnchor: null,
     },
+
+    /** 当前悬停的页面元素（用于显示锚点），null = 不显示 */
+    hoverElementId: null,
+
+    /**
+     * 锚点吸附半径（屏幕像素）。
+     * 换算到画布坐标时会除以 zoom，保证缩放后手感一致。
+     */
+    SNAP_PX: 12,
 
     // ------------------------------------------------------------ 坐标换算
 
@@ -85,17 +97,71 @@ const ToolsConnector = {
         return { x: el.position.x, y: el.position.y, width: el.width, height: el.height };
     },
 
+    /** 取某页面元素内的 iframe（锚点桥需要它） */
+    iframeOf(elementId) {
+        const wrapper = document.querySelector(`.canvas-element.page-element[data-element-id="${elementId}"]`);
+        return wrapper ? wrapper.querySelector('iframe') : null;
+    },
+
+    // ------------------------------------------------------------ 锚点显示
+
+    /**
+     * 设置当前悬停的元素 → 决定显示哪些锚点。
+     *
+     * MasterGo 的锚点是**按需出现**的：不 hover 就不显示。
+     * 所以这里每次 hover 变化都要重绘锚点层。
+     */
+    setHoverElement(element) {
+        const id = element ? element.id : null;
+        if (id === this.hoverElementId) return;
+        this.hoverElementId = id;
+        AnchorSession.hoverId = id;
+
+        // ⚠️ 用 typeof 而不是 window.ElementManager：
+        //    顶层 const 在词法作用域里，不挂在 window 上（CLAUDE.md 记录过此坑）。
+        if (typeof ElementManager === 'undefined' || !ElementManager.renderAnchors) return;
+
+        if (id) {
+            // 异步预热内部宿主；回来后再重绘一次（首次可能只有元素级锚点）
+            const iframeEl = this.iframeOf(id);
+            AnchorSession.primeInnerHosts(element, iframeEl, () => {
+                if (this.hoverElementId === id) ElementManager.renderAnchors();
+            });
+        }
+        ElementManager.renderAnchors();
+    },
+
+    /** 当前吸附半径（画布坐标） */
+    snapTolerance() {
+        const view = CanvasView.getView();
+        const zoom = view && view.zoom ? view.zoom : 1;
+        return this.SNAP_PX / zoom;
+    },
+
+    /** 在给定元素上尝试吸附到某个锚点 */
+    snapToAnchor(element, canvasPos) {
+        if (!element) return null;
+        const hosts = AnchorSession.hostsOf(element);
+        return AnchorSession.hitTest(canvasPos.x, canvasPos.y, hosts, this.snapTolerance());
+    },
+
     // ------------------------------------------------------------ 绘制
 
-    /** mousedown：在页面框上按下开始画 */
+    /** mousedown：在锚点上按下 → 从该锚点起画；在元素内按下 → 元素级起画 */
     handleMouseDown(e) {
         if (e.button !== 0) return;
         const from = this.findPageElementAt(e);
         if (!from) return;   // 没落在页面框上就不开始
 
+        const pos = this.toCanvasCoords(e);
+
+        // 优先吸附到锚点：点中锚点 = 用户明确指定了连接点
+        const snap = this.snapToAnchor(from, pos);
+        this.state.fromAnchor = snap ? snap.ref : null;
+
         this.state.isDrawing = true;
         this.state.fromId = from.id;
-        this.state.cursor = this.toCanvasCoords(e);
+        this.state.cursor = pos;
         e.preventDefault();
         e.stopPropagation();
     },
@@ -107,12 +173,18 @@ const ToolsConnector = {
             const hover = this.findPageElementAt(e);
             const hoverId = hover && hover.id !== this.state.fromId ? hover.id : null;
             this.state.hoverId = hoverId;
+            // 终点也支持吸附锚点
+            const snap = hover ? this.snapToAnchor(hover, this.state.cursor) : null;
+            this.state.hoverAnchor = snap ? snap.ref : null;
             this.renderPreview();
             return;
         }
 
         if (this.dragState.active) {
             this.dragState.hoverId = this.resolveDropTarget(e);
+            const hoverEl = this.dragState.hoverId ? ElementManager.getElement(this.dragState.hoverId) : null;
+            const snap = hoverEl ? this.snapToAnchor(hoverEl, this.toCanvasCoords(e)) : null;
+            this.dragState.hoverAnchor = snap ? snap.ref : null;
             this.renderPreview();
         }
     },
@@ -122,7 +194,8 @@ const ToolsConnector = {
         if (this.state.isDrawing) {
             const to = this.resolveDropTarget(e);
             if (to && to !== this.state.fromId) {
-                ElementManager.addConnectorElement(this.state.fromId, to);
+                ElementManager.addConnectorElement(
+                    this.state.fromId, to, this.state.fromAnchor, this.state.hoverAnchor);
                 PageLibrary.showHint('✅ 连接线已创建');
                 HistoryManager.saveState();
             } else {
@@ -139,7 +212,7 @@ const ToolsConnector = {
             const targetId = this.dragState.hoverId;
             if (connectorId) {
                 if (targetId) {
-                    ElementManager.retargetConnector(connectorId, end, targetId);
+                    ElementManager.retargetConnector(connectorId, end, targetId, this.dragState.hoverAnchor);
                     HistoryManager.saveState();
                     PageLibrary.showHint('✅ 连接线已改连');
                 } else {
@@ -150,6 +223,7 @@ const ToolsConnector = {
             this.dragState.connectorId = null;
             this.dragState.end = null;
             this.dragState.hoverId = null;
+            this.dragState.hoverAnchor = null;
             this.removePreview();
         }
     },
@@ -176,7 +250,9 @@ const ToolsConnector = {
     cancelDrawing() {
         this.state.isDrawing = false;
         this.state.fromId = null;
+        this.state.fromAnchor = null;
         this.state.hoverId = null;
+        this.state.hoverAnchor = null;
         this.removePreview();
     },
 
@@ -188,6 +264,7 @@ const ToolsConnector = {
         this.dragState.connectorId = connectorId;
         this.dragState.end = end;
         this.dragState.hoverId = null;
+        this.dragState.hoverAnchor = null;
     },
 
     /** 判断鼠标是否命中某条连线的某个端点圆点，返回 {connectorId, end} 或 null */
@@ -225,15 +302,19 @@ const ToolsConnector = {
         const preview = this.ensurePreview();
         if (!preview) return;
 
-        let fromRect = null, toRect = null, cursorRect = null;
+        let fromRect = null, toRect = null;
+        let fromAnchor = null, toAnchor = null;
 
         if (this.state.isDrawing) {
-            fromRect = this.rectOf(ElementManager.getElement(this.state.fromId));
+            const fromEl = ElementManager.getElement(this.state.fromId);
+            fromRect = this.rectOf(fromEl);
+            fromAnchor = this.state.fromAnchor;
             // 拖到页面框上 → 预览吸附；否则用光标位置当自由点
             const hoverEl = this.state.hoverId ? ElementManager.getElement(this.state.hoverId) : null;
             toRect = hoverEl
                 ? this.rectOf(hoverEl)
                 : { x: this.state.cursor.x, y: this.state.cursor.y, width: 0, height: 0 };
+            toAnchor = this.state.hoverAnchor;
         } else if (this.dragState.active) {
             const connector = ElementManager.getElement(this.dragState.connectorId);
             if (!connector) return;
@@ -245,6 +326,17 @@ const ToolsConnector = {
             toRect = this.dragState.hoverId
                 ? this.rectOf(ElementManager.getElement(this.dragState.hoverId))
                 : (fixedEl ? this.rectOf(fixedEl) : null);
+            // 被拖的一端用鼠标下的锚点（或保持原锚点），另一端保持不动
+            const movingAnchor = this.dragState.end === 'from'
+                ? (this.dragState.hoverAnchor || connector.fromAnchor)
+                : (this.dragState.hoverAnchor || connector.toAnchor);
+            if (this.dragState.end === 'from') {
+                fromAnchor = movingAnchor;
+                toAnchor = connector.toAnchor;
+            } else {
+                fromAnchor = connector.fromAnchor;
+                toAnchor = movingAnchor;
+            }
         }
 
         if (!fromRect || !toRect) return;
@@ -255,12 +347,12 @@ const ToolsConnector = {
             const connector = ElementManager.getElement(this.dragState.connectorId);
             const toEl = ElementManager.getElement(this.dragState.end === 'from' ? connector.toId : connector.fromId);
             if (this.dragState.end === 'from') {
-                pts = ConnectorRouter.route(toRect, fromRect);
+                pts = this.routeWithAnchors(toRect, fromRect, toAnchor, fromAnchor);
             } else {
-                pts = ConnectorRouter.route(fromRect, toRect);
+                pts = this.routeWithAnchors(fromRect, toRect, fromAnchor, toAnchor);
             }
         } else {
-            pts = ConnectorRouter.route(fromRect, toRect);
+            pts = this.routeWithAnchors(fromRect, toRect, fromAnchor, toAnchor);
         }
 
         if (!pts || pts.length < 2) return;
@@ -310,6 +402,44 @@ const ToolsConnector = {
             ring.setAttribute('rx', '4');
             preview.appendChild(ring);
         }
+
+        // 吸附到锚点时，在吸附点画一个实心圆，明确告诉用户"就钉在这里"
+        const activeAnchor = this.state.isDrawing ? this.state.hoverAnchor : this.dragState.hoverAnchor;
+        const activeElId = this.state.isDrawing ? this.state.hoverId : this.dragState.hoverId;
+        if (activeAnchor && activeElId) {
+            const hostEl = ElementManager.getElement(activeAnchor.elementId || activeElId);
+            const resolved = AnchorSession.resolve({
+                elementId: activeAnchor.elementId || activeElId,
+                kind: activeAnchor.kind,
+                selector: activeAnchor.selector,
+                side: activeAnchor.side,
+                t: activeAnchor.t,
+            }) || (hostEl ? {
+                point: AnchorProvider.resolvePoint(this.rectOf(hostEl), activeAnchor),
+            } : null);
+            if (resolved && resolved.point) {
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', resolved.point.x);
+                dot.setAttribute('cy', resolved.point.y);
+                dot.setAttribute('r', '5');
+                dot.setAttribute('fill', '#409EFF');
+                preview.appendChild(dot);
+            }
+        }
+    },
+
+    /**
+     * 有锚点走锚点路由，没有就退回普通路由。
+     *
+     * ⚠️ 这两个分支必须都在，缺一个就会破坏旧数据：
+     *    旧连接线没有锚点字段，若强行走 routeFromAnchor 会得到
+     *    与升级前不同的路径（线会突然变形）。
+     */
+    routeWithAnchors(fromRect, toRect, fromAnchor, toAnchor) {
+        if (!fromAnchor && !toAnchor) {
+            return ConnectorRouter.route(fromRect, toRect);
+        }
+        return ConnectorRouter.routeFromAnchor(fromRect, toRect, fromAnchor, toAnchor);
     },
 
     arrowHeadPath(from, to) {

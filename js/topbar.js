@@ -3,11 +3,28 @@
  * 1. 全屏切换（状态缓存到 localStorage，刷新后保持）
  * 2. 全屏状态下拦截 Ctrl+S，阻止浏览器默认保存
  * 3. Escape 通知父页面退出预览（file:// 协议下父页面注入失效时的降级通道）
+ * 4. 注入 page-autofit.js（画布内页面框自适应内容全高）
  */
 (function () {
     'use strict';
 
     var FULLSCREEN_KEY = 'topbar_fullscreen';
+
+    // ========== 注入 page-autofit.js ==========
+    //
+    // 本文件是唯一被所有原型页面加载（桌面端 + 移动端）的公共脚本，
+    // 把「画布内自适应高度」挂在这里，pages/ 下的页面就一行都不用改。
+    //
+    // 为什么用动态注入而不是 <script> 标签：加标签就要改 28 个页面；
+    // 为什么不能用父页面注入：file:// 下父页面连 <script> 都塞不进 iframe（同 Escape 桥）。
+    // currentScript.src 在 file:// 下是完整 file URL，取同目录文件名即可解析出兄弟文件。
+    (function injectPageAutofit() {
+        var cur = document.currentScript;
+        if (!cur || !cur.src) return;
+        var script = document.createElement('script');
+        script.src = cur.src.replace(/[^/]*$/, 'page-autofit.js');
+        document.head.appendChild(script);
+    })();
 
     // ========== 全屏功能 ==========
 
@@ -152,4 +169,111 @@
         }
         lastTouchEnd = now;
     }, false);
+
+    // ========== 连接线锚点：向画布编辑器上报内部可连接元素 ==========
+    //
+    // 背景：画布编辑器要让**页面内部的真实 DOM 元素**也能作为连接线锚点
+    // （对齐 MasterGo「容器内的子元素也有连接点」）。
+    //
+    // http(s) 下编辑器可以直接读 iframe.contentDocument；但 file:// 下
+    // Chrome 给每个本地文件分配不透明来源，跨文档访问被拒 —— 与上面
+    // Esc/Ctrl+S 桥是同一个坑。所以由页面自己把可连接元素报回去。
+    //
+    // ⚠️ 为什么内联在这里而不是引 js/connectors/anchor-bridge.js：
+    //    本文件已被**所有**原型页面加载（DESKTOP_REQUIRED + MOBILE_REQUIRED
+    //    都含它），内联等于零页面改动；引外部文件则要改 40+ 个 HTML。
+    //    代价是消息类型与选择器算法在两侧各存一份 —— 已由
+    //    tools/test-anchor.js 的「协议常量一致性」用例锁死，改一边就变红。
+    //
+    // 独立打开页面时 window.parent === window，直接跳过，不做无谓遍历。
+
+    if (window.parent && window.parent !== window) {
+        var ANCHOR_REQ = 'connector-anchor-request';
+        var ANCHOR_RES = 'connector-anchor-response';
+        var ANCHOR_MAX = 6;
+        var ANCHOR_MIN = 12;
+        var ANCHOR_SKIP = { HTML: 1, HEAD: 1, BODY: 1, SCRIPT: 1, STYLE: 1, LINK: 1, META: 1, TITLE: 1, BR: 1 };
+
+        // 生成稳定的 CSS 选择器路径（与 anchor-bridge.js 的 cssPath 同算法）
+        function anchorCssPath(el) {
+            if (!el || !el.tagName) return '';
+            var parts = [];
+            var cur = el;
+            var guard = 0;
+            while (cur && cur.tagName && guard++ < 64) {
+                var tag = String(cur.tagName).toLowerCase();
+                if (tag === 'html') break;
+                if (cur.id) {
+                    parts.unshift('#' + cur.id);
+                    break;
+                }
+                var part = tag;
+                var parent = cur.parentElement;
+                if (parent && parent.children) {
+                    var same = [];
+                    for (var i = 0; i < parent.children.length; i++) {
+                        var c = parent.children[i];
+                        if (c && c.tagName === cur.tagName) same.push(c);
+                    }
+                    if (same.length > 1) {
+                        part += ':nth-of-type(' + (same.indexOf(cur) + 1) + ')';
+                    }
+                }
+                parts.unshift(part);
+                cur = parent;
+            }
+            return parts.join(' > ');
+        }
+
+        // 收集可作为锚点宿主的元素（面积大的优先，超过上限截断）
+        function anchorCollect() {
+            var found = [];
+            function walk(node, depth) {
+                if (!node || depth > 32) return;
+                var kids = node.children || [];
+                for (var i = 0; i < kids.length; i++) {
+                    var child = kids[i];
+                    if (!child || !child.tagName) continue;
+                    if (ANCHOR_SKIP[String(child.tagName).toUpperCase()]) continue;
+                    var r = child.getBoundingClientRect();
+                    if (r && r.width >= ANCHOR_MIN && r.height >= ANCHOR_MIN) {
+                        found.push({
+                            selector: anchorCssPath(child),
+                            depth: depth + 1,
+                            area: r.width * r.height,
+                            rect: { left: r.left, top: r.top, width: r.width, height: r.height }
+                        });
+                    }
+                    walk(child, depth + 1);
+                }
+            }
+            walk(document.body, 0);
+            found.sort(function (a, b) { return b.area - a.area || a.depth - b.depth; });
+            return found.slice(0, ANCHOR_MAX);
+        }
+
+        window.addEventListener('message', function (event) {
+            var data = event && event.data;
+            if (!data || data.type !== ANCHOR_REQ) return;
+
+            var hosts = [];
+            try {
+                hosts = anchorCollect().map(function (h) {
+                    return { selector: h.selector, depth: h.depth, rect: h.rect };
+                });
+            } catch (err) {
+                hosts = [];
+            }
+
+            try {
+                event.source.postMessage({
+                    type: ANCHOR_RES,
+                    elementId: data.elementId,
+                    hosts: hosts
+                }, '*');
+            } catch (err) {
+                // 父页面已关闭，忽略
+            }
+        });
+    }
 })();

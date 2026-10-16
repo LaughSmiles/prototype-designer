@@ -55,6 +55,14 @@ const Tools = {
             ToolsConnector.cancelDrawing();
         }
 
+        // 切换工具时收起锚点层：锚点只在连接线工具下显示（对齐 MasterGo）
+        if (typeof ToolsConnector !== 'undefined') {
+            ToolsConnector.setHoverElement(null);
+        }
+        if (typeof ElementManager !== 'undefined' && ElementManager.clearAnchors) {
+            ElementManager.clearAnchors();
+        }
+
         // 更新状态
         this.currentTool = tool;
 
@@ -146,7 +154,7 @@ const Tools = {
             }
         });
 
-        // 鼠标移动（用于箭头预览 / 连接线实时预览）
+        // 鼠标移动（用于箭头预览 / 连接线实时预览 / 锚点显示）
         // 也在canvas-wrapper上监听,确保箭头预览在iframe上方正常工作
         canvasWrapper.addEventListener('mousemove', (e) => {
             if (this.currentTool === 'arrow' && this.arrowState.isDrawing) {
@@ -154,6 +162,19 @@ const Tools = {
             } else if (this.currentTool === 'connector' || ToolsConnector.dragState.active) {
                 ToolsConnector.handleMouseMove(e);
             }
+
+            // 锚点显示：仅在连接线工具下，且不在拖拽中。
+            // 对齐 MasterGo —— 锚点是「按需出现」的，其它工具下画布保持干净。
+            if (this.currentTool === 'connector' && !ToolsConnector.state.isDrawing
+                && !ToolsConnector.dragState.active) {
+                const hovered = ToolsConnector.findPageElementAt(e);
+                ToolsConnector.setHoverElement(hovered);
+            }
+        });
+
+        // 鼠标离开画布 → 收起锚点
+        canvasWrapper.addEventListener('mouseleave', () => {
+            ToolsConnector.setHoverElement(null);
         });
 
         // 鼠标释放（连接线落点建线 / 端点改连）

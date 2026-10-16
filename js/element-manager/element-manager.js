@@ -58,13 +58,14 @@ const ElementManager = {
         ElementAdder.addArrowElement(points);
     },
 
-    // 添加智能连接线（绑定 fromId/toId，路径实时计算）
-    addConnectorElement(fromId, toId) {
-        ElementAdder.addConnectorElement(fromId, toId);
+    // 添加智能连接线（绑定 fromId/toId + 可选锚点，路径实时计算）
+    // 返回新元素 id（调用方常需要它，比如紧接着改锚点或选中）
+    addConnectorElement(fromId, toId, fromAnchor = null, toAnchor = null) {
+        return ElementAdder.addConnectorElement(fromId, toId, fromAnchor, toAnchor);
     },
 
-    // 改连连接线的某一端
-    retargetConnector(connectorId, end, newTargetId) {
+    // 改连连接线的某一端（可同时指定新的锚点）
+    retargetConnector(connectorId, end, newTargetId, newAnchor = null) {
         const connector = this.getElement(connectorId);
         if (!connector || connector.type !== 'connector') return;
 
@@ -74,8 +75,12 @@ const ElementManager = {
 
         if (end === 'from') {
             connector.fromId = newTargetId;
+            // 锚点必须跟着宿主一起换：旧锚点指向的是旧元素，
+            // 留着它会让 _hostRectOf 去新元素上找一个不存在的 selector。
+            connector.fromAnchor = newAnchor || null;
         } else {
             connector.toId = newTargetId;
+            connector.toAnchor = newAnchor || null;
         }
 
         // 就地重绘而非重建：保住选中态与端点手柄（改连后线仍是选中状态）
@@ -101,6 +106,27 @@ const ElementManager = {
     // 渲染元素
     renderElement(element) {
         ElementRenderer.renderElement(element);
+    },
+
+    // 渲染当前 hover 元素的锚点（MasterGo 的「连接点」）
+    renderAnchors() {
+        ElementRenderer.renderAnchors();
+    },
+
+    // 清空锚点层（切换工具 / 离开画布时调用）
+    clearAnchors() {
+        ElementRenderer.clearAnchors();
+        if (typeof ToolsConnector !== 'undefined') ToolsConnector.hoverElementId = null;
+        if (typeof AnchorSession !== 'undefined') AnchorSession.hoverId = null;
+    },
+
+    /**
+     * 元素尺寸变化后清掉它的 iframe 内部宿主缓存。
+     * 缓存键含尺寸，尺寸一变旧键自然失效；这里主动清是为了释放内存，
+     * 避免反复拖拽改尺寸时缓存无限增长。
+     */
+    invalidateAnchorCache(elementId) {
+        if (typeof AnchorSession !== 'undefined') AnchorSession.invalidate(elementId);
     },
 
     // 获取元素
@@ -174,6 +200,11 @@ const ElementManager = {
     updateElementSize(div, element) {
         div.style.width = `${element.width}px`;
         div.style.height = `${element.height}px`;
+        // 撤销/重做会走到这里，把高度重置回设备固定尺寸。
+        // 页面元素要再套一次自适应缓存，否则长框会被打回一屏。
+        if (element.type === 'page' && window.ProtoAutoFit) {
+            window.ProtoAutoFit.apply(element.id, div, element.width, element.height);
+        }
     },
 
     // 删除元素
@@ -190,6 +221,9 @@ const ElementManager = {
         }
 
         this.state.elements.splice(index, 1);
+
+        // 清掉自适应高度缓存，避免 id 复用时套用到不相干的高度上
+        if (window.ProtoAutoFit) window.ProtoAutoFit.clear(id);
 
         const div = document.querySelector(`[data-element-id="${id}"]`);
         if (div) {
@@ -220,6 +254,9 @@ const ElementManager = {
             this.state.selectedElements = this.state.selectedElements.filter(el => el !== c.id);
             if (this.state.selectedElement === c.id) this.state.selectedElement = null;
         }
+        // 元素没了，它的 iframe 内部宿主缓存也必须丢掉：
+        // 留着会在下次同名 id 出现时命中过期几何。
+        if (typeof AnchorSession !== 'undefined') AnchorSession.invalidate(elementId);
         if (doomed.length > 0) {
             Debug.log(`已连带删除 ${doomed.length} 条连接线`);
         }
@@ -363,7 +400,9 @@ const ElementManager = {
 
         const fromRect = { x: fromEl.position.x, y: fromEl.position.y, width: fromEl.width, height: fromEl.height };
         const toRect = { x: toEl.position.x, y: toEl.position.y, width: toEl.width, height: toEl.height };
-        const points = ConnectorRouter.route(fromRect, toRect);
+        // ⚠️ 必须复用渲染器的锚点感知路由，不能在这里再写一份 route()：
+        //    两处逻辑一旦分叉，就会出现「首次渲染走锚点、改连后走整元素」的鬼影。
+        const points = ElementRenderer.routeFor(element, fromEl, toEl, fromRect, toRect);
         if (!points || points.length < 2) return;
 
         element._routePoints = points;

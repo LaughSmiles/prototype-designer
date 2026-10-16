@@ -53,12 +53,15 @@
   .by-dm-item em{color:#7CFC00;font-style:normal;font-weight:700}
   .by-dm-item u{color:#FF6B9D;text-decoration:none;font-weight:700}
 
-  /* 播放进度条 */
+  /* 播放进度条（可点击跳转） */
   .by-p-bar{position:absolute;left:10px;right:10px;bottom:8px;z-index:6;display:flex;
             align-items:center;gap:8px;color:#fff;font-size:10px}
-  .by-p-track{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.34);overflow:hidden}
-  .by-p-buf{height:100%;background:rgba(255,255,255,.5);width:72%}
-  .by-p-play2{height:100%;background:var(--by-pink);width:38%}
+  .by-p-track{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.34);
+              overflow:hidden;cursor:pointer;position:relative}
+  .by-p-track::before{content:"";position:absolute;left:0;top:-7px;right:0;height:17px}
+  .by-p-play2{height:100%;background:var(--by-pink);width:0;border-radius:2px}
+  .by-p-ic{font-size:12px;cursor:pointer;padding:2px 3px;min-width:18px;text-align:center}
+  .by-p-ic.off{color:rgba(255,255,255,.42)}
 
   /* 弹幕开关（浮层按钮） */
   .by-dm-toggle{position:absolute;right:10px;bottom:30px;z-index:6;background:rgba(0,0,0,.42);
@@ -144,8 +147,9 @@
 
   <!-- ============ 播放器 ============ -->
   <div class="by-player">
-    <video id="v" poster="../../../lib/images/cover-gaming-neon.jpeg"
-           preload="none" playsinline muted></video>
+    <video id="v" src="../../../lib/videos/neon-dice.mp4"
+           poster="../../../lib/images/cover-gaming-neon.jpeg"
+           preload="metadata" playsinline></video>
 
     <!-- 顶部：返回 / 更多 -->
     <div class="by-p-top">
@@ -178,12 +182,13 @@
     <!-- 弹幕开关 -->
     <span class="by-dm-toggle" id="dmToggle">弹幕 开</span>
 
-    <!-- 进度条 -->
+    <!-- 进度条：时间随真实播放更新，点击可跳转 -->
     <div class="by-p-bar">
-      <span>05:22</span>
-      <span class="by-p-track"><span class="by-p-buf"></span><span class="by-p-play2"></span></span>
-      <span>14:22</span>
-      <i class="fas fa-expand" style="font-size:12px"></i>
+      <span id="curTime">00:00</span>
+      <span class="by-p-track" id="track"><span class="by-p-play2" id="played"></span></span>
+      <span id="durTime">00:00</span>
+      <i class="fas fa-volume-high by-p-ic" id="muteBtn"></i>
+      <i class="fas fa-expand by-p-ic" id="fsBtn"></i>
     </div>
   </div>
 
@@ -323,16 +328,73 @@
 <script src="../../../js/topbar.js"></script>
 <script src="../../../js/prototype-components.js"></script>
 <script>
-/* ---------- 本页交互（原型演示级） ---------- */
+/* ---------- 本页交互 ---------- */
 (function () {
-  // 点击才播放：符合「不自动循环播放」的可持续性规范
+  var v = document.getElementById('v');
   var mask = document.getElementById('playMask');
   var btn = document.getElementById('playBtn');
-  var v = document.getElementById('v');
-  var playing = false;
-  btn.addEventListener('click', function () {
-    if (!playing) { mask.style.display = 'none'; playing = true; }
+  var track = document.getElementById('track');
+  var played = document.getElementById('played');
+  var curEl = document.getElementById('curTime');
+  var durEl = document.getElementById('durTime');
+  var muteBtn = document.getElementById('muteBtn');
+  var fsBtn = document.getElementById('fsBtn');
+
+  function fmt(s) {
+    if (!isFinite(s) || s < 0) s = 0;
+    var m = Math.floor(s / 60), x = Math.floor(s % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x;
+  }
+
+  // 遮罩/按钮跟随真实播放状态，而不是自己维护一个假变量
+  function sync() {
+    var paused = v.paused;
+    mask.style.display = paused ? 'flex' : 'none';
+    btn.innerHTML = '<i class="fas ' + (paused ? 'fa-play' : 'fa-pause') + '"></i>';
+    var d = v.duration;
+    played.style.width = (d ? (v.currentTime / d * 100) : 0) + '%';
+    curEl.textContent = fmt(v.currentTime);
+    durEl.textContent = d ? fmt(d) : '00:00';
+  }
+
+  ['loadedmetadata', 'timeupdate', 'play', 'pause', 'ended'].forEach(function (e) {
+    v.addEventListener(e, sync);
   });
+
+  // 点击播放（带用户手势，移动端自动播放限制才能过）
+  function toggle() {
+    if (v.paused) {
+      var p = v.play();
+      if (p && p.catch) p.catch(function () { Debug.warn('播放被浏览器拒绝'); });
+    } else {
+      v.pause();
+    }
+  }
+  mask.addEventListener('click', toggle);
+  btn.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+
+  // 进度条跳转
+  track.addEventListener('click', function (e) {
+    var d = v.duration;
+    if (!d) return;
+    var r = track.getBoundingClientRect();
+    v.currentTime = Math.max(0, Math.min(d, (e.clientX - r.left) / r.width * d));
+  });
+
+  // 静音切换
+  muteBtn.addEventListener('click', function () {
+    v.muted = !v.muted;
+    muteBtn.classList.toggle('off', v.muted);
+    muteBtn.className = 'fas ' + (v.muted ? 'fa-volume-xmark' : 'fa-volume-high') + ' by-p-ic' + (v.muted ? ' off' : '');
+  });
+
+  // 全屏
+  fsBtn.addEventListener('click', function () {
+    var p = v.closest('.by-player');
+    if (document.fullscreenElement) document.exitFullscreen();
+    else if (p.requestFullscreen) p.requestFullscreen();
+  });
+
   // 弹幕开关
   var dm = document.querySelector('.by-dm-layer');
   var dmOn = true;
@@ -341,12 +403,15 @@
     dm.style.display = dmOn ? '' : 'none';
     e.target.textContent = dmOn ? '弹幕 开' : '弹幕 关';
   });
+
   // 关注切换
   var fb = document.getElementById('followBtn');
   fb.addEventListener('click', function () {
     var on = fb.classList.toggle('follow');
     fb.textContent = on ? '已关注' : '+ 关注';
   });
+
+  sync();
 })();
 </script>
 </body>

@@ -24,12 +24,14 @@ const ConnectorRouter = {
     /**
      * 默认圆角半径。
      *
-     * 实测真实路由的段长分布：p50≈59px，但约 32% 的段 < 32px。
-     * 半径若取 16，这批短拐角会被 min(radius, len/2) 压到 8 甚至更小，
-     * 观感上退化成尖角，与 MasterGo 那种恒定圆润的弯头差很多。
-     * 24px 能让绝大多数拐角保持饱满的圆弧。
+     * 实测 MasterGo 连接线的圆角是 **16**（选中连线后属性面板「圆角」栏显示 16），
+     * 因此这里与它对齐，不再自定 24。
+     *
+     * 历史备注：早期为掩盖「短段拐角退化成尖角」的观感问题曾把默认值提到 24。
+     * 该问题的真正解法是 _cornerArc 里的 MIN_VISIBLE_RADIUS 判据（亚像素微段
+     * 直接按直角画），而不是放大半径。半径回到 16 后短拐角依旧圆润。
      */
-    DEFAULT_RADIUS: 24,
+    DEFAULT_RADIUS: 16,
 
     /**
      * 画不出可见圆弧的半径下限。
@@ -213,6 +215,252 @@ const ConnectorRouter = {
                typeof r.width === 'number' && typeof r.height === 'number' &&
                Number.isFinite(r.x) && Number.isFinite(r.y) &&
                Number.isFinite(r.width) && Number.isFinite(r.height);
+    },
+
+    // ------------------------------------------------------- 锚点约束路由
+
+    /**
+     * 从指定锚点出发的路由（MasterGo「连接点」语义）。
+     *
+     * 与 route() 的区别只有一个：端点不再是「算法自选的边中点」，
+     * 而是由调用方指定的锚点。锚点决定了两件事：
+     *   1) 端点的**精确坐标**（含沿边位置 t）
+     *   2) 出边/进边的**法线方向** —— 路径首段必须沿法线离开元素，
+     *      否则线会从元素内部穿出去，看起来像"扎进去"了
+     *
+     * @param {object} fromRect  起点元素矩形
+     * @param {object} toRect    终点元素矩形
+     * @param {?object} fromAnchor 起点锚点 {side,t}；null = 交回算法自选（旧数据）
+     * @param {?object} toAnchor   终点锚点 {side,t}；null = 交回算法自选
+     * @returns {Array<{x,y}>} 正交点集，首尾分别贴合两个锚点
+     */
+    routeFromAnchor(fromRect, toRect, fromAnchor, toAnchor) {
+        // 两端都没锚点 → 与旧行为完全一致（旧画布数据走这条路径）
+        if (!fromAnchor && !toAnchor) {
+            return this.route(fromRect, toRect);
+        }
+        if (!this._isValidRect(fromRect) || !this._isValidRect(toRect)) {
+            return [];
+        }
+
+        const start = fromAnchor ? this._anchorPoint(fromRect, fromAnchor) : null;
+        const end = toAnchor ? this._anchorPoint(toRect, toAnchor) : null;
+
+        const candidates = this._buildAnchorCandidates(
+            fromRect, toRect, fromAnchor, toAnchor, start, end);
+
+        let best = null;
+        for (const pts of candidates) {
+            const deduped = this._dedupe(pts);
+            if (deduped.length < 2) continue;
+            const segments = deduped.length - 1;
+            const length = this._pathLength(deduped);
+            const score = segments * 1e7 + length;
+            if (!best || score < best.score) {
+                best = { pts: deduped, score };
+            }
+        }
+
+        if (best) return best.pts;
+        // 所有候选都退化 → 退回普通路由，至少保证有线可看
+        return this.route(fromRect, toRect);
+    },
+
+    /**
+     * 锚点圆心的默认外移量。
+     *
+     * ⚠️ 必须与 AnchorProvider.OFFSET 保持一致，否则「锚点画在哪」和
+     *    「线从哪出发」会错开几个像素，看起来像没连上。
+     *    两侧各有一份，由 tools/test-anchor.js 的「常量一致性」用例锁死，
+     *    改动任一侧都会让测试变红。
+     */
+    ANCHOR_OFFSET: 6,
+
+    /**
+     * 锚点描述符 → 画布坐标（含沿边位置与外移量）。
+     *
+     * 这里**不依赖 AnchorProvider**：router 是纯几何模块，
+     * 加载顺序上可能先于 anchor-provider 就位，不能有硬依赖。
+     * 逻辑与 AnchorProvider.pointInRect 一致，两侧各有单测锁定。
+     */
+    _anchorPoint(rect, anchor) {
+        if (!anchor || !this._isValidRect(rect)) return null;
+        const t = this._clamp(Number(anchor.t), 0, 1);
+        const off = Number.isFinite(anchor.offset) ? anchor.offset : this.ANCHOR_OFFSET;
+        switch (anchor.side) {
+            case 'left':   return { x: rect.x - off, y: rect.y + rect.height * t };
+            case 'right':  return { x: rect.x + rect.width + off, y: rect.y + rect.height * t };
+            case 'top':    return { x: rect.x + rect.width * t, y: rect.y - off };
+            case 'bottom': return { x: rect.x + rect.width * t, y: rect.y + rect.height + off };
+            default:       return null;
+        }
+    },
+
+    /** 锚点所在边的外法线（单位向量） */
+    _anchorNormal(side) {
+        switch (side) {
+            case 'left':   return { x: -1, y: 0 };
+            case 'right':  return { x: 1, y: 0 };
+            case 'top':    return { x: 0, y: -1 };
+            case 'bottom': return { x: 0, y: 1 };
+            default:       return { x: 0, y: 0 };
+        }
+    },
+
+    /**
+     * 锚点约束下的候选枚举。
+     *
+     * 关键点：**首段必须先沿法线离开**，所以起点不能直接连到目标，
+     * 必须先加一个"出边引导点"（start 沿法线走一小段）。
+     * 同理终点前加一个"进边引导点"，让线从法线方向进入。
+     *
+     * 引导长度取一个足以脱离元素本体的值；元素很薄时按半宽/半高夹取，
+     * 避免引导点戳进元素内部。
+     */
+    _buildAnchorCandidates(a, b, fromAnchor, toAnchor, start, end) {
+        const out = [];
+        const aC = this.rectCenter(a);
+        const bC = this.rectCenter(b);
+
+        // 没有锚点的一侧，用原有的边中点逻辑补齐（支持"只锁一端"）
+        const outSide = fromAnchor ? fromAnchor.side : null;
+        const inSide = toAnchor ? toAnchor.side : null;
+
+        const lead = (rect, side) => {
+            const n = this._anchorNormal(side);
+            const half = (side === 'left' || side === 'right') ? rect.width / 2 : rect.height / 2;
+            const d = Math.max(12, Math.min(40, half + 12));
+            return { x: n.x * d, y: n.y * d };
+        };
+
+        const fromPts = start ? [start] : null;
+        const toPts = end ? [end] : null;
+
+        // --- 情形一：两端都有锚点 ---
+        if (start && end) {
+            const sLead = { x: start.x + lead(a, outSide).x, y: start.y + lead(a, outSide).y };
+            const eLead = { x: end.x + lead(b, inSide).x, y: end.y + lead(b, inSide).y };
+
+            // 直连：出边引导点与进边引导点在同一行/列
+            if (sLead.x === eLead.x || sLead.y === eLead.y) {
+                out.push([start, sLead, eLead, end]);
+            }
+            // L 字：一个拐点
+            out.push([start, sLead, { x: eLead.x, y: sLead.y }, eLead, end]);
+            out.push([start, sLead, { x: sLead.x, y: eLead.y }, eLead, end]);
+            // Z 字：走中轴
+            const midX = (sLead.x + eLead.x) / 2;
+            const midY = (sLead.y + eLead.y) / 2;
+            out.push([start, sLead, { x: midX, y: sLead.y }, { x: midX, y: eLead.y }, eLead, end]);
+            out.push([start, sLead, { x: sLead.x, y: midY }, { x: eLead.x, y: midY }, eLead, end]);
+            // 经两中心（重叠场景的脱困走法）
+            out.push([start, sLead, aC, bC, eLead, end]);
+            return this._finalizeAnchorCandidates(out, a, b, fromAnchor, toAnchor);
+        }
+
+        // --- 情形二：只锁起点，终点自由 ---
+        if (start) {
+            const sLead = { x: start.x + lead(a, outSide).x, y: start.y + lead(a, outSide).y };
+            for (const inS of ['left', 'right', 'top', 'bottom']) {
+                const p1 = this.rectEdgeMidpoints(b)[inS];
+                out.push([start, sLead, { x: p1.x, y: sLead.y }, p1]);
+                out.push([start, sLead, { x: sLead.x, y: p1.y }, p1]);
+                const midX = (sLead.x + p1.x) / 2;
+                const midY = (sLead.y + p1.y) / 2;
+                out.push([start, sLead, { x: midX, y: sLead.y }, { x: midX, y: p1.y }, p1]);
+                out.push([start, sLead, { x: sLead.x, y: midY }, { x: p1.x, y: midY }, p1]);
+                out.push([start, sLead, aC, bC, p1]);
+            }
+            return this._finalizeAnchorCandidates(out, a, b, fromAnchor, null);
+        }
+
+        // --- 情形三：只锁终点，起点自由 ---
+        if (end) {
+            const eLead = { x: end.x + lead(b, inSide).x, y: end.y + lead(b, inSide).y };
+            for (const outS of ['left', 'right', 'top', 'bottom']) {
+                const p0 = this.rectEdgeMidpoints(a)[outS];
+                out.push([p0, { x: eLead.x, y: p0.y }, eLead, end]);
+                out.push([p0, { x: p0.x, y: eLead.y }, eLead, end]);
+                const midX = (p0.x + eLead.x) / 2;
+                const midY = (p0.y + eLead.y) / 2;
+                out.push([p0, { x: midX, y: p0.y }, { x: midX, y: eLead.y }, eLead, end]);
+                out.push([p0, { x: p0.x, y: midY }, { x: eLead.x, y: midY }, eLead, end]);
+                out.push([p0, aC, bC, eLead, end]);
+            }
+            return this._finalizeAnchorCandidates(out, a, b, null, toAnchor);
+        }
+
+        return out;
+    },
+
+    /**
+     * 候选收尾：正交化 + 端点校正。
+     *
+     * ⚠️ 与普通 route 的 _buildCandidates 有个关键差别：
+     *    普通路由允许 projectToBoundary 把端点**挪到别的边**（那是它的智能所在）；
+     *    但锚点是用户明确指定的，端点一旦被挪走就不是"钉住锚点"了。
+     *    所以这里只在**锚点已失效**（落在对方矩形内部）时才修正，
+     *    并且修正只沿锚点所在边滑动，不换边。
+     */
+    _finalizeAnchorCandidates(raw, a, b, fromAnchor, toAnchor) {
+        const lockStart = !!fromAnchor;
+        const lockEnd = !!toAnchor;
+        return raw
+            .map(pts => {
+                const ortho = this._orthogonalize(pts);
+                if (ortho.length < 2) return null;
+
+                if (lockStart) {
+                    ortho[0] = this._fixLockedEndpoint(a, fromAnchor, b);
+                } else {
+                    ortho[0] = this.projectToBoundary(a, ortho[0], b);
+                }
+
+                if (lockEnd) {
+                    ortho[ortho.length - 1] = this._fixLockedEndpoint(b, toAnchor, a);
+                } else {
+                    ortho[ortho.length - 1] = this.projectToBoundary(b, ortho[ortho.length - 1], a);
+                }
+
+                const re = this._orthogonalize(ortho);
+                return re;
+            })
+            .filter(pts => pts && pts.length >= 2);
+    },
+
+    /**
+     * 锚点端点的失效修正。
+     *
+     * 锚点本身是用户指定的，绝大多数情况直接可用。
+     * 唯一的问题是**两元素重叠**：锚点可能落进对方矩形内部，
+     * 线就会从对方身上"长出来"。
+     *
+     * 修正策略：保持锚点所在边不变，沿这条边滑动到脱离 other 的位置；
+     * 实在脱不开（完全包含）就保持原样 —— 宁可线短一点，也不换边，
+     * 因为换边等于偷偷改了用户的锚点。
+     *
+     * ⚠️ 入参是**锚点描述符**（{side,t}），返回**坐标点**。
+     *    早期版本把坐标点当描述符传进来，导致 t/side 全为 undefined、
+     *    返回 null，最终 _orthogonalize 读 null.x 崩掉 —— 由单测捕获。
+     */
+    _fixLockedEndpoint(rect, anchor, other) {
+        const cand = this._anchorPoint(rect, anchor);
+        if (!cand) return this.rectCenter(rect);
+        if (!other || !this._inside(other, cand)) return cand;
+
+        // 沿锚点所在边采样，找第一个脱离 other 的位置（不换边）
+        const t0 = this._clamp(Number(anchor.t), 0, 1);
+        const off = Number.isFinite(anchor.offset) ? anchor.offset : this.ANCHOR_OFFSET;
+        let best = null;
+        let bestDist = Infinity;
+        for (let i = 0; i <= 16; i++) {
+            const k = i / 16;
+            const p = this._anchorPoint(rect, { side: anchor.side, t: k, offset: off });
+            if (!p || this._inside(other, p)) continue;
+            const d = Math.abs(k - t0);
+            if (d < bestDist) { bestDist = d; best = p; }
+        }
+        return best || cand;
     },
 
     /**

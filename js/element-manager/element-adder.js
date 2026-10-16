@@ -47,9 +47,15 @@ const ElementAdder = {
     },
 
     // 添加智能连接线
-    // 只存 fromId/toId —— 路径由 ConnectorRouter 按两端元素当前位置实时计算，
-    // 不存坐标（这是 MasterGo 连接线的核心语义，见 js/connectors/connector-router.js）
-    addConnectorElement(fromId, toId) {
+    //
+    // 只存 fromId/toId + 锚点描述符 —— 路径与端点坐标都由 ConnectorRouter
+    // 按两端元素当前位置实时计算，**不存任何像素坐标**
+    // （这是 MasterGo 连接线的核心语义，见 js/connectors/connector-router.js）
+    //
+    // 锚点描述符形如 {elementId, kind:'element'|'inner', selector?, side, t}：
+    //   - side/t 是归一化位置，元素缩放后锚点自动跟着变，无需迁移数据
+    //   - inner 锚点额外记 selector，用于在 iframe 里重新定位那个子元素
+    addConnectorElement(fromId, toId, fromAnchor = null, toAnchor = null) {
         const fromEl = ElementManager.state.elements.find(el => el.id === fromId);
         const toEl = ElementManager.state.elements.find(el => el.id === toId);
         if (!fromEl || !toEl) return;
@@ -59,6 +65,9 @@ const ElementAdder = {
             type: 'connector',
             fromId: fromId,
             toId: toId,
+            // 旧行为兼容：没给锚点时保持为 null，渲染时退化为整元素路由
+            fromAnchor: fromAnchor || null,
+            toAnchor: toAnchor || null,
             position: { x: 0, y: 0 },
             width: 0,
             height: 0

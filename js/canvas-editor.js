@@ -124,10 +124,41 @@ const CanvasEditor = {
             }
         }, true); // 捕获阶段，优先于浏览器默认行为（全屏下也能拦截）
 
-        // 监听 iframe 内页面全屏时发来的 Ctrl+S 保存消息
+        // 监听 iframe 内页面发来的两类消息
+        //   ① canvas-save        —— 页面全屏时拦截 Ctrl+S，转交给画布保存
+        //   ② proto-page-height  —— 页面报告真实内容高度（见 js/page-autofit.js）
         window.addEventListener('message', (e) => {
-            if (e.data && e.data.type === 'canvas-save') {
+            const data = e.data;
+            if (!data) return;
+
+            if (data.type === 'canvas-save') {
                 Storage.save();
+                return;
+            }
+
+            if (data.type === 'proto-page-height') {
+                // key 形如 proto-canvas-<elementId>，由 element-renderer 写进 iframe.name
+                const height = Math.round(Number(data.height));
+                const width = Math.round(Number(data.width));
+                if (!data.key || !isFinite(height) || height <= 0 || height > 30000) return;
+                if (!isFinite(width) || width <= 0 || width > 12000) return;
+
+                let iframe = null;
+                const named = document.querySelectorAll('iframe[name]');
+                for (let i = 0; i < named.length; i++) {
+                    if (named[i].name === data.key) { iframe = named[i]; break; }
+                }
+                if (!iframe) return;
+
+                const div = iframe.closest('.canvas-element');
+                if (!div) return;
+
+                // 只写样式，不改 element.width/height：自适应是渲染表现，不是画布数据
+                const elementId = div.dataset.elementId;
+                window.ProtoAutoFit.remember(elementId, { h: height, w: width });
+                window.ProtoAutoFit.apply(elementId, div);
+
+                if (window.Debug) Debug.log('[autofit] 页面框尺寸 →', width + '×' + height, div.dataset.elementId);
             }
         });
     },
