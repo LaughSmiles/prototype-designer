@@ -163,12 +163,16 @@ const Tools = {
                 ToolsConnector.handleMouseMove(e);
             }
 
-            // 锚点显示：仅在连接线工具下，且不在拖拽中。
+            // 锚点显示：仅在连接线工具下。
             // 对齐 MasterGo —— 锚点是「按需出现」的，其它工具下画布保持干净。
-            if (this.currentTool === 'connector' && !ToolsConnector.state.isDrawing
-                && !ToolsConnector.dragState.active) {
-                const hovered = ToolsConnector.findPageElementAt(e);
-                ToolsConnector.setHoverElement(hovered);
+            //
+            // ⚠️ 这里**不能**用 !isDrawing / !dragState.active 把绘制期排除掉：
+            //    那是问题 1 的根因（实测 tools.js 原先带这两个门禁）——
+            //    鼠标一按下开始拖线，锚点层就不再更新，
+            //    于是"目标页面也需要有锚点"永远做不到。
+            //    绘制期改为显示 **源元素 + 当前悬停目标** 两个元素的锚点。
+            if (this.currentTool === 'connector') {
+                ToolsConnector.refreshAnchors(e);
             }
         });
 

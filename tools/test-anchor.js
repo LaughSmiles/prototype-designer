@@ -117,6 +117,7 @@ function loadSources() {
         ['js', 'connectors', 'anchor-provider.js'],
         ['js', 'connectors', 'connector-router.js'],
         ['js', 'connectors', 'anchor-bridge.js'],
+        ['js', 'connectors', 'anchor-session.js'],
     ]) {
         const file = path.join(ROOT, ...rel);
         vm.runInContext(fs.readFileSync(file, 'utf8'), ctx, { filename: file });
@@ -126,10 +127,11 @@ function loadSources() {
         Anchor: vm.runInContext('AnchorProvider', ctx),
         Router: vm.runInContext('ConnectorRouter', ctx),
         Bridge: vm.runInContext('AnchorBridge', ctx),
+        Session: vm.runInContext('AnchorSession', ctx),
     };
 }
 
-const { Anchor, Router, Bridge } = loadSources();
+const { Anchor, Router, Bridge, Session: AnchorSession } = loadSources();
 if (!Anchor) {
     console.error('\x1b[31m✗ 无法从沙箱取到 AnchorProvider，anchor-provider.js 未正确导出\x1b[0m');
     process.exit(1);
@@ -657,11 +659,13 @@ function tree(spec) {
 }
 
 test('递归收集：孙元素也被收集到（对应 MasterGo 的不限深度递归）', () => {
+    // ⚠️ 尺寸变了：旧用例用 100×100 的方块，在新的尺寸过滤下（面积 ≥ 2000）
+    //    会被判为"小元素"。递归本身没问题，是测试数据没跟上设计变更。
     const root = tree({
         tag: 'body', children: [{
             tag: 'div', id: 'outer', rect: [0, 0, 300, 300], children: [{
-                tag: 'div', id: 'inner', rect: [10, 10, 100, 100], children: [{
-                    tag: 'button', id: 'deep', rect: [20, 20, 60, 30],
+                tag: 'div', id: 'inner', rect: [10, 10, 200, 200], children: [{
+                    tag: 'button', id: 'deep', rect: [20, 20, 150, 150],
                 }],
             }],
         }],
@@ -671,7 +675,7 @@ test('递归收集：孙元素也被收集到（对应 MasterGo 的不限深度�
     assertEqual(ids, ['#deep', '#inner', '#outer'], '三层都应被收集');
 });
 
-test('尺寸不足的元素被跳过（防锚点重叠成团的第一道闸）', () => {
+test('尺寸不足的元素被跳过（MasterGo：小图标/头像/数字都不出锚点）', () => {
     const root = tree({
         tag: 'body', children: [
             { tag: 'div', id: 'big', rect: [0, 0, 200, 200] },
@@ -682,16 +686,18 @@ test('尺寸不足的元素被跳过（防锚点重叠成团的第一道闸）',
     assertEqual(hosts.map(h => h.selector), ['#big'], '8×8 的图标应被跳过');
 });
 
-test('数量上限：按面积从大到小截断（防重叠成团的第二道闸）', () => {
+test('不做数量截断：位置各异的够大元素全部保留（MasterGo 实测规则）', () => {
     const children = [];
+    // ⚠️ 必须让它们**位置各异**。若 40 个方块位置相同，
+    //    去重叠（消除位置重合）会把它们合并成 1 个 ——
+    //    那是去重，不是数量截断，两者必须分清。
     for (let i = 0; i < 40; i++) {
-        children.push({ tag: 'div', id: `d${i}`, rect: [0, 0, 20 + i, 20 + i] });
+        children.push({ tag: 'div', id: `d${i}`, rect: [i * 9, i * 5, 200, 120] });
     }
     const root = tree({ tag: 'body', children });
-    const hosts = Bridge.collectInnerHosts(root, { pageElement: PAGE, maxHosts: 5 });
-    assertEqual(hosts.length, 5, '应被截断到 5 个');
-    // 面积最大的 d39 应排第一
-    assertEqual(hosts[0].selector, '#d39', '面积最大的应优先保留');
+    const hosts = Bridge.collectInnerHosts(root, { pageElement: PAGE });
+    assert(hosts.length >= 20,
+        `位置各异的大元素应大部分保留，实际只剩 ${hosts.length} 个`);
 });
 
 test('结构性标签被跳过（html/head/script 等不是连接目标）', () => {
@@ -707,14 +713,13 @@ test('结构性标签被跳过（html/head/script 等不是连接目标）', () 
 });
 
 test('收集结果的 rect 是画布坐标（已换算）', () => {
-    const root = tree({ tag: 'body', children: [{ tag: 'div', id: 'x', rect: [5, 6, 50, 40] }] });
+    // 用 200×200（面积 40000）以通过尺寸过滤
+    const root = tree({ tag: 'body', children: [{ tag: 'div', id: 'x', rect: [5, 6, 200, 200] }] });
     const hosts = Bridge.collectInnerHosts(root, { pageElement: PAGE });
-    assertEqual(hosts[0].rect, {
-        x: 1000 + 5,
-        y: 500 + Bridge.IFRAME_TOP_OFFSET + 6,
-        width: 50,
-        height: 40,
-    }, '应已换算为画布坐标');
+    assertEqual(hosts.length, 1, '应被收集');
+    assertEqual(hosts[0].rect.x, 1000 + 5, 'x 应换算为画布坐标');
+    assertEqual(hosts[0].rect.y, 500 + Bridge.IFRAME_TOP_OFFSET + 6, 'y 应含 iframe 下沉量');
+    assertEqual(hosts[0].rect.width, 200, '宽度不应被改');
 });
 
 test('每个宿主都带 depth，便于调试与裁剪', () => {
@@ -736,9 +741,9 @@ suite('14. iframe 桥 · 上报数据校验（不可信输入）');
 
 test('非法上报项被逐项丢弃，合法项保留', () => {
     const reported = [
-        { selector: '#ok', rect: { left: 1, top: 2, width: 50, height: 50 } },
-        { selector: '', rect: { left: 1, top: 2, width: 50, height: 50 } },
-        { selector: '#nan', rect: { left: NaN, top: 2, width: 50, height: 50 } },
+        { selector: '#ok', rect: { left: 1, top: 2, width: 200, height: 200 } },
+        { selector: '', rect: { left: 1, top: 2, width: 200, height: 200 } },
+        { selector: '#nan', rect: { left: NaN, top: 2, width: 200, height: 200 } },
         { selector: '#tiny', rect: { left: 1, top: 2, width: 3, height: 3 } },
         { selector: '#norect' },
         null,
@@ -748,29 +753,30 @@ test('非法上报项被逐项丢弃，合法项保留', () => {
     assertEqual(out.map(h => h.selector), ['#ok'], '只有合法项应存活');
 });
 
-test('上报项会被换算为画布坐标并按面积降序', () => {
+test('上报项的尺寸过滤与 direct 模式一致（http 与 file:// 必须看到同一批锚点）', () => {
     const reported = [
-        { selector: '#small', rect: { left: 0, top: 0, width: 20, height: 20 } },
-        { selector: '#large', rect: { left: 0, top: 0, width: 200, height: 200 } },
+        { selector: '#big', rect: { left: 0, top: 0, width: 300, height: 200 } },
+        { selector: '#icon', rect: { left: 0, top: 0, width: 16, height: 16 } },
     ];
     const out = Bridge._normalizeReported(reported, PAGE);
-    assertEqual(out.map(h => h.selector), ['#large', '#small'], '应按面积降序');
-    assertEqual(out[0].rect.x, 1000, '应换算为画布坐标');
+    assertEqual(out.map(h => h.selector), ['#big'],
+        '小图标在两种协议下都应被过滤，否则用户换协议就看到不同锚点');
 });
 
-test('非数组输入返回空数组，不抛异常', () => {
+test('上报项同样不做裁剪（与 direct 模式一致）', () => {
+    // PAGE 高 812，元素从 y=400 延伸到 y=1888。
+    // 页面已改为展示全部内容，两条路径都**不裁剪**，否则
+    // http 与 file:// 下会看到不同的锚点集合。
+    const reported = [{ selector: '#tall', rect: { left: 0, top: 400, width: 300, height: 1488 } }];
+    const out = Bridge._normalizeReported(reported, PAGE);
+    assertEqual(out.length, 1, '超出声明高度也应保留');
+    assertEqual(out[0].rect.height, 1488, '上报项不应被裁剪');
+});
+
+test('非法入参返回空数组，不抛异常', () => {
     for (const bad of [null, undefined, 'x', 42, {}]) {
         assertEqual(Bridge._normalizeReported(bad, PAGE), [], `应返回空: ${JSON.stringify(bad)}`);
     }
-});
-
-test('上报项数量超限时被截断', () => {
-    const reported = [];
-    for (let i = 0; i < 100; i++) {
-        reported.push({ selector: `#e${i}`, rect: { left: 0, top: 0, width: 20 + i, height: 20 + i } });
-    }
-    const out = Bridge._normalizeReported(reported, PAGE);
-    assertEqual(out.length, Bridge.MAX_INNER_HOSTS, '应被截断到上限');
 });
 
 test('上报项的尺寸阈值独立生效（不依赖下游再校验一次）', () => {
@@ -852,10 +858,22 @@ test('topbar.js 内联的协议常量与 anchor-bridge.js 一致（双份常量�
             `topbar.js 里缺少${name} ${value}，两侧协议已分叉`);
     }
 
-    assert(new RegExp(`ANCHOR_MAX\\s*=\\s*${Bridge.MAX_INNER_HOSTS}\\b`).test(topbar),
-        `topbar.js 的 ANCHOR_MAX 应为 ${Bridge.MAX_INNER_HOSTS}（与 MAX_INNER_HOSTS 一致）`);
-    assert(new RegExp(`ANCHOR_MIN\\s*=\\s*${Bridge.MIN_HOST_SIZE}\\b`).test(topbar),
-        `topbar.js 的 ANCHOR_MIN 应为 ${Bridge.MIN_HOST_SIZE}（与 MIN_HOST_SIZE 一致）`);
+    assert(new RegExp(`ANCHOR_MIN_AREA\\s*=\\s*${Bridge.MIN_HOST_AREA}\\b`).test(topbar),
+        `topbar.js 的 ANCHOR_MIN_AREA 应为 ${Bridge.MIN_HOST_AREA}（与 MIN_HOST_AREA 一致）`);
+    assert(new RegExp(`ANCHOR_MIN_EDGE\\s*=\\s*${Bridge.MIN_HOST_EDGE}\\b`).test(topbar),
+        `topbar.js 的 ANCHOR_MIN_EDGE 应为 ${Bridge.MIN_HOST_EDGE}（与 MIN_HOST_EDGE 一致）`);
+
+    // 两侧阈值不一致 → 同一页面在 http 与 file:// 下会看到不同的锚点集合
+    assert(!/ANCHOR_MAX|MAX_INNER_HOSTS/.test(topbar),
+        '数量截断已被实测证明是错解，topbar.js 不应再保留 ANCHOR_MAX');
+});
+
+test('数量截断常量已彻底移除（MasterGo 是「够大就出」，不是「只出前 N 个」）', () => {
+    assertEqual(Bridge.MAX_INNER_HOSTS, undefined,
+        'MAX_INNER_HOSTS 应已删除；保留它会随机丢掉用户真正想连的元素');
+    const anchorTest = fs.readFileSync(__filename, 'utf8');
+    assert(!/MAX_INNER_HOSTS\s*[:=]\s*\d/.test(anchorTest),
+        '测试里也不应再出现数量上限的定义');
 });
 
 test('topbar.js 只在被嵌入时才安装上报（独立打开不遍历 DOM）', () => {
@@ -869,6 +887,920 @@ test('topbar.js 的上报不破坏既有 postMessage 逻辑', () => {
     for (const kept of ['canvas-save', 'prototype-escape-preview']) {
         assert(topbar.includes(kept), `topbar.js 应保留既有协议 ${kept}`);
     }
+});
+
+// ================================================================ 16. 内部宿主裁剪到可视区
+
+suite('16. 内部宿主跟随页面完整内容（不裁剪）');
+
+/** 造一个带 getRect 的假节点 */
+function node(tagName, rect, children = []) {
+    const el = {
+        tagName: tagName.toUpperCase(),
+        id: '',
+        children,
+        parentElement: null,
+        getBoundingClientRect: () => ({ left: rect[0], top: rect[1], width: rect[2], height: rect[3] }),
+    };
+    for (const c of children) c.parentElement = el;
+    return el;
+}
+
+const CLIP_PAGE = { id: 'p', position: { x: 100, y: 200 }, width: 375, height: 812 };
+
+test('页面下半部分也产生锚点（这是「只有一半页面显示锚点」的根因）', () => {
+    // ⚠️ 用户实况：页面已去掉滚轮、展示**全部内容**。
+    //    实测 element.height=812，但页面实际内容高 1699。
+    //    旧实现按 812 裁剪 → 下半页（y>912）永远没有锚点。
+    //    页面既然展示全部内容，"不可见区域"这个概念已不存在，裁剪只会误伤。
+    const body = node('body', [0, 0, 375, 1699], [
+        node('div', [0, 0, 375, 400]),      // 上半部分
+        node('div', [0, 1200, 375, 499]),   // 下半部分，远超声明高度 812
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: CLIP_PAGE });
+    assertEqual(hosts.length, 2, '上下两部分都应产生锚点宿主');
+});
+
+test('内容超出页面框声明高度时保留完整矩形', () => {
+    const body = node('body', [0, 0, 375, 1699], [
+        node('div', [0, 400, 375, 1488]),   // 从 y=400 延伸到 1888
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: CLIP_PAGE });
+    // 1488×375 面积远大于页面框 → 被"根容器剔除"规则挡掉（它是页面框的超集）
+    // 用一个正常尺寸但纵向超出的元素来验证"不裁剪"这个行为本身
+    const body2 = node('body', [0, 0, 375, 1699], [
+        node('div', [0, 400, 200, 900]),    // 200×900，位置在页面框中部以下
+    ]);
+    const hosts2 = Bridge.collectInnerHosts(body2, { pageElement: CLIP_PAGE });
+    assertEqual(hosts2.length, 1, '纵向超出页面框的元素应保留');
+    assertEqual(hosts2[0].rect.height, 900, '矩形高度不应被裁剪到页面框以内');
+});
+
+test('clipToViewport 已移除（保留它反而会误伤完整内容）', () => {
+    assertEqual(Bridge.clipToViewport, undefined,
+        '裁剪函数应已删除；页面不再滚动，"不可见区域"不存在，裁剪只会切掉下半页');
+});
+
+test('取消裁剪不等于取消过滤（小图标仍应被滤掉）', () => {
+    const body = node('body', [0, 0, 375, 1699], [
+        node('div', [0, 0, 375, 400]),      // 大块 → 保留
+        node('i', [0, 500, 16, 16]),        // 小图标 → 滤掉
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: CLIP_PAGE });
+    assertEqual(hosts.length, 1, '小图标仍应被滤掉');
+    assertEqual(hosts[0].rect.height, 400, '保留的应是那块大内容');
+});
+
+// ================================================================ 17. 尺寸过滤（小元素不出锚点）
+
+suite('17. 尺寸过滤（MasterGo：大块元素出锚点，小元素不出）');
+
+test('小元素被过滤，MasterGo 实测头像/数字/图标都无锚点', () => {
+    const roots = [
+        ['圆形头像 32×32', node('div', [10, 100, 32, 32])],
+        ['点赞数字 20×14', node('span', [10, 200, 20, 14])],
+        ['小图标 16×16', node('i', [10, 300, 16, 16])],
+    ];
+    for (const [label, el] of roots) {
+        const body = node('body', [0, 0, 375, 812], [el]);
+        const hosts = Bridge.collectInnerHosts(body, { pageElement: CLIP_PAGE, viewportOffset: 0 });
+        assertEqual(hosts.length, 0, `${label} 不应产生锚点宿主（MasterGo 实测无锚点）`);
+    }
+});
+
+test('大块结构元素被保留，MasterGo 实测卡片/输入框都有锚点', () => {
+    const cases = [
+        ['评论卡片 351×80', [10, 100, 351, 80]],
+        ['底部输入框 351×44', [10, 300, 351, 44]],
+        ['媒体区 375×200', [0, 0, 375, 200]],
+    ];
+    for (const [label, rect] of cases) {
+        const body = node('body', [0, 0, 375, 812], [node('div', rect)]);
+        const hosts = Bridge.collectInnerHosts(body, { pageElement: CLIP_PAGE, viewportOffset: 0 });
+        assert(hosts.length >= 1, `${label} 应产生锚点宿主（MasterGo 实测有锚点）`);
+    }
+});
+
+test('过滤阈值落在实测数据的分界处（MasterGo 实测值）', () => {
+    // 实测 MasterGo：有锚点 = 输入框 351×44=15444、卡片 351×80=28080、媒体区 375×200
+    //               无锚点 = 头像 32×32=1024、数字 20×14=280、图标 16×16=256
+    // 阈值必须落在 1024 与 15444 之间，否则要么小元素冒锚点，要么大元素被砍。
+    assert(Bridge.MIN_HOST_AREA > 32 * 32,
+        `阈值 ${Bridge.MIN_HOST_AREA} 必须大于头像面积 1024，否则头像会冒锚点`);
+    assert(Bridge.MIN_HOST_AREA < 351 * 44,
+        `阈值 ${Bridge.MIN_HOST_AREA} 必须小于输入框面积 15444，否则输入框会被砍掉`);
+});
+
+test('边界两侧行为符合预期：阈值以下过滤，以上保留', () => {
+    // 刚好在阈值以下
+    const small = Math.floor(Math.sqrt(Bridge.MIN_HOST_AREA)) - 1;
+    const smallBody = node('body', [0, 0, 375, 812], [node('div', [10, 100, small, small])]);
+    assertEqual(Bridge.collectInnerHosts(smallBody, { pageElement: CLIP_PAGE, viewportOffset: 0 }).length, 0,
+        `${small}×${small}（面积 ${small * small} < ${Bridge.MIN_HOST_AREA}）应被过滤`);
+
+    // 明确大于阈值
+    const bigBody = node('body', [0, 0, 375, 812], [node('div', [10, 100, 200, 200])]);
+    assert(Bridge.collectInnerHosts(bigBody, { pageElement: CLIP_PAGE, viewportOffset: 0 }).length >= 1,
+        '200×200（面积 40000）必须通过');
+});
+
+test('去重只消除「位置重合」，不按数量截断（MasterGo 实测规则）', () => {
+    // 位置各异 → 全部保留
+    const distinct = [];
+    for (let i = 0; i < 40; i++) distinct.push(node('div', [i * 12, i * 7, 120, 90]));
+    const bodyDistinct = node('body', [0, 0, 375, 812], distinct);
+    const kept = Bridge.collectInnerHosts(bodyDistinct, { pageElement: CLIP_PAGE, viewportOffset: 0 });
+    assert(kept.length >= 15,
+        `位置差异超过容差(8px)的大元素应大量保留，实际 ${kept.length} 个`);
+
+    // 完全重合 → 合并成 1 个（这是去重，不是截断）
+    const same = [];
+    for (let i = 0; i < 40; i++) same.push(node('div', [10, 10, 200, 200]));
+    const bodySame = node('body', [0, 0, 375, 812], same);
+    const merged = Bridge.collectInnerHosts(bodySame, { pageElement: CLIP_PAGE, viewportOffset: 0 });
+    assertEqual(merged.length, 1, '完全重合的 40 个应合并为 1 个');
+});
+
+// ================================================================ 18. 锚点归属判定
+
+suite('18. 锚点归属判定（外扩带）');
+
+test('框外 6px 的锚点归属于该元素（修复「点不中」）', () => {
+    const rect = R(100, 100, 200, 200);
+    const OFF = Anchor.OFFSET;
+    // 右边中点锚点的画布坐标
+    const p = Anchor.resolvePoint(rect, { side: 'right', t: 0.5 });
+    const owner = AnchorSession.ownerOf({ x: p.x, y: p.y }, [rect]);
+    assert(owner, '框外锚点必须能归属到宿主元素');
+    assertEqual(owner.rect, rect, '应归属到正确的那一个');
+    assert(owner.dist <= AnchorSession.BAND,
+        `归属距离 ${owner.dist} 必须在外扩带 ${AnchorSession.BAND} 内`);
+});
+
+test('精确包含优先于外扩带（不抢占正常点击）', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(102, 0, 100, 100);   // 与 a 相距 2px，外扩带会重叠
+    // 点落在 b 的框内、同时落在 a 的外扩带内
+    const owner = AnchorSession.ownerOf({ x: 110, y: 50 }, [a, b]);
+    assertEqual(owner.rect, b, '精确命中优先，应归 b');
+});
+
+test('外扩带重叠时取最近的一条边', () => {
+    const a = R(0, 0, 100, 100);
+    const b = R(108, 0, 100, 100);   // a 的右边 100，b 的左边 108，点在 104 正好居中
+    const owner = AnchorSession.ownerOf({ x: 104, y: 50 }, [a, b]);
+    assert(owner, '应能归属');
+    assertEqual(owner.dist, 4, '到两条边都是 4px，应归最近者');
+});
+
+test('远离所有元素的点不归属任何元素', () => {
+    const owner = AnchorSession.ownerOf({ x: 5000, y: 5000 }, [R(0, 0, 100, 100)]);
+    assertEqual(owner, null, '远处空白点不应被归属');
+});
+
+test('外扩带宽度 = OFFSET + RADIUS，恰好包住整个锚点圆点', () => {
+    assertEqual(AnchorSession.BAND, Anchor.OFFSET + Anchor.RADIUS,
+        '外扩带必须刚好覆盖锚点圆点，否则圆点边缘仍点不中');
+});
+
+// ================================================================ 19. 已渲染锚点清单
+
+suite('19. 已渲染锚点清单（命中以屏幕所见为准）');
+
+test('记录清单后，命中返回的就是清单里那一个锚点', () => {
+    const rect = R(0, 0, 200, 200);
+    const rightMid = Anchor.resolvePoint(rect, { side: 'right', t: 0.5 });
+    AnchorSession.setRendered([
+        { ref: { elementId: 'e1', kind: 'element', side: 'right', t: 0.5 }, point: rightMid },
+    ]);
+    const hit = AnchorSession.hitRendered({ x: rightMid.x, y: rightMid.y }, 12);
+    assert(hit, '应命中');
+    assertEqual(hit.ref.elementId, 'e1', '命中的必须是清单里那一个');
+    assertEqual(hit.ref.side, 'right', '命中的 side 必须一致');
+    assertEqual(hit.ref.t, 0.5, '命中的 t 必须一致 —— 这正是「选了 A 连到 B」的判据');
+});
+
+test('清单为空时不命中（交由几何兜底）', () => {
+    AnchorSession.setRendered([]);
+    assertEqual(AnchorSession.hitRendered({ x: 0, y: 0 }), null, '空清单不应命中');
+});
+
+test('命中取最近的一个锚点', () => {
+    AnchorSession.setRendered([
+        { ref: { elementId: 'far', side: 'right', t: 0.5 }, point: { x: 100, y: 0 } },
+        { ref: { elementId: 'near', side: 'right', t: 0.5 }, point: { x: 2, y: 0 } },
+    ]);
+    const hit = AnchorSession.hitRendered({ x: 0, y: 0 }, 10);
+    assertEqual(hit.ref.elementId, 'near', '应取最近的');
+});
+
+test('超出吸附半径不命中', () => {
+    AnchorSession.setRendered([
+        { ref: { elementId: 'a', side: 'right', t: 0.5 }, point: { x: 100, y: 0 } },
+    ]);
+    assertEqual(AnchorSession.hitRendered({ x: 0, y: 0 }, 10), null, '距离 100 > 半径 10，不应命中');
+});
+
+test('清空锚点层后不再命中（残留锚点必须失效）', () => {
+    const p = { x: 10, y: 10 };
+    AnchorSession.setRendered([
+        { ref: { elementId: 'ghost', side: 'right', t: 0.5 }, point: p },
+    ]);
+    assert(AnchorSession.hitRendered(p, 10), '前置：清单里有锚点时应能命中');
+    AnchorSession.setRendered([]);
+    assertEqual(AnchorSession.hitRendered(p, 10), null, '清空后不应再能命中');
+});
+
+test('clearAnchors 必须同步清空清单（幽灵锚点的静态契约）', () => {
+    // ⚠️ clearAnchors 在 element-renderer.js 里，涉及 DOM，没法在沙箱里直接跑。
+    //    这里用静态断言锁死契约：它清了 SVG 就**必须**同时清清单。
+    //    只清 SVG 不清清单 → 画布空了，用户却还能"点到"早已消失的锚点。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/clearAnchors\(\)\s*\{([\s\S]*?)\n    \}/);
+    assert(m, '应能在 element-renderer.js 里找到 clearAnchors');
+    assert(/setRendered\(\[\]\)/.test(m[1]),
+        'clearAnchors 必须清空锚点清单，否则会出现「画布空白却能点中幽灵锚点」');
+});
+
+// ================================================================ 20. 宿主去重叠
+
+suite('20. 宿主去重叠（嵌套容器边重合时只留最内层）');
+
+const DEDUP_PAGE = { id: 'p', position: { x: 0, y: 0 }, width: 800, height: 900 };
+
+test('外层容器与内层元素边几乎重合时，只保留更内层的那个', () => {
+    // ⚠️ 页面框故意给得很大（800×900），好让下面这两个容器
+    //    不会被"与页面框等大"的剔除规则干掉 —— 这条只验证去重。
+    const body = node('body', [0, 0, 600, 600], [
+        node('div', [0, 0, 400, 400]),        // 外层
+        node('div', [8, 8, 384, 384]),        // 内层，几乎重合
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: DEDUP_PAGE, viewportOffset: 0 });
+    assertEqual(hosts.length, 1, '边几乎重合的嵌套容器只应保留一个宿主，否则锚点糊成一坨');
+});
+
+test('边相距较远的嵌套容器各自保留（不能误删）', () => {
+    const body = node('body', [0, 0, 600, 600], [
+        node('div', [0, 0, 400, 400]),        // 外层
+        node('div', [10, 120, 200, 200]),     // 内层，位置差异明显
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: DEDUP_PAGE, viewportOffset: 0 });
+    assertEqual(hosts.length, 2, '差异明显的两个宿主都应保留');
+});
+
+test('去重叠只看几何，不看 DOM 关系（并列的两个大容器都保留）', () => {
+    const body = node('body', [0, 0, 375, 782], [
+        node('div', [0, 0, 180, 782]),
+        node('div', [185, 0, 180, 782]),
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: DEDUP_PAGE, viewportOffset: 0 });
+    assertEqual(hosts.length, 2, '并列容器不重合，都应保留');
+});
+
+test('去重后锚点总量显著下降（这是「糊成一片」的根因）', () => {
+    // 模拟真实页面：多层嵌套，边间距都很小（页面框给大以隔离剔除规则）
+    let inner = node('div', [20, 20, 335, 742]);
+    for (let i = 0; i < 6; i++) {
+        inner = node('div', [4 + i * 2, 4 + i * 2, 367 - i * 4, 758 - i * 4], [inner]);
+    }
+    const body = node('body', [0, 0, 400, 800], [inner]);
+
+    const before = Bridge.collectInnerHosts(body, { pageElement: DEDUP_PAGE, viewportOffset: 0, dedupe: false });
+    const after = Bridge.collectInnerHosts(body, { pageElement: DEDUP_PAGE, viewportOffset: 0 });
+    assert(after.length < before.length,
+        `去重叠应减少宿主数：去重前 ${before.length} → 去重后 ${after.length}`);
+    assert(after.length <= 4,
+        `边距很小的 7 层嵌套应收敛到 ≤4 个宿主，实际 ${after.length}`);
+});
+
+test('去重保留的是最内层（用户想连的是内容，不是包着它的容器）', () => {
+    const outer = node('div', [0, 0, 400, 400]);
+    const innerNode = node('div', [4, 4, 392, 392], [outer]);
+    const body = node('body', [0, 0, 600, 600], [innerNode]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: DEDUP_PAGE, viewportOffset: 0 });
+    assertEqual(hosts.length, 1, '重合的一组只留一个');
+    assertEqual(hosts[0].rect.width, 392, '应保留最内层（更小）的那个');
+});
+
+// ================================================================ 21. 剔除"等于页面框"的根容器
+
+suite('21. 剔除与页面框几乎等大的根容器');
+
+const ROOT_PAGE = { id: 'p', position: { x: 0, y: 0 }, width: 375, height: 812 };
+
+test('铺满全屏的根容器不产生锚点（与页面框锚点重复）', () => {
+    // 真实数据：body > div 是 375×782，占页面框 96.4%，
+    // 它的锚点全部贴在页面框边线上，纯属重复噪音。
+    const body = node('body', [0, 0, 375, 812], [
+        node('div', [0, 0, 375, 782]),          // 96.4% → 应剔除
+        node('div', [0, 100, 375, 260]),       // 32%   → 应保留
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: ROOT_PAGE, viewportOffset: 0 });
+    assertEqual(hosts.length, 1, '只应保留那个中等大小的容器');
+    assertEqual(hosts[0].rect.height, 260, '保留的应是 375×260 那个');
+});
+
+test('明显小于页面框的容器都保留（不能误删真实内容）', () => {
+    const body = node('body', [0, 0, 375, 812], [
+        node('div', [0, 0, 375, 400]),        // 49%
+        node('div', [0, 420, 375, 300]),       // 37%
+        node('div', [10, 100, 351, 200]),      // 23%
+    ]);
+    const hosts = Bridge.collectInnerHosts(body, { pageElement: ROOT_PAGE, viewportOffset: 0 });
+    assertEqual(hosts.length, 3, '三个明显小于页面框的容器都应保留');
+});
+
+test('占比阈值落在实测分界处', () => {
+    // 剔除条件是 ratio >= HOST_VS_PAGE_RATIO。
+    // 根容器占比 0.963 必须 **≥ 阈值**（被剔除），
+    // 真实内容占比 0.320 必须 **< 阈值**（被保留）。
+    const rootRatio = 375 * 782 / (375 * 812);
+    const contentRatio = 375 * 260 / (375 * 812);
+    assert(Bridge.HOST_VS_PAGE_RATIO <= rootRatio,
+        `阈值 ${Bridge.HOST_VS_PAGE_RATIO} 必须 ≤ 根容器占比 ${rootRatio.toFixed(3)}，否则根容器会漏出锚点`);
+    assert(Bridge.HOST_VS_PAGE_RATIO > contentRatio,
+        `阈值 ${Bridge.HOST_VS_PAGE_RATIO} 必须 > 真实内容占比 ${contentRatio.toFixed(3)}，否则真实内容会被误删`);
+});
+
+// ================================================================ 22. 内部宿主用中点单采样
+
+suite('22. 内部宿主用中点单采样（MasterGo 实测：卡片只亮 1 个锚点）');
+
+test('内部宿主用 coarse 密度：每边 1 个锚点', () => {
+    const rect = R(0, 0, 351, 80);   // 典型评论卡片尺寸
+    const full = Anchor.anchorsOfRect(rect);
+    const coarse = Anchor.anchorsOfRect(rect, { density: 'coarse' });
+    assert(coarse.length < full.length, 'coarse 应明显少于 full');
+    assertEqual(coarse.length, 4, '每边 1 个，共 4 个');
+    for (const a of coarse) assertClose(a.t, 0.5, 1e-9, '只保留中点');
+});
+
+test('页面框自身保持 full 密度（用户会按高度选点）', () => {
+    const pageRect = R(0, 0, 375, 812);
+    assertEqual(Anchor.anchorsOfRect(pageRect).length, 12,
+        '页面框应保持 12 个锚点（四边 × 3 采样）');
+});
+
+// ================================================================ 23. 视口固定系换算（修「锚点只显示一部分」）
+
+suite('23. 视口固定系换算（锚点层脱离 wrapper 裁剪）');
+
+test('画布坐标 → 视口坐标的换算', () => {
+    const v = { zoom: 0.55, pan: { x: -40, y: -60 } };
+    const origin = { left: 0, top: 0 };
+    const p = AnchorSession.toViewport({ x: 100, y: 200 }, v, origin);
+    assertEqual(p, { x: -40 + 100 * 0.55, y: -60 + 200 * 0.55 }, '应按 zoom/pan 换算');
+});
+
+test('与 ToolsConnector.toCanvasCoords 严格互逆', () => {
+    // 两边必须是同一套公式的互逆，否则锚点画的位置和命中位置会错开
+    const v = { zoom: 0.55, pan: { x: -40, y: -60 } };
+    const origin = { left: 180, top: 44 };     // 模拟 wrapper 的位置
+    const canvasPt = { x: 123.4, y: 567.8 };
+    const screen = AnchorSession.toViewport(canvasPt, v, origin);
+
+    // 反算：canvas = (screen - origin - pan) / zoom
+    const back = {
+        x: (screen.x - origin.left - v.pan.x) / v.zoom,
+        y: (screen.y - origin.top - v.pan.y) / v.zoom,
+    };
+    assertClose(back.x, canvasPt.x, 1e-9, 'x 应可无损反算');
+    assertClose(back.y, canvasPt.y, 1e-9, 'y 应可无损反算');
+});
+
+test('fixed 层原点在视口 (0,0)，不受 wrapper 位置影响', () => {
+    const a = AnchorSession.layerOrigin(true, { left: 180, top: 44, bottom: 771 });
+    assertEqual(a, { left: 0, top: 0 }, 'fixed 层应无视 wrapper 位置');
+
+    const b = AnchorSession.layerOrigin(false, { left: 180, top: 44 });
+    assertEqual(b, { left: 180, top: 44 }, '非 fixed 层用 wrapper 左上角');
+});
+
+test('⚠️ 换算原点必须用 wrapper 位置，不能用视口原点（否则整体偏移）', () => {
+    // 这是一条**回归防护**：曾经因为传了 {left:0, top:0} 而没用 wrapper 的
+    // 实际 rect，导致所有锚点整体偏移 wrapper.left/top（实测偏 191px），
+    // 圆点全跑到页面框外面、叠成一坨。
+    //
+    // 判据：同一个画布点，用 wrapper 原点算出的屏幕 x 必须等于
+    // 浏览器实测的屏幕 x —— 而后者正是 ToolsConnector.toCanvasCoords 的逆运算基准。
+    const v = { zoom: 0.5, pan: { x: 100, y: 0 } };
+    const canvasX = 1000;
+    const wrapperLeft = 180;
+
+    const bad = AnchorSession.toViewport({ x: canvasX, y: 0 }, v, { left: 0, top: 0 });
+    const good = AnchorSession.toViewport({ x: canvasX, y: 0 }, v, { left: wrapperLeft, top: 0 });
+
+    assertEqual(good.x - bad.x, wrapperLeft,
+        '用 wrapper 原点应比用视口原点正好偏移 wrapper.left');
+    assert(bad.x !== good.x, '两者必须不同，否则说明原点没起作用');
+
+    // 与 toCanvasCoords 的逆运算一致：canvas = (screen - wrapperLeft - pan) / zoom
+    const back = (good.x - wrapperLeft - v.pan.x) / v.zoom;
+    assertClose(back, canvasX, 1e-9, '应能无损反算回画布坐标');
+});
+
+test('renderAnchors 必须用 wrapper 的 rect 作为换算原点', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/renderAnchors\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 renderAnchors');
+    assert(/getElementById\('canvasWrapper'\)/.test(m[1]),
+        '必须取 #canvasWrapper 的 rect 作为原点；用视口原点会让锚点整体偏移');
+    assert(/getBoundingClientRect\(\)/.test(m[1]),
+        '原点必须来自 getBoundingClientRect（随布局实时变化）');
+});
+
+test('非法输入返回 null，不产生 NaN', () => {
+    const v = { zoom: 0.55, pan: { x: 0, y: 0 } };
+    assertEqual(AnchorSession.toViewport(null, v, { left: 0, top: 0 }), null, 'point 缺失应返回 null');
+    assertEqual(AnchorSession.toViewport({ x: 1, y: 1 }, null, { left: 0, top: 0 }), null, 'view 缺失应返回 null');
+    assertEqual(AnchorSession.toViewport({ x: 1, y: 1 }, v, null), null, 'origin 缺失应返回 null');
+});
+
+test('zoom 为 0 时不产生 Infinity（除零保护）', () => {
+    const p = AnchorSession.toViewport({ x: 100, y: 100 },
+        { zoom: 0, pan: { x: 0, y: 0 } }, { left: 0, top: 0 });
+    assert(p && Number.isFinite(p.x) && Number.isFinite(p.y),
+        `zoom=0 应退化为 1 而非 Infinity，实测 ${JSON.stringify(p)}`);
+});
+
+// ================================================================ 24. 预热（修「逐步显示」）
+
+suite('24. 内部宿主预热（首帧即完整）');
+
+test('预热后首次 hover 即可拿到全部内部宿主（无需等异步）', () => {
+    const cache = new Map();
+    const key = 'elem_1@375x812';
+    // 模拟：预热已经把结果放进缓存
+    cache.set(key, [{ selector: 'body > div', rect: { x: 0, y: 0, width: 375, height: 782 } }]);
+    assert(cache.has(key), '预热后的缓存应已就绪，首次 hover 不必等待异步');
+});
+
+test('预热函数必须幂等（重复调用不重复发请求）', () => {
+    // primeInnerHosts 用 _pending + _innerCache 去重，
+    // 重复预热不应产生第二次 postMessage。
+    const pending = new Set();
+    const cache = new Map();
+    const key = 'elem_1@375x812';
+
+    const prime = () => {
+        if (cache.has(key) || pending.has(key)) return 'skip';
+        pending.add(key);
+        cache.set(key, []);   // 模拟同步完成
+        pending.delete(key);
+        return 'sent';
+    };
+    assertEqual(prime(), 'sent', '首次应发起');
+    assertEqual(prime(), 'skip', '已缓存时应跳过');
+});
+
+test('缓存键含尺寸：元素改尺寸后应重新预热', () => {
+    const cache = new Map();
+    const k1 = 'elem_1@375x812';
+    const k2 = 'elem_1@375x600';
+    assert(k1 !== k2, '不同尺寸应是不同的缓存键，否则改尺寸后锚点不会更新');
+});
+
+// ================================================================ 25. 锚点层挂载位置（静态契约）
+
+suite('25. 锚点层挂载位置（不得被 wrapper 裁剪）');
+
+test('锚点层不得挂在 overflow:hidden 的 wrapper 内', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    // 锚点层的创建逻辑可能抽在 _ensureAnchorLayer 里，两处都要查
+    assert(!/document\.getElementById\('canvas'\)\.appendChild\(layer\)/.test(src),
+        '锚点层不能挂在 #canvas（它在 overflow:hidden 的 #canvasWrapper 内，会被裁掉）');
+    assert(/document\.body\.appendChild\(layer\)/.test(src),
+        '锚点层应挂在 document.body 下并用 position:fixed，才不会被 wrapper 裁剪');
+});
+
+test('锚点层样式必须是 fixed 且不裁剪', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    // ⚠️ 用「从 cssText 到 appendChild」的整段检查，不对拼接字符串做正则 ——
+    //    样式值是 'a' + 'b' 两段拼的，逐段正则极易因引号/行尾匹配失败，
+    //    而"匹配不上"会让本用例失去意义。
+    const m = src.match(/layer\.style\.cssText([\s\S]*?)document\.body\.appendChild\(layer\)/);
+    assert(m, '应能找到锚点层的 cssText 到挂载这段');
+    assert(/position:\s*fixed/.test(m[1]), '锚点层应 position:fixed（相对视口，不随画布滚动被裁）');
+    assert(/pointer-events:\s*none/.test(m[1]), '必须 pointer-events:none，不干扰既有交互');
+    assert(/overflow:\s*visible/.test(m[1]), '层自身不能裁剪子元素');
+});
+
+test('锚点位置必须用视口固定系换算，不能直接用画布坐标', () => {
+    // 层是 fixed 的，参照系是视口；若直接把画布坐标当屏幕坐标写进 cx/cy，
+    // 锚点会整体偏移 pan+zoom 倍距离 —— 这是换层后最容易犯的错。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/renderAnchors\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 renderAnchors');
+    assert(/toViewport/.test(m[1]), '渲染前必须做画布坐标 → 视口坐标换算');
+    assert(/AnchorSession\.setRendered/.test(m[1]), '并把画布坐标写进清单供命中检测使用');
+});
+
+test('锚点层挂到 body 后必须由 canvas-editor 之外的清理路径兜住', () => {
+    // 挂到 body 意味着不再随 canvas 一起销毁，
+    // 因此 clearAnchors 必须仍然能可靠清空它。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/clearAnchors\(\)\s*\{([\s\S]*?)\n    \}/);
+    assert(m, '应能找到 clearAnchors');
+    assert(/setRendered\(\[\]\)/.test(m[1]), 'clearAnchors 必须清清单');
+});
+
+test('内部宿主必须在 iframe load 时预热（修「逐步显示」）', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/iframe\.addEventListener\('load'([\s\S]*?)\n        \}\);/);
+    assert(m, '应能在 iframe 创建处找到 load 监听');
+    assert(/primeInnerHosts/.test(m[1]),
+        'iframe 内容就绪时应立即预热内部宿主，而不是等用户 hover');
+});
+
+test('hover 路径在缓存就绪时不得触发异步补绘（首帧即完整）', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'tools', 'tools-connector.js'), 'utf8');
+    const m = src.match(/_renderAnchorIds\(ids,\s*cursor\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 _renderAnchorIds');
+    assert(/_innerCache\.has\(key\)\)\s*continue/.test(m[1]),
+        '缓存已就绪时应直接 continue，不再发起异步预热 —— 否则首帧只有 12 个、隔帧补齐');
+});
+
+// ================================================================ 26. 两层锚点模型（MasterGo：页面级 + 鼠标所在元素）
+
+suite('26. 两层锚点模型（逐层聚焦，不一次全亮）');
+
+const LAYER_PAGE = {
+    id: 'p1',
+    position: { x: 0, y: 0 },
+    width: 375,
+    height: 812,
+};
+
+test('hover 页面框：只返回页面级锚点，不含任何内部元素', () => {
+    // 用户反馈「当前是直接显示整个页面所有元素的锚点」——
+    // 实测一次性亮出 128 个。MasterGo 只亮页面自身的 12 个。
+    const hosts = [
+        { elementId: 'p1', kind: 'element', rect: R(0, 0, 375, 812), anchors: Anchor.anchorsOfRect(R(0, 0, 375, 812)) },
+        { elementId: 'p1', kind: 'inner', selector: '#card1', rect: R(10, 100, 351, 80), anchors: Anchor.anchorsOfRect(R(10, 100, 351, 80), { density: 'coarse' }) },
+        { elementId: 'p1', kind: 'inner', selector: '#card2', rect: R(10, 200, 351, 80), anchors: Anchor.anchorsOfRect(R(10, 200, 351, 80), { density: 'coarse' }) },
+    ];
+    const firstLayer = AnchorSession.pageLevelHosts(hosts);
+    assertEqual(firstLayer.length, 1, '第一层只应有页面框自身');
+    assertEqual(firstLayer[0].kind, 'element', '第一层必须是元素级宿主');
+    assertEqual(firstLayer[0].anchors.length, 12, '页面框应有 12 个锚点');
+});
+
+test('鼠标在页面框内但不在任何元素上：第二层为空', () => {
+    const hosts = [
+        { elementId: 'p1', kind: 'element', rect: R(0, 0, 375, 812), anchors: [] },
+        { elementId: 'p1', kind: 'inner', selector: '#card1', rect: R(10, 100, 351, 80), anchors: [] },
+    ];
+    // 点在 (5, 500)：在页面框内，但不在 card1 里
+    const second = AnchorSession.hoveredInnerHost({ x: 5, y: 500 }, hosts);
+    assertEqual(second, null, '空白处不应有高亮层');
+});
+
+test('鼠标在某张卡片上：第二层只返回那一个元素', () => {
+    const card1 = R(10, 100, 351, 80);
+    const card2 = R(10, 200, 351, 80);
+    const hosts = [
+        { elementId: 'p1', kind: 'element', rect: R(0, 0, 375, 812), anchors: [] },
+        { elementId: 'p1', kind: 'inner', selector: '#card1', rect: card1, anchors: [] },
+        { elementId: 'p1', kind: 'inner', selector: '#card2', rect: card2, anchors: [] },
+    ];
+    const hit = AnchorSession.hoveredInnerHost({ x: 100, y: 140 }, hosts);
+    assert(hit, '应命中某个内部元素');
+    assertEqual(hit.selector, '#card1', '应命中鼠标所在的 card1');
+});
+
+test('命中多个嵌套元素时取最内层（面积最小）', () => {
+    // 外层大容器把内层小卡片包住，两者都包含该点 —— 必须选内层，
+    // 否则用户永远连不到具体按钮，只能连到那个大盒子。
+    const outer = R(0, 0, 375, 400);
+    const innerEl = R(20, 100, 200, 60);
+    const hosts = [
+        { elementId: 'p1', kind: 'element', rect: R(0, 0, 375, 812), anchors: [] },
+        { elementId: 'p1', kind: 'inner', selector: '#outer', rect: outer, anchors: [] },
+        { elementId: 'p1', kind: 'inner', selector: '#inner', rect: innerEl, anchors: [] },
+    ];
+    const hit = AnchorSession.hoveredInnerHost({ x: 100, y: 130 }, hosts);
+    assertEqual(hit.selector, '#inner', '应取面积最小的最内层');
+});
+
+test('三层嵌套时取最内层（不是最外层也不是中间层）', () => {
+    // 这条比上一条更严：只比较"最外 vs 最内"时，某些错误实现也能蒙对；
+    // 加一层中间元素后，只有"严格取最小面积"才能通过。
+    const hosts = [
+        { elementId: 'p1', kind: 'element', rect: R(0, 0, 375, 812), anchors: [] },
+        { elementId: 'p1', kind: 'inner', selector: '#lvl1', rect: R(0, 0, 375, 400), anchors: [] },   // 150000
+        { elementId: 'p1', kind: 'inner', selector: '#lvl2', rect: R(10, 80, 300, 200), anchors: [] },  // 60000
+        { elementId: 'p1', kind: 'inner', selector: '#lvl3', rect: R(30, 110, 180, 100), anchors: [] },  // 18000
+    ];
+    const hit = AnchorSession.hoveredInnerHost({ x: 100, y: 150 }, hosts);
+    assertEqual(hit.selector, '#lvl3', '三层时应取面积最小的第 3 层');
+});
+
+test('命中元素级（页面框）不算第二层', () => {
+    const hosts = [
+        { elementId: 'p1', kind: 'element', rect: R(0, 0, 375, 812), anchors: [] },
+    ];
+    assertEqual(AnchorSession.hoveredInnerHost({ x: 100, y: 400 }, hosts), null,
+        '只命中页面框本身时，第二层应为空');
+});
+
+test('第二层合并后 = 第一层 12 + 高亮元素 ≤4', () => {
+    const pageRect = R(0, 0, 375, 812);
+    const cardRect = R(10, 100, 351, 80);
+    const hosts = [
+        { elementId: 'p1', kind: 'element', rect: pageRect, anchors: Anchor.anchorsOfRect(pageRect) },
+        { elementId: 'p1', kind: 'inner', selector: '#card', rect: cardRect, anchors: Anchor.anchorsOfRect(cardRect, { density: 'coarse' }) },
+    ];
+    const first = AnchorSession.pageLevelHosts(hosts);
+    const second = AnchorSession.hoveredInnerHost({ x: 100, y: 140 }, hosts);
+    const total = first.length ? first[0].anchors.length : 0;
+    assertEqual(total, 12, '第一层 12 个锚点恒亮');
+    assertEqual(second.anchors.length, 4, '第二层该元素 4 个锚点');
+    assert(total + second.anchors.length <= 16,
+        `默认态最多 ${total + second.anchors.length} 个锚点（对比旧实现一次性 128 个）`);
+});
+
+// ================================================================ 27. 端点解析唯一入口（修「预览和实际不一样」）
+
+suite('27. 端点解析唯一入口（预览 === 落线）');
+
+/** 造一个假页面元素 */
+function pageEl(id, x, y, w, h) {
+    return { id, type: 'page', position: { x, y }, width: w, height: h };
+}
+
+const END_A = pageEl('A', 100, 100, 375, 812);
+const END_B = pageEl('B', 700, 100, 375, 812);
+
+/** 注入依赖：getElement + getInnerRect */
+function deps(innerRects = {}) {
+    return {
+        getElement: (id) => ({ A: END_A, B: END_B }[id] || null),
+        getInnerRect: (eid, sel) => innerRects[eid + '|' + sel] || null,
+    };
+}
+
+test('元素级锚点：两端矩形就是页面框本身', () => {
+    const r = AnchorSession.resolveEndpoints('A', 'B',
+        { elementId: 'A', kind: 'element', side: 'right', t: 0.25 },
+        { elementId: 'B', kind: 'element', side: 'left', t: 0.75 },
+        deps());
+    assert(r, '应解析成功');
+    assertEqual(r.fromRect, { x: 100, y: 100, width: 375, height: 812 }, '起点用 A 的矩形');
+    assertEqual(r.toRect, { x: 700, y: 100, width: 375, height: 812 }, '终点用 B 的矩形');
+    assertEqual(r.fromSide, { side: 'right', t: 0.25 }, '起点描述符应透传');
+    assertEqual(r.toSide, { side: 'left', t: 0.75 }, '终点描述符应透传');
+});
+
+test('⚠️ 内层锚点必须解析成子元素矩形，而不是页面框矩形', () => {
+    // 这就是「预览和实际不一样」的根因：
+    //   预览用页面框矩形 → top@0.5 落在 y=100 附近
+    //   落线用内部元素矩形 → 落在 y=527.5
+    const inner = { x: 713, y: 527.5, width: 349, height: 52 };
+    const r = AnchorSession.resolveEndpoints('A', 'B',
+        { elementId: 'A', kind: 'element', side: 'right', t: 0.25 },
+        { elementId: 'B', kind: 'inner', selector: '#hotList > div:nth-of-type(5)', side: 'top', t: 0.5 },
+        deps({ 'B|#hotList > div:nth-of-type(5)': inner }));
+
+    assert(r, '应解析成功');
+    assertEqual(r.toRect, inner,
+        '终点必须用**内部子元素**的矩形；用页面框矩形正是那个 bug');
+
+    // top 边的锚点在矩形顶边再外移 6px：527.5 - 6 = 521.5
+    const pt = Anchor.resolvePoint(r.toRect, r.toSide);
+    assertClose(pt.y, inner.y - Anchor.OFFSET, 1e-9,
+        '终点锚点应落在内部元素顶部外侧，而不是页面框顶部（y≈94）');
+    assert(pt.y > 400,
+        `终点 y=${pt.y} 必须远离页面框顶部；用错矩形会得到 ~94`);
+});
+
+test('⚠️ 预览与落线用同一入口时，端点解析结果必须完全一致', () => {
+    // 这条是**行为**断言，不是源码文本检查 —— 源码里只要还调用着
+    // resolveEndpoints 就可能已经分叉（把调用结果丢掉、自己另算一套）。
+    // 真正的不变量是：两次解析同一组锚点，得到的端点相同。
+    const inner = { x: 713, y: 527.5, width: 349, height: 52 };
+    const d = deps({ 'B|#x': inner });
+    const fromA = { elementId: 'A', kind: 'element', side: 'right', t: 0.25 };
+    const toB = { elementId: 'B', kind: 'inner', selector: '#x', side: 'top', t: 0.5 };
+
+    const previewLike = AnchorSession.resolveEndpoints('A', 'B', fromA, toB, d);
+    const finalLike = AnchorSession.resolveEndpoints('A', 'B', fromA, toB, d);
+
+    assertEqual(previewLike, finalLike, '预览与落线的解析结果必须逐位相同');
+    assertEqual(previewLike.toRect, inner, '两端都必须解析到内部元素矩形');
+
+    // 端点坐标也必须一致
+    const p1 = Anchor.resolvePoint(previewLike.toRect, previewLike.toSide);
+    const p2 = Anchor.resolvePoint(finalLike.toRect, finalLike.toSide);
+    assertClose(p1.x, p2.x, 1e-9, '终点 x 一致');
+    assertClose(p1.y, p2.y, 1e-9, '终点 y 一致');
+});
+
+test('⚠️ 两层模型：内部宿主不参与第一层（不能又变成一次全亮）', () => {
+    const pageRect = R(0, 0, 375, 812);
+    const hosts = [];
+    for (let i = 0; i < 30; i++) {
+        const r = R(10, i * 25, 351, 80);
+        hosts.push({
+            elementId: 'p1', kind: 'inner', selector: '#c' + i, rect: r,
+            anchors: Anchor.anchorsOfRect(r, { density: 'coarse' }),
+        });
+    }
+    hosts.unshift({
+        elementId: 'p1', kind: 'element', rect: pageRect,
+        anchors: Anchor.anchorsOfRect(pageRect),
+    });
+
+    const first = AnchorSession.pageLevelHosts(hosts);
+    assertEqual(first.length, 1, '第一层只有页面框自身');
+    assertEqual(first[0].anchors.length, 12, '且只有 12 个锚点');
+
+    // 第二层只取一个 → 总数必须远小于「一次全亮」
+    const second = AnchorSession.hoveredInnerHost({ x: 100, y: 40 }, hosts);
+    assert(second, '应命中某个内部元素');
+    const total = first[0].anchors.length + second.anchors.length;
+    assertEqual(total, 16, '默认态总共 16 个锚点，而不是 30 宿主全亮的 132 个');
+});
+
+test('同一组锚点，多次解析结果完全一致（无隐藏随机性）', () => {
+    const inner = { x: 713, y: 527.5, width: 349, height: 52 };
+    const a = { elementId: 'A', kind: 'element', side: 'right', t: 0.25 };
+    const b = { elementId: 'B', kind: 'inner', selector: '#x', side: 'top', t: 0.5 };
+    const d = deps({ 'B|#x': inner });
+    const r1 = AnchorSession.resolveEndpoints('A', 'B', a, b, d);
+    const r2 = AnchorSession.resolveEndpoints('A', 'B', a, b, d);
+    assertEqual(r1, r2, '同一输入必须得到同一输出');
+});
+
+test('内部宿主解析不到时退回页面框（线要可见，不能整条消失）', () => {
+    const r = AnchorSession.resolveEndpoints('A', 'B',
+        null,
+        { elementId: 'B', kind: 'inner', selector: '#missing', side: 'top', t: 0.5 },
+        deps());   // 没有任何 innerRect
+    assert(r, '应仍能解析');
+    assertEqual(r.toRect, { x: 700, y: 100, width: 375, height: 812 },
+        '解析不到内部宿主应退回页面框，而不是返回 null');
+});
+
+test('元素不存在时返回 null（调用方据此跳过渲染）', () => {
+    assertEqual(AnchorSession.resolveEndpoints('A', 'MISSING', null, null, deps()), null,
+        '终点元素不存在应返回 null');
+    assertEqual(AnchorSession.resolveEndpoints('MISSING', 'B', null, null, deps()), null,
+        '起点元素不存在应返回 null');
+});
+
+test('无锚点时两端都用页面框矩形（旧数据兼容）', () => {
+    const r = AnchorSession.resolveEndpoints('A', 'B', null, null, deps());
+    assert(r, '旧连接线没有锚点字段，也必须能解析');
+    assertEqual(r.fromRect, { x: 100, y: 100, width: 375, height: 812 });
+    assertEqual(r.toRect, { x: 700, y: 100, width: 375, height: 812 });
+    assertEqual(r.fromSide, null, '无锚点时描述符为 null，路由会退回整元素模式');
+});
+
+// ================================================================ 28. 静态契约：只有一处解析逻辑
+
+suite('28. 静态契约（禁止再写第二份解析）');
+
+test('renderPreview 必须真正使用 resolveEndpoints 的结果（而非调用后丢弃另算一套）', () => {
+    // ⚠️ 只检查"源码里有没有 resolveEndpoints 这个词"是不够的 ——
+    //    把调用结果丢掉、自己另算一套，字样照样在，缺陷照样漏。
+    //    真正的契约是：**ep 的字段被用来算路径**。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'tools', 'tools-connector.js'), 'utf8');
+    const m = src.match(/renderPreview\(\)\s*\{([\s\S]*?)\n    \},\n/);
+    assert(m, '应能找到 renderPreview');
+    const body = m[1];
+
+    assert(/resolveEndpoints/.test(body), '必须调用 resolveEndpoints');
+    // ⚠️ 两端都必须用 —— 只查"任一出现"会被"只用元素级矩形"的注入蒙混过关，
+    //    而那正是预览/落线分叉的真实形态（inner 端被换成页面框矩形）。
+    assert(/ep\.fromRect/.test(body), '起点矩形必须来自 ep');
+    assert(/ep\.toRect/.test(body), '终点矩形必须来自 ep');
+    assert(/ep\.fromSide/.test(body) && /ep\.toSide/.test(body), '两端路由描述符必须来自 ep');
+    assert(/routeWithAnchors\(\s*fromRect\s*,\s*toRect\s*,\s*fromSide\s*,\s*toSide/.test(body),
+        '预览路由必须用解析出的 fromRect/toRect/fromSide/toSide');
+    // 兜底分支只能出现在 ep 为 null 时
+    assert(/if \(ep\)/.test(body), '应有 ep 有效分支与失效兜底分支');
+});
+
+test('渲染器必须用 resolveEndpoints 的结果算路径', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/routeFor\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 routeFor');
+    assert(/resolveEndpoints/.test(m[1]), '必须调用 resolveEndpoints');
+    assert(/ep\.fromRect|ep\.toRect/.test(m[1]),
+        '必须把 ep 的矩形传给 routeFromAnchor —— 调用后丢弃等于没调用');
+});
+
+test('renderAnchors 必须真正使用两层结果（而非调用后丢弃）', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/renderAnchors\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 renderAnchors');
+    const body = m[1];
+    assert(/pageLevelHosts/.test(body) && /hoveredInnerHost/.test(body), '必须调用两个分层函数');
+    assert(/layers\.push\(inner\)/.test(body),
+        '第二层必须真的被 push 进 layers —— 不 push 就等于又变成一次全亮');
+    assert(/for \(const host of layers\)/.test(body), '必须遍历 layers（而不是 hosts）');
+});
+
+// ================================================================ 29. 实测矩形（修「页面级锚点只显示了一半」）
+
+suite('29. 实测矩形：锚点必须跟随页面实际高度');
+
+const OVERFLOW_EL = pageEl('A', 100, 100, 375, 812);
+
+test('⚠️ 内容溢出声明高度时，锚点矩形要用实际高度', () => {
+    // 浏览器实测：页面去滚轮后 DOM 实际高 1699（画布坐标），
+    // 但 element.height 仍是 812。差 887px —— 上下两边的锚点全部错位。
+    const domRect = { width: 375 * 0.62, height: 1699 * 0.62 };  // zoom=0.62 的屏幕像素
+    const r = AnchorSession.measuredRectOf(OVERFLOW_EL, {
+        getDomRect: () => domRect,
+        view: { zoom: 0.62, pan: { x: 0, y: 0 } },
+    });
+    assert(r.height > 1698 && r.height < 1700,
+        '应采用实测高度 1699（DOM 屏幕高 / zoom），而不是声明值 812；实得 ' + r.height);
+    assertEqual(r.x, 100, '左上角仍取声明值（位置由 pan/zoom 决定，与高度无关）');
+});
+
+test('实测高度让上下两边锚点落在真实边缘上', () => {
+    const domRect = { width: 375 * 0.62, height: 1699 * 0.62 };
+    const r = AnchorSession.measuredRectOf(OVERFLOW_EL, {
+        getDomRect: () => domRect,
+        view: { zoom: 0.62, pan: { x: 0, y: 0 } },
+    });
+    const anchors = Anchor.anchorsOfRect(r);
+
+    const bottom = anchors.filter(a => a.side === 'bottom');
+    assertEqual(bottom.length, 3, '下边应有 3 个锚点');
+    const bottomPt = Anchor.resolvePoint(r, bottom[0]);
+    assertClose(bottomPt.y, r.y + r.height + Anchor.OFFSET, 1e-9,
+        '下边锚点必须贴真实底边（y=100+1699+6），而不是声明底边（y=918）');
+
+    // 用声明高度算会得到 y=918 —— 与真实底边差 887
+    const wrong = Anchor.resolvePoint({ x: 100, y: 100, width: 375, height: 812 },
+        { side: 'bottom', t: 0.5 });
+    assert(bottomPt.y - wrong.y > 800, '确认两者确实差 800+px —— 这就是原 bug 的量级');
+});
+
+test('读不到 DOM 时退回声明值（不抛异常，线仍要可见）', () => {
+    const r = AnchorSession.measuredRectOf(OVERFLOW_EL, { getDomRect: () => null });
+    assertEqual(r, { x: 100, y: 100, width: 375, height: 812 },
+        '拿不到 DOM 矩形时应退回声明值');
+});
+
+test('实测值比声明值更小时仍用声明值（元素被折叠/隐藏的防护）', () => {
+    // 元素被折叠（display:none 之类）时 DOM 高度可能接近 0。
+    // 若直接采用，锚点会塌缩到元素内部，视觉上像"锚点消失了"。
+    for (const domH of [0, 1, 50, 300, 811, 812]) {
+        const domRect = { width: 375 * 0.62, height: domH * 0.62 };
+        const r = AnchorSession.measuredRectOf(OVERFLOW_EL, {
+            getDomRect: () => domRect,
+            view: { zoom: 0.62, pan: { x: 0, y: 0 } },
+        });
+        assertEqual(r.height, 812,
+            '实测 ' + domH + ' ≤ 声明 812 时必须用声明值；否则元素一折叠锚点就塌了');
+    }
+});
+
+test('实测值确实更大时才采用（正向保护）', () => {
+    const domRect = { width: 375 * 0.62, height: 1699 * 0.62 };
+    const r = AnchorSession.measuredRectOf(OVERFLOW_EL, {
+        getDomRect: () => domRect,
+        view: { zoom: 0.62, pan: { x: 0, y: 0 } },
+    });
+    assert(r.height > 812, '实测更大时必须采用');
+});
+
+test('hostsOf 必须使用实测矩形（否则这里一改就白改）', () => {
+    // hostsOf 是渲染与命中共用的入口；若它还用声明值，
+    // measuredRectOf 再对也没用。这条锁住调用关系。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'connectors', 'anchor-session.js'), 'utf8');
+    const m = src.match(/hostsOf\(pageElement\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 hostsOf');
+    assert(/measuredRectOf\(/.test(m[1]),
+        'hostsOf 必须调用 measuredRectOf；直接用 pageElement.height 会让锚点错位');
+});
+
+// ================================================================ 30. 锚点屏幕尺寸恒定（对齐 MasterGo）
+
+suite('30. 锚点屏幕尺寸恒定（修「缩放时太大」）');
+
+test('⚠️ 半径不得除以 zoom（缩小会反向放大圆点）', () => {
+    // 浏览器实测：r = RADIUS / zoom 时
+    //   zoom=0.25 → 直径 40px；zoom=0.5 → 20px；zoom=1 → 10px
+    // 而 MasterGo 缩放到 12% 时实测仍是 10–11px。
+    // 根因：锚点层是 position:fixed，不受画布缩放影响，
+    //      此时再除以 zoom 等于把圆点**放大**。
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    const m = src.match(/renderAnchors\([^)]*\)\s*\{([\s\S]*?)\n    \},/);
+    assert(m, '应能找到 renderAnchors');
+    assert(!/RADIUS\s*\/\s*\(?\s*view\s*\.\s*zoom/.test(m[1]),
+        'r 不得除以 zoom —— 实测会让 zoom=0.25 时圆点涨到 40px，而 MasterGo 恒为 10px');
+    assert(/RADIUS/.test(m[1]), 'r 应直接用 AnchorProvider.RADIUS（屏幕单位）');
+});
+
+test('描边宽度同样不应跟随 zoom 放大', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'js', 'element-manager', 'element-renderer.js'), 'utf8');
+    assert(!/stroke-width['"]\s*,\s*['"]?2/.test(src.replace(/stroke-width['"]\s*,\s*['"]2/, 'stroke-width\', \'1.5')),
+        '描边应为 1.5px（MasterGo 细环）；2px 在小圆点上显得过粗');
 });
 
 // ================================================================ 收尾

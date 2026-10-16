@@ -140,6 +140,28 @@ const ElementRenderer = {
         iframe.style.overflow = 'hidden';
         div.appendChild(iframe);
 
+        // ⚠️ 预热内部宿主：iframe 内容一就绪就去取，不等用户 hover。
+        //
+        // 用户报的第二个问题「锚点是逐步显示的，不是一下子全部显示」：
+        //   修复前内部宿主是在 **hover 时**才去取，
+        //   而 file:// 走 postMessage 桥要一个来回（约 5ms），
+        //   于是首帧只有元素级 12 个，隔一帧才补到 152 个 —— 肉眼可见的"逐步出现"。
+        //   MasterGo 是一帧出齐的。
+        //
+        // 挂在 load 上是因为此时内部 DOM 才有意义（about:blank 阶段没有内容）。
+        // primeInnerHosts 自带去重，重复触发不会重复发请求。
+        iframe.addEventListener('load', () => {
+            if (typeof AnchorSession === 'undefined' || !AnchorSession.primeInnerHosts) return;
+            AnchorSession.primeInnerHosts(element, iframe, () => {
+                // 若用户此刻正悬停在这个元素上，立刻补齐
+                if (typeof ToolsConnector !== 'undefined' &&
+                    ToolsConnector.hoverElementId === element.id &&
+                    typeof ElementManager !== 'undefined' && ElementManager.renderAnchors) {
+                    ElementManager.renderAnchors([element.id]);
+                }
+            });
+        });
+
         // 透明点击遮罩层：覆盖在 iframe 上方，捕获鼠标事件并正常冒泡
         const clickOverlay = document.createElement('div');
         clickOverlay.className = 'page-click-overlay';
@@ -252,13 +274,13 @@ const ElementRenderer = {
     /**
      * 为一条连接线算出路径点集。
      *
-     * 锚点解析规则：
-     *   - 锚点引用里的 rect 取**宿主矩形**：元素级锚点用页面元素矩形，
-     *     inner 锚点用 iframe 内那个子元素的矩形（由 AnchorSession 解析）。
-     *   - 解析不出宿主（页面刚加载、iframe 内元素还没上报）时，
-     *     该端退回「整元素」语义，线仍然画得出来，不会消失。
+     * ⚠️ 端点解析一律走 `AnchorSession.resolveEndpoints` —— **唯一入口**。
+     *    本项目曾因"同一逻辑写两份"出过三次分叉 bug，其中一次就是
+     *    「预览用页面框矩形、落线用内部元素矩形」，用户看到预览终点
+     *    y=54、实际终点 y=521.5。现在收敛为单处，结构上杜绝复发。
      *
-     * 旧数据（没有 fromAnchor/toAnchor 字段）走 route()，路径与升级前逐像素一致。
+     * 旧数据（没有 fromAnchor/toAnchor 字段）走 route()，
+     * 路径与升级前逐像素一致。
      */
     routeFor(element, fromEl, toEl, fromRect, toRect) {
         const hasAnchor = !!(element.fromAnchor || element.toAnchor);
@@ -266,46 +288,15 @@ const ElementRenderer = {
             return ConnectorRouter.route(fromRect, toRect);
         }
 
-        const fromHost = this._hostRectOf(element.fromAnchor, fromEl, fromRect);
-        const toHost = this._hostRectOf(element.toAnchor, toEl, toRect);
-
-        return ConnectorRouter.routeFromAnchor(
-            fromHost.rect, toHost.rect, fromHost.anchor, toHost.anchor);
-    },
-
-    /**
-     * 解析锚点引用的宿主矩形 + 传给路由的锚点描述符。
-     *
-     * inner 锚点必须用**子元素自己的矩形**，否则线会从整个页面框的边出发，
-     * 而不是从那个按钮出发 —— 这正是"内部元素也能作锚点"的意义所在。
-     */
-    _hostRectOf(anchorRef, fallbackEl, fallbackRect) {
-        if (!anchorRef) return { rect: fallbackRect, anchor: null };
-
-        // inner 锚点：向 AnchorSession 要宿主矩形
-        if (anchorRef.kind === 'inner' && anchorRef.selector &&
-            typeof AnchorSession !== 'undefined' && AnchorSession.resolve) {
-            const resolved = AnchorSession.resolve({
-                elementId: anchorRef.elementId || (fallbackEl && fallbackEl.id),
-                kind: 'inner',
-                selector: anchorRef.selector,
-                side: anchorRef.side,
-                t: anchorRef.t,
-            });
-            if (resolved && resolved.rect) {
-                return {
-                    rect: resolved.rect,
-                    anchor: { side: anchorRef.side, t: anchorRef.t },
-                };
-            }
-            // 内部宿主暂时解析不到 → 退回元素级，保证线可见
-            return {
-                rect: fallbackRect,
-                anchor: { side: anchorRef.side, t: anchorRef.t },
-            };
+        const ep = AnchorSession.resolveEndpoints(
+            fromEl.id, toEl.id, element.fromAnchor, element.toAnchor);
+        if (!ep) {
+            // 端点元素已消失 → 退回元素级，至少把线画出来
+            return ConnectorRouter.routeFromAnchor(fromRect, toRect,
+                element.fromAnchor, element.toAnchor);
         }
-
-        return { rect: fallbackRect, anchor: { side: anchorRef.side, t: anchorRef.t } };
+        return ConnectorRouter.routeFromAnchor(
+            ep.fromRect, ep.toRect, ep.fromSide, ep.toSide);
     },
 
     /**
@@ -412,62 +403,114 @@ const ElementRenderer = {
     // ================================================================ 锚点层
 
     /**
-     * 渲染当前 hover 元素的锚点（MasterGo 的「连接点」）。
+     * 渲染锚点（MasterGo 的「连接点」）。
      *
-     * 绘制在**独立的顶层 SVG**（#connectorAnchorLayer）里，而不是塞进
-     * 每个元素的 div：
-     *   - 锚点画在元素边界**外侧**，塞进元素 div 会被 overflow 裁掉
-     *   - iframe 内的子元素锚点根本不属于任何画布元素的 DOM 子树
+     * ⚠️ 为什么锚点层挂在 document.body 而不是 #canvas：
+     *    #canvas 在 #canvasWrapper 里，而 wrapper 是 `overflow:hidden`、
+     *    高度仅等于视口可见区（实测 727px）。用户放大看单个页面框时，
+     *    页面框底边会落到屏幕 y=834 > 771，
+     *    **底部 14 个锚点全被裁掉**（实测 insideWrapper:0 / clipped:14）。
+     *    数据层是完整对称的（124 个），丢的是渲染而非数据。
+     *    改成 body + position:fixed 后，锚点不再受画布滚动区裁剪。
      *
-     * 锚点是纯视觉 + 命中靠几何计算（AnchorSession.hitTest），
-     * 所以整层 pointer-events:none，不干扰任何既有交互。
+     * @param {?Array<string>|?string} elementIds 要显示的页面元素 id
+     * @param {?{x,y}} cursor 鼠标画布坐标；决定第二层高亮哪个内部元素
      */
-    renderAnchors() {
-        const canvas = document.getElementById('canvas');
-        if (!canvas) return;
-
-        let layer = document.getElementById('connectorAnchorLayer');
-        if (!layer) {
-            layer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            layer.id = 'connectorAnchorLayer';
-            layer.setAttribute('class', 'connector-anchor-layer');
-            layer.style.cssText =
-                'position:absolute;left:0;top:0;width:100%;height:100%;' +
-                'overflow:visible;pointer-events:none;z-index:120;';
-            canvas.appendChild(layer);
-        }
+    renderAnchors(elementIds, cursor) {
+        const layer = this._ensureAnchorLayer();
+        if (!layer) return;
 
         layer.innerHTML = '';
 
-        const hoverId = (typeof ToolsConnector !== 'undefined') ? ToolsConnector.hoverElementId : null;
-        if (!hoverId) return;
-        const el = ElementManager.getElement(hoverId);
-        if (!el) return;
+        // 归一成数组并去重：绘制期同一元素可能既是源又是目标
+        const ids = (Array.isArray(elementIds) ? elementIds : [elementIds]).filter(Boolean);
+        const unique = ids.filter((v, i) => ids.indexOf(v) === i);
 
-        const hosts = AnchorSession.hostsOf(el);
-        const r = AnchorProvider.RADIUS;
+        // fixed 层以视口为参照系：画布坐标要先换算成屏幕坐标再落点。
+        // ⚠️ origin 必须是 #canvasWrapper 的屏幕位置 —— 画布坐标是相对 wrapper 的，
+        //    不是相对视口原点。用 (0,0) 会让所有锚点整体偏移 wrapper.left/top。
+        const view = (typeof CanvasView !== 'undefined' && CanvasView.getView)
+            ? CanvasView.getView() : { zoom: 1, pan: { x: 0, y: 0 } };
+        const wrapper = document.getElementById('canvasWrapper');
+        const origin = wrapper
+            ? wrapper.getBoundingClientRect()
+            : { left: 0, top: 0 };
+        const rendered = [];
 
-        for (const host of hosts) {
-            for (const a of host.anchors) {
-                const p = AnchorProvider.resolvePoint(host.rect, a);
-                if (!p) continue;
-                const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                c.setAttribute('class', 'connector-anchor');
-                c.setAttribute('cx', p.x);
-                c.setAttribute('cy', p.y);
-                c.setAttribute('r', r);
-                // 内部子元素的锚点用略淡的颜色，与宿主自身锚点区分开
-                c.setAttribute('fill', host.kind === 'inner' ? '#ffffff' : '#ffffff');
-                c.setAttribute('stroke', host.kind === 'inner' ? '#7cb3f5' : '#409EFF');
-                c.setAttribute('stroke-width', '2');
-                layer.appendChild(c);
+        for (const id of unique) {
+            const el = ElementManager.getElement(id);
+            if (!el) continue;
+            const hosts = AnchorSession.hostsOf(el);
+            // ⚠️ 两层模型（修「应该逐步显示却一次全亮」）：
+            //    第一层 = 页面框自身（恒亮）
+            //    第二层 = 鼠标当前所在的**那一个**内部元素
+            //    其余内部元素的锚点**不显示** —— MasterGo 就是这个行为。
+            const layers = AnchorSession.pageLevelHosts(hosts).slice();
+            const inner = AnchorSession.hoveredInnerHost(cursor, hosts);
+            if (inner) layers.push(inner);
+
+            for (const host of layers) {
+                for (const a of host.anchors) {
+                    const canvasPt = AnchorProvider.resolvePoint(host.rect, a);
+                    if (!canvasPt) continue;
+                    const p = AnchorSession.toViewport(canvasPt, view, origin);
+                    if (!p) continue;
+
+                    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    c.setAttribute('class', 'connector-anchor');
+                    c.setAttribute('cx', p.x);
+                    c.setAttribute('cy', p.y);
+                    // ⚠️ r 直接用屏幕单位，**不除 zoom**。
+                    //    锚点层是 position:fixed（不受画布缩放影响），
+                    //    再除 zoom 等于反向放大 —— 实测 zoom=0.25 时圆点涨到 40px，
+                    //    而 MasterGo 缩放到 12% 仍是 10~11px。
+                    //    恒定 10px 同时也解决了「小圆点互相盖住导致只显示一半」。
+                    c.setAttribute('r', AnchorProvider.RADIUS);
+                    c.setAttribute('fill', '#ffffff');
+                    // 内部子元素的锚点用略淡的蓝，与宿主自身锚点区分开
+                    c.setAttribute('stroke', host.kind === 'inner' ? '#7cb3f5' : '#409EFF');
+                    c.setAttribute('stroke-width', '1.5');
+                    layer.appendChild(c);
+
+                    // 清单里存的仍是**画布坐标**，因为命中检测用的是画布坐标
+                    rendered.push({
+                        ref: {
+                            elementId: host.elementId,
+                            kind: host.kind,
+                            selector: host.selector,
+                            side: a.side,
+                            t: a.t,
+                        },
+                        point: canvasPt,
+                    });
+                }
             }
         }
+
+        AnchorSession.setRendered(rendered);
+    },
+
+    /** 创建（或复用）锚点层：挂在 body 上，fixed 定位，不受画布滚动区裁剪 */
+    _ensureAnchorLayer() {
+        let layer = document.getElementById('connectorAnchorLayer');
+        if (layer && layer.parentNode === document.body) return layer;
+
+        layer = layer || document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        layer.id = 'connectorAnchorLayer';
+        layer.setAttribute('class', 'connector-anchor-layer');
+        layer.style.cssText =
+            'position:fixed;left:0;top:0;width:100%;height:100%;' +
+            'overflow:visible;pointer-events:none;z-index:120;';
+        document.body.appendChild(layer);
+        return layer;
     },
 
     /** 清空锚点层（切换工具 / 离开画布时调用） */
     clearAnchors() {
         const layer = document.getElementById('connectorAnchorLayer');
         if (layer) layer.innerHTML = '';
+        // ⚠️ 清单必须同步清空，否则残留锚点还能被命中 ——
+        //    用户看到的是空画布，却能"点到"早已消失的锚点。
+        AnchorSession.setRendered([]);
     }
 };

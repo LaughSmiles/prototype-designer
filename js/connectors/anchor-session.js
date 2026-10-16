@@ -16,6 +16,33 @@
 const AnchorSession = {
 
     /**
+     * 锚点归属的**外扩带宽度**（画布 px）。
+     *
+     * = OFFSET + RADIUS，恰好把整个锚点圆点包进宿主的归属范围。
+     *
+     * ⚠️ 这个常量是问题 1 的修复核心。
+     *    实测 bug：锚点画在元素边界**外侧** 6px，而元素命中框只认框内，
+     *    于是每个锚点都落在自己宿主的命中区之外：
+     *      · 鼠标朝框外锚点移动 → findPageElementAt 返回 null
+     *      → setHoverElement(null) → 锚点层被清空，圆点凭空消失
+     *      → 用户凭记忆点在原处 → 命中别的元素 → 「选了 A 连到 B」
+     *    而且更糟：框外锚点物理上根本无法被 snapToAnchor 选中，
+     *    实测点上去 started=false，连画都起不来。
+     *
+     *    修法就是让归属判定承认这段外扩带（选项 C：视觉不变，只修命中）。
+     */
+    get BAND() {
+        // ⚠️ 不用 this.OFFSET + this.RADIUS 硬算，也不直接引用 AnchorProvider：
+        //    本模块可能被单独加载（tools/test-anchor.js 会把它和
+        //    connector-router.js 一起塞进同一个 vm 沙箱），直接引用全局标识符
+        //    会在缺少依赖时抛 ReferenceError，把整个会话模块拖垮。
+        //    与 ConnectorRouter._anchorPoint 同一个教训：宁可本地兜底。
+        const off = (typeof AnchorProvider !== 'undefined') ? AnchorProvider.OFFSET : 6;
+        const rad = (typeof AnchorProvider !== 'undefined') ? AnchorProvider.RADIUS : 5;
+        return off + rad;
+    },
+
+    /**
      * 当前要显示锚点的宿主集合。
      * 每项：{ elementId, kind:'element'|'inner', selector?, rect, anchors[] }
      */
@@ -24,29 +51,326 @@ const AnchorSession = {
     /** 内部宿主缓存：key → [{selector, rect}]，rect 为画布坐标 */
     _innerCache: new Map(),
 
-    /** 当前悬停的元素 id（null = 没悬停，此时不显示任何锚点） */
-    hoverId: null,
-
     /** 异步往返期间避免重复请求 */
     _pending: new Set(),
+
+    /**
+     * 当前悬停的元素 id（null = 没悬停，此时不显示任何锚点） */
+    hoverId: null,
+
+    /**
+     * 已渲染的锚点清单：[{ref, point}]。
+     *
+     * ⚠️ 命中检测以**这份清单**为准，而不是用几何重新推导。
+     *    原因：渲染与推导一旦分叉，就会出现"屏幕上画的是 A 锚点、
+     *    算出来的是 B 锚点"——用户点哪个都对不上。
+     *    既然屏幕上画了什么我们最清楚，就直接拿这份清单做命中。
+     */
+    _rendered: [],
+
+    /** 记录本轮实际渲染出去的锚点（由 renderAnchors 调用） */
+    setRendered(list) {
+        this._rendered = Array.isArray(list) ? list : [];
+    },
+
+    /** 在已渲染清单里找离给定点最近的锚点 */
+    hitRendered(point, tolerance) {
+        if (!point || !this._rendered.length) return null;
+        const t = Number.isFinite(tolerance) ? tolerance : 10;
+        let best = null;
+        let bestDist = Infinity;
+        for (const a of this._rendered) {
+            if (!a || !a.point) continue;
+            const d = Math.hypot(a.point.x - point.x, a.point.y - point.y);
+            if (d <= t && d < bestDist) {
+                bestDist = d;
+                best = { ref: a.ref, point: a.point, dist: d };
+            }
+        }
+        return best;
+    },
+
+    /**
+     * 判断一个画布点归属于哪个宿主矩形（精确 → 外扩带）。
+     *
+     * 顺序不能反：**先精确包含，再外扩带**。
+     * 反过来的话，外扩带会抢走相邻元素框内的正常点击，
+     * 让两个靠得很近的页面框互相"吃掉"对方的点击。
+     *
+     * @param {{x,y}} point 画布坐标
+     * @param {Array<object>} rects 候选宿主矩形数组 {x,y,width,height}
+     * @returns {?{rect, dist}} dist=0 表示精确命中；外扩带命中时为到最近边的距离
+     */
+    ownerOf(point, rects) {
+        if (!point || !Array.isArray(rects)) return null;
+
+        // 第一层：精确包含
+        for (const r of rects) {
+            if (!r) continue;
+            if (point.x >= r.x && point.x <= r.x + r.width &&
+                point.y >= r.y && point.y <= r.y + r.height) {
+                return { rect: r, dist: 0 };
+            }
+        }
+
+        // 第二层：外扩带，取最近的一条边
+        const band = this.BAND;
+        let best = null;
+        for (const r of rects) {
+            if (!r) continue;
+            const d = this._distToRect(point, r);
+            if (d <= band && (!best || d < best.dist)) {
+                best = { rect: r, dist: d };
+            }
+        }
+        return best;
+    },
+
+    /** 点到矩形的最短距离（在矩形内为 0） */
+    _distToRect(p, r) {
+        const dx = Math.max(r.x - p.x, 0, p.x - (r.x + r.width));
+        const dy = Math.max(r.y - p.y, 0, p.y - (r.y + r.height));
+        return Math.hypot(dx, dy);
+    },
+
+    // ------------------------------------------------------------ 端点解析（唯一入口）
+
+    /**
+     * 解析一条连接线两端的「宿主矩形 + 路由锚点描述符」。
+     *
+     * ⚠️ 这是**唯一**的解析入口。预览、渲染、改连都必须走这里。
+     *
+     * 背景（反复踩的坑）：同一逻辑写两份必然分叉。本项目已因此出过三次：
+     *   1) routeFor 与 renderConnectorInto 各写一份 → 改连后路径变鬼影
+     *   2) hitRendered（清单命中）与 hitTest（几何推导）各写一份 → 「选了 A 连到 B」
+     *   3) renderPreview 用页面框矩形、落线用内部宿主矩形
+     *      → 同一锚点，预览终点 y=54、实际终点 y=521.5，**用户看到的「预览和实际不一样」**
+     * 收敛成单一入口后，这类分叉在结构上就不可能再发生。
+     *
+     * @param {string} fromId   起点元素 id
+     * @param {string} toId     终点元素 id
+     * @param {?object} fromAnchor 起点锚点引用
+     * @param {?object} toAnchor   终点锚点引用
+     * @param {?object} [opts] { getElement, getInnerRect } 依赖注入（测试用）
+     * @returns {?{fromRect,toRect,fromSide,toSide}} 任一端解析不出返回 null
+     */
+    resolveEndpoints(fromId, toId, fromAnchor, toAnchor, opts = {}) {
+        const getElement = opts.getElement ||
+            (typeof ElementManager !== 'undefined' ? (id) => ElementManager.getElement(id) : null);
+        if (!getElement) return null;
+
+        const fromEl = getElement(fromId);
+        const toEl = getElement(toId);
+        if (!fromEl || !toEl) return null;
+
+        const rawOf = (el) => ({
+            x: el.position.x, y: el.position.y,
+            width: el.width, height: el.height,
+        });
+
+        const sideOf = (a) => (a ? { side: a.side, t: a.t } : null);
+
+        return {
+            fromRect: this._hostRectFor(fromAnchor, fromEl, rawOf(fromEl), opts),
+            toRect: this._hostRectFor(toAnchor, toEl, rawOf(toEl), opts),
+            fromSide: sideOf(fromAnchor),
+            toSide: sideOf(toAnchor),
+        };
+    },
+
+    /**
+     * 单个端点的宿主矩形。
+     *
+     * inner 锚点必须用**子元素自己的矩形**，否则线会从整个页面框的边出发，
+     * 而不是从那个按钮出发 —— 这正是"内部元素也能作锚点"的意义所在。
+     *
+     * 解析不到内部宿主时退回元素级，保证线可见（而不是整条消失）。
+     */
+    _hostRectFor(anchorRef, el, fallbackRect, opts = {}) {
+        if (!anchorRef) return fallbackRect;
+
+        if (anchorRef.kind === 'inner' && anchorRef.selector) {
+            const getInnerRect = opts.getInnerRect || ((eid, sel) => {
+                const resolved = this.resolve({
+                    elementId: anchorRef.elementId || eid,
+                    kind: 'inner', selector: sel,
+                    side: anchorRef.side, t: anchorRef.t,
+                });
+                return resolved ? resolved.rect : null;
+            });
+            const r = getInnerRect(el.id, anchorRef.selector);
+            if (r) return r;
+        }
+        return fallbackRect;
+    },
+
+    // ------------------------------------------------------------ 两层锚点模型
+
+    /**
+     * 第一层：页面级宿主（页面框自身）。
+     *
+     * ⚠️ 用户反馈「当前是直接显示整个页面所有元素的锚点」——
+     *    实测一次性亮出 128 个，既糊成一片，也让人无从下手。
+     *    MasterGo 是分层的：先亮页面自身，鼠标探到哪个内部元素
+     *    再额外亮起那一个。**两层叠加，不是替换。**
+     */
+    pageLevelHosts(hosts) {
+        if (!Array.isArray(hosts)) return [];
+        return hosts.filter(h => h && h.kind === 'element');
+    },
+
+    /**
+     * 第二层：鼠标当前所在的内部元素（高亮层）。
+     *
+     * 只返回**一个**宿主 —— 命中多个嵌套元素时取**面积最小**的（最内层）。
+     * 取最内层是必须的：否则大容器永远盖住里面的按钮，
+     * 用户想连"立即使用"却只能连到包着它的大盒子。
+     *
+     * @param {{x,y}} point 画布坐标
+     * @param {Array} hosts 候选宿主
+     * @returns {?object} 命中的内部宿主；只命中页面框或在空白处时返回 null
+     */
+    hoveredInnerHost(point, hosts) {
+        if (!point || !Array.isArray(hosts)) return null;
+        let best = null;
+        let bestArea = Infinity;
+        for (const h of hosts) {
+            // 页面框本身不算第二层 —— 它已经是第一层了
+            if (!h || h.kind !== 'inner' || !h.rect) continue;
+            const r = h.rect;
+            if (point.x < r.x || point.x > r.x + r.width) continue;
+            if (point.y < r.y || point.y > r.y + r.height) continue;
+            const area = r.width * r.height;
+            if (area < bestArea) {
+                bestArea = area;
+                best = h;
+            }
+        }
+        return best;
+    },
+
+    // ------------------------------------------------------------ 视口固定系换算
+
+    /**
+     * 画布坐标 → 视口（屏幕）坐标。
+     *
+     * ⚠️ 这是修复「锚点只显示了一部分」的核心。
+     *
+     *    浏览器实测：锚点层原本挂在 #canvasWrapper 里，而 wrapper 是
+     *    `overflow:hidden`、高度仅等于视口可见区（实测 727px）。
+     *    用户放大看单个页面框时，页面框底边落到屏幕 y=834 > 771，
+     *    **底部 14 个锚点全部被裁掉**（实测 insideWrapper:0 / clipped:14）。
+     *
+     *    所以把层移到 body + position:fixed。但画布坐标**不是**相对视口原点的，
+     *    而是相对 #canvasWrapper 左上角的 —— 这里必须补上 wrapper 的屏幕偏移，
+     *    否则锚点整体偏移 wrapper.left/top（实测偏了 191px，锚点全跑到框外）。
+     *
+     *    公式与 ToolsConnector.toCanvasCoords 严格互逆。
+     *
+     * @param {{x,y}} point 画布坐标
+     * @param {object} view {zoom, pan}
+     * @param {object} origin 参照物在视口中的左上角 {left, top}（通常传 wrapper 的 rect）
+     */
+    toViewport(point, view, origin) {
+        if (!point || !view || !origin) return null;
+        const zoom = Number.isFinite(view.zoom) && view.zoom ? view.zoom : 1;
+        const pan = view.pan || { x: 0, y: 0 };
+        return {
+            x: origin.left + pan.x + point.x * zoom,
+            y: origin.top + pan.y + point.y * zoom,
+        };
+    },
+
+    /**
+     * 取「锚点层的参照原点」。
+     *
+     * 锚点层挂在 body 下、用 position:fixed 时，原点就是视口 (0,0)；
+     * 挂回 wrapper 内则用 wrapper 的左上角。
+     *
+     * @param {boolean} fixed 层是否 position:fixed
+     * @param {?DOMRect} wrapperRect
+     */
+    layerOrigin(fixed, wrapperRect) {
+        if (fixed) return { left: 0, top: 0 };
+        return wrapperRect ? { left: wrapperRect.left, top: wrapperRect.top } : { left: 0, top: 0 };
+    },
 
     // ------------------------------------------------------------ 宿主解析
 
     /**
-     * 计算某页面元素当前可用的锚点宿主（含内部元素）。
+     * 取页面元素的**实测矩形**（画布坐标）。
+     *
+     * ⚠️ 为什么要实测而不是直接用 element.width/height：
+     *
+     *    浏览器实测 bug：页面去掉滚轮后改为展示**全部内容**，
+     *    内容高 1699px，DOM 实际长到 1073（屏幕）/ 1730（画布），
+     *    但 element.height 仍是声明值 **812**。
+     *
+     *    于是锚点按 812 算 —— 上下两边的锚点全部错位：
+     *      · 上边 3 个 → 框顶上方 4px，落进拖拽条区域，被盖住
+     *      · 下边 3 个 → 框顶下方 507px，掉进页面内部，被 IFRAME 盖住
+     *      · 左右边 6 个 → 正常
+     *    12 个里 6 个看不见，用户看到的正是「只显示了一半」。
+     *
+     *    实测矩形对"内容溢出"这种形态天然免疫：页面多高，锚点就贴多高的边。
+     *
+     * 读不到 DOM 时退回声明值（不抛异常，保证线仍可见）。
      *
      * @param {object} pageElement 画布上的 page 元素
-     * @param {?HTMLIFrameElement} iframeEl 该元素内的 iframe（可空）
-     * @returns {Array<{elementId,kind,selector?,rect,anchors}>}
+     * @param {?object} [opts] { getDomRect, view } 依赖注入（测试用）
      */
-    hostsOf(pageElement) {
-        if (!pageElement) return [];
-        const rect = {
+    measuredRectOf(pageElement, opts = {}) {
+        const declared = {
             x: pageElement.position.x,
             y: pageElement.position.y,
             width: pageElement.width,
             height: pageElement.height,
         };
+        if (!Number.isFinite(declared.width) || !Number.isFinite(declared.height)) return declared;
+
+        const getDomRect = opts.getDomRect || ((id) => {
+            // 锚点层已在 body 上，页面元素的 DOM 节点由渲染器按 data-element-id 挂载
+            const dom = typeof document !== 'undefined'
+                ? document.querySelector('.canvas-element[data-element-id="' + id + '"]')
+                : null;
+            if (!dom || typeof dom.getBoundingClientRect !== 'function') return null;
+            const r = dom.getBoundingClientRect();
+            return (r && Number.isFinite(r.width) && Number.isFinite(r.height)) ? r : null;
+        });
+
+        const view = (typeof CanvasView !== 'undefined' && CanvasView.getView)
+            ? CanvasView.getView() : (opts.view || null);
+        if (!view || !Number.isFinite(view.zoom) || !view.zoom) return declared;
+
+        const r = getDomRect(pageElement.id);
+        // 只在确实拿到更大的尺寸时采用实测值（内容溢出方向）；
+        // 拿到更小的值可能是元素被隐藏/折叠，此时用声明值更稳。
+        if (!r) return declared;
+        const w = r.width / view.zoom;
+        const h = r.height / view.zoom;
+        if (!Number.isFinite(w) || !Number.isFinite(h)) return declared;
+        if (h <= declared.height) return declared;
+
+        return { x: declared.x, y: declared.y, width: w, height: h };
+    },
+
+    /**
+     * 计算某页面元素当前可用的锚点宿主（含内部元素）。
+     *
+     * ⚠️ 内部元素一律用 full 密度（不再分 coarse）。
+     *    上一版让内部元素只出「每边 1 个」的锚点，是我在锚点数失控时
+     *    打的补丁。实测 MasterGo 的规则是**按尺寸过滤**而不是降密度：
+     *    够大的元素（评论卡片、输入框）出完整锚点，
+     *    小元素（头像、数字、图标）根本不出。
+     *    尺寸过滤已经在 AnchorBridge.isUsableHost 里做了，这里不再重复裁剪。
+     *
+     * @param {object} pageElement 画布上的 page 元素
+     * @returns {Array<{elementId,kind,selector?,rect,anchors}>}
+     */
+    hostsOf(pageElement) {
+        if (!pageElement) return [];
+        // ⚠️ 用实测矩形而非声明尺寸（页面去滚轮后内容会溢出声明高度）
+        const rect = this.measuredRectOf(pageElement);
 
         const out = [];
         const ownAnchors = AnchorProvider.anchorsOfRect(rect);
@@ -55,8 +379,11 @@ const AnchorSession = {
         }
 
         for (const inner of this._innerHostsOf(pageElement)) {
-            // 内部目标用 coarse 密度（每边 1 个）：它们是"连到它"，
-            // 不像页面框那样需要按高度精确选点。详见 AnchorProvider.anchorsOfRect。
+            // ⚠️ 内部宿主用 coarse（每边只留中点），**不是** full。
+            //    MasterGo 实测：hover 一个页面框时，每张评论卡片只亮出
+            //    **1 个**锚点（在卡片底部中点），不是四边各 3 个。
+            //    页面框自身保持 full（12 个），因为它大、用户会按高度选点；
+            //    页面内的卡片只是"连到它"，从哪条边出无所谓。
             const anchors = AnchorProvider.anchorsOfRect(inner.rect, { density: 'coarse' });
             if (!anchors.length) continue;
             out.push({

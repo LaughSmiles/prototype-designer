@@ -108,9 +108,10 @@ const ElementManager = {
         ElementRenderer.renderElement(element);
     },
 
-    // 渲染当前 hover 元素的锚点（MasterGo 的「连接点」）
-    renderAnchors() {
-        ElementRenderer.renderAnchors();
+    // 渲染锚点：elementIds = 页面元素 id（可多个），cursor = 鼠标画布坐标
+    // （决定第二层高亮哪个内部元素，对齐 MasterGo 的逐层聚焦）
+    renderAnchors(elementIds, cursor) {
+        ElementRenderer.renderAnchors(elementIds, cursor);
     },
 
     // 清空锚点层（切换工具 / 离开画布时调用）

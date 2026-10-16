@@ -190,8 +190,9 @@
     if (window.parent && window.parent !== window) {
         var ANCHOR_REQ = 'connector-anchor-request';
         var ANCHOR_RES = 'connector-anchor-response';
-        var ANCHOR_MAX = 6;
-        var ANCHOR_MIN = 12;
+        // 尺寸过滤（对齐 MasterGo 实测：小图标/数字/头像不出锚点，大块结构元素出）
+        var ANCHOR_MIN_AREA = 4000;
+        var ANCHOR_MIN_EDGE = 16;
         var ANCHOR_SKIP = { HTML: 1, HEAD: 1, BODY: 1, SCRIPT: 1, STYLE: 1, LINK: 1, META: 1, TITLE: 1, BR: 1 };
 
         // 生成稳定的 CSS 选择器路径（与 anchor-bridge.js 的 cssPath 同算法）
@@ -225,7 +226,7 @@
             return parts.join(' > ');
         }
 
-        // 收集可作为锚点宿主的元素（面积大的优先，超过上限截断）
+        // 收集可作为锚点宿主的元素（按尺寸过滤，不按数量截断）
         function anchorCollect() {
             var found = [];
             function walk(node, depth) {
@@ -236,7 +237,9 @@
                     if (!child || !child.tagName) continue;
                     if (ANCHOR_SKIP[String(child.tagName).toUpperCase()]) continue;
                     var r = child.getBoundingClientRect();
-                    if (r && r.width >= ANCHOR_MIN && r.height >= ANCHOR_MIN) {
+                    // 尺寸过滤：与 anchor-bridge.js 的 isUsableHost 同判据
+                    if (r && r.width >= ANCHOR_MIN_EDGE && r.height >= ANCHOR_MIN_EDGE &&
+                        r.width * r.height >= ANCHOR_MIN_AREA) {
                         found.push({
                             selector: anchorCssPath(child),
                             depth: depth + 1,
@@ -248,8 +251,10 @@
                 }
             }
             walk(document.body, 0);
+            // ⚠️ 不截断：MasterGo 是「够大就出锚点」，不是「只出前 N 个」。
+            //    可视区裁剪由父页面做（它才知道页面框在画布上的位置）。
             found.sort(function (a, b) { return b.area - a.area || a.depth - b.depth; });
-            return found.slice(0, ANCHOR_MAX);
+            return found;
         }
 
         window.addEventListener('message', function (event) {
