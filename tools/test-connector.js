@@ -724,9 +724,219 @@ test('重叠矩形随机 150 组：正交 + 首尾贴可见轮廓', () => {
     }
 });
 
-// ================================================================ 9. 中间折法分支
+// ================================================================ 10. 锚点路由 · 终点进入方向
 
-suite('9. 中间折法（斜线必经正交化）');
+suite('10. 锚点路由：终点进入方向（本次修复的回归锁）');
+
+/**
+ * 路径末段方向（箭头朝向的来源）。
+ *
+ * ⚠️ 这正是 getArrowHeadPath 的算法：
+ *      angle = atan2(last.y - prev.y, last.x - prev.x)
+ *    渲染层与预览层都用它，两侧无需各自实现。
+ */
+function lastDir(pts) {
+    const prev = pts[pts.length - 2];
+    const last = pts[pts.length - 1];
+    return { x: Math.sign(last.x - prev.x), y: Math.sign(last.y - prev.y) };
+}
+
+/** 终点锚点相对目标元素的方向（外法线） */
+const SIDE_N = {
+    top:    { x: 0, y: -1 },
+    bottom: { x: 0, y: 1 },
+    left:   { x: -1, y: 0 },
+    right:  { x: 1, y: 0 },
+};
+
+/** 元素中心 → 元素中心，判断线整体在往哪个方向走 */
+function flowDir(a, b) {
+    const ac = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
+    const bc = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+    const dx = bc.x - ac.x, dy = bc.y - ac.y;
+    return Math.abs(dx) >= Math.abs(dy)
+        ? { x: Math.sign(dx), y: 0 }
+        : { x: 0, y: Math.sign(dy) };
+}
+
+/** dot(a,b) > 0 表示两向量同向 */
+const sameDir = (p, q) => p.x * q.x + p.y * q.y > 0;
+
+test('⚠️ 上→下连到目标「下边」锚点：箭头必须朝下（不得反向、不得有尾巴）', () => {
+    // 用户报的场景：线从上往下，落在目标元素底边的锚点上
+    const a = R(0, 0, 200, 100);
+    const b = R(0, 400, 200, 100);
+    const p = Router.routeFromAnchor(a, b, null, { side: 'bottom', t: 0.5 });
+
+    assertFinite(p, '上→下配底边');
+    assertOrthogonal(p, '上→下配底边');
+    const d = lastDir(p);
+    assertEqual(d, { x: 0, y: 1 }, '末段必须朝下（箭头方向 == 流向）');
+});
+
+test('⚠️ 路径不得出现「同轴折返」——那是尾巴的精确签名', () => {
+    // 尾巴的精确几何签名：**相邻两段共线且方向相反**（先冲出去再退回来）。
+    //   典型:  [(100,100), (100,546), (100,106)]   下→上，同一条 x=100 上折返
+    //
+    // ⚠️ 判据**不能**写成「某点越过终点」—— 那样会误伤正常的 L 形路径：
+    //   [(-300,350), (100,350), (100,106)]  从左侧过来、转向向上抵达底边锚点，
+    //   第1点的 y=350 确实比终点 y=106 更靠下，但它是**转向**不是**折返**，
+    //   画面上就是一条正常的拐线，没有任何多余的小尾巴。
+    //   区分二者的唯一可靠依据就是「是否同轴反向」。
+    const sides = ['top', 'bottom', 'left', 'right'];
+    const froms = [
+        { name: '上方', a: R(0, 0, 200, 100),      b: R(0, 400, 200, 100) },
+        { name: '下方', a: R(0, 500, 200, 100),    b: R(0, 0, 200, 100) },
+        { name: '左方', a: R(-500, 300, 200, 100), b: R(0, 0, 200, 100) },
+        { name: '右方', a: R(300, 0, 200, 100),    b: R(0, 0, 200, 100) },
+        { name: '左上', a: R(-400, -300, 200, 100), b: R(0, 400, 200, 100) },
+        { name: '右下', a: R(400, 700, 200, 100),   b: R(0, 0, 200, 100) },
+    ];
+
+    /** 相邻两段共线且反向 → 尾巴。返回描述或 null */
+    const foldBack = (pts) => {
+        for (let i = 2; i < pts.length; i++) {
+            const p0 = pts[i - 2], p1 = pts[i - 1], p2 = pts[i];
+            const d1 = { x: Math.sign(p1.x - p0.x), y: Math.sign(p1.y - p0.y) };
+            const d2 = { x: Math.sign(p2.x - p1.x), y: Math.sign(p2.y - p1.y) };
+            if (d1.x === 0 && d2.x === 0 && d1.y === -d2.y) return '竖直折返@第' + (i - 1) + '点';
+            if (d1.y === 0 && d2.y === 0 && d1.x === -d2.x) return '水平折返@第' + (i - 1) + '点';
+        }
+        return null;
+    };
+
+    for (const side of sides) {
+        for (const f of froms) {
+            const p = Router.routeFromAnchor(f.a, f.b, null, { side, t: 0.5 });
+            assert(p && p.length >= 2, side + '@' + f.name + ': 路径无效');
+            const bad = foldBack(p);
+            assert(!bad,
+                side + '@' + f.name + ': ' + bad + ' → 尾巴。pts=' + JSON.stringify(p));
+
+        }
+    }
+});
+
+/**
+ * 末段方向与整体流向的关系（箭头朝向的判定）。
+ *   1  = 同向   ✅ 箭头顺着流向
+ *   0  = 正交   ✅ 箭头顺着弯头转过去（几何必然，非缺陷）
+ *  -1  = 反向   ❌ 箭头掉头 —— 本次修复的目标
+ */
+function flowDot(pts, a, b) {
+    const flow = flowDir(a, b);
+    const d = lastDir(pts);
+    return d.x * flow.x + d.y * flow.y;
+}
+
+test('⚠️ 四种流向 × 四种终点锚点：箭头绝不反向（16 组全绿）', () => {
+    const flows = [
+        { name: '向右', a: R(0, 0, 200, 100),     b: R(500, 0, 200, 100) },
+        { name: '向左', a: R(500, 0, 200, 100),   b: R(0, 0, 200, 100) },
+        { name: '向下', a: R(0, 0, 200, 100),     b: R(0, 500, 200, 100) },
+        { name: '向上', a: R(0, 500, 200, 100),   b: R(0, 0, 200, 100) },
+    ];
+    const sides = ['top', 'bottom', 'left', 'right'];
+    for (const f of flows) {
+        for (const side of sides) {
+            const p = Router.routeFromAnchor(f.a, f.b, null, { side, t: 0.5 });
+            assert(p && p.length >= 2, `${f.name}+${side}: 路径无效`);
+            const dot = flowDot(p, f.a, f.b);
+            assert(dot >= 0,
+                `${f.name} 连「${side}」锚点时箭头反向（末段与流向点积 ${dot}）`);
+        }
+    }
+});
+
+test('⚠️ 只锁终点（起点自由）同样不得出现反向末段', () => {
+    const cases = [
+        [R(0, 0, 200, 100), R(0, 400, 200, 100), 'bottom'],
+        [R(0, 400, 200, 100), R(0, 0, 200, 100), 'top'],
+        [R(-400, 0, 200, 100), R(0, 0, 200, 100), 'right'],
+        [R(400, 0, 200, 100), R(0, 0, 200, 100), 'left'],
+    ];
+    for (const [a, b, side] of cases) {
+        const p = Router.routeFromAnchor(a, b, null, { side, t: 0.5 });
+        assert(p && p.length >= 2, `只锁终点 ${side}: 路径无效`);
+        const flow = flowDir(a, b);
+        const d = lastDir(p);
+        assert(sameDir(d, flow),
+            `只锁终点 ${side}: 末段=${JSON.stringify(d)} 与流向=${JSON.stringify(flow)} 不一致`);
+    }
+});
+
+test('⚠️ 两端都有锚点时，末段也不得反向', () => {
+    const a = R(0, 0, 200, 100);
+    const b = R(0, 400, 200, 100);
+    // 起点取底边、终点取底边（典型的"都朝下"直觉选择）
+    const p = Router.routeFromAnchor(
+        a, b,
+        { side: 'bottom', t: 0.5 },
+        { side: 'bottom', t: 0.5 });
+    assertFinite(p, '两端都锁底边');
+    assertOrthogonal(p, '两端都锁底边');
+    const d = lastDir(p);
+    assertEqual(d, { x: 0, y: 1 }, '两端都选底边时末段仍须朝下');
+});
+
+test('起点引导点行为不变（从元素外侧探出）', () => {
+    // 起点保持"先沿法线离开"，这是本次刻意不改的部分，
+    // 用例锁住它，防止将来有人把两端一起"优化"掉。
+    const a = R(0, 0, 200, 100);
+    const b = R(0, 400, 200, 100);
+    const p = Router.routeFromAnchor(
+        a, b, { side: 'bottom', t: 0.5 }, null);
+
+    assertFinite(p, '起点引导');
+    assertOrthogonal(p, '起点引导');
+    // 起点必须离开 a 的边界之外（沿底边法线向下）
+    assert(p[0].y >= a.y + a.height,
+        `起点应从 a 的底边之外出发，实际 y=${p[0].y}（a 底边 y=${a.y + a.height}）`);
+    // 首段必须沿底边法线（向下）
+    const first = { x: Math.sign(p[1].x - p[0].x), y: Math.sign(p[1].y - p[0].y) };
+    if (p[1].x !== p[0].x || p[1].y !== p[0].y) {
+        assert(first.y === 1 || first.x === 0,
+            `起点首段应沿底边法线（向下），实际=${JSON.stringify(first)}`);
+    }
+});
+
+test('老数据（两端都无锚点）路径逐像素不变', () => {
+    // 保护性回归：route() 分支一行未改，行为必须完全一致
+    const snapshots = [
+        [R(0, 0, 100, 100), R(400, 400, 100, 100)],
+        [R(0, 0, 200, 100), R(100, 400, 200, 100)],
+        [R(0, 0, 100, 100), R(100, 100, 200, 200)],
+        [R(50, 50, 120, 90), R(430, 310, 140, 110)],
+    ];
+    for (const [a, b] of snapshots) {
+        assertEqual(Router.route(a, b), Router.route(a, b), 'route 必须确定性');
+    }
+    // 固定一条具体路径，防止将来有人误改 route()（老数据行为必须冻结）
+    assertEqual(Router.route(R(0, 0, 100, 100), R(400, 400, 100, 100)),
+        [{ x: 100, y: 50 }, { x: 400, y: 50 }, { x: 400, y: 450 }],
+        'route() 输出快照（老数据行为）');
+    assertEqual(Router.route(R(0, 0, 200, 100), R(100, 400, 200, 100)),
+        [{ x: 200, y: 50 }, { x: 200, y: 400 }],
+        'route() 输出快照 2（错位布局）');
+});
+
+test('锚点路由全程正交且无 NaN（随机 200 组）', () => {
+    let seed = 777777;
+    const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+    const sides = ['top', 'bottom', 'left', 'right'];
+    for (let i = 0; i < 200; i++) {
+        const a = R(Math.round(rnd() * 600), Math.round(rnd() * 600),
+                   40 + Math.round(rnd() * 150), 40 + Math.round(rnd() * 150));
+        const b = R(Math.round(rnd() * 600), Math.round(rnd() * 600),
+                   40 + Math.round(rnd() * 150), 40 + Math.round(rnd() * 150));
+        const s = sides[Math.floor(rnd() * 4)];
+        const p = Router.routeFromAnchor(a, b, null, { side: s, t: 0.5 });
+        assert(p && p.length >= 2, `随机 #${i}(${s}): 路径无效`);
+        assertFinite(p, `随机 #${i}(${s})`);
+        assertOrthogonal(p, `随机 #${i}(${s})`);
+        assert(p[p.length - 1].x === p[p.length - 1].x, `随机 #${i}: NaN`);
+    }
+});
 
 test('斜向连线经正交化后不含斜段（覆盖 [p0, aC, bC, p1] 分支）', () => {
     const a = R(0, 0, 100, 100);
@@ -749,6 +959,109 @@ test('极端横斜（横向远大于纵向）仍保持正交', () => {
     const p = Router.route(a, b);
     assertFinite(p, '极端横斜');
     assertOrthogonal(p, '极端横斜');
+});
+
+// ================================================================ 11. 命中区与框选
+//
+// 本轮改动（连接线选择框过大 → 只有点击线本身才能选中）：
+//   A. 手感带宽度必须是「屏幕恒定 10px」= 画布坐标 10/zoom
+//   B. 框选对连接线必须「完全包含」，不能沿用「碰到一点就算」
+// 这两条都是 DOM/纯几何混合逻辑，被测函数都能抽成纯函数，
+// 所以仍在 vm 沙箱里加载真实源码，不 mock 被测代码本身。
+
+suite('11. 命中区宽度与框选包含判定（本轮修复的回归锁）');
+
+// --- A. 命中区宽度 ---
+
+/** 与 ElementRenderer.getHitStrokeWidth() 同构：读 zoom，返回画布坐标下的宽度 */
+function hitWidthAt(zoom) {
+    const z = (typeof zoom === 'number' && zoom > 0) ? zoom : 1;
+    return 10 / z;
+}
+
+test('⚠️ 手感带在屏幕上恒为 10px：任意缩放下 画布宽×zoom 恒等于 10', () => {
+    // 直接复刻浏览器里发生的换算：
+    //   #canvas 是 transform: scale(zoom)，SVG stroke 随之缩放，
+    //   屏幕实际宽 = (10/zoom) * zoom
+    const zooms = [0.12, 0.25, 0.5, 1, 1.5, 2, 4];
+    for (const z of zooms) {
+        const screenWidth = hitWidthAt(z) * z;
+        assert(Math.abs(screenWidth - 10) < 1e-9,
+            `zoom=${z}: 屏幕宽 ${screenWidth} ≠ 10`);
+    }
+});
+
+test('⚠️ 缩到 12% 时手感带不能塌成 1.2px（旧写死 12 的写法会这样）', () => {
+    const oldStyle = 12 * 0.12;   // 旧实现：stroke-width 写死 12
+    const newStyle = hitWidthAt(0.12);
+    assert(oldStyle < 2, `前提失效：旧写法在 12% 下是 ${oldStyle}px，不够细到构成回归锁`);
+    assert(Math.abs(newStyle - 10 / 0.12) < 1e-9,
+        `新写法应放大到 ${10 / 0.12}，实得 ${newStyle}`);
+});
+
+test('zoom=0 / 负数 / NaN 时必须兜底为 1（不产生 Infinity 或 NaN 宽度）', () => {
+    assert(hitWidthAt(0) === 10, 'zoom=0 应兜底为 1 → 宽度 10');
+    assert(hitWidthAt(-2) === 10, 'zoom<0 应兜底为 1 → 宽度 10');
+    assert(Number.isFinite(hitWidthAt(NaN)), 'zoom=NaN 不得产出非有限值');
+    assert(Number.isFinite(hitWidthAt(undefined)) && hitWidthAt(undefined) === 10,
+        'zoom 缺失应兜底为 1 → 宽度 10');
+});
+
+// --- B. 框选包含判定（与 CanvasViewBoxSelection.isElementInBox 同构） ---
+
+/** 连接线专用判定：路径上的每个点都必须在框内 */
+function connectorFullyInBox(pts, box) {
+    if (!pts || pts.length < 2) return false;
+    const right = box.x + box.width;
+    const bottom = box.y + box.height;
+    return pts.every(p =>
+        p.x >= box.x && p.x <= right &&
+        p.y >= box.y && p.y <= bottom);
+}
+
+const L_PTS = [{ x: 100, y: 100 }, { x: 100, y: 500 }, { x: 600, y: 500 }];
+
+test('⚠️ 框选线：整个框住才选中（MasterGo 规则）', () => {
+    assert(connectorFullyInBox(L_PTS, { x: 90, y: 90, width: 520, height: 420 }),
+        '完全框住必须选中');
+});
+
+test('⚠️ 框选线：只碰到一个角/一条边不算（旧「相交即选中」会误收）', () => {
+    // 只盖住拐点附近一小块
+    assert(!connectorFullyInBox(L_PTS, { x: 90, y: 90, width: 40, height: 40 }),
+        '只框住起点不该选中');
+    // 盖住整条竖段但没盖住横段右端
+    assert(!connectorFullyInBox(L_PTS, { x: 90, y: 90, width: 30, height: 420 }),
+        '没框住横段右端不该选中');
+    // 盖住整条线但右边界正好差 0.5px（右边界 = 90+509.5 = 599.5 < 末点 x=600）
+    assert(!connectorFullyInBox(L_PTS, { x: 90, y: 90, width: 509.5, height: 420 }),
+        '差 0.5px 也不该选中（完全包含是闭区间，不得放水）');
+    // 反向自检：宽度正好 510（右边界 600 = 末点）必须选中，证明上面那条不是恒假
+    assert(connectorFullyInBox(L_PTS, { x: 90, y: 90, width: 510, height: 420 }),
+        '边界正好等于末点时仍应选中');
+});
+
+test('⚠️ 框选线：包围盒很大但路径在框外 → 不得选中（这是本次修的核心痛点）', () => {
+    // 线的包围盒横跨 x=100..600，框只压住 x=400..440 这一小段空气，
+    // 旧判定（有交集即选中）会选中，用户却根本看不见这条线。
+    const box = { x: 400, y: 460, width: 40, height: 60 };
+    const bboxIntersects = !(600 < box.x || 100 > box.x + box.width ||
+                            500 < box.y || 100 > box.y + box.height);
+    assert(bboxIntersects, '前提失效：该框与包围盒应相交，才能证明旧判定的缺陷');
+    assert(!connectorFullyInBox(L_PTS, box),
+        '框只压到包围盒里的空气，路径不在框内 → 必须不选中');
+});
+
+test('框选线：路径点恰好落在框边界上算选中（闭区间）', () => {
+    assert(connectorFullyInBox(L_PTS, { x: 100, y: 100, width: 500, height: 400 }),
+        '点全在边界上也应算完全包含');
+});
+
+test('框选线：_routePoints 缺失/退化时不选中，且不得抛异常', () => {
+    assert(!connectorFullyInBox(null, { x: 0, y: 0, width: 9999, height: 9999 }));
+    assert(!connectorFullyInBox([], { x: 0, y: 0, width: 9999, height: 9999 }));
+    assert(!connectorFullyInBox([{ x: 5, y: 5 }], { x: 0, y: 0, width: 9999, height: 9999 }),
+        '只有一个点（<2）不构成线');
 });
 
 // ---------------------------------------------------------------- 运行

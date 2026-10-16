@@ -310,12 +310,40 @@ const ConnectorRouter = {
     /**
      * 锚点约束下的候选枚举。
      *
-     * 关键点：**首段必须先沿法线离开**，所以起点不能直接连到目标，
-     * 必须先加一个"出边引导点"（start 沿法线走一小段）。
-     * 同理终点前加一个"进边引导点"，让线从法线方向进入。
+     * 关键点：
+     *   · **起点**先沿法线离开元素（见 sLead），保证线从框外伸出而不是穿过去；
+     *   · **终点**直接落在锚点上（见 eLead），不做任何法线预偏移。
      *
-     * 引导长度取一个足以脱离元素本体的值；元素很薄时按半宽/半高夹取，
-     * 避免引导点戳进元素内部。
+     * ⚠️ 终点为什么不能也按法线外移（这正是本次修掉的 bug）：
+     *
+     *   早期版本两端都用同一个引导距离
+     *       d = 夹取(半高/半宽 + 12, 12, 40)
+     *   并把终点引导点钉在锚点**外侧 d 像素**处，理由是"线应从法线方向进入，
+     *   否则看起来像从元素内部扎出去"。实际后果有两个，且都直接可见：
+     *
+     *     1) **尾巴**：路径先冲到终点之外 d 像素，再折回来停上去。
+     *        实测（200×100 元素、终点选底边）：
+     *            pts = [(100,100), (100,546), (100,506)]
+     *                   终点 y=546 是真正终点，末段 y=546→506 折回，尾巴 40px。
+     *
+     *     2) **箭头反向**：箭头按路径**最后一段**算朝向
+     *        （getArrowHeadPath: angle = atan2(last - prev)），
+     *        而末段恒为"由外向内进入"，于是
+     *            终点选下边 → 箭头朝上    选上边 → 朝下
+     *            终点选右边 → 箭头朝左    选左边 → 朝右
+     *        与"线从上往下、箭头就该朝下"的直觉完全相反。
+     *
+     *   两者同源：尾巴就是末段本身，反向箭头就是末段的方向。
+     *   所以**不再设置终点引导点**即可同时消掉二者 ——
+     *   线从哪个方向来就从哪个方向落到锚点上，箭头自然与流向一致。
+     *
+     *   代价（已知且可接受）：终点锚点位于"背面"时，
+     *   线会穿过元素本体约 (d + OFFSET) 像素才停到锚点上。
+     *   这与用户确认的口径一致 —— 线允许穿过元素，
+     *   换来箭头方向与流向一致、且没有任何尾巴。
+     *
+     * 起点**保持原状**：起点的探出线视觉上像"从框里伸出一条线"，
+     * 语义清晰；改成直切会让线盖住起点锚点圆点，得不偿失。
      */
     _buildAnchorCandidates(a, b, fromAnchor, toAnchor, start, end) {
         const out = [];
@@ -333,15 +361,22 @@ const ConnectorRouter = {
             return { x: n.x * d, y: n.y * d };
         };
 
+        /**
+         * 终点引导点 = 终点本身（不外移）。
+         *
+         * 保留这个变量而非直接用 end，是为了让下面各分支的候选写法
+         * 与"起点有引导点"保持对称、可读；值相等时 _dedupe 会合并掉重复点。
+         */
+        const eLead = end;
+
         const fromPts = start ? [start] : null;
         const toPts = end ? [end] : null;
 
         // --- 情形一：两端都有锚点 ---
         if (start && end) {
             const sLead = { x: start.x + lead(a, outSide).x, y: start.y + lead(a, outSide).y };
-            const eLead = { x: end.x + lead(b, inSide).x, y: end.y + lead(b, inSide).y };
 
-            // 直连：出边引导点与进边引导点在同一行/列
+            // 直连：出边引导点与终点在���一行/列
             if (sLead.x === eLead.x || sLead.y === eLead.y) {
                 out.push([start, sLead, eLead, end]);
             }
@@ -376,7 +411,6 @@ const ConnectorRouter = {
 
         // --- 情形三：只锁终点，起点自由 ---
         if (end) {
-            const eLead = { x: end.x + lead(b, inSide).x, y: end.y + lead(b, inSide).y };
             for (const outS of ['left', 'right', 'top', 'bottom']) {
                 const p0 = this.rectEdgeMidpoints(a)[outS];
                 out.push([p0, { x: eLead.x, y: p0.y }, eLead, end]);
