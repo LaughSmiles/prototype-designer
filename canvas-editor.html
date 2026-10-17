@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<!-- ⚠️ data-theme 必须写死在这里，不能只靠 JS 兜底：
+     CSS 里 `:root, :root[data-theme="dark"]` 是合并选择器（暗色变量作为无属性时的兜底），
+     JS 要等 initThemeToggle() 才 setAttribute —— 那之前会闪一下暗色。
+     写死属性 = 首帧就是最终主题。 -->
+<html lang="zh-CN" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">

@@ -444,7 +444,10 @@ const CanvasEditor = {
             'light': '#3498db'
         };
 
-        let currentTheme = localStorage.getItem(STORAGE_KEY) || 'dark';
+        // ⚠️ 默认改成 light（白）。canvas-editor.html 的 <html> 上也写死了
+        //    data-theme="light" —— 两处必须一致，否则首帧会闪一下暗色。
+        //    用户手动切过的选择仍然优先（读得到 localStorage 就用它）。
+        let currentTheme = localStorage.getItem(STORAGE_KEY) || 'light';
         // 兼容旧的 classic 值
         if (currentTheme === 'classic') currentTheme = 'light';
 
