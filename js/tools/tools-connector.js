@@ -145,11 +145,45 @@ const ToolsConnector = {
             const h = this.findAnchorOwnerAt(e);
             this.hoverElementId = h ? h.id : null;
             AnchorSession.hoverId = this.hoverElementId;
+            // 拖后跟随：鼠标**离开所有页面框**的那一刻结束跟随（锚点同时被清空）。
+            // 这正是 MasterGo 的手感：拖完线鼠标还在框上就继续亮，移开才灭。
+            if (!this.hoverElementId) this._anchorFollow = false;
             return this._renderAnchorIds([this.hoverElementId], cursor);
         }
 
         this._renderAnchorIds([sourceId, targetId], cursor);
         return [sourceId, targetId];
+    },
+
+    /**
+     * 拖完端点后是否继续跟随鼠标刷新锚点。
+     *
+     * ⚠️ 为什么需要这个标记（用户报的两个问题之一）：
+     *    拖端点在任何工具下都能起手（见 tools.js 的 mousedown 分发），
+     *    而 refreshAnchors 只在**连接线工具**下被调用。于是用户在
+     *    **选择工具**下拖完端点后，没有任何人接管后续的鼠标移动 ——
+     *    锚点就永远停在最后的画面上，要切一次工具才清掉。
+     *    用户报的「拖拽完后，页面会残留页面页面的锚点」正是此处。
+     *
+     * ⚠️ 为什么不是「mouseup 时直接 clearAnchors」：
+     *    那样鼠标明明还停在页面框上，锚点却瞬间消失，手感很突兀。
+     *    这里改成让跟随继续，由 refreshAnchors 在鼠标移出所有页面框时
+     *    自然收尾（语义与连接线工具下完全一致）。
+     *
+     * ⚠️ 不能拿它当「选择工具下也显示锚点」的开关：
+     *    它只在拖过端点之后为真，用完即清，所以选择工具**悬停**时
+     *    画布依旧保持干净（锚点按需出现那条设计不变）。
+     */
+    _anchorFollow: false,
+
+    /** 锚点层此刻是否还需要跟随鼠标刷新 */
+    shouldFollowAnchors() {
+        return !!this._anchorFollow;
+    },
+
+    /** 结束拖后跟随（切工具 / 取消时调用） */
+    endAnchorFollow() {
+        this._anchorFollow = false;
     },
 
     /** 拖拽端点时，被拖那一端所属的元素 id */
@@ -319,12 +353,23 @@ const ToolsConnector = {
         }
 
         if (this.dragState.active) {
+            // ⚠️ 必须把坐标写回 state.cursor（用户报的问题 ①）：
+            //    下面 _renderAnchorIds 传的是 state.cursor，而它只在
+            //    refreshAnchors 里被更新 —— 那个函数**只在连接线工具下**跑
+            //    （见 tools.js 的 mousemove 门禁），可拖端点在任何工具下都能起手。
+            //    于是选择工具下拖端点时，cursor 是个陈旧值，
+            //    hoveredInnerHost() 拿它去算"鼠标在哪个内部元素上"必然算错 →
+            //    **页面内部的锚点一个都不亮**。
+            //    这里的坐标本来就算过（下面吸附要用），只是从前没写回去。
+            const cursor = this.toCanvasCoords(e);
+            this.state.cursor = cursor;
+
             this.dragState.hoverId = this.resolveDropTarget(e);
             const hoverEl = this.dragState.hoverId ? ElementManager.getElement(this.dragState.hoverId) : null;
-            const snap = hoverEl ? this.snapToAnchor(hoverEl, this.toCanvasCoords(e)) : null;
+            const snap = hoverEl ? this.snapToAnchor(hoverEl, cursor) : null;
             this.dragState.hoverAnchor = snap ? snap.ref : null;
             const src = this._draggedElementId();
-            this._renderAnchorIds([src, this.dragState.hoverId], this.state.cursor);
+            this._renderAnchorIds([src, this.dragState.hoverId], cursor);
             this.renderPreview();
         }
     },
@@ -390,7 +435,34 @@ const ToolsConnector = {
             this.dragState.hoverId = null;
             this.dragState.hoverAnchor = null;
             this.removePreview();
+            this._syncAfterEndpointDrag(e);
         }
+    },
+
+    /**
+     * 拖端点收尾后的锚点收口。
+     *
+     * ⚠️ 这里**不能**直接 clearAnchors()：鼠标此刻多半还停在页面框上，
+     *    锚点凭空消失会很突兀。改成让「拖后跟随」接管 ——
+     *    鼠标还框上就继续亮，一旦移出所有页面框，refreshAnchors
+     *    自然会把锚点清掉。选择工具下也照样工作，因为
+     *    tools.js 的 mousemove 门禁已经放开成「连接线工具 **或** 正在跟随」。
+     *
+     * ⚠️ 不是连接线工具时，本次 mouseup 之后不会再有 refreshAnchors 调用
+     *    来「重新画出正确的锚点集」，所以这里必须自己补一次首帧，
+     *    否则用户看到的是拖拽过程中的中间态（可能是空的、也可能是旧的）。
+     */
+    _syncAfterEndpointDrag(e) {
+        this._anchorFollow = true;
+        if (Tools.currentTool === 'connector') return;   // 连接线工具自己会持续刷新
+
+        if (!e || typeof e.clientX !== 'number') {
+            ElementManager.clearAnchors();
+            this._anchorFollow = false;
+            return;
+        }
+        // 补一次首帧：位置取「松手处」，语义与后续 mousemove 完全一致
+        this.refreshAnchors(e);
     },
 
     /**
@@ -430,6 +502,9 @@ const ToolsConnector = {
         this.state.hoverId = null;
         this.state.hoverAnchor = null;
         this.removePreview();
+        // 画新线是「收工」语义：调用方随即会切回选择工具，
+        // 不保留拖后跟随（那条只属于「拖端点」）。
+        this._anchorFollow = false;
         // 收工后回到"只显示悬停元素"的状态，别把源/目标的锚点留在画布上
         if (typeof ElementManager !== 'undefined' && ElementManager.clearAnchors) {
             ElementManager.clearAnchors();

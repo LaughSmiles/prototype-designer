@@ -1555,6 +1555,146 @@ test('⚠️ 端点可在绑定与自由之间来回切换（改连入口统一�
         '端点落在空白处时必须走「解绑成自由端」分支，而不是提示「改连已取消」');
 });
 
+suite('16. 拖端点时的锚点：内部要亮、收尾要不残留');
+
+/**
+ * 用户报的两个问题（本组锁死）：
+ *   ① 拖端点时**看不到页面内部的锚点** —— 只亮页面框自己那 12 个
+ *   ② 拖完之后**锚点残留在画布上** —— 要切一次工具才清掉
+ *
+ * 两者根因不同，但共用同一条链路，所以放一组。
+ */
+/**
+ * 把源码里的 `//` 行注释剥掉。
+ *
+ * ⚠️ 本项目已被这件事坑过三次：静态契约测试用 indexOf/regex 去源码里找代码，
+ *    结果命中的是**注释里引用的同一段代码**，测试断言方向被带偏。
+ *    凡是"判断先后顺序""判断某写法是否还存在"这类用例，一律先在剥注释的文本上做。
+ *
+ * 只剥整行注释与行尾注释，不做完整的 JS 词法分析 ——
+ * 够用且不会误伤字符串（本项目源码里没有含双斜杠的字面量）。
+ */
+function stripComments(src) {
+    return src
+        .split('\n')
+        .map(line => {
+            const t = line.trim();
+            if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return '';
+            return line.replace(/\s\/\/\s.*$/, '');
+        })
+        .join('\n');
+}
+
+test('⚠️ 拖端点必须更新 state.cursor（否则第二层内部锚点永远算不出来）', () => {
+    const src = stripComments(readSrc('js', 'tools', 'tools-connector.js'));
+    const fn = src.match(/handleMouseMove\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 handleMouseMove');
+    const branch = fn[1].split('if (this.dragState.active)')[1];
+    assert(branch, '应能找到 dragState 分支');
+    assert(/this\.state\.cursor\s*=\s*cursor/.test(branch),
+        '必须把坐标写回 state.cursor —— _renderAnchorIds 用的就是它');
+
+    // ⚠️ 顺序也要对：先算 cursor，再拿它渲染。
+    //    写成「先 _renderAnchorIds(state.cursor) 再赋值」等于没改。
+    const assign = branch.indexOf('this.state.cursor = cursor');
+    const render = branch.indexOf('_renderAnchorIds');
+    assert(assign > 0 && render > 0, `两处都必须存在（assign=${assign}, render=${render}）`);
+    assert(assign < render,
+        `必须**先**写回 cursor，**再**用它渲染锚点（assign=${assign}, render=${render}）`);
+
+    // 防止退回「每次调 toCanvasCoords 各算一遍」的写法
+    assert(!/this\.snapToAnchor\(hoverEl, this\.toCanvasCoords\(e\)\)/.test(branch),
+        '吸附与渲染必须共用同一个 cursor 变量，不要各算一遍');
+});
+
+test('⚠️ refreshAnchors 只在连接线工具下跑，但拖端点任何工具都能起手（问题的成因）', () => {
+    const tools = readSrc('js', 'tools', 'tools.js');
+    // 拖端点的注册**不能**带工具门禁
+    const down = tools.match(/canvasWrapper\.addEventListener\('mousedown'([\s\S]*?)\}, true\);/);
+    assert(down, '应能找到 mousedown 分发');
+    assert(/hitTestEndpoint\(e\)/.test(down[1]), '端点命中必须在');
+    assert(!/this\.currentTool !== 'connector'\) return/.test(
+        down[1].split('hitTestEndpoint')[0]),
+        '端点拖拽必须在任何工具下都可用（否则用户切工具后拖不动端点）');
+});
+
+test('⚠️ 收尾不得直接 clearAnchors（鼠标还在框上就消失会很突兀 —— 走 B 方案）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/handleMouseUp\(e\)\s*\{([\s\S]*?)\n    \},\n\n    \/\*\*/);
+    assert(fn, '应能找到 handleMouseUp');
+    const tail = fn[1].split("if (this.dragState.active)")[1];
+    assert(tail, '应能找到 dragState 分支');
+    assert(/_syncAfterEndpointDrag\(e\)/.test(tail),
+        '拖端点收尾必须走 _syncAfterEndpointDrag（开启拖后跟随）');
+    // 该分支里不得出现裸的 clearAnchors（那是 A 方案，用户已否决）
+    const upToSync = tail.split('_syncAfterEndpointDrag')[0];
+    assert(!/clearAnchors\(\)/.test(upToSync),
+        '收尾前不得直接清空锚点（用户选了 B：鼠标还框上就继续亮）');
+
+    const sync = src.match(/_syncAfterEndpointDrag\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(sync, '应能找到 _syncAfterEndpointDrag');
+    assert(/this\._anchorFollow = true/.test(sync[1]), '必须开启拖后跟随');
+    assert(/refreshAnchors\(e\)/.test(sync[1]),
+        '非连接线工具下必须自己补一次首帧，否则 mouseup 之后没人再画');
+    assert(/Tools\.currentTool === 'connector'/.test(sync[1]),
+        '连接线工具下不要补 —— 它自己会持续刷新，补了是重复劳动');
+});
+
+test('⚠️ 拖后跟随必须能自然结束（鼠标移出所有页面框即收）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/refreshAnchors\(e\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 refreshAnchors');
+    assert(/if \(!this\.hoverElementId\) this\._anchorFollow = false;/.test(fn[1]),
+        '鼠标离开所有页面框时必须结束跟随并清空锚点 —— 这是"残留"的最终解药');
+    // 这行必须在 return 之前
+    const guard = fn[1].indexOf('this._anchorFollow = false');
+    const ret = fn[1].indexOf('return this._renderAnchorIds');
+    assert(guard > 0 && guard < ret, '结束跟随必须发生在"只显示悬停元素"那条 return 之前');
+});
+
+test('⚠️ 跟随不得破坏「选择工具悬停时不显示锚点」', () => {
+    const tools = readSrc('js', 'tools', 'tools.js');
+    const mv = tools.match(/canvasWrapper\.addEventListener\('mousemove'([\s\S]*?)\n        \}\);/);
+    assert(mv, '应能找到 mousemove 监听');
+    assert(/this\.currentTool === 'connector' \|\| ToolsConnector\.shouldFollowAnchors\(\)/.test(mv[1]),
+        '门禁只能是「连接线工具 或 正在跟随」，不能直接放开成无条件');
+    assert(/mousemove/.test(mv[0]), '监听类型应是 mousemove');
+
+    const tc = readSrc('js', 'tools', 'tools-connector.js');
+    assert(/shouldFollowAnchors\(\)\s*\{\s*\n?\s*return !!this\._anchorFollow;/.test(tc),
+        'shouldFollowAnchors 必须只看 _anchorFollow 这一个标记');
+    assert(/_anchorFollow: false,/.test(tc), '标记初值必须是 false（默认不跟随）');
+});
+
+test('⚠️ 切换工具必须同时结束跟随并清空（否则选择工具下鼠标一动锚点就回来）', () => {
+    const tools = readSrc('js', 'tools', 'tools.js');
+    const setTool = tools.match(/setTool\(tool\)\s*\{([\s\S]*?)\n    \},/);
+    assert(setTool, '应能找到 setTool');
+    const endFollow = setTool[1].indexOf('endAnchorFollow()');
+    const clear = setTool[1].indexOf('clearAnchors()');
+    assert(endFollow > 0, 'setTool 必须结束拖后跟随');
+    assert(clear > 0, 'setTool 必须清空锚点层');
+    assert(endFollow < clear, '必须先结束跟随再清空 —— 反了两者都不生效');
+});
+
+test('⚠️ 鼠标移出画布必须清空锚点（锚点层是 fixed 挂在 body 上，会悬在画布外）', () => {
+    const tools = readSrc('js', 'tools', 'tools.js');
+    const leave = tools.match(/addEventListener\('mouseleave'([\s\S]*?)\n        \}\);/);
+    assert(leave, '应能找到 mouseleave');
+    assert(/shouldFollowAnchors\(\)/.test(leave[1]),
+        '跟随态下必须做额外清理 —— 否则鼠标移出画布后锚点仍亮着');
+    assert(/endAnchorFollow\(\)/.test(leave[1]) && /clearAnchors\(\)/.test(leave[1]),
+        '必须同时结束跟随并清空锚点层');
+});
+
+test('⚠️ 画新线收尾不得继承拖后跟随（那是拖端点专属语义）', () => {
+    const src = readSrc('js', 'tools', 'tools-connector.js');
+    const fn = src.match(/cancelDrawing\(\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 cancelDrawing');
+    assert(/this\._anchorFollow = false/.test(fn[1]),
+        '画新线是「收工」语义：调用方随即切回选择工具，不该留着跟随');
+});
+
 // ---------------------------------------------------------------- 运行
 
 (async () => {

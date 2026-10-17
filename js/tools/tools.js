@@ -61,7 +61,12 @@ const Tools = {
         }
 
         // 切换工具时收起锚点层：锚点只在连接线工具下显示（对齐 MasterGo）
+        //
+        // ⚠️ 必须先 endAnchorFollow()：它管的是「拖完端点后的跟随」，
+        //    不清的话，切到选择工具后只移动鼠标就会把锚点又画回来 ——
+        //    而「选择工具悬停时画布保持干净」是这条设计的前提。
         if (typeof ToolsConnector !== 'undefined') {
+            ToolsConnector.endAnchorFollow();
             ToolsConnector.setHoverElement(null);
         }
         if (typeof ElementManager !== 'undefined' && ElementManager.clearAnchors) {
@@ -178,22 +183,32 @@ const Tools = {
                 ToolsConnector.handleMouseMove(e);
             }
 
-            // 锚点显示：仅在连接线工具下。
-            // 对齐 MasterGo —— 锚点是「按需出现」的，其它工具下画布保持干净。
+            // 锚点显示：连接线工具下常驻；**或者**刚拖完端点、还在跟随鼠标。
             //
-            // ⚠️ 这里**不能**用 !isDrawing / !dragState.active 把绘制期排除掉：
-            //    那是问题 1 的根因（实测 tools.js 原先带这两个门禁）——
-            //    鼠标一按下开始拖线，锚点层就不再更新，
-            //    于是"目标页面也需要有锚点"永远做不到。
-            //    绘制期改为显示 **源元素 + 当前悬停目标** 两个元素的锚点。
-            if (this.currentTool === 'connector') {
+            // ⚠️ 后半个条件（shouldFollowAnchors）是修「拖完端点锚点残留」的：
+            //    拖端点在选择工具下也能起手，而选择工具下 mousemove 本来不碰锚点层，
+            //    于是松手后没有**任何人**接管 —— 锚点停在最后画面上，要切一次工具才清。
+            //    ⚠️ 它只在拖过端点之后为真、鼠标移出所有页面框即自动置假，
+            //       所以「选择工具悬停时不显示锚点」那条设计没有被破坏。
+            if (this.currentTool === 'connector' || ToolsConnector.shouldFollowAnchors()) {
                 ToolsConnector.refreshAnchors(e);
             }
         });
 
         // 鼠标离开画布 → 收起锚点
+        //
+        // ⚠️ 跟随态下必须**连锚点一起清掉**并结束跟随：
+        //    mouseleave 之后鼠标已经不在画布上了，锚点没有任何理由继续亮着；
+        //    而锚点层是 position:fixed 挂在 body 上，不清就会**悬在画布之外**，
+        //    看起来正是用户报的「残留」。
         canvasWrapper.addEventListener('mouseleave', () => {
             ToolsConnector.setHoverElement(null);
+            if (ToolsConnector.shouldFollowAnchors()) {
+                ToolsConnector.endAnchorFollow();
+                if (typeof ElementManager !== 'undefined' && ElementManager.clearAnchors) {
+                    ElementManager.clearAnchors();
+                }
+            }
         });
 
         // 鼠标释放（连接线落点建线 / 端点改连）
