@@ -421,9 +421,29 @@ const CanvasViewEvents = {
     },
 
     // ========== 原位预览功能 ==========
+    //
+    // 预览要的是「真机体感」：设备视口（375×812 / 1440×900）+ 页面内部自己滚动。
+    // 但画布为了让长页面**完整**展示，做了两件与预览相冲的事：
+    //   ① 页面框被 ProtoAutoFit 撑成完整内容高度（1733 而不是 812）；
+    //   ② iframe 里的页面被 js/page-autofit.js 「解锁」——html/body 变
+    //      height:auto、overflow:visible，内部滚动容器也被解开（见该文件 unlock()），
+    //      于是内容摊平成一条 1699px 的长文档，压根没有滚动。
+    // 所以进出预览必须**成对**：把外框在「设备尺寸」与「记忆里的完整高度」之间切，
+    // 并通过改写 iframe 的 src（挂标记）重新加载一次，让页面回到/离开原生布局。
+    //
+    // ⚠️ 为什么是「改写 src」而不是「改 iframe.name + reload」：
+    //    实测（Chrome）给一个**已存在**的 iframe 赋 name，并不会改变它当前浏览上下文的
+    //    window.name —— 页面侧读到的还是老名字，重载后照样会解锁，等于白干。
+    //    而 src 一改就是一次完整导航，页面侧读 location 就能拿到标记，
+    //    file://（不透明来源、父页面读不到 contentDocument）下同样可靠。
 
     // 保存预览前的状态，用于恢复
     _previewElementId: null,
+
+    // 写在 iframe src 上的两个标记，页面侧据此决定「要不要解锁」。
+    // ⚠️ 必须与 js/page-autofit.js 里的 MARK_PREVIEW / MARK_FIT 一字不差。
+    PREVIEW_URL_MARK: '__proto_preview=1',
+    FIT_URL_MARK: '__proto_fit=1',
 
     // 预览 iframe 的 load 监听引用（预览中页面内部跳转后需重新注入 ESC 监听）
     _previewIframeLoadHandler: null,
@@ -446,6 +466,11 @@ const CanvasViewEvents = {
         // 2. 不改变 zoom/pan，只隐藏 overlay 让 iframe 可交互
         const overlay = pageDiv.querySelector('.page-click-overlay');
         if (overlay) overlay.style.display = 'none';
+
+        // 2.5 把框缩回**设备尺寸**，并让页面以「未解锁」的原生布局重载
+        //     （用户已确认接受这 0.3~0.5s 的重新加载，见 _enterDeviceFrame）
+        this._enterDeviceFrame(elementId, pageDiv);
+
         const iframe = pageDiv.querySelector('iframe');
         if (iframe) {
             iframe.focus();
@@ -539,6 +564,9 @@ const CanvasViewEvents = {
             pageDiv.querySelectorAll('.preview-btn, .delete-btn').forEach(btn => {
                 btn.style.display = '';
             });
+
+            // 2.5 把框恢复成「完整高度」，并让页面重新回到画布版布局
+            this._exitDeviceFrame(this._previewElementId, pageDiv);
         }
 
         // 3. 移除 iframe 内的键盘监听器
@@ -563,5 +591,94 @@ const CanvasViewEvents = {
 
         // 5. 清理状态
         this._previewElementId = null;
+    },
+
+    // ---------------------------------------------------------------- 预览尺寸切换
+
+    /**
+     * 进入预览：把页面框缩回**设备尺寸**，并让 iframe 里的页面回到原生布局。
+     *
+     * ⚠️ 为什么非要重载不可（用户已确认接受代价）：
+     *    js/page-autofit.js 为了让画布显示「完整长页」，把页面**永久改写**了 ——
+     *    html/body 变 height:auto + overflow:visible，内部滚动容器也全被解开
+     *    （见该文件 unlock()）。此时若只把外框缩到 812，里面那 1699px 内容会被
+     *    iframe 自身的 overflow:hidden 直接裁掉、**而且滚不动** —— 连预览都算不上。
+     *    往 src 上挂一个 __proto_preview=1 再导航，页面侧就不解锁了，
+     *    页面回到「设备视口 + 内部滚动」的真机布局。
+     *
+     * @param {string} elementId
+     * @param {HTMLElement} pageDiv
+     */
+    _enterDeviceFrame(elementId, pageDiv) {
+        if (!pageDiv) return;
+
+        const element = ElementManager.getElement(elementId);
+        const iframe = pageDiv.querySelector('iframe');
+
+        // 设备尺寸（含顶栏 30px 与边框）。尺寸算法复用 ProtoAutoFit.applyPlaceholder
+        // ——「+30」「+边框」这两笔补偿只允许有一份实现，免得两处漂移。
+        if (element && element.type === 'page' && window.ProtoAutoFit) {
+            window.ProtoAutoFit.applyPlaceholder(pageDiv, element.width, element.height);
+
+            // ⚠️ 必须显形：若这个页面是刚拖进来、高度还没量到（框正被
+            //    proto-measuring 藏着），不先显形的话预览会是一片空白。
+            window.ProtoAutoFit.reveal(elementId);
+        }
+
+        this._navigateFrame(iframe, this._urlWithMark(iframe && iframe.getAttribute('src'), this.PREVIEW_URL_MARK));
+    },
+
+    /**
+     * 退出预览：用**记忆里的完整高度**立刻恢复外框，并挂上退出标记重新加载一次。
+     *
+     * ⚠️ 恢复必须走 ProtoAutoFit.apply（记忆高度）而不是等页面重新回报：
+     *    重载后量一次要 300~500ms，等它回来就会「先矮后高」跳一下。
+     *    apply 返回 false = 该页面从未量到过（如标了 PROTO_FIXED_HEIGHT 的页面），
+     *    那就保持设备尺寸 —— 与进入预览前完全一致。
+     *
+     * ⚠️ 退出后 iframe 回到元素**声明的那个页面**：src 一直在元素属性上没动过，
+     *    预览里点链接跳到别的页面也不会改它（那只改浏览上下文里的文档）。
+     *    这正是我们要的 —— 框显示的页面与画布数据（element.pageId）重新一致。
+     */
+    _exitDeviceFrame(elementId, pageDiv) {
+        if (!pageDiv) return;
+
+        if (window.ProtoAutoFit) {
+            const element = ElementManager.getElement(elementId);
+            if (!window.ProtoAutoFit.apply(elementId, pageDiv) && element) {
+                window.ProtoAutoFit.applyPlaceholder(pageDiv, element.width, element.height);
+            }
+        }
+
+        const iframe = pageDiv.querySelector('iframe');
+        this._navigateFrame(iframe, this._urlWithMark(iframe && iframe.getAttribute('src'), this.FIT_URL_MARK));
+    },
+
+    // ---------------------------------------------------------------- src 标记工具
+
+    /** 去掉 src 上残留的预览 / 退出标记，拿到干净的页面地址 */
+    _cleanFrameUrl(url) {
+        return String(url || '')
+            .replace(new RegExp(`[?&](?:${this.PREVIEW_URL_MARK}|${this.FIT_URL_MARK})`, 'g'), '')
+            .replace(/[?&]+$/, '');
+    },
+
+    /** 干净的页面地址 + 一个标记（没有查询串就用 ? 起头，有就接 &） */
+    _urlWithMark(url, mark) {
+        const base = this._cleanFrameUrl(url);
+        if (!base) return '';
+        return base + (base.indexOf('?') === -1 ? '?' : '&') + mark;
+    },
+
+    /**
+     * 换 src 触发一次完整导航。
+     *
+     * ⚠️ 刻意不用 location.reload()：file:// 下父页面读 contentWindow.location 必然抛
+     *    SecurityError（Chrome 给每个文件分配不透明来源，与 topbar.js 的 Esc 桥同一堵墙），
+     *    而「src 原样重设」在同源下又会被浏览器判为无变化而静默不动 —— 两头都不保险。
+     *    带标记的 src 天然是新地址，一次导航，两种协议一致。
+     */
+    _navigateFrame(iframe, url) {
+        if (iframe && url) iframe.setAttribute('src', url);
     }
 };

@@ -25,6 +25,12 @@
  * 该名字只由画布的页面元素 renderer 设置，全屏预览浮层与 index.html 总览页都没有，
  * 因此「单独打开页面 / 全屏预览 / 总览页」三种场景行为完全不变。
  *
+ * ⚠️ 例外：画布的**原位预览模式**下本文件完全让路（不解锁、不上报），
+ *    因为预览要的是「设备视口 + 页面内部滚动」的真机观感，与「解锁成长文档」
+ *    正好相反。判据是 iframe src 上的 __proto_preview=1 标记，以及挂在
+ *    window.name 尾巴上的同名标记（帧内跳转后 URL 标记会丢，名字不会）。
+ *    详见下方 MARK_PREVIEW 一节。
+ *
  * 页面可通过在自身脚本里写 `window.PROTO_FIXED_HEIGHT = true` 显式退出自适应
  * （给「必须永远 1 屏」的页面留的逃逸开关，如移动端长列表）。
  */
@@ -38,6 +44,71 @@
     var MIN_HEIGHT = 120;    // 兜底，防止解锁失误把框压扁
     var MIN_WIDTH = 200;     // 同上，宽度下限
     var MSG_TYPE = 'proto-page-height';
+
+    // ========== 原位预览态（画布把框缩成设备尺寸时，本文件必须完全让路） ==========
+    //
+    // 画布的「预览模式」要的是**真机观感**：设备视口（375×812）+ 页面内部自己滚动。
+    // 而本文件为了画布上能完整展示长页面，会主动把它解锁成一条长文档 —— 两者直接冲突。
+    // 所以画布进入预览时会在 iframe 的 src 上写一个标记，本文件见状就什么都不做
+    // （不解锁、不上报），页面保持原生布局；退出预览时再写另一个标记，本文件恢复。
+    //
+    // ⚠️ 两个标记的字面量与 js/canvas-view/canvas-view-events.js 里的
+    //    PREVIEW_URL_MARK / FIT_URL_MARK 必须一字不差。
+    var MARK_PREVIEW = '__proto_preview=1';
+    var MARK_FIT = '__proto_fit=1';
+
+    // 预览态还会把标记挂到 window.name 的**尾巴**上（见 enterPreviewName 的注释），
+    // 用 \u0000 是因为它不可能出现在正常窗口名里，不会与 proto-canvas- 前缀混淆。
+    var NAME_SUFFIX = '\u0000proto-preview';
+
+    function hasMark(mark) {
+        return typeof location !== 'undefined' &&
+            typeof location.search === 'string' &&
+            location.search.indexOf(mark) !== -1;
+    }
+
+    function inPreviewName() {
+        return typeof window.name === 'string' && window.name.indexOf(NAME_SUFFIX) !== -1;
+    }
+
+    /**
+     * 进入预览态：把标记挂到自己的 window.name 尾巴上。
+     *
+     * ⚠️ 为什么非要动 window.name（而不是只认 URL 标记）：
+     *    预览中用户会在页面里点链接跳转，而相对链接**不带查询串**，
+     *    URL 上的标记会丢；可 window.name 是浏览上下文自己的属性，**跨导航保持**。
+     *    实测：页面自己 set 完 window.name 再跳转，新文档读到的仍是新名字。
+     *
+     * ⚠️ 它是**自己改自己**，不涉及跨源访问，所以 file://（不透明来源）同样可用；
+     *    而且父页面 iframe 元素上的 name 属性不受影响（实测两者互不干扰），
+     *    画布照旧能靠 `iframe[name]` 找到这个框。
+     *    代价是预览期间上报的 key 带上了尾巴、与画布上的 name 对不上 →
+     *    报告自然被丢弃，正好是我们要的（预览中不该改框高）。
+     */
+    function enterPreviewName() {
+        if (inPreviewName()) return;
+        try {
+            window.name = window.name + NAME_SUFFIX;
+        } catch (err) {
+            // 极少见（名字被冻结），忽略即可：URL 标记那一路仍然生效
+        }
+    }
+
+    /** 退出预览态：把尾巴摘掉，让上报 key 与画布上的 iframe name 重新对上 */
+    function leavePreviewName() {
+        if (!inPreviewName()) return;
+        try {
+            window.name = window.name.split(NAME_SUFFIX)[0];
+        } catch (err) {
+            // 同上，忽略
+        }
+        // 尽力把地址栏里的标记擦掉（file:// 下 replaceState 可能被拒，失败无所谓）
+        try {
+            window.history.replaceState(null, '', location.pathname);
+        } catch (err) {
+            // 忽略
+        }
+    }
 
     function log() {
         if (typeof Debug !== 'undefined' && Debug && Debug.log) {
@@ -218,6 +289,18 @@
     }
 
     function boot() {
+        // ⚠️ 顺序不能反：先按「退出预览」标记摘掉名字尾巴，再判断是否在预览态。
+        //    退出预览那次导航带的是 MARK_FIT，若先判预览态就会因为尾巴仍在
+        //    而永远退不出来（框再也回不到完整高度）。
+        if (hasMark(MARK_FIT)) leavePreviewName();
+
+        // 预览态（首帧看 URL 标记，帧内跳转看名字尾巴）：完全让路。
+        if (hasMark(MARK_PREVIEW) || inPreviewName()) {
+            enterPreviewName();
+            log('[autofit] skipped: canvas preview mode');
+            return;
+        }
+
         if (optedOut()) {
             log('[autofit] skipped: page set PROTO_FIXED_HEIGHT');
             return;

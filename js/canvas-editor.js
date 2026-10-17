@@ -202,7 +202,20 @@ const CanvasEditor = {
                 const elementId = div.dataset.elementId;
                 const prev = window.ProtoAutoFit._cache[elementId];
                 window.ProtoAutoFit.remember(elementId, { h: height, w: width });
-                window.ProtoAutoFit.apply(elementId, div);
+
+                // ⚠️ 正在原位预览的那个框已被刻意缩回设备尺寸（见 CanvasViewEvents.
+                //    _enterDeviceFrame），此时**绝不能被撑回去**。
+                //    进入预览时旧文档里排队的那一帧 rAF 报告仍可能带着**干净 key**
+                //    到达（iframe 的 name 属性没变过），光靠 key 根本拦不住，必须显式认人。
+                //    remember 仍要执行：量到的就是**页面**的完整高度，记忆不能丢，
+                //    退出预览时还要靠它零跳变恢复。
+                const previewing = typeof CanvasView !== 'undefined' && CanvasView.isPreviewMode &&
+                    typeof CanvasViewEvents !== 'undefined' &&
+                    CanvasViewEvents._previewElementId === elementId;
+
+                if (!previewing) {
+                    window.ProtoAutoFit.apply(elementId, div);
+                }
 
                 // 收到高度 = 这个框量完了。若它此前因为「高度未知」被藏着
                 // （该页面有史以来第一次出现），现在让它以完整高度显形。

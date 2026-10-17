@@ -2054,6 +2054,220 @@ test('⚠️ 边框补偿只能按 offsetWidth-clientWidth 量（游离节点 co
         '⚠️ 不得改用 computed border：游离节点匹配不到 :root[data-theme] 这类祖先选择器，照样是 0');
 });
 
+// ================================================================ 19. 预览模式：设备尺寸 + 真机观感
+//
+// 用户诉求（原话）：「在画布中。用户使用预览模式后，恢复设备的大小。」
+// 追问后确认的定义：
+//   · 进入预览 → 页面框回到**设备尺寸**（375×812，而不是 1733 的完整高度）
+//   · 退出预览 → 回到「完整高度」（记忆里的实测值）
+//
+// 为什么「光把框缩到 812」不算数：
+//   page-autofit.js 为了让画布显示完整长页，把页面 html/body 改成了
+//   height:auto + overflow:visible，内部滚动容器也全被解开（unlock()）。
+//   框缩到 812 后，那 1699px 内容会被 iframe 自身的 overflow:hidden
+//   直接裁掉、而且滚不动 —— 连预览都算不上，必须让页面回到原生布局。
+//
+// 实测（Chrome，本机）三个关键事实，决定了实现方式：
+//   ① 给**已存在**的 iframe 赋 name，**不会**改变它当前浏览上下文的 window.name
+//      （改完立刻读 iframe.contentWindow.name 仍是旧值）→「改名 + reload」走不通；
+//   ② 页面**自己** set window.name 是跨导航保持的（改完再跳转，新文档读到的仍是新名字），
+//      且父页面 iframe 元素上的 name 属性完全不受影响（两条通道互不干扰）；
+//   ③ src 一改就是一次完整导航，file://（不透明来源）下同样可靠。
+// 于是：画布侧往 src 上挂 URL 标记，页面侧靠 URL 标记 + window.name 尾巴认预览态。
+
+suite('19. 预览模式：进预览缩回设备尺寸 / 退预览回到完整高度');
+
+test('⚠️ 预览标记的字面量：画布侧与页面侧必须一字不差', () => {
+    const canvas = stripComments(readSrc('js', 'canvas-view', 'canvas-view-events.js'));
+    const page = stripComments(readSrc('js', 'page-autofit.js'));
+
+    const canvasPreview = canvas.match(/PREVIEW_URL_MARK:\s*'([^']+)'/);
+    const canvasFit = canvas.match(/FIT_URL_MARK:\s*'([^']+)'/);
+    const pagePreview = page.match(/MARK_PREVIEW\s*=\s*'([^']+)'/);
+    const pageFit = page.match(/MARK_FIT\s*=\s*'([^']+)'/);
+
+    assert(canvasPreview && canvasFit, '画布侧应声明 PREVIEW_URL_MARK / FIT_URL_MARK');
+    assert(pagePreview && pageFit, '页面侧应声明 MARK_PREVIEW / MARK_FIT');
+    assertEqual(pagePreview[1], canvasPreview[1],
+        '⚠️ 预览标记不一致 → 页面侧认不出，预览中照样解锁成长文档、框缩了也是白缩');
+    assertEqual(pageFit[1], canvasFit[1],
+        '⚠️ 退出标记不一致 → 名字尾巴摘不掉，框再也回不到完整高度');
+});
+
+test('⚠️ 进入预览：框缩回设备尺寸 + src 挂预览标记（缺一不可）', () => {
+    const src = stripComments(readSrc('js', 'canvas-view', 'canvas-view-events.js'));
+
+    const open = src.match(/openPreview\(pageTitle, elementId\)\s*\{([\s\S]*?)\n    \},/);
+    assert(open, '应能找到 openPreview');
+    assert(/_enterDeviceFrame\(elementId, pageDiv\)/.test(open[1]),
+        'openPreview 必须调 _enterDeviceFrame');
+
+    const enter = src.match(/_enterDeviceFrame\(elementId, pageDiv\)\s*\{([\s\S]*?)\n    \},/);
+    assert(enter, '应能找到 _enterDeviceFrame');
+    assert(/ProtoAutoFit\.applyPlaceholder\(pageDiv, element\.width, element\.height\)/.test(enter[1]),
+        '⚠️ 必须走 applyPlaceholder 缩到设备尺寸 —— 「+30 顶栏」「+边框」两笔补偿只允许一份实现');
+    assert(/PREVIEW_URL_MARK/.test(enter[1]),
+        '⚠️ 必须把预览标记挂到 src 上重新导航，否则页面侧不解锁 → 预览框里是条裁死不滚的长文档');
+    assert(/ProtoAutoFit\.reveal\(elementId\)/.test(enter[1]),
+        '⚠️ 必须显形：刚拖进来还没量到高度的框正被 proto-measuring 藏着，不显形预览就是一片空白');
+});
+
+test('⚠️ 退出预览：先用记忆高度恢复，再挂退出标记导航（顺序反了会先矮后高跳一下）', () => {
+    const src = stripComments(readSrc('js', 'canvas-view', 'canvas-view-events.js'));
+
+    const close = src.match(/closePreview\(\)\s*\{([\s\S]*?)\n    \},/);
+    assert(close, '应能找到 closePreview');
+    assert(/_exitDeviceFrame\(/.test(close[1]), 'closePreview 必须调 _exitDeviceFrame');
+
+    const exit = src.match(/_exitDeviceFrame\(elementId, pageDiv\)\s*\{([\s\S]*?)\n    \},/);
+    assert(exit, '应能找到 _exitDeviceFrame');
+    assert(/ProtoAutoFit\.apply\(elementId, pageDiv\)/.test(exit[1]),
+        '必须按记忆里的实测高度立刻恢复 —— 等页面重新回报要 300~500ms，那就是一次跳变');
+    assert(/applyPlaceholder\(pageDiv, element\.width, element\.height\)/.test(exit[1]),
+        '从未量到过的页面（PROTO_FIXED_HEIGHT / 首次出现）要保持设备尺寸，不能留个空高');
+    assert(/FIT_URL_MARK/.test(exit[1]),
+        '⚠️ 必须挂退出标记 —— 名字尾巴只能靠它摘掉，否则页面永远不解锁');
+    assert(exit[1].indexOf('apply(elementId, pageDiv)') < exit[1].indexOf('_navigateFrame('),
+        '⚠️ 必须先恢复尺寸再导航');
+});
+
+test('⚠️ 不得再用「改 iframe.name 后重载」那套 —— 实测对已存在的浏览上下文无效', () => {
+    const src = stripComments(readSrc('js', 'canvas-view', 'canvas-view-events.js'));
+    assert(!/iframe\.name\s*=/.test(src),
+        '⚠️ 给已存在的 iframe 赋 name 不会改变它的 window.name（实测仍读到旧值），' +
+        '页面侧照样解锁 —— 这条路已被证伪，别再写回来');
+    assert(!/contentWindow\.location/.test(src),
+        '⚠️ file:// 下读 contentWindow.location 必抛 SecurityError，不得依赖它做重载');
+});
+
+test('⚠️ 预览中的那个框：迟到的测量报告绝不能把它重新撑高', () => {
+    const editor = stripComments(readSrc('js', 'canvas-editor.js'));
+    const handler = editor.match(/data\.type === 'proto-page-height'([\s\S]*?)\n            \}/);
+    assert(handler, '应能找到 proto-page-height 分支');
+    assert(/isPreviewMode/.test(handler[1]) && /_previewElementId/.test(handler[1]),
+        '⚠️ 必须显式认「正在预览的就是这个元素」：进入预览时旧文档在导航前排队的那一帧 ' +
+        'rAF 报告仍带着**干净 key** 到达，光靠 key 是拦不住的');
+    assert(/if \(!previewing\)/.test(handler[1]), '拦下时不得调 apply');
+    assert(/ProtoAutoFit\.remember\(/.test(handler[1]),
+        'remember 不能被一起拦掉：记忆里存的仍是这个页面的完整高度，退出预览就靠它零跳变恢复');
+});
+
+/**
+ * 在 vm 里真跑 page-autofit.js，只观察它有没有去「解锁」根节点。
+ *
+ * 解锁的写法是 `root.style.setProperty('height','auto','important')`，
+ * 因此一个会记账的假 Element 就够把「解没解锁」看得一清二楚。
+ *
+ * ⚠️ 静态 grep 在这里不够用：boot() 里「先摘尾巴再判预览态」的顺序一颠倒，
+ *    该有的字符串一个都没少，只有真跑才能看出框再也回不到完整高度。
+ */
+function runAutofit(opts) {
+    const file = path.join(ROOT, 'js', 'page-autofit.js');
+    const code = fs.readFileSync(file, 'utf8');
+
+    const unlockCalls = [];
+    const reports = [];
+    const mkEl = (tag) => ({
+        tagName: tag,
+        style: { setProperty(prop, value) { unlockCalls.push([tag, prop, value]); } },
+        dataset: {},
+        scrollHeight: 1699, clientHeight: 1699, offsetHeight: 1699,
+        scrollWidth: 375, offsetWidth: 375, clientWidth: 375,
+        parentElement: null,
+        querySelectorAll: () => [],
+        getAttribute: () => null,
+        setAttribute() {},
+    });
+
+    const documentElement = mkEl('html');
+    const body = mkEl('body');
+    body.children = [];
+    const documentStub = {
+        readyState: 'complete',
+        documentElement,
+        body,
+        addEventListener() {},
+        querySelectorAll: () => [],
+    };
+
+    const locationStub = { search: opts.search || '' };
+    const parentStub = { postMessage(msg) { reports.push(msg); } };
+    const win = {
+        name: opts.name,
+        innerHeight: 812,
+        innerWidth: 375,
+        PROTO_FIXED_HEIGHT: !!opts.fixed,
+        location: locationStub,
+        history: { replaceState() {} },
+        requestAnimationFrame(fn) { fn(); return 1; },
+        addEventListener() {},
+        getComputedStyle: () => ({ overflowY: 'visible', maxHeight: 'none' }),
+        document: documentStub,
+    };
+    win.parent = opts.topLevel ? win : parentStub;
+    win.window = win;
+
+    const sandbox = {
+        window: win,
+        document: documentStub,
+        location: locationStub,
+        Debug: { log() {}, warn() {}, error() {} },
+    };
+    sandbox.globalThis = sandbox;
+
+    const ctx = vm.createContext(sandbox);
+    vm.runInContext(code, ctx, { filename: file });
+
+    return {
+        unlocked: unlockCalls.some(c => c[1] === 'height' && c[2] === 'auto'),
+        name: win.name,
+        reports,
+    };
+}
+
+const CANVAS_NAME = 'proto-canvas-elem_7';
+const SUFFIX = '\u0000proto-preview';
+
+test('页面侧：画布常态（无标记）必须照常解锁 —— 这是老功能，不能被新逻辑误伤', () => {
+    const r = runAutofit({ name: CANVAS_NAME, search: '' });
+    assert(r.unlocked, '无标记时页面必须解锁，否则画布上又只能看到一屏');
+    assertEqual(r.name, CANVAS_NAME, '不该动 window.name');
+});
+
+test('⚠️ 页面侧：预览首帧（URL 标记）必须拒绝解锁，并把标记挂上 window.name', () => {
+    const r = runAutofit({ name: CANVAS_NAME, search: '?__proto_preview=1' });
+    assert(!r.unlocked,
+        '⚠️ 预览中绝不能解锁：一解锁内容就摊平成 1699px 长文档，812 的框里裁死不滚');
+    assertEqual(r.name, CANVAS_NAME + SUFFIX,
+        '⚠️ 必须把标记挂到 window.name 尾巴上 —— 帧内跳转时 URL 标记会丢，名字不会');
+});
+
+test('⚠️ 页面侧：预览中帧内跳转（只剩名字尾巴）仍必须拒绝解锁', () => {
+    const r = runAutofit({ name: CANVAS_NAME + SUFFIX, search: '' });
+    assert(!r.unlocked, '⚠️ 预览里点链接跳转后若不认尾巴，新页面会解锁 → 预览立刻变回裁死不滚');
+    assertEqual(r.name, CANVAS_NAME + SUFFIX, '尾巴要保持，后续跳转才认得出');
+});
+
+test('⚠️ 页面侧：退出预览（URL 标记）必须摘掉尾巴并恢复解锁', () => {
+    const r = runAutofit({ name: CANVAS_NAME + SUFFIX, search: '?__proto_fit=1' });
+    assert(r.unlocked, '⚠️ 退出预览后必须恢复自适应，否则框再也回不到完整高度');
+    assertEqual(r.name, CANVAS_NAME,
+        '⚠️ 尾巴必须摘干净：上报的 key 与画布上 iframe 的 name 对不上，报告会被整条丢弃');
+    assert(r.reports.length > 0, '退出预览后应当立刻上报一次实测尺寸');
+    assertEqual(r.reports[0].key, CANVAS_NAME, '⚠️ 上报 key 必须是干净的名字，否则画布定位不到 iframe');
+});
+
+test('页面侧：单独打开 / 全屏浮层（非画布 iframe）不受任何影响', () => {
+    const r = runAutofit({ name: '', search: '', topLevel: true });
+    assert(!r.unlocked, '顶层打开页面时不得解锁');
+    assertEqual(r.reports.length, 0, '顶层打开时不得上报');
+});
+
+test('页面侧：PROTO_FIXED_HEIGHT 逃逸开关仍然有效（预览逻辑不得绕过它以外的判断）', () => {
+    const r = runAutofit({ name: CANVAS_NAME, search: '', fixed: true });
+    assert(!r.unlocked, '标了 PROTO_FIXED_HEIGHT 的页面不得解锁');
+});
+
 // ---------------------------------------------------------------- 运行
 
 (async () => {
