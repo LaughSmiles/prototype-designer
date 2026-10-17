@@ -226,9 +226,16 @@ const ElementManager = {
         div.style.width = `${element.width}px`;
         div.style.height = `${element.height}px`;
         // 撤销/重做会走到这里，把高度重置回设备固定尺寸。
-        // 页面元素要再套一次自适应缓存，否则长框会被打回一屏。
+        // 页面元素要再套一次自适应 —— 否则长框会被打回一屏。
+        //
+        // ⚠️ apply 返回 false = 该页面高度还未知（有史以来第一次出现且没量完）。
+        //    此时必须补上占位高度（含顶栏 30px），否则框会比设备视口还矮 30px。
+        //    走 ProtoAutoFit.placeholderHeight 而不是在本文件再写一遍 "+30"，
+        //    免得两处算法漂移（本仓库已被"同一逻辑写两份"坑过三次）。
         if (element.type === 'page' && window.ProtoAutoFit) {
-            window.ProtoAutoFit.apply(element.id, div, element.width, element.height);
+            if (!window.ProtoAutoFit.apply(element.id, div, element.width, element.height)) {
+                div.style.height = `${window.ProtoAutoFit.placeholderHeight(element.height)}px`;
+            }
         }
     },
 

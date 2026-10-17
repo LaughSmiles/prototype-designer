@@ -14,6 +14,21 @@ const Storage = {
     },
 
     /**
+     * 页面框实测高度记忆（pageId -> {h, w}）。
+     *
+     * 为什么需要它：页面框的「完整高度」只能把页面加载起来量，量完又只活在内存里，
+     * 于是每次刷新、每次重新拖入都要重新量一遍 —— 用户看到的就是
+     * 「先按设备高占位 → 几百毫秒后撑开」的跳变。
+     * 把量到的结果记住，下次渲染就能直接画成完整高度。
+     *
+     * ⚠️ 键名收在这里（Storage 是全部 localStorage 键名的唯一来源），
+     *    ProtoAutoFit 通过 ProtoAutoFit.storeKey 复用它，不另写字面量。
+     */
+    get PAGE_BOX_KEY() {
+        return `${this.projectName}_pageBoxes`;
+    },
+
+    /**
      * 读取项目名。config.js 必须先于本模块加载（canvas-editor.html 已保证这一点），
      * 仍保留兜底以防配置缺失。
      */
@@ -583,6 +598,9 @@ const Storage = {
         return [
             this.STORAGE_KEY,
             this.UI_STATE_KEY,
+            // 页面框实测高度记忆：虽然是「渲染缓存」性质，但它同样是本项目写在
+            // 本机的东西。按钮叫「清空浏览器缓存」，漏掉它就会残留半套状态。
+            this.PAGE_BOX_KEY,
             'canvasEditor_theme',
             'sidebarMenuExpanded',
             'topbar_fullscreen',

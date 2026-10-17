@@ -1860,6 +1860,200 @@ test('⚠️ 光标判定必须用命中区，不能继续找 svg.arrow-svg path
     assert(/\.arrow-hit/.test(down[1]), 'handleMouseDown 的兜底应判命中区');
 });
 
+// ================================================================ 18. 页面框「拖入即完整 / F5 即完整」
+//
+// 用户诉求：从页面库拖进画布应当直接是**完整**页面，F5 刷新后也应当直接是完整页面，
+// 不该出现「先按设备高 812 占位 → 几百毫秒后撑开」的跳变。
+//
+// 实测（改前）：
+//   · 刷新 elem_7  812 → t≈485ms → 1733
+//   · 刷新 elem_8  812 → t≈541ms → 1987
+//   · 刷新 elem_9  812 → t≈541ms → 1300
+//   · 拖入 app-message 812 → t≈143ms → 846
+//
+// 根因：完整高度只能把页面加载起来量，而量到的结果只活在内存缓存
+// （ProtoAutoFit._cache）里，刷新即丢 → 每次都必须重新量。
+// 做法：按 pageId 记住量到的结果（独立 localStorage 键），渲染时直接用它；
+// 有史以来第一次遇到的页面高度未知，则先把框藏起来、量完直接以完整高度显形。
+
+suite('18. 页面框：拖入即完整 / F5 即完整');
+
+/** 取出 element-renderer.js 里 ProtoAutoFit 这个对象的源码块 */
+function protoAutoFitSrc() {
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const start = src.indexOf('window.ProtoAutoFit = {');
+    assert(start >= 0, '应能找到 window.ProtoAutoFit 定义');
+    const end = src.indexOf('\n};', start);
+    assert(end > start, '应能找到 ProtoAutoFit 对象结尾');
+    return src.slice(start, end);
+}
+
+test('⚠️ 键名必须由 Storage 统一持有（不得在两处各写一份字面量）', () => {
+    const storage = stripComments(readSrc('js', 'storage.js'));
+    assert(/get PAGE_BOX_KEY\(\)\s*\{[\s\S]*?return `\$\{this\.projectName\}_pageBoxes`/.test(storage),
+        'Storage 应提供 PAGE_BOX_KEY，且随 projectName 派生（换项目名不孤立数据）');
+
+    const managed = storage.match(/getManagedKeys\(\)\s*\{([\s\S]*?)\n    \},/);
+    assert(managed, '应能找到 getManagedKeys');
+    assert(/this\.PAGE_BOX_KEY/.test(managed[1]),
+        '⚠️ 新键必须纳入 getManagedKeys —— 按钮叫「清空浏览器缓存」，漏掉它就残留');
+
+    const proto = protoAutoFitSrc();
+    assert(/Storage\.PAGE_BOX_KEY/.test(proto), 'ProtoAutoFit.storeKey 应复用 Storage.PAGE_BOX_KEY');
+    assert(!/_pageBoxes/.test(proto),
+        '⚠️ ProtoAutoFit 里不得再写一遍 `_pageBoxes` 字面量（两处拼装迟早漂移）');
+    assert(/typeof Storage !== 'undefined'/.test(proto),
+        'Storage 未就绪时必须安全降级（返回 null → 只走内存缓存，不落盘）');
+});
+
+test('⚠️ recall 必须先查本次会话实测、再回退到跨刷新记忆，且按 pageId 查', () => {
+    const proto = protoAutoFitSrc();
+    const fn = proto.match(/recall\(elementId\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 recall');
+    const body = fn[1];
+    assert(/_cache\[elementId\]/.test(body), '必须先查本次会话实测（最准）');
+    const firstHit = body.indexOf('_cache[elementId]');
+    const known = body.indexOf('_loadKnown()');
+    assert(known > firstHit, '⚠️ 跨刷新记忆只能做回退 —— 顺序反了会拿旧值盖掉刚量到的新值');
+    assert(/el\.pageId/.test(body), '⚠️ 跨刷新记忆必须按 pageId 查（内容是页面的属性，不是元素实例的）');
+    assert(/return null/.test(body), '都没有时必须返回 null，调用方据此判断「高度未知」');
+});
+
+test('⚠️ remember 必须同时写内存与跨刷新记忆（只写内存 = 刷新白记）', () => {
+    const proto = protoAutoFitSrc();
+    const fn = proto.match(/remember\(elementId, box\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 remember');
+    assert(/_cache\[elementId\]\s*=/.test(fn[1]), '要写本次会话缓存');
+    assert(/_loadKnown\(\)\[pageId\]\s*=/.test(fn[1]), '⚠️ 必须同时按 pageId 写跨刷新记忆');
+    assert(/_schedulePersist\(\)/.test(fn[1]), '⚠️ 写完要安排落盘（防抖），否则刷新就丢');
+});
+
+test('⚠️ apply 必须走 recall 且返回布尔（调用方靠它判断「高度未知」）', () => {
+    const proto = protoAutoFitSrc();
+    const fn = proto.match(/apply\(elementId, div, baseWidth, baseHeight\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 apply');
+    assert(/const box = this\.recall\(elementId\)/.test(fn[1]),
+        '⚠️ 必须走 recall —— 直接读 _cache 的话跨刷新记忆永远用不上，等于没做');
+    assert(/if \(!box \|\| !div\) return false;/.test(fn[1]), '未知时必须 return false');
+    assert(/return true;/.test(fn[1]), '成功套上必须 return true');
+});
+
+test('⚠️ 占位高度必须含顶栏 30px（历史上漏了 → 初始 iframe 比设备视口还矮 30px）', () => {
+    const proto = protoAutoFitSrc();
+    const fn = proto.match(/placeholderHeight\(baseHeight\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 placeholderHeight');
+    assert(/PROTO_FRAME_BAR/.test(fn[1]), '⚠️ 占位高度必须加顶栏，否则初始画面本身就是错的');
+
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const render = src.match(/renderPageElement\(div, element, canvas\)\s*\{([\s\S]*?)\n    \},/);
+    assert(render, '应能找到 renderPageElement');
+    assert(/placeholderHeight\(element\.height\)/.test(render[1]), 'renderPageElement 应走 placeholderHeight');
+    assert(!/div\.style\.height = `\$\{element\.height\}px`/.test(render[1]),
+        '⚠️ 不得再裸写 element.height 当占位高（那是漏掉顶栏的旧写法）');
+
+    const em = stripComments(readSrc('js', 'element-manager', 'element-manager.js'));
+    const upd = em.match(/updateElementSize\(div, element\)\s*\{([\s\S]*?)\n    \},/);
+    assert(upd, '应能找到 updateElementSize');
+    assert(/placeholderHeight\(element\.height\)/.test(upd[1]),
+        '⚠️ apply 返回 false（高度未知）时必须补占位高度，否则撤销/重做会把框打矮 30px');
+});
+
+test('⚠️ 高度未知的框必须先藏起来，且必须有兜底超时（否则页面可能永不出现）', () => {
+    const proto = protoAutoFitSrc();
+    const fn = proto.match(/beginMeasureIfUnknown\(element, div\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 beginMeasureIfUnknown');
+    const body = fn[1];
+    assert(/if \(this\.recall\(element\.id\)\) return;/.test(body),
+        '⚠️ 高度已知时绝不能藏 —— 那会把「零延迟直接完整」这条正常路径也拖慢');
+    assert(/classList\.add\('proto-measuring'\)/.test(body), '未知时挂上隐藏类');
+    assert(/PROTO_MEASURE_TIMEOUT/.test(body), '⚠️ 必须有兜底超时');
+    assert(/this\.reveal\(/.test(body), '超时后必须显形');
+
+    // 超时常量声明在 ProtoAutoFit 对象**之外**（模块顶层），所以要在整个文件里找
+    const whole = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    assert(/const PROTO_MEASURE_TIMEOUT = \d+;/.test(whole), '超时常量应显式声明');
+
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const render = src.match(/renderPageElement\(div, element, canvas\)\s*\{([\s\S]*?)\n    \},/);
+    assert(/beginMeasureIfUnknown\(element, div\)/.test(render[1]), 'renderPageElement 应接上「未知则藏」');
+});
+
+test('⚠️ 隐藏只能用 visibility:hidden，绝不能用 display:none', () => {
+    const css = readSrc('css', 'canvas-editor.css');
+    // ⚠️ 只在**规则体内**断言：本文件上方那条注释里也写着 "display:none"，
+    //    直接全文搜会被自己的注释骗过（本仓库已被同类问题坑过三次）。
+    const rule = css.match(/\.canvas-element\.page-element\.proto-measuring\s*\{([\s\S]*?)\}/);
+    assert(rule, '应能找到 .proto-measuring 规则');
+    assert(/visibility:\s*hidden/.test(rule[1]), '必须用 visibility:hidden');
+    assert(!/display:\s*none/.test(rule[1]),
+        '⚠️ 绝不能用 display:none —— 它让 iframe 不参与布局，量出来的高度是错的');
+    assert(!/opacity:\s*0/.test(rule[1]),
+        '不要用 opacity:0 顶替：它仍会接收指针事件，可能被误点到看不见的框');
+});
+
+test('⚠️ 显形必须发生在套用高度之后（反了就会露出那一下跳变）', () => {
+    const editor = stripComments(readSrc('js', 'canvas-editor.js'));
+    const handler = editor.match(/data\.type === 'proto-page-height'([\s\S]*?)\n            \}/);
+    assert(handler, '应能找到 proto-page-height 分支');
+    const applyAt = handler[1].indexOf('ProtoAutoFit.apply(');
+    const revealAt = handler[1].indexOf('ProtoAutoFit.reveal(');
+    assert(applyAt > 0, '必须调 apply');
+    assert(revealAt > 0, '⚠️ 必须调 reveal —— 否则被「未知则藏」藏起来的框永远不出现');
+    assert(applyAt < revealAt,
+        `⚠️ 必须先 apply 再 reveal（apply=${applyAt}, reveal=${revealAt}）；反了就是先显形再改高度，照样跳`);
+});
+
+test('⚠️ 绝不能把实测高度写进 element.height（画布数据/撤销栈/脏标记必须不受影响）', () => {
+    // 这是本模块的立身之本：自适应是渲染表现，不是画布数据。
+    // 一旦写进去，加载一个画布就会把「未保存」点亮，撤销栈也会被污染。
+    const proto = protoAutoFitSrc();
+    assert(!/\b(element|el|e)\.height\s*=/.test(proto),
+        '⚠️ ProtoAutoFit 里不得给 element.height 赋值');
+    assert(!/element\.width\s*=/.test(proto), '同理不得写 element.width');
+});
+
+test('⚠️ 落盘必须容错：形状不对的条目要丢弃，写失败不能抛', () => {
+    const proto = protoAutoFitSrc();
+    const load = proto.match(/_loadKnown\(\)\s*\{([\s\S]*?)\n    \},/);
+    assert(load, '应能找到 _loadKnown');
+    assert(/Number\.isFinite\(b\.h\)/.test(load[1]) && /Number\.isFinite\(b\.w\)/.test(load[1]),
+        '⚠️ 必须逐条校验 h/w 是有限数 —— 手改过的存档会把 NaN 灌进样式');
+    assert(/b\.h > 0 && b\.w > 0/.test(load[1]), '非正数也要丢弃');
+    assert(/catch/.test(load[1]), 'JSON 解析失败必须兜住（损坏的存档不能让画布起不来）');
+
+    const flush = proto.match(/_flush\(\)\s*\{([\s\S]*?)\n    \},/);
+    assert(flush, '应能找到 _flush');
+    assert(/catch/.test(flush[1]), '⚠️ 写入失败必须兜住（配额满/无痕模式下不能抛）');
+});
+
+test('⚠️ 挂到 DOM 之后必须再套一次尺寸（游离节点量不到边框，首帧会小 4px）', () => {
+    // 实测：不补这一下，刷新后 elem_7 首帧是 1729px，等页面把高度报回来
+    // 才被修正成 1733px —— 那 4px 就是浅色主题 border:2px 的上下左右合计，
+    // 游离节点 offsetWidth-clientWidth 恒为 0，量不出来。
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const fn = src.match(/renderElementWithoutCount\(element\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 renderElementWithoutCount');
+    const body = fn[1];
+    const appendAt = body.indexOf('canvas.appendChild(div)');
+    assert(appendAt > 0, '应能找到 canvas.appendChild(div)');
+    const after = body.slice(appendAt);
+    assert(/ProtoAutoFit\.apply\(/.test(after),
+        '⚠️ 必须在 appendChild **之后**再套一次尺寸（游离时边框量不到）');
+    assert(/ProtoAutoFit\.applyPlaceholder\(/.test(after),
+        '高度未知时要补占位尺寸，且同样要含边框');
+});
+
+test('⚠️ 边框补偿只能按 offsetWidth-clientWidth 量（游离节点 computed border 也是 0）', () => {
+    const proto = protoAutoFitSrc();
+    const fn = proto.match(/borderOf\(div\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 borderOf');
+    assert(/div\.offsetWidth - div\.clientWidth/.test(fn[1]), '用 offsetWidth-clientWidth 量左右边框');
+    assert(/div\.offsetHeight - div\.clientHeight/.test(fn[1]), '用 offsetHeight-clientHeight 量上下边框');
+    // 反向：不得改用 computed border —— 游离节点匹配不到 :root[data-theme] 祖先选择器
+    assert(!/getComputedStyle\(div\)\.border/.test(fn[1]),
+        '⚠️ 不得改用 computed border：游离节点匹配不到 :root[data-theme] 这类祖先选择器，照样是 0');
+});
+
 // ---------------------------------------------------------------- 运行
 
 (async () => {

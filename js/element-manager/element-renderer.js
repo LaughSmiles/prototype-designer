@@ -10,50 +10,249 @@
 //
 // ⚠️ 只写 div.style.height，绝不写 element.height：
 //    自适应是渲染时的表现，不是画布数据。存档 JSON、脏标记、撤销栈都不该被它影响。
-//    这也意味着拖动/缩放画布视图、重新渲染都不会丢失已测得的高度（缓存在这里）。
+//
+// ============================ 为什么还要「记住」(本轮新增) ============================
+//
+// 上面那条「不写 element.height」是对的，但只活在内存里的后果是：**每次都要重新量**。
+// 实测（zoom 0.55，硬刷新）三条时间线：
+//    · 刷新 elem_7  812 → t≈485ms → 1733
+//    · 刷新 elem_8  812 → t≈541ms → 1987
+//    · 拖入 app-msg 812 → t≈143ms → 846
+// 也就是「先按设备高占位，几百毫秒后才撑开」—— 用户要的是拖入即完整、F5 即完整。
+//
+// 关键事实：要在**一点都不跳**的前提下显示完整页面，就必须在 iframe 加载**之前**
+// 知道内容高度。而高度只能量出来，所以唯一可行的办法是「量过一次就记住」。
+//
+// 于是：把内容高度当作**页面自身的属性**，按 pageId 记住，存到独立键里
+// （Storage.PAGE_BOX_KEY）。仍不碰 element.height —— 存档 JSON / 脏标记 /
+// 撤销栈继续完全不受影响。
+//
+// ⚠️ 某个页面**有史以来第一次**出现时，高度客观上还不知道。这种「未知」的框
+//    先 visibility:hidden 藏起来，等第一次测量结果回来直接以完整高度显形；
+//    全程没有任何跳变。并有兜底超时，保证它绝不永久不出现。
+//
+// ⚠️ 已知的、无法根除的残余：若页面内容后来被**改短**，它会先按记忆里的旧高度
+//    画出来、随后被真实高度缩小 —— 反向跳一下。内容变长或没变都不会跳。
+//    要彻底消除得给页面内容算指纹，代价远大于收益。
 
 const PROTO_FRAME_BAR = 30; // 顶部拖拽条高度，与下方 calc(100% - 30px) 保持一致
 
+// 「高度还不知道」的框先藏起来，最多藏这么久。
+// 到期仍没收到高度回报就按设备尺寸显示 —— 宁可退回旧观感，也不能让页面不出现。
+// 真实存在的不回报情形：页面标了 `window.PROTO_FIXED_HEIGHT = true`、
+// iframe 加载失败、page-autofit.js 没能注入。这些都不会报错，只能靠超时兜底。
+const PROTO_MEASURE_TIMEOUT = 1500;
+
 window.ProtoAutoFit = {
-    _cache: Object.create(null), // elementId -> { h, w } 实测内容尺寸（不含拖拽条与边框）
+    _cache: Object.create(null),      // elementId -> { h, w } 本次会话实测（权威）
+    _known: null,                     // pageId -> { h, w } 跨刷新记住的（懒加载）
+    _measuring: Object.create(null),  // elementId -> { timer, div } 正在等首次测量
+    _persistTimer: null,
+    _unloadBound: false,
+
+    /**
+     * 落盘用的键名。**单一来源在 Storage**（它是全部 localStorage 键名的持有者）。
+     * Storage 尚未就绪时返回 null → 本次只走运行时缓存、不落盘（安全降级）。
+     */
+    get storeKey() {
+        if (typeof Storage !== 'undefined' && Storage.PAGE_BOX_KEY) return Storage.PAGE_BOX_KEY;
+        return null;
+    },
+
+    /** 「完整高度还不知道」时给框的占位高度（设备高 + 顶栏） */
+    placeholderHeight(baseHeight) {
+        const base = (typeof baseHeight === 'number' && baseHeight > 0) ? baseHeight : 0;
+        return base + PROTO_FRAME_BAR;
+    },
+
+    /**
+     * 边框厚度（左右 / 上下）。
+     *
+     * ⚠️ 只能用 offsetWidth-clientWidth 量，**不能**用 getComputedStyle：
+     *    游离（还没 appendChild）的节点匹配不到 `:root[data-theme="light"] …`
+     *    这类祖先选择器，computed border 会是 0；而 offsetWidth 也是 0。
+     *    所以调用方必须在**挂到 DOM 之后**再调一次（见 renderElementWithoutCount）。
+     */
+    borderOf(div) {
+        return {
+            w: (div.offsetWidth - div.clientWidth) || 0,
+            h: (div.offsetHeight - div.clientHeight) || 0,
+        };
+    },
+
+    /**
+     * 把**占位**尺寸套上去（设备高 + 顶栏 + 边框）。
+     * 用于「高度还未知」的框：它虽然被藏着，但盒子尺寸仍要正确，
+     * 否则兜底超时把它显出来时会比设备视口矮一截。
+     */
+    applyPlaceholder(div, baseWidth, baseHeight) {
+        if (!div) return;
+        const b = this.borderOf(div);
+        if (typeof baseWidth === 'number' && baseWidth > 0) {
+            div.style.width = `${baseWidth + b.w}px`;
+        }
+        div.style.height = `${this.placeholderHeight(baseHeight) + b.h}px`;
+    },
+
+    _elementOf(elementId) {
+        if (typeof ElementManager === 'undefined' || !ElementManager.getElement) return null;
+        return ElementManager.getElement(elementId) || null;
+    },
+
+    /** 懒加载跨刷新记忆。形状不对的条目直接丢弃 —— 存档可能被手改过 */
+    _loadKnown() {
+        if (this._known) return this._known;
+        this._known = Object.create(null);
+        const key = this.storeKey;
+        if (!key) return this._known;
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) return this._known;
+            const parsed = JSON.parse(raw);
+            for (const pageId in parsed) {
+                const b = parsed[pageId];
+                if (b && Number.isFinite(b.h) && Number.isFinite(b.w) && b.h > 0 && b.w > 0) {
+                    this._known[pageId] = { h: b.h, w: b.w };
+                }
+            }
+        } catch (e) {
+            Debug.warn('[autofit] 页面高度记忆损坏，已忽略:', e);
+            this._known = Object.create(null);
+        }
+        return this._known;
+    },
+
+    /**
+     * 写盘（防抖 400ms）。
+     *
+     * ⚠️ 只做「下次少跳一下」的优化，所以任何失败都只 warn 不打扰用户 ——
+     *    写不进去（配额满 / 无痕模式）也只是退回「每次都量一遍」，功能不受影响。
+     * ⚠️ 挂一个 pagehide 兜底：极端情况下用户量完就立刻刷新，定时器还没跑到。
+     */
+    _schedulePersist() {
+        if (!this._unloadBound) {
+            this._unloadBound = true;
+            window.addEventListener('pagehide', () => {
+                if (!this._persistTimer) return;
+                clearTimeout(this._persistTimer);
+                this._persistTimer = null;
+                this._flush();
+            });
+        }
+        if (this._persistTimer) return;
+        this._persistTimer = setTimeout(() => {
+            this._persistTimer = null;
+            this._flush();
+        }, 400);
+    },
+
+    _flush() {
+        const key = this.storeKey;
+        if (!key || !this._known) return;
+        try {
+            localStorage.setItem(key, JSON.stringify(this._known));
+        } catch (e) {
+            Debug.warn('[autofit] 页面高度记忆写入失败（不影响使用，只是下次还会量一遍）:', e);
+        }
+    },
+
+    /**
+     * 查一个页面框该用多大。
+     * 顺序：本次会话实测 → 跨刷新记住的。都没有 → null
+     * （调用方据此判断「高度未知」，决定先把它藏起来）。
+     */
+    recall(elementId) {
+        const hit = this._cache[elementId];
+        if (hit) return hit;
+        const el = this._elementOf(elementId);
+        const pageId = el && el.pageId;
+        if (!pageId) return null;
+        return this._loadKnown()[pageId] || null;
+    },
 
     remember(elementId, box) {
         if (!elementId || !box) return;
         this._cache[elementId] = { h: box.h, w: box.w };
+        // 按 pageId 记住：内容是**页面**的属性，不是某个元素实例的
+        // —— 同一个页面拖两个框，两个框都该立刻是同一高度。
+        const el = this._elementOf(elementId);
+        const pageId = el && el.pageId;
+        if (pageId) {
+            this._loadKnown()[pageId] = { h: box.h, w: box.w };
+            this._schedulePersist();
+        }
     },
 
     /**
-     * 把缓存的尺寸套到外框上。
+     * 把已知尺寸套到外框上。
      * 必须是**绝对赋值**：ResizeObserver 会在内容后续增长时反复调用本函数
      * （实测 pc-home 首次测量后内容又长了 2px），累加式写法会把框越撑越大。
+     *
+     * @returns {boolean} 是否真的套上了（false = 高度未知，调用方可能要藏框）
      */
     apply(elementId, div, baseWidth, baseHeight) {
-        const box = this._cache[elementId];
-        if (!box || !div) return;
+        const box = this.recall(elementId);
+        if (!box || !div) return false;
         if (typeof baseWidth !== 'number' || typeof baseHeight !== 'number') {
             const el = ElementManager.state.elements.find(e => e.id === elementId);
-            if (!el) return;
+            if (!el) return false;
             baseWidth = el.width;
             baseHeight = el.height;
         }
 
-        // ⬇️ 边框补偿（本轮核心修复）
-        // .canvas-element.page-element 是 border:1px + box-sizing:border-box，
-        // style.height/width 里会被上下左右边框各吃掉 1px。
-        // 早期版本没补这 2px，iframe 就比内容矮 2px → 冒出纵向滚动条
+        // ⬇️ 边框补偿
+        // .canvas-element.page-element 是 border + box-sizing:border-box
+        // （浅色主题 border:2px），style.height/width 里会被边框吃掉相应像素。
+        // 早期版本没补，iframe 就比内容矮 → 冒出纵向滚动条
         // → 视口被压窄 15px → 移动页写死的 html,body{width:375px} 横向溢出
         // → 画布上凭空多出「右 + 下」两条滚动条。
-        // 这里动态读取而不是写死 2，主题/样式变化都能自适应。
-        const borderW = (div.offsetWidth - div.clientWidth) || 0;
-        const borderH = (div.offsetHeight - div.clientHeight) || 0;
+        // 这里动态读取而不是写死，主题/样式变化都能自适应。
+        const b = this.borderOf(div);
 
         // 只许长不许矮：页面框代表设备视口，不该比设备尺寸还矮
-        div.style.width = `${Math.max(baseWidth, box.w) + borderW}px`;
-        div.style.height = `${Math.max(baseHeight, box.h) + PROTO_FRAME_BAR + borderH}px`;
+        div.style.width = `${Math.max(baseWidth, box.w) + b.w}px`;
+        div.style.height = `${Math.max(baseHeight, box.h) + PROTO_FRAME_BAR + b.h}px`;
+        return true;
+    },
+
+    /**
+     * 高度未知时先把框藏起来，等第一次测量结果回来再显形（零跳变）。
+     * 已知高度时什么都不做 —— 那是零延迟的正常路径。
+     */
+    beginMeasureIfUnknown(element, div) {
+        if (!element || !div) return;
+        if (this.recall(element.id)) return;   // 已知 → 不藏
+        const id = element.id;
+        if (this._measuring[id]) return;       // 已经在等，别重置计时
+        div.classList.add('proto-measuring');
+        this._measuring[id] = {
+            div,
+            timer: setTimeout(() => {
+                Debug.warn('[autofit] 页面未回报高度，已按设备尺寸显示:', id);
+                this.reveal(id);
+            }, PROTO_MEASURE_TIMEOUT),
+        };
+    },
+
+    /** 让一个正在等待测量的页面框显形（收到高度回报，或兜底超时） */
+    reveal(elementId) {
+        const rec = this._measuring[elementId];
+        if (rec) {
+            clearTimeout(rec.timer);
+            delete this._measuring[elementId];
+        }
+        const div = (rec && rec.div) ||
+            document.querySelector(`[data-element-id="${elementId}"]`);
+        if (div) div.classList.remove('proto-measuring');
     },
 
     clear(elementId) {
         delete this._cache[elementId];
+        const rec = this._measuring[elementId];
+        if (rec) {
+            clearTimeout(rec.timer);
+            delete this._measuring[elementId];
+        }
     }
 };
 
@@ -94,6 +293,25 @@ const ElementRenderer = {
 
         canvas.appendChild(div);
 
+        // ⚠️ 挂到 DOM 之后再套一次尺寸。
+        //
+        // renderPageElement 里那次 apply 是在**游离状态**下跑的，
+        // 而边框补偿用的是 offsetWidth - clientWidth —— 游离节点恒为 0
+        // （且匹配不到 `:root[data-theme="light"] …` 这类祖先选择器，
+        //  computed border 也同样是 0），于是首帧会比最终尺寸小 4px
+        // （浅色主题 border:2px，上下 / 左右各 2）。
+        // 实测：刷新后 elem_7 首帧 1729 → 报告回来时被修正为 1733，
+        // 又是一次（虽然很小的）跳变。这里在**同一次任务内**补一次，
+        // 浏览器还没绘制，所以用户完全看不到。
+        //
+        // ⚠️ apply 返回 false = 高度未知（该页面第一次出现）。此时要补的是
+        //    **占位**尺寸而不是已知尺寸 —— 盒子尺寸同样要含边框。
+        if (element.type === 'page' && window.ProtoAutoFit) {
+            if (!window.ProtoAutoFit.apply(element.id, div, element.width, element.height)) {
+                window.ProtoAutoFit.applyPlaceholder(div, element.width, element.height);
+            }
+        }
+
         // 选中状态
         if (ElementManager.state.selectedElements.includes(element.id) ||
             ElementManager.state.selectedElement === element.id) {
@@ -112,9 +330,16 @@ const ElementRenderer = {
         div.style.left = `${element.position.x}px`;
         div.style.top = `${element.position.y}px`;
         div.style.width = `${element.width}px`;
-        div.style.height = `${element.height}px`;
-        // 若此前已测得内容尺寸，优先用它（element.width/height 是设备尺寸，只是下限）
+        // 占位高度也要把顶栏算进来。历史上这里漏了 +30，于是「高度还没量到」
+        // 的那一瞬 iframe 比设备视口还矮 30px（812 里塞 782 的内容），
+        // 初始画面本身就是错的，这让「先固定再展开」更加显眼。
+        // ⚠️ 这里的边框补偿量不出来（div 还没 appendChild，见 borderOf 的注释），
+        //    renderElementWithoutCount 会在挂到 DOM 后补一次准确的。
+        div.style.height = `${window.ProtoAutoFit.placeholderHeight(element.height)}px`;
+        // 已知完整高度（跨刷新记住的也算已知）→ 直接用，零延迟零跳变
         window.ProtoAutoFit.apply(element.id, div, element.width, element.height);
+        // 高度未知（这个页面有史以来第一次出现）→ 先藏起来，量完直接以完整高度显形
+        window.ProtoAutoFit.beginMeasureIfUnknown(element, div);
 
         // 拖拽手柄
         const dragHandle = document.createElement('div');

@@ -676,7 +676,9 @@ test('getManagedKeys 覆盖全部项目写入的键', () => {
     const keys = env.Storage.getManagedKeys();
     ['测试项目Canvas', '测试项目_uiState', 'canvasEditor_theme', 'sidebarMenuExpanded',
         'topbar_fullscreen', 'prototypeFullscreenState', 'prototype_open_tabs',
-        'photographySchoolCanvas', 'photographySchool_uiState'].forEach(k => {
+        'photographySchoolCanvas', 'photographySchool_uiState',
+        // 页面框实测高度记忆：也是本项目写在本机的东西，清缓存必须一并清
+        '测试项目_pageBoxes'].forEach(k => {
         assert(keys.includes(k), `应包含键 ${k}`);
     });
     assert(!keys.includes('prototypeDebug'), '开发者调试开关不属于项目数据，不应清除');

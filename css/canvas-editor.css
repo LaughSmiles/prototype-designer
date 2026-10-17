@@ -2212,6 +2212,19 @@ body {
     user-select: none;
 }
 
+/* 「完整高度还不知道」的页面框：先藏起来，量完直接以完整高度显形。
+   由 ProtoAutoFit.beginMeasureIfUnknown 挂上，收到高度回报或超时后摘掉。
+   用途：该页面有史以来第一次出现时，避免「先按设备高占位、几百毫秒后撑开」的跳变。
+
+   ⚠️ 只能用 visibility:hidden，**绝不能**用 display:none：
+      display:none 的元素不参与布局，iframe 拿不到视口尺寸
+      → page-autofit.js 量出来的高度就是错的（甚至量成 0）
+      → 框会以错误的尺寸显形，比跳变更糟。
+      visibility:hidden 的元素照常占位、照常参与布局，只是不画出来。 */
+.canvas-element.page-element.proto-measuring {
+    visibility: hidden;
+}
+
 .canvas-element.selected {
     border-color: var(--accent-blue);
     box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.25), var(--shadow-lg);

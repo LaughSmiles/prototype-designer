@@ -204,6 +204,11 @@ const CanvasEditor = {
                 window.ProtoAutoFit.remember(elementId, { h: height, w: width });
                 window.ProtoAutoFit.apply(elementId, div);
 
+                // 收到高度 = 这个框量完了。若它此前因为「高度未知」被藏着
+                // （该页面有史以来第一次出现），现在让它以完整高度显形。
+                // ⚠️ 必须放在 apply 之后 —— 先显形再改高度就会露出那一下跳变。
+                window.ProtoAutoFit.reveal(elementId);
+
                 if (window.Debug) Debug.log('[autofit] 页面框尺寸 →', width + '×' + height, div.dataset.elementId);
 
                 // 实测高度真的变了 → iframe 视口变了 → 内部宿主几何全部作废。

@@ -2110,7 +2110,11 @@ function runCanvasEditor(heightReports, opts = {}) {
     const protoAutoFit = {
         _cache: {},
         remember(id, box) { protoAutoFit._cache[id] = box; },
-        apply(id, d) { d.style.height = `${protoAutoFit._cache[id].h}px`; },
+        apply(id, d) { d.style.height = `${protoAutoFit._cache[id].h}px`; return true; },
+        // ⚠️ canvas-editor.js 在收到高度回报后会调 reveal（让「此前因高度未知而
+        //    藏起来」的框显形）。桩必须跟上真实接口，否则这条链路一改就报
+        //    "reveal is not a function"，而那是桩的缺口、不是产品缺陷。
+        reveal() {},
         clear() {},
     };
 
