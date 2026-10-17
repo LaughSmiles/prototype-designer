@@ -170,22 +170,27 @@ const CanvasViewBoxSelection = {
     isElementInBox(element, box) {
         let elemLeft, elemTop, elemRight, elemBottom;
 
-        // 连接线：规则与其它元素**不同** —— 必须「完全包含」才算选中。
+        // 线条类元素（连接线 / 箭头）：规则与其它元素**不同** —— 必须「完全包含」。
         //
         // ⚠️ 为什么不能用下面那段通用的「有交集就算」：
-        //    线的包围盒是一大块空气（L 形线尤其明显），用相交判定会
-        //    把框外根本看不见的线卷进多选，选中后用户一脸问号。
+        //    线的包围盒是一大块空气（L 形尤其明显：实测真线面积只占包围盒的 2%，
+        //    25×25 网格里 84.5% 的可点区域离线超过 15px）。
+        //    用相交判定会把框外根本看不见的线卷进多选，选中后用户一脸问号。
         //    改成完全包含后，「框住了就选中」和「没框住就不选」是同一条直觉。
         //    MasterGo 对连接线也是完全包含。
         //
-        // ⚠️ 判据用 _routePoints（路径上的点）而不是 element.position/width/height：
-        //    后者是包围盒+不含 padding 的松弛值，用它判会误收边界外的线。
-        if (element.type === 'connector') {
-            const pts = element._routePoints;
-            if (!pts || pts.length < 2) return false;
+        // ⚠️ 判据用**实际路径点**而不是 element.position/width/height：
+        //    后者是包围盒（且不含 padding），用它判会误收边界外的线。
+        //    路径点由 ElementRenderer.linePointsOf 统一提供 ——
+        //    箭头取 element.points、连接线取 element._routePoints，来源不同，
+        //    所以**不在这里分支**，否则将来加第三种线元素必然漏一处。
+        const linePts = (typeof ElementRenderer !== 'undefined' && ElementRenderer.linePointsOf)
+            ? ElementRenderer.linePointsOf(element)
+            : null;
+        if (linePts) {
             const boxRight = box.x + box.width;
             const boxBottom = box.y + box.height;
-            return pts.every(p =>
+            return linePts.every(p =>
                 p.x >= box.x && p.x <= boxRight &&
                 p.y >= box.y && p.y <= boxBottom);
         }

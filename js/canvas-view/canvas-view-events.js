@@ -139,31 +139,28 @@ const CanvasViewEvents = {
             return;
         }
 
-        // 检查是否点击了元素（包括箭头的SVG路径）
+        // 检查是否点击了元素
         let targetElement = e.target.closest('.canvas-element');
         let targetElementId = targetElement ? targetElement.dataset.elementId : null;
 
-        // 连接线命中优先：透明加粗的命中区 path 先于视觉线响应
-        if (targetElement && targetElement.classList.contains('connector-element')) {
-            // 已命中连接线容器，targetElementId 已就绪
-        } else {
-            // 如果点的是箭头/连接线的 SVG path（path 不在 .canvas-element 里）
-            const arrowPath = e.target.closest('svg.arrow-svg path');
-            if (arrowPath) {
-                const arrowDiv = arrowPath.closest('.canvas-element.arrow-element');
-                if (arrowDiv) {
-                    targetElement = arrowDiv;
-                    targetElementId = arrowDiv.dataset.elementId;
-                }
-            } else {
-                const connPath = e.target.closest('svg.connector-svg path');
-                if (connPath) {
-                    const connDiv = connPath.closest('.canvas-element.connector-element');
-                    if (connDiv) {
-                        targetElement = connDiv;
-                        targetElementId = connDiv.dataset.elementId;
-                    }
-                }
+        // 箭头 / 连接线的命中兜底。
+        //
+        // ⚠️ 这两类元素的容器都是 pointer-events:none（盒子 = 包围盒 + padding，
+        //    整块可点会「点空白也选中」），真正接事件的是它们内部那条透明加宽的
+        //    命中区 path（.arrow-hit / .connector-hit）。
+        //
+        // ⚠️ 正常情况下上面那行 closest('.canvas-element') 已经解析到容器了：
+        //    closest() 走的是 DOM 祖先链，**与 pointer-events 无关**，
+        //    命中区 path 正是容器的子元素。这里保留一层兜底，
+        //    是为了 DOM 结构将来若把命中区挪到容器之外时不至于静默失效。
+        if (!targetElement || !targetElement.classList.contains('connector-element')) {
+            const lineHit = e.target.closest('svg.arrow-svg .arrow-hit, svg.connector-svg .connector-hit');
+            const lineDiv = lineHit
+                ? lineHit.closest('.canvas-element.arrow-element, .canvas-element.connector-element')
+                : null;
+            if (lineDiv) {
+                targetElement = lineDiv;
+                targetElementId = lineDiv.dataset.elementId;
             }
         }
         // 检查是否点击了拖拽手柄（仅手柄可拖拽）
@@ -408,11 +405,15 @@ const CanvasViewEvents = {
 
         const targetElement = e.target.closest('.canvas-element');
         const dragHandle = e.target.closest('.page-drag-handle');
-        const arrowPath = e.target.closest('svg.arrow-svg path');
+        // ⚠️ 判据是命中区（.arrow-hit），不是 `svg.arrow-svg path`。
+        //    箭头改成「容器与视觉 path 都 pointer-events:none、只有命中区接事件」后，
+        //    原来的 `closest('svg.arrow-svg path')` 永远匹配不到 —— 它会变成死代码，
+        //    光标也就再不会变成 grab。命中区本身就是那条线，用最准确。
+        const arrowHit = e.target.closest('svg.arrow-svg .arrow-hit');
 
         if (dragHandle) {
             canvasWrapper.style.cursor = 'move';
-        } else if (targetElement || arrowPath) {
+        } else if (targetElement || arrowHit) {
             canvasWrapper.style.cursor = 'grab';
         } else {
             canvasWrapper.style.cursor = 'default';

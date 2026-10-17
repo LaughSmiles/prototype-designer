@@ -343,7 +343,11 @@ const ElementManager = {
                     const pageName = PageLibrary.getPageName(element.pageId);
                     info = `选中: ${pageName} (拖拽手柄移动)`;
                 } else if (element.type === 'arrow') {
-                    info = `选中: 箭头 (点击任意位置拖动)`;
+                    // ⚠️ 不能再写「点击任意位置拖动」：箭头已改成
+                    //    容器 pointer-events:none + 只有 .arrow-hit 那条 10px 手感带接事件，
+                    //    "任意位置" 现在指的是一大块空气，用户照着做会点不中。
+                    const pointCount = Array.isArray(element.points) ? element.points.length : 0;
+                    info = `选中: 箭头 (${pointCount} 个点，点线身拖动)`;
                 } else if (element.type === 'connector') {
                     // 自由端没有页面名，显示「自由点」，别让用户以为线坏了
                     const nameOf = (id) => {

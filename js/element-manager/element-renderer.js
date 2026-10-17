@@ -232,9 +232,16 @@ const ElementRenderer = {
         svg.style.top = '0';
         svg.style.width = '100%';
         svg.style.height = '100%';
+        // ⚠️ 必须 visible：SVG 默认 overflow:hidden，而命中带的 stroke 是**骑在路径中心线**
+        //    上的（两侧各占一半）。缩放越小命中带越宽（10/zoom），
+        //    zoom=0.25 时半宽 20 画布 px 已经超过 padding 10，
+        //    超出部分会被 SVG 盒子裁掉 → 边缘手感莫名变差，且**不报任何错**。
+        //    连接线的 .connector-svg 同理设了 visible，两条线保持一致。
+        svg.style.overflow = 'visible';
 
         const pathData = ElementManager.generateArrowPath(points, minX, minY);
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'arrow-path');
         path.setAttribute('d', pathData);
         path.setAttribute('fill', 'none');
         path.setAttribute('stroke', '#e74c3c');
@@ -243,14 +250,75 @@ const ElementRenderer = {
         path.setAttribute('stroke-linejoin', 'round');
 
         const arrowHead = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        arrowHead.setAttribute('class', 'arrow-head');
         arrowHead.setAttribute('d', this.getArrowHeadPath(points[points.length - 2], points[points.length - 1], minX, minY));
         arrowHead.setAttribute('fill', '#e74c3c');
 
+        // ---- 命中区（透明加宽带）----
+        //
+        // ⚠️ 为什么必须有它：容器的盒子是整条折线的**包围盒**，
+        //    在它上面接点击等于「点空白也能选中箭头」——
+        //    实测 25×25 网格里 625 点全中，其中 84.5% 离线超过 15px。
+        //    现在容器与视觉 path 都是 pointer-events:none，
+        //    只有这条透明的加宽 stroke 负责命中，手感带在屏幕上恒定 10px。
+        //
+        // ⚠️ 它画到**最后一个点**（不是 generateArrowPath 用的箭头根部）：
+        //    箭头头部是个 15px 长的三角形，只画到根部的话头部那一截点不中，
+        //    用户会觉得"点到箭头尖上没反应"。画到尖端正好把头部也圈进来。
+        const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        hit.setAttribute('class', 'arrow-hit');
+        hit.setAttribute('d', this.arrowHitPathData(points, minX, minY));
+        hit.setAttribute('fill', 'none');
+        hit.setAttribute('stroke', 'transparent');
+        hit.setAttribute('stroke-width', String(this.getHitStrokeWidth()));
+        hit.setAttribute('stroke-linecap', 'round');
+        hit.setAttribute('stroke-linejoin', 'round');
+
+        // 命中区在下、视觉在上（与 renderConnectorParts 同一顺序）
+        svg.appendChild(hit);
         svg.appendChild(path);
         svg.appendChild(arrowHead);
         div.appendChild(svg);
 
         // 不在这里appendChild，由调用者统一添加
+    },
+
+    /**
+     * 箭头命中区的路径数据：一条穿过**所有**拐点的折线。
+     *
+     * ⚠️ 不复用 generateArrowPath：那条刻意停在箭头根部（免得线头从三角形底下
+     *    戳出来），用它做命中区会让尖端那一截点不中。命中区只管"盖住哪里"，
+     *    盖得越完整越好，视觉与命中在这里本就该是不同的形状。
+     */
+    arrowHitPathData(points, offsetX, offsetY) {
+        if (!Array.isArray(points) || points.length < 2) return '';
+        const seg = points.map((p, i) =>
+            `${i === 0 ? 'M' : 'L'} ${p.x - offsetX} ${p.y - offsetY}`);
+        return seg.join(' ');
+    },
+
+    /**
+     * 取「线条类元素」的真实路径点（箭头 / 连接线），别的类型返回 null。
+     *
+     * ⚠️ 为什么要抽出来：箭头的点是 element.points，连接线的点是
+     *    element._routePoints（渲染时算好缓存的），**来源不同**。
+     *    框选判定要按路径点而不是包围盒来判（包围盒是一大块空气），
+     *    若在调用点各写一份 `type === 'arrow' ? points : _routePoints`，
+     *    将来加第三种线元素时必然漏掉一处 —— 本仓库已被
+     *    "同一逻辑写两份"坑过三次。这里一次收敛。
+     *
+     * 返回 null 表示「不是线元素」，调用方应走通用的矩形判定。
+     */
+    linePointsOf(element) {
+        if (!element) return null;
+        if (element.type === 'arrow') {
+            return Array.isArray(element.points) && element.points.length >= 2 ? element.points : null;
+        }
+        if (element.type === 'connector') {
+            const pts = element._routePoints;
+            return Array.isArray(pts) && pts.length >= 2 ? pts : null;
+        }
+        return null;
     },
 
     // 生成箭头头部路径
@@ -306,12 +374,16 @@ const ElementRenderer = {
     },
 
     /**
-     * 重算**已渲染**的所有连接线命中区宽度。
+     * 重算**已渲染**的所有连接线 / 箭头命中区宽度。
      *
-     * ⚠️ 缩放时必须调用：命中区是在 renderConnectorElement 里写死的，
+     * ⚠️ 缩放时必须调用：命中区是在渲染时写死的，
      *    画布 zoom 变了但 DOM 不会自动重算，不重写就会出现
      *    「放大后点不中线 / 缩小后乱点」。
      *    用 requestAnimationFrame 节流，连续滚轮缩放时每帧最多跑一次。
+     *
+     * ⚠️ 箭头（.arrow-hit）与连接线（.connector-hit）一起处理：
+     *    两者都是「屏幕恒定 10px」的同一条原则，分两处写迟早漏一处
+     *    —— 漏掉的那一类就会在缩放后手感失真，且**不报任何错**。
      */
     refreshHitStrokeWidths() {
         if (this._hitRefreshPending) return;
@@ -319,7 +391,7 @@ const ElementRenderer = {
         const run = () => {
             this._hitRefreshPending = false;
             const w = this.getHitStrokeWidth();
-            const hits = document.querySelectorAll('.connector-hit');
+            const hits = document.querySelectorAll('.connector-hit, .arrow-hit');
             for (let i = 0; i < hits.length; i++) {
                 hits[i].setAttribute('stroke-width', String(w));
             }

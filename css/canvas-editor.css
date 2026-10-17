@@ -2218,10 +2218,22 @@ body {
     z-index: 100;
 }
 
+/* ⚠️ 必须 pointer-events:none —— div 的盒子 = 整条折线的**包围盒** + 10px padding。
+   一条 L 形箭头中间那片空白会被整个框住。实测（zoom 0.55）在 300×300 的
+   包围盒里撒 25×25=625 个网格点，**625 个全部由箭头接住**，其中 528 个
+   （84.5%）离线超过 15px，最远一个离线 66px；真线面积只占包围盒的 2%。
+
+   危害不只是手感：箭头 z-index:100 压着页面框的 10，
+   一条穿过页面框的箭头会让框上几百像素宽的区域点不动 ——
+   在页面框**内部**取 6 个点（都在框里、都不在线上），4 个被箭头抢走。
+
+   用户诉求：只有点击线本身才可以选择 —— 与连接线完全同一条规则。
+   命中改由 .arrow-hit（透明加宽 stroke）承担，见下方 .arrow-svg 规则。 */
 .canvas-element.arrow-element {
     background: transparent;
     border: none;
     z-index: 100;
+    pointer-events: none;
 }
 
 /* ================================================================ 智能连接线 */
@@ -2489,7 +2501,14 @@ body {
     box-shadow: 0 2px 10px rgba(248, 113, 113, 0.6);
 }
 
-.canvas-element .delete-btn {
+/* ⚠️ 这里**必须**带 `.selected`。
+   上面那条基础规则写的是 display:none，靠这条再覆盖成 flex；
+   一旦把 `.selected` 去掉（提交 d3976c6 曾这么改过），
+   "未选中"这个条件就整个消失了 —— 于是每一条箭头、每一个页面框上
+   都常驻一个红叉，未选中时也挂在包围盒角上。
+   用户报的现象正是「箭头工具在失去选择状态的时候仍有删除按钮」。
+   批注元素另有下面 `.annotation-element.selected .delete-btn` 兜底。 */
+.canvas-element.selected .delete-btn {
     display: flex;
 }
 
@@ -2565,6 +2584,10 @@ body {
 /* ============================================================
    箭头绘制
    ============================================================ */
+/* .arrow-svg 的盒子本身穿透，只有命中区的 stroke 接事件 ——
+   与 .connector-svg 完全同一条思路。
+   ⚠️ pointer-events 会在 SVG 上「继承」到 <svg> 本身，所以这里必须显式
+   写 none，否则命中区的 stroke 永远收不到事件。 */
 .arrow-svg {
     position: absolute;
     top: 0;
@@ -2572,6 +2595,60 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
+}
+
+.arrow-svg path {
+    pointer-events: none;
+}
+
+/* 箭头命中区：屏幕恒定 10px 宽的透明带（stroke-width 由 JS 写成 10/zoom）。
+   ⚠️ 与 .connector-hit 逐条同源 —— 手感带必须在**屏幕上**恒定，
+   否则 zoom=0.25 时写死的 10 只剩 2.5px 根本点不中，
+   zoom=4 时又变成 40px，一条线能"点中"大半个画布。
+
+   ⚠️ cursor 必须是 move：改前箭头 div 自己在接事件，光标来自
+   `.canvas-element { cursor: move }`（实测 computed cursor = "move"）。
+   现在 div 已 pointer-events:none，光标改由命中区提供 ——
+   这里若写成 pointer 就会把「这条线可以整条拖走」的暗示弄丢。 */
+.arrow-svg .arrow-hit {
+    pointer-events: stroke;
+    cursor: move;
+}
+
+/* ---- 箭头选中视觉：只有线本身变蓝加粗，**没有**包围矩形 ----
+   ⚠️ 两处都要关，且**必须带上 [data-theme] 前缀把特异性抬到 (0,4,0)**：
+   通用规则有两条，`.canvas-element.selected` 是 (0,2,0)、
+   而浅色主题的 `:root[data-theme="light"] .canvas-element.selected` 是 (0,3,0)。
+   如果本条只写 (0,3,0)（连接线那条就是 0,3,0 却写成了 0,1,0 的量级），
+   在浅色主题下会被 (0,3,0) 那条按特异性压过 ——
+   实测连接线在浅色主题下选中时矩形辉光**确实还在**，正是踩了这个坑。
+   依据 MasterGo：选中后只有线变蓝 + 端点手柄，无包围矩形。
+   包围盒对一条折线来说是「一大块空气」，画出来既误导（看着像可拖动的框）
+   又和真实可点区域不一致。 */
+.canvas-element.arrow-element.selected,
+:root[data-theme="light"] .canvas-element.arrow-element.selected,
+:root[data-theme="dark"] .canvas-element.arrow-element.selected {
+    outline: none;
+    box-shadow: none;
+}
+
+.canvas-element.arrow-element.selected .arrow-path {
+    stroke: var(--accent-blue);
+    stroke-width: 4;
+}
+
+.canvas-element.arrow-element.selected .arrow-head {
+    fill: var(--accent-blue);
+}
+
+/* ⚠️ 连接线同样的坑，一并兜住：
+   上面 `.canvas-element.connector-element.selected` 只有 (0,2,0)，
+   而浅色主题的通用规则是 (0,3,0) —— 实测浅色下矩形辉光会复发。
+   补两条带主题前缀的选择器把它压回去。 */
+:root[data-theme="light"] .canvas-element.connector-element.selected,
+:root[data-theme="dark"] .canvas-element.connector-element.selected {
+    outline: none;
+    box-shadow: none;
 }
 
 /* ============================================================

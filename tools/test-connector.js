@@ -1695,6 +1695,171 @@ test('⚠️ 画新线收尾不得继承拖后跟随（那是拖端点专属语�
         '画新线是「收工」语义：调用方随即切回选择工具，不该留着跟随');
 });
 
+// ================================================================ 17. 箭头命中范围与选中态
+//
+// 用户报的三个现象（前两个来自本轮，第三处是顺手发现的既有 bug）：
+//   ① 「箭头工具在失去选择状态的时候去掉删除按钮」
+//   ② 「箭头工具的选择范围太大了，这里可以参考下连接线工具是怎么做的」
+//   ③ 浅色主题下连接线选中时的大矩形辉光**复发**（上个提交刚消掉的东西）
+
+suite('17. 箭头命中范围与选中态');
+
+test('⚠️ 删除按钮必须重新带上 .selected（否则未选中时也常驻一个红叉）', () => {
+    const css = readSrc('css', 'canvas-editor.css');
+    // 基础规则隐藏、覆盖规则在选中时显示 —— 两条都要在
+    assert(/^\s*\.canvas-element\s*\.delete-btn\s*\{[\s\S]*?display:\s*none/m.test(css),
+        '基础规则里应当有 display: none');
+    assert(/^\s*\.canvas-element\.selected\s*\.delete-btn\s*\{[\s\S]*?display:\s*flex/m.test(css),
+        '⚠️ 覆盖规则必须带 .selected —— 丢了它就变成"所有元素永远显示删除按钮"');
+
+    // 反向：不允许存在不带 .selected 的裸覆盖规则（那就是这个 bug 本身）
+    const bare = css.match(/^\s*\.canvas-element\s*\.delete-btn\s*\{[^}]*display:\s*flex/m);
+    assert(!bare,
+        '⚠️ 不得存在 `.canvas-element .delete-btn { display: flex }` 这样的无条件覆盖 —— 正是 d3976c6 引入回归的写法');
+
+    // 批注元素有自己的那条，别被误伤
+    assert(/\.canvas-element\.annotation-element\.selected\s*\.delete-btn/.test(css),
+        '批注元素的选中态规则应保持独立存在');
+});
+
+test('⚠️ 箭头容器必须 pointer-events:none（盒子=包围盒，整块可点等于"点空白也选中"）', () => {
+    const css = readSrc('css', 'canvas-editor.css');
+    const rule = css.match(/\.canvas-element\.arrow-element\s*\{([\s\S]*?)\}/);
+    assert(rule, '应能找到 .arrow-element 基础规则');
+    assert(/pointer-events:\s*none/.test(rule[1]),
+        '⚠️ 箭头容器必须穿透：实测 300×300 包围盒撒 625 点全被它接住，真线只占 2%');
+
+    // 视觉 svg 与 path 也要穿透，命中只能由命中区负责
+    assert(/\.arrow-svg\s*\{[\s\S]*?pointer-events:\s*none/.test(css),
+        '.arrow-svg 盒子本身必须穿透（否则命中区的 stroke 收不到事件）');
+    assert(/\.arrow-svg\s+path\s*\{[\s\S]*?pointer-events:\s*none/.test(css),
+        '视觉 path 必须穿透');
+    assert(/\.arrow-svg\s+\.arrow-hit\s*\{[\s\S]*?pointer-events:\s*stroke/.test(css),
+        '⚠️ 必须存在 .arrow-hit 且 pointer-events: stroke —— 这是唯一接事件的东西');
+});
+
+test('⚠️ 箭头命中区光标必须是 move（容器穿透后光标只能由命中区提供）', () => {
+    const css = readSrc('css', 'canvas-editor.css');
+    const rule = css.match(/\.arrow-svg\s+\.arrow-hit\s*\{([\s\S]*?)\}/);
+    assert(rule, '应能找到 .arrow-hit 规则');
+    assert(/cursor:\s*move/.test(rule[1]),
+        '⚠️ 改前容器自己的 cursor 实测是 move（来自 .canvas-element），命中区若写 pointer 就丢了"整条可拖走"的暗示');
+});
+
+test('⚠️ 箭头渲染必须产出 .arrow-hit，且宽度走 getHitStrokeWidth（屏幕恒定 10px）', () => {
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const fn = src.match(/renderArrowElement\(div, element, canvas\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 renderArrowElement');
+    assert(/setAttribute\('class',\s*'arrow-hit'\)/.test(fn[1]),
+        '⚠️ 必须创建 .arrow-hit 命中路径');
+    assert(/getHitStrokeWidth\(\)/.test(fn[1]),
+        '⚠️ 命中区宽度必须由 getHitStrokeWidth() 出（= 10/zoom），不能写死');
+
+    // 视觉 path / 箭头头部也要带类名，选中态样式才有钩子
+    assert(/setAttribute\('class',\s*'arrow-path'\)/.test(fn[1]),
+        '视觉 path 要有 .arrow-path（选中变蓝用它）');
+    assert(/setAttribute\('class',\s*'arrow-head'\)/.test(fn[1]),
+        '箭头头部要有 .arrow-head（选中变蓝用它）');
+});
+
+test('⚠️ 命中路径必须画到最后一个点（不能复用 generateArrowPath 的根部截断）', () => {
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const fn = src.match(/arrowHitPathData\(points, offsetX, offsetY\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 arrowHitPathData');
+    // 必须遍历所有点（map），不能有 length - 1 之类的截断
+    assert(/points\.map\(/.test(fn[1]), '命中路径应遍历全部拐点');
+    assert(!/length\s*-\s*1/.test(fn[1]),
+        '⚠️ 不得截掉最后一个点 —— generateArrowPath 停在箭头根部是为了视觉，命中区若也停在那里，尖端那 15px 就点不中');
+
+    // 确认确实没有复用视觉路径
+    const arrow = src.match(/renderArrowElement\(div, element, canvas\)\s*\{([\s\S]*?)\n    \},/);
+    assert(arrow, '应能找到 renderArrowElement');
+    assert(!/hit\.setAttribute\('d',\s*pathData\)/.test(arrow[1]),
+        '⚠️ 命中区不得直接复用视觉路径数据（根部截断会让尖端点不中）');
+});
+
+test('⚠️ 箭头 SVG 必须 overflow:visible（命中带骑在中心线上，默认 hidden 会裁掉一半）', () => {
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const fn = src.match(/renderArrowElement\(div, element, canvas\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 renderArrowElement');
+    assert(/svg\.style\.overflow\s*=\s*'visible'/.test(fn[1]),
+        '⚠️ SVG 默认 overflow:hidden；命中带两侧各占一半，zoom=0.25 时半宽 20 已超过 padding 10，会被裁掉');
+});
+
+test('⚠️ refreshHitStrokeWidths 必须同时覆盖箭头与连接线的命中区', () => {
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const fn = src.match(/refreshHitStrokeWidths\(\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 refreshHitStrokeWidths');
+    assert(/\.connector-hit/.test(fn[1]), '必须覆盖 .connector-hit');
+    assert(/\.arrow-hit/.test(fn[1]),
+        '⚠️ 必须同时覆盖 .arrow-hit —— 漏掉的那一类会在缩放后手感失真，且不报任何错');
+});
+
+test('⚠️ 框选判定必须走公共的 linePointsOf（不得在调用点各写一份 type 分支）', () => {
+    const box = stripComments(readSrc('js', 'canvas-view', 'canvas-view-box-selection.js'));
+    assert(/ElementRenderer\.linePointsOf\(element\)/.test(box),
+        '⚠️ 线条类元素的路径点必须由 ElementRenderer.linePointsOf 统一提供');
+
+    // 反向：不允许残留按 type 硬分支的旧写法
+    assert(!/element\.type\s*===\s*'connector'/.test(box),
+        '⚠️ 不得再按 type 硬分支 —— 箭头取 element.points、连接线取 _routePoints，来源不同，写两份迟早漏一处');
+    assert(!/element\._routePoints/.test(box),
+        '⚠️ 不得在框选里直接读 _routePoints（那是连接线专有字段，箭头没有）');
+
+    // 保留「完全包含」语义：不得退回相交判定
+    assert(/\.every\(p\s*=>/.test(box), '完全包含语义应保留（every 而非 some）');
+});
+
+test('⚠️ linePointsOf 必须同时认识箭头与连接线，别的类型返回 null', () => {
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const fn = src.match(/linePointsOf\(element\)\s*\{([\s\S]*?)\n    \},/);
+    assert(fn, '应能找到 linePointsOf');
+    assert(/element\.type\s*===\s*'arrow'/.test(fn[1]), '必须认识箭头');
+    assert(/element\.points/.test(fn[1]), '箭头取 element.points');
+    assert(/element\.type\s*===\s*'connector'/.test(fn[1]), '必须认识连接线');
+    assert(/_routePoints/.test(fn[1]), '连接线取 element._routePoints');
+    assert(/return null/.test(fn[1]), '非线元素必须返回 null（调用方据此走通用矩形判定）');
+});
+
+test('⚠️ 线条类元素选中时不得有包围矩形 —— 且必须压过浅色主题的通用规则', () => {
+    const css = readSrc('css', 'canvas-editor.css');
+
+    // ① 箭头：无矩形
+    const arrowSel = css.match(/\.canvas-element\.arrow-element\.selected[\s\S]*?\{([\s\S]*?)\}/);
+    assert(arrowSel, '应能找到箭头选中态规则');
+    assert(/box-shadow:\s*none/.test(arrowSel[1]), '箭头选中必须 box-shadow: none');
+    assert(/outline:\s*none/.test(arrowSel[1]), '箭头选中必须 outline: none');
+
+    // ② 箭头：线变蓝加粗（这才是"选中了"的视觉反馈）
+    assert(/\.canvas-element\.arrow-element\.selected\s+\.arrow-path\s*\{[\s\S]*?stroke:\s*var\(--accent-blue\)/.test(css),
+        '选中时视觉线应变蓝');
+    assert(/\.canvas-element\.arrow-element\.selected\s+\.arrow-head\s*\{[\s\S]*?fill:\s*var\(--accent-blue\)/.test(css),
+        '选中时箭头头部应变蓝');
+
+    // ③ 关键：特异性必须 ≥ (0,3,0)，否则被 `:root[data-theme="light"] .canvas-element.selected` 压过
+    const lightPrefix = css.match(/:root\[data-theme="light"\]\s*\.canvas-element\.arrow-element\.selected/);
+    assert(lightPrefix,
+        '⚠️ 必须有一条带 :root[data-theme="light"] 前缀的箭头选中规则 —— 通用规则那条是 (0,3,0)，没前缀的同名规则会被它按特异性压过，矩形辉光就会复发');
+
+    // ④ 连接线同样的坑也要兜住
+    assert(/:root\[data-theme="light"\]\s*\.canvas-element\.connector-element\.selected[\s\S]*?box-shadow:\s*none/.test(css),
+        '⚠️ 连接线也必须有带主题前缀的兜底 —— 实测浅色主题下它的矩形辉光确实还在（原规则只有 0,2,0）');
+});
+
+test('⚠️ 光标判定必须用命中区，不能继续找 svg.arrow-svg path（那已永远匹配不到）', () => {
+    const src = stripComments(readSrc('js', 'canvas-view', 'canvas-view-events.js'));
+    assert(/closest\('svg\.arrow-svg\s+\.arrow-hit'\)/.test(src),
+        '⚠️ updateCursorByElement 必须改判命中区');
+    assert(!/closest\('svg\.arrow-svg path'\)/.test(src),
+        '⚠️ 不得残留 closest(\'svg.arrow-svg path\') —— 视觉 path 已 pointer-events:none，永远匹配不到，光标再不会变 grab');
+
+    const down = src.match(/handleMouseDown\(e, canvasWrapper\)\s*\{([\s\S]*?)\n    \},/);
+    assert(down, '应能找到 handleMouseDown');
+    assert(!/closest\('svg\.arrow-svg path'\)/.test(down[1]),
+        '⚠️ handleMouseDown 里同样不得残留旧判据');
+    assert(/\.arrow-hit/.test(down[1]), 'handleMouseDown 的兜底应判命中区');
+});
+
 // ---------------------------------------------------------------- 运行
 
 (async () => {
