@@ -398,11 +398,14 @@ const ElementRenderer = {
         clickOverlay.style.cursor = 'inherit';
         div.appendChild(clickOverlay);
 
-        // 预览按钮（悬停时显示，点击打开全屏预览）
+        // 预览按钮（悬停时显示，点击打开**原位**预览：原地解锁 iframe，不改 zoom/pan）
+        // ⚠️ 别把它写成「全屏预览」：真正铺满窗口的那个浮层是右键拖拽手柄 →
+        //    菜单项「全屏显示」（ElementKeyboard.createFullscreenOverlay），
+        //    而本按钮走的是 CanvasViewEvents.openPreview —— 两者是两条不同的路。
         const previewBtn = document.createElement('div');
         previewBtn.className = 'preview-btn';
         previewBtn.innerHTML = '<i class="fas fa-eye"></i>';
-        previewBtn.title = '全屏预览此页面';
+        previewBtn.title = '预览页面';
         previewBtn.style.pointerEvents = 'auto';
         previewBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();

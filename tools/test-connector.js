@@ -2268,6 +2268,24 @@ test('页面侧：PROTO_FIXED_HEIGHT 逃逸开关仍然有效（预览逻辑不�
     assert(!r.unlocked, '标了 PROTO_FIXED_HEIGHT 的页面不得解锁');
 });
 
+test('⚠️ 眼睛按钮的提示必须是「预览页面」—— 它是原位预览，不是全屏预览', () => {
+    // 用户诉求（原话）：「把全屏预览此页面改成预览页面」。
+    // 原文案把人引向了错误的心智模型：点下去期待弹个满屏，实际只是
+    // 在画布原地解锁 iframe（openPreview，不改 zoom/pan）。
+    // 「全屏」是右键拖拽手柄 → 菜单项「全屏显示」那一条路的专属说法。
+    const src = stripComments(readSrc('js', 'element-manager', 'element-renderer.js'));
+    const block = src.match(/const previewBtn = document\.createElement\('div'\);([\s\S]*?)div\.appendChild\(previewBtn\);/);
+    assert(block, '应能找到 previewBtn 渲染块');
+
+    assert(/previewBtn\.title = '预览页面'/.test(block[1]),
+        '⚠️ 提示文案应为「预览页面」');
+    assert(!/全屏/.test(block[1]),
+        '⚠️ 这一块里不得再出现「全屏」字样：本按钮走 openPreview（原位预览），' +
+        '全屏是右键菜单那条路，混用会让用户预期落空');
+    assert(/CanvasViewEvents\.openPreview\(/.test(block[1]),
+        '按钮必须仍然指向原位预览（别顺手改成了全屏浮层）');
+});
+
 // ---------------------------------------------------------------- 运行
 
 (async () => {
